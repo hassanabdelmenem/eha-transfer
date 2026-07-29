@@ -22,12 +22,12 @@ function TestComp({ trigger }: { trigger: boolean }) {
 
 describe('useAudioAlert', () => {
   it('plays audio when trigger becomes true', async () => {
-    const { rerender } = render(<TestComp trigger={false} />);
+    const { rerender } = render(React.createElement(TestComp, { trigger: false }));
 
     expect(play).not.toHaveBeenCalled();
 
     // trigger audio
-    rerender(<TestComp trigger={true} />);
+    rerender(React.createElement(TestComp, { trigger: true }));
 
     // allow promise microtasks to flush
     await Promise.resolve();

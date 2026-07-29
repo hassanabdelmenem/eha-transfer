@@ -55,7 +55,7 @@ describe('useSpeechRecognition', () => {
     const onTranscript = vi.fn();
     const refHolder: any = { current: null };
 
-    render(<TestComp onTranscript={onTranscript} refHolder={refHolder} />);
+    render(React.createElement(TestComp, { onTranscript, refHolder }));
 
     const hook = refHolder.current;
     expect(hook.isSupported).toBeTruthy();
