@@ -20,7 +20,9 @@ describe('targeted survivor tests', () => {
     for (let a of [0, 1, -1, 2, -3]) {
       for (let b of [0, 1, -2, 3]) {
         for (let c of [0, 2, -1]) {
-          expect(multiply(a, sum(b, c))).toBe(sum(multiply(a, b), multiply(a, c)));
+          const lhs = multiply(a, sum(b, c));
+          const rhs = sum(multiply(a, b), multiply(a, c));
+          expect(Object.is(lhs, rhs) || (Number.isNaN(lhs) && Number.isNaN(rhs))).toBe(true);
         }
       }
     }
