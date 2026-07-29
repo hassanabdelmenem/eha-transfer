@@ -54,19 +54,24 @@ export const useSpeechRecognition = (
   }, [onTranscript, getSpeechRecognition]);
 
   const startRecording = useCallback(() => {
-    if (recognition) {
-      try {
-        recognition.start();
-        setIsRecording(true);
-      } catch (e) {
-        console.error(e);
-      }
+    try {
+      // optional chaining to safely call start when recognition exists
+      recognition?.start();
+      // if start didn't throw, mark as recording
+      setIsRecording(true);
+    } catch (e) {
+      console.error(e);
     }
   }, [recognition]);
 
   const stopRecording = useCallback(() => {
-    if (recognition) {
-      recognition.stop();
+    try {
+      // safely call stop if available
+      recognition?.stop();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      // always ensure the recording flag is cleared
       setIsRecording(false);
     }
   }, [recognition]);
