@@ -4,6 +4,6 @@
   "testRunner": "vitest",
   "packageManager": "npm",
   "reporters": ["progress", "clear-text", "html"],
-  "coverageAnalysis": "off",
+  "coverageAnalysis": "perTest",
   "ignoreStatic": true
 }
