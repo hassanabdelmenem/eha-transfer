@@ -22,7 +22,10 @@ describe('targeted survivor tests', () => {
         for (let c of [0, 2, -1]) {
           const lhs = multiply(a, sum(b, c));
           const rhs = sum(multiply(a, b), multiply(a, c));
-          expect(Object.is(lhs, rhs) || (Number.isNaN(lhs) && Number.isNaN(rhs))).toBe(true);
+          // Treat +0 and -0 as equal for these numeric invariants
+          if (!((lhs === 0 && rhs === 0) || Object.is(lhs, rhs) || (Number.isNaN(lhs) && Number.isNaN(rhs)))) {
+            throw new Error(`Distributive failed for a=${a},b=${b},c=${c}: lhs=${lhs} rhs=${rhs}`);
+          }
         }
       }
     }
