@@ -10,9 +10,12 @@ const TestComp = ({ onTranscript, getFactory }: any) => {
 };
 
 describe('useSpeechRecognition injection tests', () => {
-  it('works when factory returns null: isSupported false and toggling is safe', async () => {
+  it('works when factory returns null: isSupported false and toggling is safe (no errors logged)', async () => {
     const onTranscript = vi.fn();
     const factory = () => null;
+    const errorLog = vi.fn();
+    (global as any).console = { ...console, error: errorLog } as any;
+
     const { container } = render(React.createElement(TestComp, { onTranscript, getFactory: factory }));
 
     expect(container.firstChild?.getAttribute('data-supported')).toBe('false');
@@ -20,6 +23,10 @@ describe('useSpeechRecognition injection tests', () => {
     // toggling should not throw and should not set recording
     await act(async () => { container.firstChild && (container.firstChild as HTMLElement).click(); });
     expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
+    // ensure no errors were logged when toggling without a recognition instance
+    expect(errorLog).not.toHaveBeenCalled();
+
+    (global as any).console = console;
   });
 
   it('works when factory returns a constructor: start/stop and onerror use latest instance', async () => {
@@ -64,5 +71,29 @@ describe('useSpeechRecognition injection tests', () => {
     await act(async () => { container.firstChild && (container.firstChild as HTMLElement).click(); });
     expect(recog.stop).toHaveBeenCalled();
     expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
+  });
+
+  it('clears recognition when factory changes from constructor to null', async () => {
+    const onTranscript = vi.fn();
+    const instances: any[] = [];
+    const MockCtor = function () {
+      instances.push(this);
+      this.continuous = false;
+      this.interimResults = false;
+      this.lang = '';
+      this.start = vi.fn();
+      this.stop = vi.fn();
+    } as any;
+
+    const factoryA = () => MockCtor as any;
+    const factoryB = () => null;
+    const { rerender, container } = render(React.createElement(TestComp, { onTranscript, getFactory: factoryA }));
+    expect(container.firstChild?.getAttribute('data-supported')).toBe('true');
+
+    // now rerender with factory returning null and assert recognition is cleared
+    rerender(React.createElement(TestComp, { onTranscript, getFactory: factoryB }));
+    // microtask tick
+    await act(async () => { await Promise.resolve(); });
+    expect(container.firstChild?.getAttribute('data-supported')).toBe('false');
   });
 });

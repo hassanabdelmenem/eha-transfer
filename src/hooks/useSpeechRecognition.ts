@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 // Allow injection of a SpeechRecognition constructor for testability
 export type SpeechRecognitionFactory = () => any | null;
 
-const defaultSpeechRecognitionFactory: SpeechRecognitionFactory = () => {
+export const defaultSpeechRecognitionFactory: SpeechRecognitionFactory = () => {
   if (typeof window !== 'undefined') {
     return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
   }
