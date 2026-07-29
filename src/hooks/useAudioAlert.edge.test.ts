@@ -84,6 +84,8 @@ describe('useAudioAlert edge behaviors', () => {
     await Promise.resolve();
 
     expect(log).toHaveBeenCalled();
+    // assert the logged message contains the original user-facing string
+    expect(log.mock.calls.some(c => String(c[0]).includes('Audio play prevented by browser policy'))).toBe(true);
 
     delete (global as any).Audio;
     (global as any).console = console;

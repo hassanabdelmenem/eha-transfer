@@ -5,7 +5,29 @@ const put = vi.fn();
 const getAll = vi.fn().mockResolvedValue([{ id: 'r1', note: 'hello' }]);
 const del = vi.fn();
 const clear = vi.fn();
-const openDB = vi.fn().mockResolvedValue({ put, getAll, delete: del, clear });
+
+// Make the openDB mock assert it was called with the expected DB name and upgrade options
+const openDB = vi.fn().mockImplementation((name: string, version: number, opts?: any) => {
+  if (name !== 'referral-store') {
+    // throw to fail mutated cases where the store name was changed
+    throw new Error(`unexpected db name: ${name}`);
+  }
+  // Ensure the upgrade function exists and when invoked it creates the expected object store
+  if (!opts || typeof opts.upgrade !== 'function') {
+    throw new Error('missing upgrade function');
+  }
+  // provide a fake db with createObjectStore capturing calls
+  const created: any[] = [];
+  const fakeDb = {
+    createObjectStore: (storeName: string, opts: any) => created.push({ storeName, opts }),
+  } as any;
+  // call upgrade to simulate DB initialization
+  opts.upgrade(fakeDb);
+  const storeCreated = created.find((c: any) => c.storeName === 'offline-referrals' && c.opts && c.opts.keyPath === 'id');
+  if (!storeCreated) throw new Error('offline-referrals store not created as expected');
+
+  return Promise.resolve({ put, getAll, delete: del, clear });
+});
 
 vi.stubGlobal('window', {} as any);
 vi.mock('idb', () => ({ openDB }));

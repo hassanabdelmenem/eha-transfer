@@ -60,9 +60,13 @@ describe('useSpeechRecognition edge behaviors', () => {
     act(() => { recog.onresult && recog.onresult(event); });
     expect(onTranscript).toHaveBeenCalledWith('hello');
 
-    // simulate onerror -> should set isRecording false
+    // simulate onerror -> should set isRecording false and log the error
+    const errorLog = vi.fn();
+    (global as any).console = { ...console, error: errorLog } as any;
     act(() => { recog.onerror && recog.onerror({ error: 'boom' }); });
     expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
+    expect(errorLog).toHaveBeenCalled();
+    expect(String(errorLog.mock.calls[0][0])).toContain('Speech recognition error');
 
     // start again, then simulate onend
     await act(async () => {
@@ -75,6 +79,7 @@ describe('useSpeechRecognition edge behaviors', () => {
 
     delete (global as any).SpeechRecognition;
     delete (global as any).__lastRecog;
+    (global as any).console = console;
   });
 
   it('does not call onTranscript for interim (non-final) results', async () => {
