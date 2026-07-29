@@ -47,7 +47,7 @@ describe('useSpeechRecognition edge behaviors', () => {
 
     // verify start was called and recording is true
     expect(recog.start).toHaveBeenCalled();
-    expect(container.firstChild).toHaveAttribute('data-recording', 'true');
+    expect(container.firstChild?.getAttribute('data-recording')).toBe('true');
 
     // simulate an onresult with a final transcript
     const event = {
@@ -62,16 +62,16 @@ describe('useSpeechRecognition edge behaviors', () => {
 
     // simulate onerror -> should set isRecording false
     act(() => { recog.onerror && recog.onerror({ error: 'boom' }); });
-    expect(container.firstChild).toHaveAttribute('data-recording', 'false');
+    expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
 
     // start again, then simulate onend
     await act(async () => {
       container.firstChild && (container.firstChild as HTMLElement).click();
     });
-    expect(container.firstChild).toHaveAttribute('data-recording', 'true');
+    expect(container.firstChild?.getAttribute('data-recording')).toBe('true');
 
     act(() => { recog.onend && recog.onend(); });
-    expect(container.firstChild).toHaveAttribute('data-recording', 'false');
+    expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
 
     delete (global as any).SpeechRecognition;
     delete (global as any).__lastRecog;
@@ -81,6 +81,6 @@ describe('useSpeechRecognition edge behaviors', () => {
     delete (global as any).SpeechRecognition;
     const onTranscript = vi.fn();
     const { container } = render(React.createElement(TestComp, { onTranscript }));
-    expect(container.firstChild).toHaveAttribute('data-supported', 'false');
+    expect(container.firstChild?.getAttribute('data-supported')).toBe('false');
   });
 });

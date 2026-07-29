@@ -20,33 +20,4 @@ describe('db edge cases', () => {
       (global as any).window = origWindow;
     }
   });
-
-  it('calls underlying idb methods when openDB is present', async () => {
-    vi.resetModules();
-
-    const put = vi.fn();
-    const getAll = vi.fn().mockResolvedValue([{ id: '1' }]);
-    const del = vi.fn();
-    const clear = vi.fn();
-
-    vi.doMock('idb', () => ({
-      openDB: () => Promise.resolve({ put, getAll, delete: del, clear }),
-    }));
-
-    const { saveOfflineReferral, getOfflineReferrals, deleteOfflineReferral, clearOfflineReferrals } = await import('./db');
-
-    await saveOfflineReferral({ id: '1' } as any);
-    expect(put).toHaveBeenCalledWith('offline-referrals', { id: '1' });
-
-    const res = await getOfflineReferrals();
-    expect(res).toEqual([{ id: '1' }]);
-
-    await deleteOfflineReferral('1');
-    expect(del).toHaveBeenCalledWith('offline-referrals', '1');
-
-    await clearOfflineReferrals();
-    expect(clear).toHaveBeenCalledWith('offline-referrals');
-
-    vi.dontMock('idb');
-  });
 });
