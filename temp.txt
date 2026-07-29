@@ -1,0 +1,9 @@
+          <Link
+             to="/referrals/new"
+             className={`flex flex-col items-center py-2 px-3 text-xs uppercase font-bold tracking-wider ${
+                location.pathname.startsWith('/referrals/new') ? 'text-blue-900' : 'text-slate-500'
+             }`}
+          >
+             <PlusCircle className="h-6 w-6 mb-1" />
+             New
+          </Link>
