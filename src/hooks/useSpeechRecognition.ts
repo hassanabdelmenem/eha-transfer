@@ -57,8 +57,8 @@ export const useSpeechRecognition = (
     try {
       // optional chaining to safely call start when recognition exists
       recognition?.start();
-      // if start didn't throw, mark as recording
-      setIsRecording(true);
+      // set recording only if a recognition instance exists
+      setIsRecording(Boolean(recognition));
     } catch (e) {
       console.error(e);
     }
