@@ -41,4 +41,51 @@ describe('useAudioAlert edge behaviors', () => {
 
     delete (global as any).Audio;
   });
+
+  it('constructs Audio only once across multiple renders and re-triggers', () => {
+    const play = vi.fn().mockResolvedValue(null);
+    const constructed: any[] = [];
+    (global as any).Audio = function (src: string) {
+      this.src = src;
+      this.play = play;
+      constructed.push(this);
+    } as any;
+
+    const { rerender } = render(React.createElement(TestComp, { trigger: false }));
+    // first render should construct the audio
+    expect(constructed.length).toBe(1);
+
+    // rerender with trigger true to play
+    rerender(React.createElement(TestComp, { trigger: true }));
+    expect(play).toHaveBeenCalled();
+
+    // rerender again (should NOT construct another Audio)
+    rerender(React.createElement(TestComp, { trigger: true }));
+    expect(constructed.length).toBe(1);
+
+    delete (global as any).Audio;
+  });
+
+  it('logs a message when play rejects', async () => {
+    const play = vi.fn().mockRejectedValue(new Error('blocked'));
+    const constructed: any[] = [];
+    const log = vi.fn();
+    (global as any).console = { ...console, log } as any;
+
+    (global as any).Audio = function (src: string) {
+      this.src = src;
+      this.play = play;
+      constructed.push(this);
+    } as any;
+
+    render(React.createElement(TestComp, { trigger: true }));
+
+    // allow microtask queue to flush
+    await Promise.resolve();
+
+    expect(log).toHaveBeenCalled();
+
+    delete (global as any).Audio;
+    (global as any).console = console;
+  });
 });

@@ -77,6 +77,56 @@ describe('useSpeechRecognition edge behaviors', () => {
     delete (global as any).__lastRecog;
   });
 
+  it('does not call onTranscript for interim (non-final) results', async () => {
+    const onTranscript = vi.fn();
+    (global as any).SpeechRecognition = function () {
+      (global as any).__lastRecog = this;
+      this.continuous = false;
+      this.interimResults = false;
+      this.lang = '';
+      this.start = vi.fn();
+      this.stop = vi.fn();
+    } as any;
+
+    const { container } = render(React.createElement(TestComp, { onTranscript }));
+    const recog = (global as any).__lastRecog;
+
+    // simulate an interim result (isFinal: false)
+    act(() => {
+      recog.onresult && recog.onresult({ resultIndex: 0, results: [{ isFinal: false, 0: { transcript: 'partial' } }] });
+    });
+
+    expect(onTranscript).not.toHaveBeenCalled();
+
+    delete (global as any).SpeechRecognition;
+    delete (global as any).__lastRecog;
+  });
+
+  it('recreates recognition when onTranscript callback changes', async () => {
+    const instances: any[] = [];
+    (global as any).SpeechRecognition = function () {
+      instances.push(this);
+      this.continuous = false;
+      this.interimResults = false;
+      this.lang = '';
+      this.start = vi.fn();
+      this.stop = vi.fn();
+    } as any;
+
+    const onTranscriptA = vi.fn();
+    const { rerender } = render(React.createElement(TestComp, { onTranscript: onTranscriptA }));
+    expect(instances.length).toBe(1);
+
+    const onTranscriptB = vi.fn();
+    // rerender with a different callback should cause the effect to re-run and create a new instance
+    rerender(React.createElement(TestComp, { onTranscript: onTranscriptB }));
+    // microtask tick to let effect run
+    await Promise.resolve();
+    expect(instances.length).toBeGreaterThanOrEqual(2);
+
+    delete (global as any).SpeechRecognition;
+  });
+
   it('isSupported is false when no SpeechRecognition exists', async () => {
     delete (global as any).SpeechRecognition;
     const onTranscript = vi.fn();
