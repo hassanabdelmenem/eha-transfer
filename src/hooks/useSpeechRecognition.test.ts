@@ -33,12 +33,6 @@ class MockRecognition {
   }
 }
 
-declare global {
-  interface Window {
-    SpeechRecognition?: any;
-    webkitSpeechRecognition?: any;
-  }
-}
 
 vi.stubGlobal('window', (globalThis as any).window || {});
 (globalThis as any).window.SpeechRecognition = MockRecognition;

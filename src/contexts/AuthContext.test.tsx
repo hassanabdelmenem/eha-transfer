@@ -6,15 +6,12 @@ import React from 'react';
 
 // Mock component to test the context
 const AuthConsumer = () => {
-  const { user, login, logout, hasRole, verifyMFA } = useAuth();
+  const { user, hasRole, verifyMFA } = useAuth();
 
   return (
     <div>
       <div data-testid="user">{user ? user.name : 'No User'}</div>
       <div data-testid="role-admin">{hasRole(['system_admin']) ? 'Is Admin' : 'Not Admin'}</div>
-      
-      <button onClick={() => login('u1')}>Login U1</button>
-      <button onClick={() => logout()}>Logout</button>
       
       <button onClick={() => {
         const success = verifyMFA('1234');

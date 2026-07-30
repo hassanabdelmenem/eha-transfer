@@ -102,7 +102,7 @@ export const Onboarding: React.FC = () => {
                 </select>
               </div>
 
-              {role !== 'system_admin' && role !== 'owner' && (
+              {role !== 'owner' && (
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Facility</label>
                   <div className="relative">

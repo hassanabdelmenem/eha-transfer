@@ -6,9 +6,10 @@ import { Button } from '../components/ui/Button';
 import { User, Role } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { CheckCircle, XCircle, Plus, Trash2, UserPlus } from 'lucide-react';
+import { UserManagementTable } from '../components/users/UserManagementTable';
 
 export const FacilitySettingsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, activeFacilityId } = useAuth();
   const { facilities, users, updateUserVerified, updateUserRole, addFacilityDepartment, removeFacilityDepartment } = useData();
   
   const [newDepartment, setNewDepartment] = useState('');
@@ -19,7 +20,8 @@ export const FacilitySettingsPage: React.FC = () => {
   }
 
   const isGlobalAdmin = user.role === 'owner' || user.role === 'system_admin';
-  const facility = facilities.find(f => f.id === user.facilityId);
+  const currentFacilityId = isGlobalAdmin ? activeFacilityId : user.facilityId;
+  const facility = facilities.find(f => f.id === currentFacilityId);
   
   if (!facility && !isGlobalAdmin) return null;
 
@@ -134,82 +136,13 @@ export const FacilitySettingsPage: React.FC = () => {
           <CardTitle className="text-lg">Staff Role Management</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 dark:bg-slate-950 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-slate-800">
-                <tr>
-                  <th className="px-4 py-3">Name / Email</th>
-                  <th className="px-4 py-3">Current Role</th>
-                  <th className="px-4 py-3">Department</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {verifiedUsers.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-50 dark:bg-slate-950">
-                    <td className="px-4 py-3">
-                      <p className="font-bold text-slate-900 dark:text-slate-100">{u.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{u.email}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                       <select 
-                         className="text-xs border border-slate-300 rounded p-1 bg-white dark:bg-slate-900 outline-none"
-                         value={u.role}
-                         disabled={user.role !== 'owner' && u.role === 'owner'}
-                         onChange={(e) => updateUserRole(u.id, e.target.value as Role, u.department)}
-                       >
-                         <option value="consultant">Consultant</option>
-                         <option value="specialist">Specialist</option>
-                         <option value="resident">Resident</option>
-                         <option value="nurse">Nurse</option>
-                         <option value="nursing_supervisor">Nursing Supervisor</option>
-                         <option value="er_official">ER Room Official</option>
-                         {!['head_of_department'].includes(user.role) && (
-                           <>
-                             <option value="head_of_department">Head of Department</option>
-                             <option value="hospital_manager">Hospital Manager</option>
-                             <option value="deputy_manager">Deputy Manager</option>
-                             <option value="medical_director">Medical Director</option>
-                           </>
-                         )}
-                         {(user.role === 'owner' || user.role === 'system_admin') && (
-                           <option value="system_admin">System Admin</option>
-                         )}
-                         {user.role === 'owner' && (
-                           <option value="owner">Owner</option>
-                         )}
-                       </select>
-                    </td>
-                    <td className="px-4 py-3">
-                       {['consultant', 'specialist', 'resident', 'head_of_department', 'nurse', 'nursing_supervisor'].includes(u.role) ? (
-                         <select 
-                           className="text-xs border border-slate-300 rounded p-1 bg-white dark:bg-slate-900 outline-none"
-                           value={u.department || ''}
-                           onChange={(e) => updateUserRole(u.id, u.role, e.target.value)}
-                         >
-                           <option value="">No Department</option>
-                           {(isGlobalAdmin ? facilities.find(f => f.id === u.facilityId)?.departments || [] : facility?.departments || []).map(d => (
-                             <option key={d} value={d}>{d}</option>
-                           ))}
-                         </select>
-                       ) : (
-                         <span className="text-slate-400 text-xs italic">N/A</span>
-                       )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                       {/* Placeholder for other actions like remove user if needed */}
-                       <span className="text-[10px] text-slate-400">Auto-saved</span>
-                    </td>
-                  </tr>
-                ))}
-                {verifiedUsers.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No other staff members found.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <UserManagementTable 
+            verifiedUsers={verifiedUsers} 
+            facilities={facilities} 
+            currentUser={user} 
+            isGlobalAdmin={isGlobalAdmin} 
+            updateUserRole={updateUserRole} 
+          />
         </CardContent>
       </Card>
     </div>

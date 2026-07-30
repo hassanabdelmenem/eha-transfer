@@ -1,6 +1,19 @@
 import { Facility, User } from '../types';
 
 export const FACILITIES: Facility[] = [
+  {
+    id: 'branch',
+    name: 'Branch (Administrative Office)',
+    type: 'primary_care',
+    location: 'Headquarters',
+    departments: [],
+    capacity: {
+      ICU: { total: 0, occupied: 0 },
+      CCU: { total: 0, occupied: 0 },
+      PICU: { total: 0, occupied: 0 },
+      Ward: { total: 0, occupied: 0 }
+    }
+  },
   { 
     id: 'f1', 
     name: 'Ismailia General Hospital', 

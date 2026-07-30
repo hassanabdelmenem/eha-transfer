@@ -8,21 +8,24 @@ import { Bed, Save, CheckCircle, Map, Table } from 'lucide-react';
 import { InteractiveFloorPlan } from '../components/bed-management/InteractiveFloorPlan';
 
 export const BedManagementPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, activeFacilityId } = useAuth();
   const { facilities, updateFacilityCapacity } = useData();
 
-  if (!user || !['nurse', 'nursing_supervisor', 'head_of_department', 'er_room', 'owner'].includes(user.role)) {
+  if (!user || !['nurse', 'nursing_supervisor', 'head_of_department', 'er_room', 'owner', 'system_admin'].includes(user.role)) {
     return <div className="p-8 text-center text-slate-500">Access Denied. Nursing staff privileges required.</div>;
   }
 
-  const facility = facilities.find(f => f.id === user.facilityId);
+  const isGlobalAdmin = user.role === 'owner' || user.role === 'system_admin';
+  const currentFacilityId = isGlobalAdmin ? activeFacilityId : user.facilityId;
+  const facility = facilities.find(f => f.id === currentFacilityId);
+
   const [capacities, setCapacities] = useState<Record<string, { total: number; occupied: number }>>({});
   const [saved, setSaved] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'visual'>('visual');
 
   useEffect(() => {
     if (facility) {
-      setCapacities(facility.capacity as any);
+      setCapacities(facility.capacity as Record<string, { total: number; occupied: number }>);
     }
   }, [facility]);
 
@@ -47,16 +50,18 @@ export const BedManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-16 h-full overflow-auto">
-      <div className="flex justify-between items-end">
+    <div className="max-w-4xl mx-auto space-y-6 pb-16">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Bulk Bed Management</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Quickly update bed availability across {facility.name}.</p>
         </div>
-        <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
-          {saved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-          {saved ? 'Saved' : 'Save Changes'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
+            {saved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            {saved ? 'Saved' : 'Save Changes'}
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 mb-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-max">
@@ -96,7 +101,7 @@ export const BedManagementPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {Object.entries(capacities).map(([bedType, cap]: [string, any]) => {
+                {Object.entries(capacities).map(([bedType, cap]: [string, { total: number; occupied: number }]) => {
                   const available = cap.total - cap.occupied;
                   const ratio = cap.total > 0 ? cap.occupied / cap.total : 0;
                   

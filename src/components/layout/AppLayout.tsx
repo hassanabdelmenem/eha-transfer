@@ -7,9 +7,11 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { Bell, LogOut, Activity, Users, PlusCircle, LayoutDashboard, BookOpen, Settings, Moon, Sun, Bed, Cloud, Database, Eye, Phone, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { MOCK_USERS } from '../../lib/mock-data';
+import { Sidebar } from './Sidebar';
+import { Topbar } from './Topbar';
 
 export const AppLayout: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, activeFacilityId, setActiveFacilityId } = useAuth();
   const { notifications, facilities, isOnline, pendingSyncCount, referrals, directAdmissions, addShiftLog, users } = useData();
   const { theme, setTheme, nightShift, setNightShift } = useTheme();
   const location = useLocation();
@@ -33,7 +35,17 @@ export const AppLayout: React.FC = () => {
 
   if (!user) return null;
 
-  const facility = facilities.find(f => f.id === user.facilityId);
+  const isGlobalAdmin = user.role === 'owner' || user.role === 'system_admin';
+
+  // Ensure global admins have a default facility selected
+  React.useEffect(() => {
+    if (isGlobalAdmin && !activeFacilityId && facilities.length > 0) {
+      setActiveFacilityId(facilities[0].id);
+    }
+  }, [isGlobalAdmin, activeFacilityId, facilities, setActiveFacilityId]);
+
+  const currentFacilityId = isGlobalAdmin ? activeFacilityId : user.facilityId;
+  const facility = facilities.find(f => f.id === currentFacilityId);
   const unreadNotifs = notifications.filter(n => n.userId === user.id && !n.read).length;
 
   const isNurse = user.role === 'nurse' || user.role === 'nursing_supervisor' || user.role === 'owner';
@@ -42,8 +54,8 @@ export const AppLayout: React.FC = () => {
 
   const handleLogout = () => {
     // Generate shift log for clinical staff
-    if (user.facilityId && (isDoctor || isNurse)) {
-      const myFacilityId = user.facilityId;
+    if (currentFacilityId && (isDoctor || isNurse)) {
+      const myFacilityId = currentFacilityId;
       const myDept = user.department;
       
       const relevantReferrals = referrals.filter(r => 
@@ -98,169 +110,44 @@ export const AppLayout: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans overflow-hidden">
-      <header className="h-16 bg-blue-900 text-white flex items-center justify-between px-6 shrink-0 border-b-4 border-blue-700">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-md flex items-center justify-center">
-            <Activity className="h-7 w-7 text-blue-900" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight uppercase hidden sm:block">Ismailia Health Connect</h1>
-            <p className="text-[10px] opacity-80 uppercase tracking-widest hidden sm:block">Referral Coordination System</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-6">
-          {!isOnline && (
-            <div className="flex items-center gap-2 bg-red-500/20 px-3 py-1.5 rounded text-red-100 text-[10px] font-bold uppercase tracking-wide" title="IndexedDB Offline Mode active">
-              <WifiOff className="w-3.5 h-3.5" />
-              Offline
-              {pendingSyncCount > 0 && <span className="bg-red-500/50 px-1.5 py-0.5 rounded ml-1">{pendingSyncCount} pending upload</span>}
-            </div>
-          )}
-          {isOnline && pendingSyncCount > 0 && (
-            <div className="flex items-center gap-2 bg-amber-500/20 px-3 py-1.5 rounded text-amber-100 text-[10px] font-bold uppercase tracking-wide" title="Uploading IndexedDB data to server">
-              <Database className="w-3.5 h-3.5 animate-pulse" />
-              Pending Upload ({pendingSyncCount})
-            </div>
-          )}
-          {isOnline && pendingSyncCount === 0 && (
-            <div className="flex items-center gap-2 bg-emerald-500/20 px-3 py-1.5 rounded text-emerald-100 text-[10px] font-bold uppercase tracking-wide" title="IndexedDB fully synced with server">
-              <Cloud className="w-3.5 h-3.5" />
-              Database Synced
-            </div>
-          )}
-          <button 
-            onClick={() => {
-              setProfilePhone(user?.phoneNumber || '');
-              setProfileSchedule(user?.monthlySchedule || '');
-              setShowProfile(true);
-            }} 
-            className="hidden sm:flex flex-col items-end hover:opacity-80 transition-opacity text-left"
-          >
-            <span className="text-xs font-semibold">{user.name}</span>
-            <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded">{user.role.replace(/_/g, ' ')} {facility ? `• ${facility.name}` : ''}</span>
-          </button>
-          <div className="hidden sm:block h-10 w-px bg-blue-700"></div>
-          
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowHotline(true)}
-              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded transition-colors text-[10px] font-bold uppercase tracking-wider shadow-sm"
-              title="Emergency Hotline"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">Hotline</span>
-            </button>
-            <div className="hidden sm:block h-6 w-px bg-blue-700 mx-1"></div>
-                        <button
-              onClick={() => setNightShift(!nightShift)}
-              className={`${nightShift ? 'text-amber-400' : 'text-blue-200'} hover:text-white transition-colors`}
-              title="Toggle Night Shift Mode"
-            >
-              <Eye className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="text-blue-200 hover:text-white transition-colors"
-              title="Toggle Theme"
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-            <Link to="/notifications" className="relative flex items-center text-blue-200 hover:text-white transition-colors">
-              <Bell className="h-5 w-5" />
-              {unreadNotifs > 0 && (
-                <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-              )}
-            </Link>
-            <button onClick={handleLogout} className="text-blue-200 hover:text-white transition-colors" title="Logout">
-              <LogOut className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col font-sans overflow-hidden">
+      <Topbar 
+        isOnline={isOnline}
+        pendingSyncCount={pendingSyncCount}
+        isGlobalAdmin={isGlobalAdmin}
+        facilities={facilities}
+        activeFacilityId={activeFacilityId}
+        setActiveFacilityId={setActiveFacilityId}
+        setShowProfile={setShowProfile}
+        setProfilePhone={setProfilePhone}
+        setProfileSchedule={setProfileSchedule}
+        setShowHotline={setShowHotline}
+        unreadNotifs={unreadNotifs}
+        handleLogout={handleLogout}
+      />
 
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Navigation */}
-        <aside className="w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col p-4 shrink-0 hidden sm:flex">
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-              return (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className={`px-2 py-3 flex items-center gap-3 transition-colors ${
-                    isActive 
-                      ? 'bg-blue-50 text-blue-900 border-r-4 border-blue-900' 
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-950 border-r-4 border-transparent'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="text-sm font-bold uppercase">{item.name}</span>
-                </Link>
-              );
-            })}
-            {isDoctor && (
-              <Link
-                to="/referrals/new"
-                className={`px-2 py-3 flex items-center gap-3 transition-colors ${
-                  location.pathname.startsWith('/referrals/new')
-                    ? 'bg-blue-50 text-blue-900 border-r-4 border-blue-900' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-950 border-r-4 border-transparent'
-                }`}
-              >
-                <PlusCircle className="w-5 h-5" />
-                <span className="text-sm font-bold uppercase">New Referral</span>
-              </Link>
-            )}
-            {isNurse && (
-              <Link
-                to="/admissions/new"
-                className={`px-2 py-3 flex items-center gap-3 transition-colors ${
-                  location.pathname.startsWith('/admissions/new')
-                    ? 'bg-blue-50 text-blue-900 border-r-4 border-blue-900' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-950 border-r-4 border-transparent'
-                }`}
-              >
-                <PlusCircle className="w-5 h-5" />
-                <span className="text-sm font-bold uppercase">Direct Admit</span>
-              </Link>
-            )}
-          </nav>
-          
-          <div className="mt-auto p-4 bg-slate-900 rounded-lg">
-            <div className="text-[10px] text-blue-300 font-bold uppercase mb-2">Security Status</div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-[9px] text-white">AES-256</span>
-                <span className="text-[9px] text-green-400">ACTIVE</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[9px] text-white">RBAC Filter</span>
-                <span className="text-[9px] text-green-400">ENABLED</span>
-              </div>
-            </div>
-          </div>
-        </aside>
+        <Sidebar navItems={navItems} isDoctor={isDoctor} />
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-auto p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8 lg:pb-8">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
         </main>
       </div>
 
-      {/* Mobile Nav */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-50">
-        <div className="flex justify-around">
+        <div className="w-full overflow-x-auto overflow-y-hidden touch-pan-x hide-scrollbar">
+          <div className="flex w-max min-w-full justify-start">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             return (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`flex flex-col items-center py-2 px-3 text-xs uppercase font-bold tracking-wider ${
+                className={`flex flex-col items-center py-2 px-4 shrink-0 text-[10px] uppercase font-bold tracking-wider ${
                   isActive ? 'text-blue-900' : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
@@ -272,7 +159,7 @@ export const AppLayout: React.FC = () => {
           {isDoctor && (
           <Link
              to="/referrals/new"
-             className={`flex flex-col items-center py-2 px-3 text-xs uppercase font-bold tracking-wider ${
+             className={`flex flex-col items-center py-2 px-4 shrink-0 text-[10px] uppercase font-bold tracking-wider ${
                 location.pathname.startsWith('/referrals/new') ? 'text-blue-900' : 'text-slate-500 dark:text-slate-400'
              }`}
           >
@@ -283,7 +170,7 @@ export const AppLayout: React.FC = () => {
           {isNurse && (
             <Link
                to="/admissions/new"
-               className={`flex flex-col items-center py-2 px-3 text-xs uppercase font-bold tracking-wider ${
+               className={`flex flex-col items-center py-2 px-4 shrink-0 text-[10px] uppercase font-bold tracking-wider ${
                   location.pathname.startsWith('/admissions/new') ? 'text-blue-900' : 'text-slate-500 dark:text-slate-400'
                }`}
             >
@@ -291,6 +178,7 @@ export const AppLayout: React.FC = () => {
                Admit
             </Link>
           )}
+          </div>
         </div>
       </div>
 

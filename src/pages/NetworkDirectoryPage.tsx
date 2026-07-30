@@ -4,14 +4,16 @@ import { useData } from '../contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Search } from 'lucide-react';
 import { Input } from '../components/ui/Input';
+import { User } from '../types';
 
 export const NetworkDirectoryPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, activeFacilityId } = useAuth();
   const { facilities, shiftAssignments, referrals, users } = useData();
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!user) return null;
 
+  const currentFacilityId = (user.role === 'owner' || user.role === 'system_admin') ? activeFacilityId : user.facilityId;
   const isAdmin = user.role === 'owner' || user.role === 'system_admin';
   const isLeadership = ['hospital_manager', 'deputy_manager', 'medical_director', 'owner'].includes(user.role);
   const canViewNetwork = isAdmin || isLeadership;
@@ -19,12 +21,12 @@ export const NetworkDirectoryPage: React.FC = () => {
   const allowedExternalUsers = new Set<string>();
   
   referrals.forEach(r => {
-    const isLeadershipInvolved = isLeadership && (r.receivingFacilityId === user.facilityId || r.referringFacilityId === user.facilityId);
-    const isReceiving = r.receivingFacilityId === user.facilityId && user.department && r.receivingDepartments.includes(user.department);
+    const isLeadershipInvolved = isLeadership && (r.receivingFacilityId === currentFacilityId || r.referringFacilityId === currentFacilityId);
+    const isReceiving = r.receivingFacilityId === currentFacilityId && user.department && r.receivingDepartments.includes(user.department);
     const isInitiating = r.referringUserId === user.id;
 
     if (isReceiving || isInitiating || isLeadershipInvolved) {
-      if (r.referringFacilityId !== user.facilityId) {
+      if (r.referringFacilityId !== currentFacilityId) {
         allowedExternalUsers.add(r.referringUserId);
         const referringUser = users.find(u => u.id === r.referringUserId);
         if (referringUser && referringUser.department) {
@@ -33,7 +35,7 @@ export const NetworkDirectoryPage: React.FC = () => {
         }
       }
 
-      if (r.receivingFacilityId !== user.facilityId) {
+      if (r.receivingFacilityId !== currentFacilityId) {
         r.receivingDepartments.forEach(dept => {
            const hod = users.find(u => u.facilityId === r.receivingFacilityId && u.department === dept && u.role === 'head_of_department');
            if (hod) allowedExternalUsers.add(hod.id);
@@ -46,13 +48,13 @@ export const NetworkDirectoryPage: React.FC = () => {
 
   const visibleFacilities = facilities.filter(f => {
     if (canViewNetwork) return true;
-    if (f.id === user.facilityId) return true;
+    if (f.id === currentFacilityId) return true;
     return users.some(u => u.facilityId === f.id && allowedExternalUsers.has(u.id));
   });
 
-  const isUserAllowed = (u: any, facilityId: string) => {
+  const isUserAllowed = (u: User, facilityId: string) => {
     if (u.facilityId !== facilityId) return false;
-    const isOwnFacility = u.facilityId === user.facilityId || isAdmin;
+    const isOwnFacility = u.facilityId === currentFacilityId || isAdmin;
     
     if (isAdmin) {
        return ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'consultant', 'specialist', 'resident'].includes(u.role);
@@ -87,7 +89,7 @@ export const NetworkDirectoryPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6 pb-16 h-full overflow-auto">
+    <div className="space-y-6 pb-16">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{canViewNetwork ? 'Network Directory' : 'Hospital Directory'}</h1>

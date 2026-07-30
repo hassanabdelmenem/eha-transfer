@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // Allow injection of a SpeechRecognition constructor for testability
-export type SpeechRecognitionFactory = () => any | null;
+export type SpeechRecognitionFactory = () => { new(): SpeechRecognition } | null;
 
 export const defaultSpeechRecognitionFactory: SpeechRecognitionFactory = () => {
   if (typeof window !== 'undefined') {
-    return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
   }
   return null;
 };
@@ -15,7 +15,7 @@ export const useSpeechRecognition = (
   getSpeechRecognition: SpeechRecognitionFactory = defaultSpeechRecognitionFactory,
 ) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
 
   useEffect(() => {
     const SpeechRecognition = getSpeechRecognition();
@@ -25,7 +25,7 @@ export const useSpeechRecognition = (
       recog.interimResults = true;
       recog.lang = 'en-US'; // Could be 'ar-EG' if needed
 
-      recog.onresult = (event: any) => {
+      recog.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
@@ -37,7 +37,7 @@ export const useSpeechRecognition = (
         }
       };
 
-      recog.onerror = (event: any) => {
+      recog.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error', event.error);
         setIsRecording(false);
       };

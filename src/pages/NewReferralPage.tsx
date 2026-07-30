@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { PatientData, ReferralPriority, BedType, Attachment, ReferralTransferType } from '../types';
+import { PatientData, ReferralPriority, BedType, Attachment, ReferralTransferType, ReferralStatus, Facility } from '../types';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Upload, FileText, Image as ImageIcon, X, Sparkles, Activity, Bed, Zap } from 'lucide-react';
+import { useAudioAlert } from '../hooks/useAudioAlert';
+import { getCandidateFacilities } from '../lib/matching';
 
 export const NewReferralPage: React.FC = () => {
   const { user } = useAuth();
@@ -27,7 +29,7 @@ export const NewReferralPage: React.FC = () => {
   const [reasonForReferral, setReasonForReferral] = useState('');
   const [sendCriticalAlert, setSendCriticalAlert] = useState(false);
   const [aiTriageRunning, setAiTriageRunning] = useState(false);
-  const [aiRankedFacilities, setAiRankedFacilities] = useState<any[] | null>(null);
+  const [aiRankedFacilities, setAiRankedFacilities] = useState<Array<Facility & { availableBeds: number; randomDistance: number; score: number; reason: string }> | null>(null);
 
   const runAiTriage = () => {
     setAiTriageRunning(true);
@@ -54,7 +56,7 @@ export const NewReferralPage: React.FC = () => {
         else if (randomDistance < 30) score += 15;
         
         // Priority match bonus
-        if (priority === 'life_threatening') score += 20;
+        if (priority === 'emergency') score += 20;
 
         // Specialized dept match
         score += receivingDepartments.length * 10;
@@ -99,15 +101,16 @@ export const NewReferralPage: React.FC = () => {
     e.preventDefault();
     if (receivingDepartments.length === 0 || !patientData.name || !patientData.hospitalId) return;
     
-    // Calculate matching facilities for auto-routing
-    const candidateIds = facilities.filter(f => 
-      f.id !== user.facilityId && 
-      receivingDepartments.every(d => f.departments.includes(d))
-    ).map(f => f.id);
+    const candidateIds = getCandidateFacilities(facilities, user.facilityId, receivingDepartments, requiredBedType);
+
+    let finalReceivingFacilityId = isAutoRouting ? 'auto' : receivingFacilityId;
+    let finalStatus: ReferralStatus = 'pending';
+    let finalCandidateIds = isAutoRouting ? candidateIds : [];
 
     if (isAutoRouting && candidateIds.length === 0) {
-      alert('No facilities match the required departments.');
-      return;
+      alert('No facilities match the required departments and have available beds. This referral will be escalated to System Admins at the Branch.');
+      finalReceivingFacilityId = 'branch';
+      finalStatus = 'escalated';
     }
     
     if (!isAutoRouting && !receivingFacilityId) return;
@@ -117,14 +120,14 @@ export const NewReferralPage: React.FC = () => {
       patientData: patientData as PatientData,
       referringFacilityId: user.facilityId || '',
       referringUserId: user.id,
-      receivingFacilityId: isAutoRouting ? 'auto' : receivingFacilityId,
-      candidateFacilityIds: isAutoRouting ? candidateIds : [],
+      receivingFacilityId: finalReceivingFacilityId,
+      candidateFacilityIds: finalCandidateIds,
       receivingDepartments,
       requiredBedType,
       priority,
       reasonForReferral,
       transferType,
-      status: 'pending',
+      status: finalStatus,
     }, sendCriticalAlert);
 
     navigate('/referrals');
@@ -432,7 +435,7 @@ export const NewReferralPage: React.FC = () => {
                   <select
                     className="w-full rounded border border-slate-300 p-2 text-sm"
                     value={patientData.gender || 'male'}
-                    onChange={e => setPatientData({...patientData, gender: e.target.value as any})}
+                    onChange={e => setPatientData({...patientData, gender: e.target.value as 'male' | 'female'})}
                   >
                     <option value="male">Male</option>
                     <option value="female">Female</option>

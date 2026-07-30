@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 
+
+
 interface VoiceTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   onValueChange: (value: string) => void;
 }
 
 export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChange, className, ...props }) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recog = new SpeechRecognition();
         recog.continuous = true;
@@ -26,7 +28,7 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
           finalTranscript = String(value) || '';
         };
 
-        recog.onresult = (event: any) => {
+        recog.onresult = (event: SpeechRecognitionEvent) => {
           let interimTranscript = '';
           let newFinalTranscript = '';
           
@@ -47,7 +49,7 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
           }
         };
 
-        recog.onerror = (event: any) => {
+        recog.onerror = (event: SpeechRecognitionErrorEvent) => {
           console.error('Speech recognition error', event.error);
           setIsRecording(false);
         };
@@ -69,7 +71,7 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
 
   useEffect(() => {
     if (recognition) {
-       recognition.onresult = (event: any) => {
+       recognition.onresult = (event: SpeechRecognitionEvent) => {
           let newFinalTranscript = '';
           
           for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -79,7 +81,7 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
           }
           
           if (newFinalTranscript) {
-            const currentVal = valueRef.current || '';
+            const currentVal = (valueRef.current || '') as string;
             onValueChange(currentVal + (currentVal && !currentVal.endsWith(' ') ? ' ' : '') + newFinalTranscript.trim());
           }
        };

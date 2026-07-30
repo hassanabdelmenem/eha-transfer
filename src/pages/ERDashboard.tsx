@@ -8,15 +8,17 @@ import { Clock, Truck, Check } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const ERDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, activeFacilityId } = useAuth();
   const { referrals, facilities, updateReferralStatus } = useData();
 
   if (!user) return null;
 
+  const currentFacilityId = (user.role === 'owner' || user.role === 'system_admin') ? activeFacilityId : user.facilityId;
+
   const facilityReferrals = referrals.filter(
-    r => r.referringFacilityId === user.facilityId || 
-         r.receivingFacilityId === user.facilityId || 
-         (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user.facilityId || ''))
+    r => r.referringFacilityId === currentFacilityId || 
+         r.receivingFacilityId === currentFacilityId || 
+         (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(currentFacilityId || ''))
   );
 
   const activeReferrals = facilityReferrals.filter(r => !['admitted', 'discharged', 'rejected'].includes(r.status));
@@ -32,7 +34,7 @@ export const ERDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">ER Room Dashboard</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">Track active referrals and manage ambulance dispatch/arrivals.</p>
@@ -49,7 +51,7 @@ export const ERDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             {activeReferrals
-              .filter(r => r.referringFacilityId === user.facilityId && r.status === 'accepted')
+              .filter(r => r.referringFacilityId === currentFacilityId && r.status === 'accepted')
               .map(referral => (
                 <div key={referral.id} className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm">
                   <div className="flex justify-between items-start mb-2">
@@ -69,7 +71,7 @@ export const ERDashboard: React.FC = () => {
                   </Button>
                 </div>
               ))}
-            {activeReferrals.filter(r => r.referringFacilityId === user.facilityId && r.status === 'accepted').length === 0 && (
+            {activeReferrals.filter(r => r.referringFacilityId === currentFacilityId && r.status === 'accepted').length === 0 && (
               <p className="text-sm text-slate-500 text-center py-4">No patients awaiting transport.</p>
             )}
           </CardContent>
@@ -85,7 +87,7 @@ export const ERDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             {activeReferrals
-              .filter(r => r.receivingFacilityId === user.facilityId && r.status === 'in_transit')
+              .filter(r => r.receivingFacilityId === currentFacilityId && r.status === 'in_transit')
               .map(referral => (
                 <div key={referral.id} className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm">
                   <div className="flex justify-between items-start mb-2">
@@ -103,7 +105,7 @@ export const ERDashboard: React.FC = () => {
                   </Button>
                 </div>
               ))}
-             {activeReferrals.filter(r => r.receivingFacilityId === user.facilityId && r.status === 'in_transit').length === 0 && (
+             {activeReferrals.filter(r => r.receivingFacilityId === currentFacilityId && r.status === 'in_transit').length === 0 && (
               <p className="text-sm text-slate-500 text-center py-4">No incoming patients currently in transit.</p>
             )}
           </CardContent>
@@ -128,7 +130,7 @@ export const ERDashboard: React.FC = () => {
                 </thead>
                 <tbody>
                   {activeReferrals.map(referral => {
-                    const isIncoming = referral.receivingFacilityId === user.facilityId;
+                    const isIncoming = referral.receivingFacilityId === currentFacilityId;
                     return (
                       <tr key={referral.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
                         <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{referral.patientData.name}</td>
@@ -139,7 +141,7 @@ export const ERDashboard: React.FC = () => {
                           {isIncoming ? getFacilityName(referral.referringFacilityId) : getFacilityName(referral.receivingFacilityId)}
                         </td>
                         <td className="px-4 py-3">
-                           <Badge variant={referral.status === 'emergency' ? 'danger' : 'warning'} className="capitalize">{referral.status.replace('_', ' ')}</Badge>
+                           <Badge variant={referral.priority === 'emergency' ? 'danger' : 'warning'} className="capitalize">{referral.status.replace('_', ' ')}</Badge>
                         </td>
                         <td className="px-4 py-3 text-slate-500">
                           {format(new Date(referral.updatedAt), 'MMM d, HH:mm')}

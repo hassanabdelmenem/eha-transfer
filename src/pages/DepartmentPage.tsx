@@ -7,24 +7,47 @@ import { Badge } from '../components/ui/Badge';
 import { CheckCircle, Clock, ArrowRightLeft, UserCircle, X } from 'lucide-react';
 import { formatDateTime } from '../lib/utils';
 
+interface PatientInDept {
+  id: string;
+  name: string;
+  hospitalId: string;
+  type: 'admission' | 'referral';
+  admittedAt: string | number;
+}
+
 export const DepartmentPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, activeFacilityId } = useAuth();
   const { shiftAssignments, assignShift, users, directAdmissions, referrals, facilities, quickTransfer } = useData();
   const [transferModalOpen, setTransferModalOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [selectedPatient, setSelectedPatient] = useState<PatientInDept | null>(null);
   const [targetDepartment, setTargetDepartment] = useState('');
   const [transferNotes, setTransferNotes] = useState('');
 
-  if (!user || (user.role !== 'head_of_department' && user.role !== 'owner')) {
+  if (!user || (user.role !== 'head_of_department' && user.role !== 'owner' && user.role !== 'system_admin')) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Access Denied. Head of Department privileges required.</div>;
   }
 
-  const facilityId = user.facilityId;
-  const department = user.department;
+  const isGlobalAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+  const currentFacilityId = isGlobalAdmin ? activeFacilityId : user?.facilityId;
 
-  if (!facilityId || !department) {
+  const myFacility = facilities.find(f => f.id === currentFacilityId);
+  const availableDepartments = myFacility?.departments || [];
+  
+  const initialDept = user?.department || (availableDepartments.length > 0 ? availableDepartments[0] : '');
+  const [selectedDept, setSelectedDept] = useState(initialDept);
+
+  React.useEffect(() => {
+    if (isGlobalAdmin && myFacility && !myFacility.departments.includes(selectedDept)) {
+      setSelectedDept(myFacility.departments[0] || '');
+    }
+  }, [currentFacilityId, myFacility]);
+
+  if (!user || !myFacility || !selectedDept) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Facility or Department configuration missing.</div>;
   }
+
+  const facilityId = currentFacilityId;
+  const department = selectedDept;
 
   const currentAssignment = shiftAssignments?.find(s => s.facilityId === facilityId && s.department === department);
 
@@ -40,22 +63,21 @@ export const DepartmentPage: React.FC = () => {
       id: a.id,
       name: a.patientName,
       hospitalId: a.hospitalId,
-      type: 'admission',
+      type: 'admission' as const,
       admittedAt: a.admittedAt
     })),
     ...deptReferrals.map(r => ({
       id: r.id,
       name: r.patientData.name,
       hospitalId: r.patientData.hospitalId,
-      type: 'referral',
+      type: 'referral' as const,
       admittedAt: r.statusHistory.find(h => h.status === 'admitted')?.timestamp || r.updatedAt
     }))
   ].sort((a, b) => new Date(b.admittedAt).getTime() - new Date(a.admittedAt).getTime());
 
-  const myFacility = facilities.find(f => f.id === facilityId);
   const otherDepartments = myFacility?.departments.filter(d => d !== department) || [];
 
-  const handleOpenTransfer = (patient: any) => {
+  const handleOpenTransfer = (patient: PatientInDept) => {
     setSelectedPatient(patient);
     setTargetDepartment(otherDepartments[0] || '');
     setTransferNotes('');
@@ -64,7 +86,7 @@ export const DepartmentPage: React.FC = () => {
 
   const handleTransferSubmit = () => {
     if (!selectedPatient || !targetDepartment) return;
-    quickTransfer(selectedPatient.type as any, selectedPatient.id, targetDepartment, transferNotes);
+    quickTransfer(selectedPatient.type, selectedPatient.id, targetDepartment, transferNotes);
     setTransferModalOpen(false);
     setSelectedPatient(null);
   };
@@ -78,9 +100,24 @@ export const DepartmentPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight uppercase">{department} Department</h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Manage shift assignments and delegation.</p>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight uppercase">{department} Department</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Manage shift assignments and delegation.</p>
+        </div>
+        {isGlobalAdmin && (
+          <div className="flex gap-2">
+            <select
+              className="h-9 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-xs font-bold text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600"
+              value={selectedDept}
+              onChange={(e) => setSelectedDept(e.target.value)}
+            >
+              {availableDepartments.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <Card>

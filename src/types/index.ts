@@ -15,6 +15,18 @@ export type Role =
 export type FacilityType = 'primary_care' | 'district_hospital' | 'tertiary_care' | 'external_contracted';
 export type BedType = 'ICU' | 'CCU' | 'PICU' | 'Ward';
 
+export interface DirectAdmission {
+  id: string;
+  facilityId: string;
+  department: string;
+  bedType: BedType;
+  patientName: string;
+  hospitalId: string;
+  admittedAt: string;
+  admittedBy: string;
+  status?: 'admitted' | 'discharged';
+}
+
 export interface Facility {
   id: string;
   isExternal?: boolean;
@@ -49,7 +61,8 @@ export type ReferralStatus =
   | 'in_transit' 
   | 'arrived' 
   | 'admitted' 
-  | 'discharged';
+  | 'discharged'
+  | 'escalated';
 
 export interface Attachment {
   id: string;

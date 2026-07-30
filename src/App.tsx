@@ -24,6 +24,7 @@ import { FacilitySettingsPage } from './pages/FacilitySettingsPage';
 import { BedManagementPage } from './pages/BedManagementPage';
 import { Onboarding } from './pages/Onboarding';
 import { PendingVerification } from './pages/PendingVerification';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -44,34 +45,44 @@ const RoleBasedDashboard = () => {
   if (user?.role === 'system_admin' || user?.role === 'owner') {
     return <AdminDashboard />;
   }
-  if (user?.role === 'er_room') {
+  if (user?.role === 'er_official') {
     return <ERDashboard />;
   }
   return <Dashboard />;
 };
 
 const AppRoutes = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
-    <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/onboarding" element={user ? (user.profileCompleted ? <Navigate to="/" replace /> : <Onboarding />) : <Navigate to="/login" replace />} />
-      <Route path="/pending-verification" element={<PendingVerification />} />
-      
-      <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-        <Route index element={<RoleBasedDashboard />} />
-        <Route path="referrals" element={<ReferralsPage />} />
-        <Route path="referrals/new" element={<NewReferralPage />} />
-        <Route path="referrals/:id" element={<ReferralDetailPage />} />
-        <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="admissions/new" element={<AdmitPatientPage />} />
-        <Route path="department" element={<DepartmentPage />} />
-        <Route path="directory" element={<NetworkDirectoryPage />} />
-        <Route path="facility-settings" element={<FacilitySettingsPage />} />
-        <Route path="bed-management" element={<BedManagementPage />} />
-      </Route>
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+        <Route path="/onboarding" element={user ? (user.profileCompleted ? <Navigate to="/" replace /> : <Onboarding />) : <Navigate to="/login" replace />} />
+        <Route path="/pending-verification" element={<PendingVerification />} />
+        
+        <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+          <Route index element={<RoleBasedDashboard />} />
+          <Route path="referrals" element={<ReferralsPage />} />
+          <Route path="referrals/new" element={<NewReferralPage />} />
+          <Route path="referrals/:id" element={<ReferralDetailPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="admissions/new" element={<AdmitPatientPage />} />
+          <Route path="department" element={<DepartmentPage />} />
+          <Route path="directory" element={<NetworkDirectoryPage />} />
+          <Route path="facility-settings" element={<FacilitySettingsPage />} />
+          <Route path="bed-management" element={<BedManagementPage />} />
+        </Route>
+      </Routes>
+    </ErrorBoundary>
   );
 };
 

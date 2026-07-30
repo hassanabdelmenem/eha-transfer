@@ -9,7 +9,7 @@ interface InteractiveFloorPlanProps {
 export const InteractiveFloorPlan: React.FC<InteractiveFloorPlanProps> = ({ capacities, onCapacityChange }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-      {Object.entries(capacities).map(([bedType, cap]: [string, any]) => {
+      {Object.entries(capacities).map(([bedType, cap]: [string, { total: number; occupied: number }]) => {
         const beds = [];
         for (let i = 0; i < cap.total; i++) {
           beds.push(i < cap.occupied);

@@ -14,6 +14,7 @@ import { ArrowLeft, Printer, Check, X, Truck, Building, FileText, CheckCircle, A
 import { ECGViewerOverlay } from '../components/referrals/ECGViewerOverlay';
 import { Badge } from '../components/ui/Badge';
 import { ReferralStatus, DeptApprovalStatus } from '../types';
+import { ReferralComments } from '../components/referrals/ReferralComments';
 
 export const ReferralDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -61,7 +62,7 @@ export const ReferralDetailPage: React.FC = () => {
   const isTargetDeptHead = isReceiving && (user.role === 'head_of_department' || user.role === 'owner' || (['consultant', 'specialist'].includes(user.role) && isAssignedClinician)) && (referral.receivingDepartments.includes(user.department || '') || isAdmin);
   const isFacilityManager = isReceiving && ['medical_director', 'hospital_manager', 'deputy_manager', 'owner'].includes(user.role);
   const isNurse = ['nurse', 'nursing_supervisor', 'owner'].includes(user.role);
-  const isErRoom = (user.role === 'er_room' || user.role === 'owner') && (user.facilityId === referral.referringFacilityId || user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && referral.candidateFacilityIds?.includes(user.facilityId || '')));
+  const isErRoom = (user.role === 'er_official' || user.role === 'owner') && (user.facilityId === referral.referringFacilityId || user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && referral.candidateFacilityIds?.includes(user.facilityId || '')));
 
   
   const handleCopyId = () => {
@@ -222,37 +223,12 @@ export const ReferralDetailPage: React.FC = () => {
           </Card>
           
           {/* Department Head Approval Section */}
+          <ReferralComments referral={referral} users={users} />
+          
           <Card>
-            <CardHeader>
-              <CardTitle>Department Reviews & Comments</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {referral.deptComments.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400 italic">No department comments yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {referral.deptComments.map(c => {
-                    const commentUser = users.find(u => u.id === c.userId);
-                    return (
-                      <div key={c.id} className="p-3 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800">
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{commentUser?.name} ({commentUser?.role.replace(/_/g, ' ')})</span>
-                          <span className="text-[9px] text-slate-400 font-mono">{formatDateTime(c.timestamp)}</span>
-                        </div>
-                        <div className="mb-2">
-                           <Badge variant={c.status === 'direct_approval' || c.status === 'urgent_approval' ? 'success' : c.status === 'requirements_needed' ? 'warning' : 'default'}>
-                             {c.status.replace(/_/g, ' ')}
-                           </Badge>
-                        </div>
-                        <p className="text-sm text-slate-700 dark:text-slate-300">{c.comment}</p>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
+            <CardContent className="pt-6">
               {(isTargetDeptHead || isAdmin) && referral.status === 'pending' && (
-                <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4 space-y-3">
+                <div className="space-y-3">
                   <h4 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Add Department Review</h4>
                   <div className="grid grid-cols-2 gap-2">
                      <select className="rounded border border-slate-300 p-2 text-sm" value={deptAction} onChange={e => setDeptAction(e.target.value as DeptApprovalStatus)}>

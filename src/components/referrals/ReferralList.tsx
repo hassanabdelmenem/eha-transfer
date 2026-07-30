@@ -194,6 +194,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
       case 'arrived': return <Badge variant="info">Arrived</Badge>;
       case 'admitted': return <Badge variant="success">Admitted</Badge>;
       case 'discharged': return <Badge variant="default">Discharged</Badge>;
+      case 'escalated': return <Badge variant="danger">Escalated</Badge>;
       default: return <Badge>{status}</Badge>;
     }
   };

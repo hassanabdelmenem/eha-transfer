@@ -7,7 +7,7 @@ import { Search, Filter, Activity, Clock, CheckCircle, Download, ArrowDownUp } f
 import { Button } from '../components/ui/Button';
 
 export const ReferralsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, activeFacilityId } = useAuth();
   const { referrals, facilities } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -16,14 +16,14 @@ export const ReferralsPage: React.FC = () => {
   const [bedFilter, setBedFilter] = useState("all");
   const [prioritySort, setPrioritySort] = useState(false);
 
+  const currentFacilityId = (user?.role === 'owner' || user?.role === 'system_admin') ? activeFacilityId : user?.facilityId;
+
   const stats = useMemo(() => {
     if (!user) return { active: 0, pending: 0, completed: 0 };
     const myReferrals = referrals.filter(r => 
-      r.referringFacilityId === user.facilityId || 
-      r.receivingFacilityId === user.facilityId || 
-      (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user.facilityId || '')) || 
-      user.role === 'system_admin' ||
-      user.role === 'owner'
+      r.referringFacilityId === currentFacilityId || 
+      r.receivingFacilityId === currentFacilityId || 
+      (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(currentFacilityId || ''))
     );
     return {
       active: myReferrals.filter(r => !['admitted', 'discharged', 'rejected'].includes(r.status)).length,
@@ -35,11 +35,9 @@ export const ReferralsPage: React.FC = () => {
   const handleExportCSV = () => {
     if (!user) return;
     const myReferrals = referrals.filter(r => 
-      r.referringFacilityId === user.facilityId || 
-      r.receivingFacilityId === user.facilityId || 
-      (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user.facilityId || '')) || 
-      user.role === 'system_admin' ||
-      user.role === 'owner'
+      r.referringFacilityId === currentFacilityId || 
+      r.receivingFacilityId === currentFacilityId || 
+      (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(currentFacilityId || ''))
     );
     
     const headers = ['ID', 'Patient Name', 'Hospital ID', 'Priority', 'Status', 'Referring Facility', 'Receiving Facility', 'Created At'];
@@ -72,7 +70,7 @@ export const ReferralsPage: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="h-full flex flex-col space-y-6 pb-16 sm:pb-0">
+    <div className="space-y-6 pb-16 sm:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Referrals</h1>
@@ -173,8 +171,8 @@ export const ReferralsPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
           <h3 className="text-sm font-bold uppercase text-slate-700 dark:text-slate-300">All Referrals Grid</h3>
           <button 
             onClick={() => setPrioritySort(!prioritySort)}
@@ -184,8 +182,8 @@ export const ReferralsPage: React.FC = () => {
             Priority Sort
           </button>
         </div>
-        <div className="flex-1 overflow-auto">
-          <ReferralList facilityId={user.facilityId} searchQuery={searchQuery} priorityFilter={priorityFilter} statusFilter={statusFilter} deptFilter={deptFilter} bedFilter={bedFilter} prioritySort={prioritySort} />
+        <div className="p-0">
+          <ReferralList facilityId={currentFacilityId} searchQuery={searchQuery} priorityFilter={priorityFilter} statusFilter={statusFilter} deptFilter={deptFilter} bedFilter={bedFilter} prioritySort={prioritySort} />
         </div>
       </div>
     </div>

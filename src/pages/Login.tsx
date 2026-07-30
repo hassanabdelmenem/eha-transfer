@@ -15,17 +15,19 @@ export const Login: React.FC = () => {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await loginWithEmail(email, password);
-    } catch (err: any) {
-      alert("Login failed: " + err.message);
+      await loginWithEmail(email.trim(), password);
+    } catch (err) {
+      const error = err as Error;
+      alert("Login failed: " + error.message);
     }
   };
 
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
-    } catch (err: any) {
-      alert("Google login failed: " + err.message);
+    } catch (err) {
+      const error = err as Error;
+      alert("Google login failed: " + error.message);
     }
   };
 

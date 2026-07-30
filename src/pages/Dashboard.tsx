@@ -10,136 +10,40 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Badge } from '../components/ui/Badge';
 import { subDays, subWeeks, subMonths, subQuarters, format } from 'date-fns';
 import { useAudioAlert } from '../hooks/useAudioAlert';
+import { useDashboardStats } from '../hooks/useDashboardStats';
 
 export const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, activeFacilityId } = useAuth();
   const { referrals, facilities, directAdmissions, shiftLogs } = useData();
   const [chartPeriod, setChartPeriod] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('weekly');
   const [prioritySort, setPrioritySort] = useState(false);
 
   if (!user) return null;
 
-  // Filter referrals related to user's facility, or show all if system admin/owner
+  const isGlobalAdmin = user.role === 'owner' || user.role === 'system_admin';
+  const currentFacilityId = isGlobalAdmin ? activeFacilityId : user.facilityId;
+
+  // Filter referrals related to user's facility
     const recentShiftLogs = shiftLogs.filter(log => 
-    log.facilityId === user.facilityId && (!user.department || log.department === user.department)
+    log.facilityId === currentFacilityId && (!user.department || log.department === user.department)
   ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5);
 
-  const facilityReferrals = (user.role === 'system_admin' || user.role === 'owner') 
-    ? referrals 
-    : referrals.filter(
-        r => r.referringFacilityId === user.facilityId || 
-             r.receivingFacilityId === user.facilityId || 
-             (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user.facilityId || ''))
-      );
+  const facilityReferrals = referrals.filter(
+    r => r.referringFacilityId === currentFacilityId || 
+         r.receivingFacilityId === currentFacilityId || 
+         (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(currentFacilityId || ''))
+  );
 
-  const facilityAdmissions = (user.role === 'system_admin' || user.role === 'owner')
-    ? directAdmissions
-    : directAdmissions.filter(a => a.facilityId === user.facilityId);
+  const facilityAdmissions = directAdmissions.filter(a => a.facilityId === currentFacilityId);
 
-  const dynamicChartData = useMemo(() => {
-    const today = new Date();
-    const data: Record<string, { name: string; incoming: number; outgoing: number; oneWay: number; serviceReturn: number; assessmentReturn: number }[]> = {
-      weekly: [],
-      monthly: [],
-      quarterly: [],
-      yearly: [],
-    };
+  const { dynamicChartData, departmentChartData, stats } = useDashboardStats(facilityReferrals, facilityAdmissions, currentFacilityId);
 
-    // Helper to count for a specific date range
-    const countData = (start: Date, end: Date) => {
-      const relevant = facilityReferrals.filter(x => new Date(x.createdAt) >= start && new Date(x.createdAt) <= end);
-      const incoming = relevant.filter(x => x.receivingFacilityId === user.facilityId || x.receivingFacilityId === 'auto').length;
-      const outgoing = relevant.filter(x => x.referringFacilityId === user.facilityId).length;
-      
-      const oneWay = relevant.filter(x => !x.transferType || x.transferType === 'one_way').length;
-      const serviceReturn = relevant.filter(x => x.transferType === 'service_and_return').length;
-      const assessmentReturn = relevant.filter(x => x.transferType === 'assessment_with_return').length;
-      
-      return { incoming, outgoing, oneWay, serviceReturn, assessmentReturn };
-    };
-
-    // Weekly: Last 7 days
-    for (let i = 6; i >= 0; i--) {
-      const d = subDays(today, i);
-      const start = new Date(d.setHours(0,0,0,0));
-      const end = new Date(d.setHours(23,59,59,999));
-      data.weekly.push({ name: format(d, 'EEE'), ...countData(start, end) });
-    }
-
-    // Monthly: Last 4 weeks
-    for (let i = 3; i >= 0; i--) {
-      const end = subWeeks(today, i);
-      const start = subWeeks(today, i + 1);
-      data.monthly.push({ name: `W${4-i}`, ...countData(start, end) });
-    }
-
-    // Quarterly: Last 3 months
-    for (let i = 2; i >= 0; i--) {
-      const d = subMonths(today, i);
-      const start = new Date(d.getFullYear(), d.getMonth(), 1);
-      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-      data.quarterly.push({ name: format(d, 'MMM'), ...countData(start, end) });
-    }
-
-    // Yearly: Last 4 quarters
-    for (let i = 3; i >= 0; i--) {
-      const end = subQuarters(today, i);
-      const start = subQuarters(today, i + 1);
-      data.yearly.push({ name: `Q${4-i}`, ...countData(start, end) });
-    }
-
-    return data;
-  }, [facilityReferrals, facilityAdmissions]);
-
-  const departmentChartData = useMemo(() => {
-    const deptMap = new Map<string, { name: string; incoming: number; outgoing: number; oneWay: number; serviceReturn: number; assessmentReturn: number }>();
-    
-    const getOrAdd = (dept: string) => {
-      if (!deptMap.has(dept)) {
-        deptMap.set(dept, { name: dept, incoming: 0, outgoing: 0, oneWay: 0, serviceReturn: 0, assessmentReturn: 0 });
-      }
-      return deptMap.get(dept)!;
-    };
-
-    facilityReferrals.forEach(ref => {
-      const isIncoming = ref.receivingFacilityId === user.facilityId || ref.receivingFacilityId === 'auto';
-      const isOutgoing = ref.referringFacilityId === user.facilityId;
-
-      const depts = ref.receivingDepartments && ref.receivingDepartments.length > 0 ? ref.receivingDepartments : ['Unspecified'];
-      
-      depts.forEach(dept => {
-        const entry = getOrAdd(dept);
-        if (isIncoming) entry.incoming++;
-        if (isOutgoing) entry.outgoing++;
-
-        const type = ref.transferType || 'one_way';
-        if (type === 'one_way') entry.oneWay++;
-        else if (type === 'service_and_return') entry.serviceReturn++;
-        else if (type === 'assessment_with_return') entry.assessmentReturn++;
-      });
-    });
-
-    return Array.from(deptMap.values()).sort((a, b) => (b.incoming + b.outgoing) - (a.incoming + a.outgoing));
-  }, [facilityReferrals, user.facilityId]);
-
-  const pending = facilityReferrals.filter(r => r.status === 'pending').length;
-  const inTransit = facilityReferrals.filter(r => r.status === 'in_transit').length;
-  const emergencies = facilityReferrals.filter(r => r.priority === 'emergency').length;
-  const completed = facilityReferrals.filter(r => ['admitted', 'discharged', 'rejected'].includes(r.status)).length;
-
-  const stats = [
-    { label: 'Pending Referrals', value: pending, valueColor: 'text-amber-600', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-slate-500 dark:text-slate-400', badgeBg: 'bg-amber-100', badgeText: 'text-amber-700', badgeLabel: 'Needs Action' },
-    { label: 'In Transit', value: inTransit, valueColor: 'text-slate-900 dark:text-slate-100', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-slate-500 dark:text-slate-400', badgeBg: 'bg-blue-100', badgeText: 'text-blue-500', badgeLabel: 'Real-time' },
-    { label: 'Emergencies', value: emergencies, valueColor: 'text-red-700', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-red-600', badgeBg: 'bg-red-100', badgeText: 'text-red-700', badgeLabel: 'Priority' },
-    { label: 'Completed', value: completed, valueColor: 'text-white', bg: 'bg-blue-900', labelColor: 'text-blue-200', badgeBg: 'bg-blue-800', badgeText: 'text-blue-300', badgeLabel: 'Optimal' },
-  ];
-
-  const userFacility = facilities.find(f => f.id === user.facilityId);
+  const userFacility = facilities.find(f => f.id === currentFacilityId);
   const isManager = user.role === 'hospital_manager' || user.role === 'deputy_manager' || user.role === 'medical_director' || user.role === 'owner';
   const showBeds = userFacility && userFacility.type !== 'primary_care' && (isManager || ['nursing_supervisor', 'nurse', 'owner'].includes(user.role));
   
-  const activeReferralsAdmitted = referrals.filter(r => r.status === 'admitted' && r.receivingFacilityId === user.facilityId);
-  const activeDirectAdmissions = directAdmissions.filter(a => a.facilityId === user.facilityId && a.status !== 'discharged');
+  const activeReferralsAdmitted = referrals.filter(r => r.status === 'admitted' && r.receivingFacilityId === currentFacilityId);
+  const activeDirectAdmissions = directAdmissions.filter(a => a.facilityId === currentFacilityId && a.status !== 'discharged');
 
   
   const pendingEmergencies = facilityReferrals.filter(r => r.priority === 'emergency' && (r.status === 'pending' || r.status === 'in_transit'));
@@ -160,7 +64,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {pendingEmergencies.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 p-4 rounded-lg flex items-start sm:items-center gap-3 animate-in fade-in slide-in-from-top-4">
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 p-4 rounded-lg flex items-start sm:items-center gap-3">
           <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500 shrink-0 mt-0.5 sm:mt-0 animate-pulse" />
           <div className="flex-1">
             <h3 className="text-sm font-bold text-red-800 dark:text-red-400">Critical Alerts Active</h3>
@@ -326,9 +230,9 @@ export const Dashboard: React.FC = () => {
                     <div key={r.id} className="p-4 hover:bg-slate-50 dark:bg-slate-950 transition-colors">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{r.patientName}</p>
+                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{r.patientData.name}</p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">MRN: {r.patientMrn}</span>
+                            <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">MRN: {r.patientData.hospitalId}</span>
                             <span>{r.requiredBedType}</span>
                           </div>
                         </div>
@@ -346,7 +250,7 @@ export const Dashboard: React.FC = () => {
                             <span>{a.bedType}</span>
                           </div>
                         </div>
-                        <Badge variant="secondary" className="text-[10px]">Direct</Badge>
+                        <Badge variant="info" className="text-[10px]">Direct</Badge>
                       </div>
                     </div>
                   ))}
@@ -357,7 +261,7 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm">
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <h3 className="text-sm font-bold uppercase text-slate-700 dark:text-slate-300">Incoming Referrals Grid</h3>
           <button 
@@ -368,8 +272,8 @@ export const Dashboard: React.FC = () => {
             Priority Sort
           </button>
         </div>
-        <div className="flex-1 overflow-auto">
-          <ReferralList limit={5} facilityId={user.facilityId} prioritySort={prioritySort} />
+        <div className="p-0">
+          <ReferralList limit={5} facilityId={currentFacilityId} prioritySort={prioritySort} />
         </div>
       </div>
 
@@ -389,7 +293,7 @@ export const Dashboard: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{log.userName}</span>
-                        {log.department && <Badge variant="secondary" className="text-[10px]">{log.department}</Badge>}
+                        {log.department && <Badge variant="info" className="text-[10px]">{log.department}</Badge>}
                       </div>
                       <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{log.summary}</p>
                     </div>

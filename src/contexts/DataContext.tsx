@@ -1,23 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User } from '../types';
+import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User, DirectAdmission } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES } from '../lib/mock-data';
 import { useAuth } from './AuthContext';
+import { db } from '../lib/firebase';
+import { doc, getDoc, setDoc, onSnapshot, collection, deleteDoc } from 'firebase/firestore';
 import { saveOfflineReferral, getOfflineReferrals, deleteOfflineReferral } from '../lib/db';
 
 import { ShiftLog } from '../types';
 
-export interface DirectAdmission {
-  id: string;
-  facilityId: string;
-  department: string;
-  bedType: BedType;
-  patientName: string;
-  hospitalId: string;
-  admittedAt: string;
-  admittedBy: string;
-  status?: 'admitted' | 'discharged';
-}
 
 interface DataContextType {
   users: User[];
@@ -39,7 +30,7 @@ interface DataContextType {
   quickTransfer: (type: 'referral' | 'admission', id: string, toDepartment: string, notes: string) => void;
   assignShift: (facilityId: string, department: string, assignedUserId: string | null) => void;
   updateUserVerified: (id: string, verified: boolean) => void;
-  updateUserRole: (id: string, role: Role, department?: string) => void;
+  updateUserRole: (id: string, role: Role, department?: string, facilityId?: string) => void;
   addFacilityDepartment: (facilityId: string, department: string) => void;
   removeFacilityDepartment: (facilityId: string, department: string) => void;
   updateFacilityCapacity: (facilityId: string, capacities: Record<string, { total: number; occupied: number }>) => void;
@@ -52,16 +43,154 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 const INITIAL_REFERRALS: Referral[] = [];
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [referrals, setReferrals] = useState<Referral[]>(INITIAL_REFERRALS);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [facilities, setFacilities] = useState<Facility[]>(INITIAL_FACILITIES);
-  const [directAdmissions, setDirectAdmissions] = useState<DirectAdmission[]>([]);
-  const [shiftAssignments, setShiftAssignments] = useState<ShiftAssignment[]>([]);
-  const [shiftLogs, setShiftLogs] = useState<ShiftLog[]>([]);
   const { user } = useAuth();
+  let [users, setUsers] = useState<User[]>([]);
+  let [referrals, setReferrals] = useState<Referral[]>(INITIAL_REFERRALS);
+  let [notifications, setNotifications] = useState<Notification[]>([]);
+  let [facilities, setFacilities] = useState<Facility[]>(INITIAL_FACILITIES);
+  let [directAdmissions, setDirectAdmissions] = useState<DirectAdmission[]>([]);
+  let [shiftAssignments, setShiftAssignments] = useState<ShiftAssignment[]>([]);
+  let [shiftLogs, setShiftLogs] = useState<ShiftLog[]>([]);
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
+
+  // Wrapper for setUsers to intercept and write to Firestore
+  const _setUsers = setUsers;
+  setUsers = (val) => {
+    if (typeof val === 'function') {
+      _setUsers(prev => {
+        const next = val(prev);
+        // Find what changed and write it
+        next.forEach(u => {
+          const old = prev.find(o => o.id === u.id);
+          if (JSON.stringify(old) !== JSON.stringify(u)) {
+             setDoc(doc(db, 'users', u.id), JSON.parse(JSON.stringify(u)));
+          }
+        });
+        return next;
+      });
+    } else {
+      _setUsers(val);
+      val.forEach(u => setDoc(doc(db, 'users', u.id), JSON.parse(JSON.stringify(u))));
+    }
+  };
+
+  const _setReferrals = setReferrals;
+  setReferrals = (val) => {
+    if (typeof val === 'function') {
+      _setReferrals(prev => {
+        const next = val(prev);
+        next.forEach(r => {
+          const old = prev.find(o => o.id === r.id);
+          if (JSON.stringify(old) !== JSON.stringify(r)) {
+             setDoc(doc(db, 'referrals', r.id), JSON.parse(JSON.stringify(r)));
+          }
+        });
+        return next;
+      });
+    } else {
+      _setReferrals(val);
+      val.forEach(r => setDoc(doc(db, 'referrals', r.id), JSON.parse(JSON.stringify(r))));
+    }
+  };
+
+  const _setFacilities = setFacilities;
+  setFacilities = (val) => {
+    if (typeof val === 'function') {
+      _setFacilities(prev => {
+        const next = val(prev);
+        next.forEach(f => {
+          const old = prev.find(o => o.id === f.id);
+          if (JSON.stringify(old) !== JSON.stringify(f)) {
+             setDoc(doc(db, 'facilities', f.id), JSON.parse(JSON.stringify(f)));
+          }
+        });
+        return next;
+      });
+    } else {
+      _setFacilities(val);
+      val.forEach(f => setDoc(doc(db, 'facilities', f.id), JSON.parse(JSON.stringify(f))));
+    }
+  };
+
+  const _setDirectAdmissions = setDirectAdmissions;
+  setDirectAdmissions = (val) => {
+    if (typeof val === 'function') {
+      _setDirectAdmissions(prev => {
+        const next = val(prev);
+        next.forEach(a => {
+          const old = prev.find(o => o.id === a.id);
+          if (JSON.stringify(old) !== JSON.stringify(a)) {
+             setDoc(doc(db, 'admissions', a.id), JSON.parse(JSON.stringify(a)));
+          }
+        });
+        return next;
+      });
+    } else {
+      _setDirectAdmissions(val);
+      val.forEach(a => setDoc(doc(db, 'admissions', a.id), JSON.parse(JSON.stringify(a))));
+    }
+  };
+
+  const _setShiftAssignments = setShiftAssignments;
+  setShiftAssignments = (val) => {
+    if (typeof val === 'function') {
+      _setShiftAssignments(prev => {
+        const next = val(prev);
+        next.forEach(s => {
+          const old = prev.find(o => o.id === s.id);
+          if (JSON.stringify(old) !== JSON.stringify(s)) {
+             setDoc(doc(db, 'shifts', s.id), JSON.parse(JSON.stringify(s)));
+          }
+        });
+        return next;
+      });
+    } else {
+      _setShiftAssignments(val);
+      val.forEach(s => setDoc(doc(db, 'shifts', s.id), JSON.parse(JSON.stringify(s))));
+    }
+  };
+
+  const _setShiftLogs = setShiftLogs;
+  setShiftLogs = (val) => {
+    if (typeof val === 'function') {
+      _setShiftLogs(prev => {
+        const next = val(prev);
+        next.forEach(s => {
+          const old = prev.find(o => o.id === s.id);
+          if (JSON.stringify(old) !== JSON.stringify(s)) {
+             setDoc(doc(db, 'shiftLogs', s.id), JSON.parse(JSON.stringify(s)));
+          }
+        });
+        return next;
+      });
+    } else {
+      _setShiftLogs(val);
+      val.forEach(s => setDoc(doc(db, 'shiftLogs', s.id), JSON.parse(JSON.stringify(s))));
+    }
+  };
+
+  const _setNotifications = setNotifications;
+  setNotifications = (val) => {
+    if (typeof val === 'function') {
+      _setNotifications(prev => {
+        const next = val(prev);
+        next.forEach(n => {
+          const old = prev.find(o => o.id === n.id);
+          if (JSON.stringify(old) !== JSON.stringify(n)) {
+             setDoc(doc(db, 'notifications', n.id), JSON.parse(JSON.stringify(n)));
+          }
+        });
+        return next;
+      });
+    } else {
+      _setNotifications(val);
+      val.forEach(n => setDoc(doc(db, 'notifications', n.id), JSON.parse(JSON.stringify(n))));
+    }
+  };
+
+  // End of wrappers
+
 
   // Sync offline data
   const syncOfflineData = async () => {
@@ -137,65 +266,80 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Load from local storage if exists
+  
+  // Load from Firestore
   useEffect(() => {
-    const savedUsers = localStorage.getItem('eha_users_v2');
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
-    }
-    const savedReferrals = localStorage.getItem('eha_referrals_v2');
-    if (savedReferrals) {
-      setReferrals(JSON.parse(savedReferrals));
-    }
-    const savedAdmissions = localStorage.getItem('eha_admissions_v2');
-    if (savedAdmissions) {
-      setDirectAdmissions(JSON.parse(savedAdmissions));
-    }
-    const savedFacilities = localStorage.getItem('eha_facilities_v2');
-    if (savedFacilities) {
-      setFacilities(JSON.parse(savedFacilities));
-    }
-    const savedShifts = localStorage.getItem('eha_shifts_v2');
-    if (savedShifts) {
-      setShiftAssignments(JSON.parse(savedShifts));
-    }
-    const savedShiftLogs = localStorage.getItem('eha_shift_logs_v2');
-    if (savedShiftLogs) {
-      setShiftLogs(JSON.parse(savedShiftLogs));
-    }
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      setUsers(snapshot.docs.map(d => d.data() as User));
+    });
+    const unsubReferrals = onSnapshot(collection(db, 'referrals'), (snapshot) => {
+      setReferrals(snapshot.docs.map(d => d.data() as Referral).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    });
+    const unsubAdmissions = onSnapshot(collection(db, 'admissions'), (snapshot) => {
+      setDirectAdmissions(snapshot.docs.map(d => d.data() as DirectAdmission).sort((a, b) => new Date(b.admittedAt).getTime() - new Date(a.admittedAt).getTime()));
+    });
+    const unsubFacilities = onSnapshot(collection(db, 'facilities'), (snapshot) => {
+      let facs = snapshot.docs.map(d => d.data() as Facility);
+      if (facs.length === 0) {
+        facs = INITIAL_FACILITIES;
+      } else {
+        if (!facs.some(f => f.id === 'branch')) {
+          const branch = INITIAL_FACILITIES.find(f => f.id === 'branch');
+          if (branch) {
+            facs = [branch, ...facs];
+            setDoc(doc(db, 'facilities', 'branch'), branch);
+          }
+        } else {
+          // If branch exists but has departments, clear them
+          const branch = facs.find(f => f.id === 'branch');
+          if (branch && branch.departments && branch.departments.length > 0) {
+            branch.departments = [];
+            setDoc(doc(db, 'facilities', 'branch'), branch);
+          }
+        }
+      }
+      setFacilities(facs);
+    });
+    const unsubShifts = onSnapshot(collection(db, 'shifts'), (snapshot) => {
+      setShiftAssignments(snapshot.docs.map(d => d.data() as ShiftAssignment));
+    });
+    const unsubShiftLogs = onSnapshot(collection(db, 'shiftLogs'), (snapshot) => {
+      setShiftLogs(snapshot.docs.map(d => d.data() as ShiftLog));
+    });
+    const unsubNotifs = onSnapshot(collection(db, 'notifications'), (snapshot) => {
+      setNotifications(snapshot.docs.map(d => d.data() as Notification).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    });
+
+    return () => {
+      unsubUsers();
+      unsubReferrals();
+      unsubAdmissions();
+      unsubFacilities();
+      unsubShifts();
+      unsubShiftLogs();
+      unsubNotifs();
+    };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('eha_users_v2', JSON.stringify(users));
-  }, [users]);
 
-  // Save to local storage
-  useEffect(() => {
-    localStorage.setItem('eha_referrals_v2', JSON.stringify(referrals));
-  }, [referrals]);
-
-  useEffect(() => {
-    localStorage.setItem('eha_admissions_v2', JSON.stringify(directAdmissions));
-  }, [directAdmissions]);
-
-  useEffect(() => {
-    localStorage.setItem('eha_facilities_v2', JSON.stringify(facilities));
-  }, [facilities]);
-
-  useEffect(() => {
-    localStorage.setItem('eha_shifts_v2', JSON.stringify(shiftAssignments));
-  }, [shiftAssignments]);
-
-  useEffect(() => {
-    localStorage.setItem('eha_shift_logs_v2', JSON.stringify(shiftLogs));
-  }, [shiftLogs]);
+  
 
   const updateUserVerified = (id: string, verified: boolean) => {
     setUsers(prev => prev.map(u => u.id === id ? { ...u, verified } : u));
   };
 
-  const updateUserRole = (id: string, role: Role, department?: string) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, role, department: department ?? u.department } : u));
+  const updateUserRole = (id: string, role: Role, department?: string, facilityId?: string) => {
+    setUsers(prev => prev.map(u => {
+      if (u.id === id) {
+        return { 
+          ...u, 
+          role, 
+          department: department !== undefined ? department : u.department,
+          facilityId: facilityId !== undefined ? facilityId : u.facilityId
+        };
+      }
+      return u;
+    }));
   };
 
   const addShiftLog = (logData: Omit<ShiftLog, 'id' | 'timestamp'>) => {

@@ -9,7 +9,7 @@ import { UserPlus, UserMinus, Clock } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
 
 export const AdmitPatientPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, activeFacilityId } = useAuth();
   const { facilities, addDirectAdmission, directAdmissions, dischargeDirectAdmission } = useData();
   const navigate = useNavigate();
 
@@ -18,19 +18,20 @@ export const AdmitPatientPage: React.FC = () => {
   const [department, setDepartment] = useState('');
   const [bedType, setBedType] = useState<BedType>('Ward');
 
-  if (!user || !user.facilityId) {
-    return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Facility ID not found.</div>;
-  }
+  const isGlobalAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+  const currentFacilityId = isGlobalAdmin ? activeFacilityId : user?.facilityId;
+  const facility = facilities.find(f => f.id === currentFacilityId);
 
-  const facility = facilities.find(f => f.id === user.facilityId);
-  if (!facility) return null;
+  if (!user || !facility) {
+    return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Facility ID not found or configuration missing.</div>;
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!patientName || !hospitalId || !department || !bedType) return;
 
     addDirectAdmission({
-      facilityId: user.facilityId!,
+      facilityId: currentFacilityId as string,
       department,
       bedType,
       patientName,
@@ -45,15 +46,17 @@ export const AdmitPatientPage: React.FC = () => {
     setBedType('Ward');
   };
 
-  const activeAdmissions = directAdmissions.filter(a => a.facilityId === user.facilityId && a.status !== 'discharged');
+  const activeAdmissions = directAdmissions.filter(a => a.facilityId === currentFacilityId && a.status !== 'discharged');
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Direct Patient Admission</h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Record already admitted patients (walk-ins or ER admissions) to update bed capacity tracking across the network.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Direct Patient Admission</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Record already admitted patients (walk-ins or ER admissions) to update bed capacity tracking across the network.
+          </p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit}>
