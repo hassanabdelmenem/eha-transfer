@@ -1,0 +1,27 @@
+@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
+
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  .dark {
+    background-color: white !important;
+    color: black !important;
+  }
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  @page {
+    margin: 1cm;
+  }
+}
+
+
+
+.night-shift-mode {
+  filter: sepia(0.4) hue-rotate(-10deg) contrast(1.05) brightness(0.85);
+  background-color: #0f172a;
+}
