@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 
 interface VoiceTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  value?: string;
   onValueChange: (value: string) => void;
 }
 

@@ -54,7 +54,7 @@ export const NewReferralPage: React.FC = () => {
         else if (randomDistance < 30) score += 15;
         
         // Priority match bonus
-        if (priority === 'life_threatening') score += 20;
+        if (priority === 'emergency') score += 20;
 
         // Specialized dept match
         score += receivingDepartments.length * 10;

@@ -1,0 +1,560 @@
+
+ RUN  v4.1.10 /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta
+
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/uri-js.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/to-json-schema.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/to-json-schema.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/uri-js.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/codec-examples.test.ts (19 tests | 2 failed) 17ms
+   × utf8ToBytes codec 3ms
+   × bytesToUtf8 codec 1ms
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/codec-examples.test.ts (19 tests | 2 failed) 21ms
+   × utf8ToBytes codec 4ms
+   × bytesToUtf8 codec 1ms
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/parse.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/parse.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/datetime.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/datetime.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/gensync/test/index.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/gensync/test/index.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/security.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/security.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/serialize.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/serialize.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/rfc-3986.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/rfc-3986.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/resolve.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/resolve.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-custom-expect-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-custom-expect-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-custom-expect-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-custom-expect-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-custom-expect-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-custom-expect-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-custom-expect-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-custom-expect-types.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/equal.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/equal.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/file.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/file.test.ts (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/util.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/util.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/uri-js-compatibility.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/uri-js-compatibility.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/security-normalization.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/security-normalization.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/ajv.test.js (0 test)
+ ❯ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/ajv.test.js (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 46 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/ajv.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/ajv.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/ajv.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/ajv.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/ajv.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/ajv.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/equal.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/equal.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/equal.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/equal.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/equal.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/equal.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/parse.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/parse.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/parse.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/parse.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/parse.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/parse.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/resolve.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/resolve.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/resolve.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/resolve.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/resolve.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/resolve.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/rfc-3986.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/rfc-3986.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/rfc-3986.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/rfc-3986.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/rfc-3986.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/rfc-3986.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/security-normalization.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/security-normalization.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/security-normalization.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/security-normalization.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/security-normalization.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/security-normalization.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/security.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/security.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/security.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/security.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/security.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/security.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/serialize.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/serialize.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/serialize.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/serialize.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/serialize.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/serialize.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/uri-js-compatibility.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/uri-js-compatibility.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/uri-js-compatibility.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/uri-js-compatibility.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/uri-js-compatibility.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/uri-js-compatibility.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/uri-js.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/uri-js.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/uri-js.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/uri-js.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/uri-js.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/uri-js.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/util.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/fast-uri/test/util.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/util.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/fast-uri/test/util.test.js ]
+Error: Cannot find module 'tape'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/fast-uri/test/util.test.js
+ ❯ Object.<anonymous> node_modules/fast-uri/test/util.test.js:3:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/gensync/test/index.test.js [ .stryker-tmp/sandbox-wysBCU/node_modules/gensync/test/index.test.js ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/gensync/test/index.test.js [ .stryker-tmp/sandbox-g0Zp2O/node_modules/gensync/test/index.test.js ]
+Error: Cannot find module 'util.promisify'
+Require stack:
+- /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/gensync/test/index.test.js
+ ❯ Object.<anonymous> node_modules/gensync/test/index.test.js:3:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-custom-expect-types.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-custom-expect-types.test.ts ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-custom-expect-types.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-custom-expect-types.test.ts ]
+Error: Cannot bundle built-in module "bun:test" imported from "node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-custom-expect-types.test.ts". Consider disabling environments.client.noExternal or remove the built-in dependency.
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-custom-expect-types.test.ts:9:21
+  1  |  import { expect } from "bun:test";
+     |                          ^
+  2  |  import * as matchersStandalone from "../../matchers-standalone";
+  3  |  expect.extend(matchersStandalone);
+ ❯ ResolveIdContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ ResolveIdContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ ResolveIdContext.resolveId node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:15861:18
+ ❯ EnvironmentPluginContainer.resolveId node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42372:17
+ ❯ TransformPluginContext.resolve node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42579:15
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40622:26
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-types.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-types.test.ts ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-types.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-types.test.ts ]
+Error: Cannot bundle built-in module "bun:test" imported from "node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-types.test.ts". Consider disabling environments.client.noExternal or remove the built-in dependency.
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/bun/bun-types.test.ts:9:21
+  1  |  import { expect } from "bun:test";
+     |                          ^
+  2  |  import "../../bun";
+  3  |  const element = document.body;
+ ❯ ResolveIdContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ ResolveIdContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ ResolveIdContext.resolveId node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:15861:18
+ ❯ EnvironmentPluginContainer.resolveId node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42372:17
+ ❯ TransformPluginContext.resolve node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42579:15
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40622:26
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-custom-expect-types.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-custom-expect-types.test.ts ]
+Error: Failed to resolve import "../../matchers" from "node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-custom-expect-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-custom-expect-types.test.ts:9:26
+  1  |  import * as matchers from "../../matchers";
+     |                             ^
+  2  |  expect.extend(matchers);
+  3  |  const element = document.body;
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-types.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-types.test.ts ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-types.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-types.test.ts ]
+Error: Failed to resolve import "../../jest" from "node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-types.test.ts:9:7
+  1  |  import "../../jest";
+     |          ^
+  2  |  const element = document.body;
+  3  |  expect(element).toBeInTheDOM();
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-custom-expect-types.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-custom-expect-types.test.ts ]
+Error: Failed to resolve import "../../matchers" from "node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-custom-expect-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-custom-expect-types.test.ts:10:26
+  1  |  import { expect } from "vitest";
+  2  |  import * as matchers from "../../matchers";
+     |                             ^
+  3  |  expect.extend(matchers);
+  4  |  const element = document.body;
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-types.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-types.test.ts ]
+Error: Failed to resolve import "../../vitest" from "node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-types.test.ts:10:7
+  1  |  import { expect } from "vitest";
+  2  |  import "../../vitest";
+     |          ^
+  3  |  const element = document.body;
+  4  |  expect(element).toBeInTheDOM();
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-custom-expect-types.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-custom-expect-types.test.ts ]
+Error: Failed to resolve import "@jest/globals" from "node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-custom-expect-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-custom-expect-types.test.ts:9:21
+  1  |  import { expect } from "@jest/globals";
+     |                          ^
+  2  |  import * as matchers from "../../matchers";
+  3  |  expect.extend(matchers);
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-types.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-types.test.ts ]
+Error: Failed to resolve import "@jest/globals" from "node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-types.test.ts:9:21
+  1  |  import { expect } from "@jest/globals";
+     |                          ^
+  2  |  import "../../jest-globals";
+  3  |  const element = document.body;
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/datetime.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/datetime.test.ts ]
+Error: Failed to resolve import "recheck" from "node_modules/zod/src/v4/classic/tests/datetime.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/zod/src/v4/classic/tests/datetime.test.ts:1:26
+  1  |  import { checkSync } from "recheck";
+     |                             ^
+  2  |  import { expect, test } from "vitest";
+  3  |  import * as z from "zod/v4";
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/file.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/file.test.ts ]
+Error: Failed to resolve import "@web-std/file" from "node_modules/zod/src/v4/classic/tests/file.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/zod/src/v4/classic/tests/file.test.ts:1:32
+  1  |  import { File as WebFile } from "@web-std/file";
+     |                                   ^
+  2  |  import { afterEach, beforeEach, expect, expectTypeOf, test } from "vitest";
+  3  |  import * as z from "zod/v4";
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/to-json-schema.test.ts [ .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/to-json-schema.test.ts ]
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/to-json-schema.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/to-json-schema.test.ts ]
+Error: Failed to resolve import "@seriousme/openapi-schema-validator" from "node_modules/zod/src/v4/classic/tests/to-json-schema.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/zod/src/v4/classic/tests/to-json-schema.test.ts:1:26
+  1  |  import { Validator } from "@seriousme/openapi-schema-validator";
+     |                             ^
+  2  |  import { describe, expect, test } from "vitest";
+  3  |  import * as z from "zod";
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-custom-expect-types.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-custom-expect-types.test.ts ]
+Error: Failed to resolve import "../../matchers" from "node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-custom-expect-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/jest/jest-custom-expect-types.test.ts:9:26
+  1  |  import * as matchers from "../../matchers";
+     |                             ^
+  2  |  expect.extend(matchers);
+  3  |  const element = document.body;
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+ ❯ fetchModule node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-custom-expect-types.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-custom-expect-types.test.ts ]
+Error: Failed to resolve import "@jest/globals" from "node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-custom-expect-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-custom-expect-types.test.ts:9:21
+  1  |  import { expect } from "@jest/globals";
+     |                          ^
+  2  |  import * as matchers from "../../matchers";
+  3  |  expect.extend(matchers);
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+ ❯ fetchModule node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-types.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-types.test.ts ]
+Error: Failed to resolve import "@jest/globals" from "node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/jest-globals/jest-globals-types.test.ts:9:21
+  1  |  import { expect } from "@jest/globals";
+     |                          ^
+  2  |  import "../../jest-globals";
+  3  |  const element = document.body;
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+ ❯ fetchModule node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-custom-expect-types.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-custom-expect-types.test.ts ]
+Error: Failed to resolve import "../../matchers" from "node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-custom-expect-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-custom-expect-types.test.ts:10:26
+  1  |  import { expect } from "vitest";
+  2  |  import * as matchers from "../../matchers";
+     |                             ^
+  3  |  expect.extend(matchers);
+  4  |  const element = document.body;
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+ ❯ fetchModule node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-types.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-types.test.ts ]
+Error: Failed to resolve import "../../vitest" from "node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-types.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/@testing-library/jest-dom/types/__tests__/vitest/vitest-types.test.ts:10:7
+  1  |  import { expect } from "vitest";
+  2  |  import "../../vitest";
+     |          ^
+  3  |  const element = document.body;
+  4  |  expect(element).toBeInTheDOM();
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+ ❯ fetchModule node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/datetime.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/datetime.test.ts ]
+Error: Failed to resolve import "recheck" from "node_modules/zod/src/v4/classic/tests/datetime.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/zod/src/v4/classic/tests/datetime.test.ts:1:26
+  1  |  import { checkSync } from "recheck";
+     |                             ^
+  2  |  import { expect, test } from "vitest";
+  3  |  import * as z from "zod/v4";
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+ ❯ fetchModule node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/file.test.ts [ .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/file.test.ts ]
+Error: Failed to resolve import "@web-std/file" from "node_modules/zod/src/v4/classic/tests/file.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/hassanabdelmenem/antigravity/copilot-worktrees/eha-transfer/hassanabdelmenem-fantastic-fiesta/node_modules/zod/src/v4/classic/tests/file.test.ts:1:32
+  1  |  import { File as WebFile } from "@web-std/file";
+     |                                   ^
+  2  |  import { afterEach, beforeEach, expect, expectTypeOf, test } from "vitest";
+  3  |  import * as z from "zod/v4";
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42658:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42655:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40634:23
+ ❯ node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40753:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:40680:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42453:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35845:27
+ ❯ fetchModule node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/50]⎯
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/codec-examples.test.ts > utf8ToBytes codec
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/codec-examples.test.ts > utf8ToBytes codec
+ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "Uint8Array",
+    "path": [],
+    "message": "Invalid input: expected Uint8Array, received Uint8Array"
+  }
+]
+ ❯ node_modules/zod/v4/core/parse.js:12:14
+ ❯ Proxy.<anonymous> node_modules/zod/v4/core/parse.js:64:24
+ ❯ node_modules/zod/src/v4/classic/tests/codec-examples.test.ts:258:21
+    256|
+    257|   // Test decode
+    258|   const decoded = z.decode(codec, "Hello, 世界!");
+       |                     ^
+    259|   expect(decoded).toBeInstanceOf(Uint8Array);
+    260|   expect(Array.from(decoded)).toEqual([72, 101, 108, 108, 111, 44, 32,…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/50]⎯
+
+ FAIL  .stryker-tmp/sandbox-wysBCU/node_modules/zod/src/v4/classic/tests/codec-examples.test.ts > bytesToUtf8 codec
+ FAIL  .stryker-tmp/sandbox-g0Zp2O/node_modules/zod/src/v4/classic/tests/codec-examples.test.ts > bytesToUtf8 codec
+ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "Uint8Array",
+    "path": [],
+    "message": "Invalid input: expected Uint8Array, received Uint8Array"
+  }
+]
+ ❯ node_modules/zod/v4/core/parse.js:12:14
+ ❯ Proxy.<anonymous> node_modules/zod/v4/core/parse.js:60:24
+ ❯ node_modules/zod/src/v4/classic/tests/codec-examples.test.ts:291:21
+    289|
+    290|   // Test encode
+    291|   const encoded = z.encode(codec, "Hello, 世界!");
+       |                     ^
+    292|   expect(encoded).toBeInstanceOf(Uint8Array);
+    293|   expect(Array.from(encoded)).toEqual([72, 101, 108, 108, 111, 44, 32,…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/50]⎯
+
+
+ Test Files  48 failed | 360 passed (408)
+      Tests  4 failed | 4488 passed (4492)
+   Start at  03:36:51
+   Duration  47.99s (transform 5.99s, setup 39.11s, import 22.92s, tests 5.87s, environment 209.92s)
+

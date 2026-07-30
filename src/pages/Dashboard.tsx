@@ -326,9 +326,9 @@ export const Dashboard: React.FC = () => {
                     <div key={r.id} className="p-4 hover:bg-slate-50 dark:bg-slate-950 transition-colors">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{r.patientName}</p>
+                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{r.patientData.name}</p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">MRN: {r.patientMrn}</span>
+                            <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">MRN: {r.patientData.hospitalId}</span>
                             <span>{r.requiredBedType}</span>
                           </div>
                         </div>
