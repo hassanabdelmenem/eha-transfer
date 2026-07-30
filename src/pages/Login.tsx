@@ -25,7 +25,7 @@ export const Login: React.FC = () => {
     if (found) {
       login(found.id);
     } else {
-      alert("User not found in mock data. Use the dropdown for demo.");
+      alert("User not found. Please enter a valid user email or select from the dropdown.");
     }
   };
 
