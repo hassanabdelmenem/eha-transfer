@@ -5,7 +5,8 @@ export type SpeechRecognitionFactory = () => any | null;
 
 export const defaultSpeechRecognitionFactory: SpeechRecognitionFactory = () => {
   if (typeof window !== 'undefined') {
-    return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+    const win = window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any };
+    return win.SpeechRecognition || win.webkitSpeechRecognition || null;
   }
   return null;
 };

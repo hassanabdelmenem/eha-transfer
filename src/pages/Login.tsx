@@ -7,7 +7,8 @@ import { Input } from '../components/ui/Input';
 import { Shield, Mail } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const { loginWithEmail, loginWithGoogle } = useAuth();
+  const { loginWithEmail, registerWithEmail, loginWithGoogle } = useAuth();
+  const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   
@@ -15,9 +16,13 @@ export const Login: React.FC = () => {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await loginWithEmail(email, password);
+      if (isRegistering) {
+        await registerWithEmail(email, password);
+      } else {
+        await loginWithEmail(email, password);
+      }
     } catch (err: any) {
-      alert("Login failed: " + err.message);
+      alert(`${isRegistering ? 'Registration' : 'Login'} failed: ` + err.message);
     }
   };
 
@@ -48,7 +53,7 @@ export const Login: React.FC = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <Card className="border-t-4 border-t-blue-900 shadow-xl">
           <CardHeader className="bg-white dark:bg-slate-900">
-            <CardTitle>Sign in to your account</CardTitle>
+            <CardTitle>{isRegistering ? 'Create your account' : 'Sign in to your account'}</CardTitle>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
             <Button 
@@ -98,9 +103,19 @@ export const Login: React.FC = () => {
                 />
               </div>
               <Button type="submit" className="w-full h-12 text-sm bg-blue-900 hover:bg-blue-800">
-                Sign in with Email
+                {isRegistering ? 'Sign up with Email' : 'Sign in with Email'}
               </Button>
             </form>
+            
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                onClick={() => setIsRegistering(!isRegistering)}
+              >
+                {isRegistering ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+              </button>
+            </div>
 
 
           </CardContent>

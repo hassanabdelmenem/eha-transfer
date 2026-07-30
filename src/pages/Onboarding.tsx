@@ -104,7 +104,7 @@ export const Onboarding: React.FC = () => {
 
               {role !== 'system_admin' && role !== 'owner' && (
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Facility</label>
+                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Hospital</label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                     <select
@@ -113,7 +113,7 @@ export const Onboarding: React.FC = () => {
                       onChange={(e) => { setFacilityId(e.target.value); setDepartment(''); }}
                       className="w-full pl-10 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
                     >
-                      <option value="">Select a Facility</option>
+                      <option value="">Select a Hospital</option>
                       {facilities.map(f => (
                         <option key={f.id} value={f.id}>{f.name}</option>
                       ))}

@@ -432,7 +432,7 @@ export const NewReferralPage: React.FC = () => {
                   <select
                     className="w-full rounded border border-slate-300 p-2 text-sm"
                     value={patientData.gender || 'male'}
-                    onChange={e => setPatientData({...patientData, gender: e.target.value as any})}
+                    onChange={e => setPatientData({...patientData, gender: e.target.value as PatientData['gender']})}
                   >
                     <option value="male">Male</option>
                     <option value="female">Female</option>

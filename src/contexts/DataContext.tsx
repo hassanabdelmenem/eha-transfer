@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES } from '../lib/mock-data';
 import { useAuth } from './AuthContext';
 import { saveOfflineReferral, getOfflineReferrals, deleteOfflineReferral } from '../lib/db';
+import { syncOfflineReferrals } from '../lib/offlineSync';
 
 import { ShiftLog } from '../types';
 import { debouncedSetItem, safeGetItem } from '../lib/storage';
@@ -104,7 +105,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sync offline data (delegated to offlineSync module)
   const syncOfflineData = async () => {
     try {
-      const addReferralsToState = (refs: any[]) => {
+      const addReferralsToState = (refs: Referral[]) => {
         setReferrals(prev => {
           const newReferrals = [...refs, ...prev];
           // schedule storage write
@@ -115,7 +116,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       await syncOfflineReferrals({
         addReferralsToState,
-        createNotification: (params: any) => createNotification(params as any),
+        createNotification: (params: NotificationParams | any) => createNotification(params as NotificationParams),
         facilities,
         setPendingSyncCount: (n: number) => setPendingSyncCount(n)
       });

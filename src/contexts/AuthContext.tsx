@@ -8,6 +8,7 @@ interface AuthContextType {
   login?: (id: string) => void; // legacy test helper
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (e: string, p: string) => Promise<void>;
+  registerWithEmail: (e: string, p: string) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (roles: User['role'][]) => boolean;
   verifyMFA: (pin: string) => boolean;
@@ -70,6 +71,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const loginWithEmail = async (e: string, p: string) => {
     await signInWithEmailAndPassword(auth, e, p);
+  };
+
+  const registerWithEmail = async (e: string, p: string) => {
+    const { createUserWithEmailAndPassword } = await import('firebase/auth');
+    await createUserWithEmailAndPassword(auth, e, p);
   };
 
   // Legacy/test helper: simple login by id (used in tests)
@@ -137,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithGoogle, loginWithEmail, logout, hasRole, verifyMFA, mfaVerifiedAt, updateUserProfile }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, loginWithEmail, registerWithEmail, logout, hasRole, verifyMFA, mfaVerifiedAt, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

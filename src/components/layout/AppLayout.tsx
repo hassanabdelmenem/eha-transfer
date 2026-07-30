@@ -253,14 +253,19 @@ export const AppLayout: React.FC = () => {
 
       {/* Mobile Nav */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-50">
-        <div className="flex justify-around">
+        <div className="flex overflow-x-auto snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <style>{`
+            .sm\\:hidden .flex.overflow-x-auto::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             return (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`flex flex-col items-center py-2 px-3 text-xs uppercase font-bold tracking-wider ${
+                className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] text-xs uppercase font-bold tracking-wider ${
                   isActive ? 'text-blue-900' : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
@@ -272,7 +277,7 @@ export const AppLayout: React.FC = () => {
           {isDoctor && (
           <Link
              to="/referrals/new"
-             className={`flex flex-col items-center py-2 px-3 text-xs uppercase font-bold tracking-wider ${
+             className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] text-xs uppercase font-bold tracking-wider ${
                 location.pathname.startsWith('/referrals/new') ? 'text-blue-900' : 'text-slate-500 dark:text-slate-400'
              }`}
           >
@@ -283,7 +288,7 @@ export const AppLayout: React.FC = () => {
           {isNurse && (
             <Link
                to="/admissions/new"
-               className={`flex flex-col items-center py-2 px-3 text-xs uppercase font-bold tracking-wider ${
+               className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] text-xs uppercase font-bold tracking-wider ${
                   location.pathname.startsWith('/admissions/new') ? 'text-blue-900' : 'text-slate-500 dark:text-slate-400'
                }`}
             >
