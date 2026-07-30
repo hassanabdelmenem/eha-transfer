@@ -22,11 +22,19 @@ import { DepartmentPage } from './pages/DepartmentPage';
 import { NetworkDirectoryPage } from './pages/NetworkDirectoryPage';
 import { FacilitySettingsPage } from './pages/FacilitySettingsPage';
 import { BedManagementPage } from './pages/BedManagementPage';
+import { Onboarding } from './pages/Onboarding';
+import { PendingVerification } from './pages/PendingVerification';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  if (!user.profileCompleted) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  if (!user.verified) {
+    return <Navigate to="/pending-verification" replace />;
   }
   return <>{children}</>;
 };
@@ -48,6 +56,8 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/onboarding" element={user ? (user.profileCompleted ? <Navigate to="/" replace /> : <Onboarding />) : <Navigate to="/login" replace />} />
+      <Route path="/pending-verification" element={<PendingVerification />} />
       
       <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<RoleBasedDashboard />} />

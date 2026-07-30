@@ -14,6 +14,16 @@ export const AppLayout: React.FC = () => {
   const { theme, setTheme, nightShift, setNightShift } = useTheme();
   const location = useLocation();
 
+  const [showProfile, setShowProfile] = React.useState(false);
+  const [profilePhone, setProfilePhone] = React.useState(user?.phoneNumber || '');
+  const [profileSchedule, setProfileSchedule] = React.useState(user?.monthlySchedule || '');
+  const { updateUserProfile } = useAuth();
+
+  const handleSaveProfile = () => {
+    updateUserProfile({ phoneNumber: profilePhone, monthlySchedule: profileSchedule });
+    setShowProfile(false);
+  };
+
   const [showHotline, setShowHotline] = React.useState(false);
   const hotlineContacts = users.filter(u => 
     u.facilityId === user?.facilityId && 
@@ -26,9 +36,9 @@ export const AppLayout: React.FC = () => {
   const facility = facilities.find(f => f.id === user.facilityId);
   const unreadNotifs = notifications.filter(n => n.userId === user.id && !n.read).length;
 
-  const isNurse = user.role === 'nurse' || user.role === 'nursing_supervisor';
-  const isHeadOfDept = user.role === 'head_of_department';
-  const isDoctor = ['clinician', 'head_of_department', 'medical_director'].includes(user.role);
+  const isNurse = user.role === 'nurse' || user.role === 'nursing_supervisor' || user.role === 'owner';
+  const isHeadOfDept = user.role === 'head_of_department' || user.role === 'owner';
+  const isDoctor = ['consultant', 'specialist', 'resident', 'head_of_department', 'medical_director', 'owner'].includes(user.role);
 
   const handleLogout = () => {
     // Generate shift log for clinical staff
@@ -80,7 +90,7 @@ export const AppLayout: React.FC = () => {
     navItems.push({ name: 'Department', path: '/department', icon: Activity });
   }
 
-  if (['hospital_manager', 'deputy_manager', 'medical_director'].includes(user.role)) {
+  if (['hospital_manager', 'deputy_manager', 'medical_director', 'owner'].includes(user.role)) {
     navItems.push({ name: 'Facility Settings', path: '/facility-settings', icon: Settings });
   }
   if (isNurse) {
@@ -119,10 +129,17 @@ export const AppLayout: React.FC = () => {
               Database Synced
             </div>
           )}
-          <div className="hidden sm:flex flex-col items-end">
+          <button 
+            onClick={() => {
+              setProfilePhone(user?.phoneNumber || '');
+              setProfileSchedule(user?.monthlySchedule || '');
+              setShowProfile(true);
+            }} 
+            className="hidden sm:flex flex-col items-end hover:opacity-80 transition-opacity text-left"
+          >
             <span className="text-xs font-semibold">{user.name}</span>
             <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded">{user.role.replace(/_/g, ' ')} {facility ? `• ${facility.name}` : ''}</span>
-          </div>
+          </button>
           <div className="hidden sm:block h-10 w-px bg-blue-700"></div>
           
           <div className="flex items-center gap-4">
@@ -294,18 +311,26 @@ export const AppLayout: React.FC = () => {
               {hotlineContacts.length > 0 ? (
                 <div className="space-y-3">
                   {hotlineContacts.map(contact => (
-                    <div key={contact.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800">
-                      <div>
-                        <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{contact.name}</p>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">{contact.role.replace(/_/g, ' ')} {contact.department ? `• ${contact.department}` : ''}</p>
+                    <div key={contact.id} className="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{contact.name}</p>
+                          <p className="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">{contact.role.replace(/_/g, ' ')} {contact.department ? `• ${contact.department}` : ''}</p>
+                        </div>
+                        {contact.phoneNumber ? (
+                          <a href={`tel:${contact.phoneNumber}`} className="flex items-center justify-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-4 py-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold uppercase hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shrink-0">
+                            <Phone className="w-3.5 h-3.5" />
+                            Call
+                          </a>
+                        ) : (
+                          <span className="text-[10px] uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">No Number</span>
+                        )}
                       </div>
-                      {contact.phoneNumber ? (
-                        <a href={`tel:${contact.phoneNumber}`} className="flex items-center justify-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-4 py-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold uppercase hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shrink-0">
-                          <Phone className="w-3.5 h-3.5" />
-                          Call
-                        </a>
-                      ) : (
-                        <span className="text-[10px] uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">No Number</span>
+                      {contact.monthlySchedule && (
+                        <div className="bg-slate-100 dark:bg-slate-800 p-2 text-[10px] text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700">
+                          <span className="font-bold uppercase mr-1">Schedule:</span>
+                          {contact.monthlySchedule}
+                        </div>
                       )}
                     </div>
                   ))}
@@ -313,6 +338,45 @@ export const AppLayout: React.FC = () => {
               ) : (
                 <p className="text-sm text-slate-500 text-center py-6 bg-slate-50 dark:bg-slate-950 rounded border border-dashed border-slate-200 dark:border-slate-800">No clinical leadership contacts found for this facility.</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {showProfile && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-slate-500" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">My Profile Settings</h2>
+              </div>
+              <button onClick={() => setShowProfile(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Phone Number</label>
+                <input 
+                  type="tel"
+                  value={profilePhone}
+                  onChange={e => setProfilePhone(e.target.value)}
+                  placeholder="e.g. 01012345678"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Monthly Schedule & Availability</label>
+                <textarea 
+                  value={profileSchedule}
+                  onChange={e => setProfileSchedule(e.target.value)}
+                  placeholder="E.g. Mondays & Wednesdays 8am-8pm, On-call weekends..."
+                  rows={4}
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">This will be visible to other staff in the Network Directory to facilitate communication.</p>
+              </div>
+              <Button onClick={handleSaveProfile} className="w-full">Save Changes</Button>
             </div>
           </div>
         </div>

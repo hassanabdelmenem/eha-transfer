@@ -135,8 +135,8 @@ export const Dashboard: React.FC = () => {
   ];
 
   const userFacility = facilities.find(f => f.id === user.facilityId);
-  const isManager = user.role === 'hospital_manager' || user.role === 'deputy_manager' || user.role === 'medical_director';
-  const showBeds = userFacility && userFacility.type !== 'primary_care' && (isManager || ['nursing_supervisor', 'nurse'].includes(user.role));
+  const isManager = user.role === 'hospital_manager' || user.role === 'deputy_manager' || user.role === 'medical_director' || user.role === 'owner';
+  const showBeds = userFacility && userFacility.type !== 'primary_care' && (isManager || ['nursing_supervisor', 'nurse', 'owner'].includes(user.role));
   
   const activeReferralsAdmitted = referrals.filter(r => r.status === 'admitted' && r.receivingFacilityId === user.facilityId);
   const activeDirectAdmissions = directAdmissions.filter(a => a.facilityId === user.facilityId && a.status !== 'discharged');
@@ -373,7 +373,7 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {(user.role === 'nurse' || user.role === 'nursing_supervisor' || user.role === 'clinician' || user.role === 'head_of_department') && recentShiftLogs.length > 0 && (
+      {(user.role === 'nurse' || user.role === 'nursing_supervisor' || user.role === 'consultant' || user.role === 'specialist' || user.role === 'resident' || user.role === 'head_of_department' || user.role === 'owner') && recentShiftLogs.length > 0 && (
         <Card className="mt-6 border border-slate-200 dark:border-slate-800 shadow-sm">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3">
             <CardTitle className="text-sm font-bold uppercase text-slate-700 dark:text-slate-300 flex items-center gap-2">

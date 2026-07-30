@@ -5,10 +5,12 @@ export type Role =
   | 'hospital_manager'
   | 'deputy_manager'
   | 'head_of_department'
-  | 'clinician'
+  | 'consultant'
+  | 'specialist'
+  | 'resident'
   | 'nursing_supervisor'
   | 'nurse'
-  | 'er_room';
+  | 'er_official';
 
 export type FacilityType = 'primary_care' | 'district_hospital' | 'tertiary_care' | 'external_contracted';
 export type BedType = 'ICU' | 'CCU' | 'PICU' | 'Ward';
@@ -33,6 +35,8 @@ export interface User {
   facilityId?: string;
   department?: string;
   verified?: boolean;
+  profileCompleted?: boolean;
+  monthlySchedule?: string;
 }
 
 export type ReferralPriority = 'routine' | 'urgent' | 'emergency';

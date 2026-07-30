@@ -22,7 +22,8 @@ export const ReferralsPage: React.FC = () => {
       r.referringFacilityId === user.facilityId || 
       r.receivingFacilityId === user.facilityId || 
       (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user.facilityId || '')) || 
-      user.role === 'system_admin'
+      user.role === 'system_admin' ||
+      user.role === 'owner'
     );
     return {
       active: myReferrals.filter(r => !['admitted', 'discharged', 'rejected'].includes(r.status)).length,
@@ -37,7 +38,8 @@ export const ReferralsPage: React.FC = () => {
       r.referringFacilityId === user.facilityId || 
       r.receivingFacilityId === user.facilityId || 
       (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user.facilityId || '')) || 
-      user.role === 'system_admin'
+      user.role === 'system_admin' ||
+      user.role === 'owner'
     );
     
     const headers = ['ID', 'Patient Name', 'Hospital ID', 'Priority', 'Status', 'Referring Facility', 'Receiving Facility', 'Created At'];

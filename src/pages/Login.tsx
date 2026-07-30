@@ -1,37 +1,32 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { MOCK_USERS, FACILITIES } from '../lib/mock-data';
+
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Shield, Mail } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const { login } = useAuth();
+  const { loginWithEmail, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   
-  // For demo: direct user selection
-  const [selectedUser, setSelectedUser] = useState(MOCK_USERS[0].id);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(selectedUser);
-  };
-
-  const handleEmailLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const found = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (found) {
-      login(found.id);
-    } else {
-      alert("User not found. Please enter a valid user email or select from the dropdown.");
+    try {
+      await loginWithEmail(email, password);
+    } catch (err: any) {
+      alert("Login failed: " + err.message);
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Simulate Google Login for Owner
-    login('u0'); 
+  const handleGoogleLogin = async () => {
+    try {
+      await loginWithGoogle();
+    } catch (err: any) {
+      alert("Google login failed: " + err.message);
+    }
   };
 
   return (
@@ -107,31 +102,7 @@ export const Login: React.FC = () => {
               </Button>
             </form>
 
-            <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
-              <form onSubmit={handleLogin}>
-                <label htmlFor="user" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">
-                  Demo Fast Login (Select Role)
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    id="user"
-                    className="flex-1 block w-full pl-3 pr-10 py-2 text-xs border-slate-300 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-blue-500 border rounded"
-                    value={selectedUser}
-                    onChange={(e) => setSelectedUser(e.target.value)}
-                  >
-                    {MOCK_USERS.map((user) => {
-                      const facility = FACILITIES.find(f => f.id === user.facilityId);
-                      return (
-                        <option key={user.id} value={user.id}>
-                          {user.name} - {user.role.replace(/_/g, ' ')} {facility ? `(${facility.name})` : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <Button type="submit" variant="secondary" className="px-6">Go</Button>
-                </div>
-              </form>
-            </div>
+
           </CardContent>
         </Card>
       </div>
