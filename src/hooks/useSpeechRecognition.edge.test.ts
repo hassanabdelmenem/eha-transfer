@@ -47,7 +47,7 @@ describe('useSpeechRecognition edge behaviors', () => {
 
     // verify start was called and recording is true
     expect(recog.start).toHaveBeenCalled();
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('true');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('true');
 
     // simulate an onresult with a final transcript
     const event = {
@@ -64,7 +64,7 @@ describe('useSpeechRecognition edge behaviors', () => {
     const errorLog = vi.fn();
     (global as any).console = { ...console, error: errorLog } as any;
     act(() => { recog.onerror && recog.onerror({ error: 'boom' }); });
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('false');
     expect(errorLog).toHaveBeenCalled();
     expect(String(errorLog.mock.calls[0][0])).toContain('Speech recognition error');
 
@@ -72,10 +72,10 @@ describe('useSpeechRecognition edge behaviors', () => {
     await act(async () => {
       container.firstChild && (container.firstChild as HTMLElement).click();
     });
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('true');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('true');
 
     act(() => { recog.onend && recog.onend(); });
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('false');
 
     delete (global as any).SpeechRecognition;
     delete (global as any).__lastRecog;
@@ -147,13 +147,13 @@ describe('useSpeechRecognition edge behaviors', () => {
 
     // try toggling — should be safe and not set recording
     await act(async () => { (container.firstChild as HTMLElement).click(); });
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('false');
   });
 
   it('isSupported is false when no SpeechRecognition exists', async () => {
     delete (global as any).SpeechRecognition;
     const onTranscript = vi.fn();
     const { container } = render(React.createElement(TestComp, { onTranscript }));
-    expect(container.firstChild?.getAttribute('data-supported')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-supported')).toBe('false');
   });
 });

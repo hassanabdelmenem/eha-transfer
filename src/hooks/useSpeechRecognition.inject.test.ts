@@ -18,11 +18,11 @@ describe('useSpeechRecognition injection tests', () => {
 
     const { container } = render(React.createElement(TestComp, { onTranscript, getFactory: factory }));
 
-    expect(container.firstChild?.getAttribute('data-supported')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-supported')).toBe('false');
 
     // toggling should not throw and should not set recording
     await act(async () => { container.firstChild && (container.firstChild as HTMLElement).click(); });
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('false');
     // ensure no errors were logged when toggling without a recognition instance
     expect(errorLog).not.toHaveBeenCalled();
 
@@ -50,7 +50,7 @@ describe('useSpeechRecognition injection tests', () => {
     // start via toggle
     await act(async () => { container.firstChild && (container.firstChild as HTMLElement).click(); });
     expect(recog.start).toHaveBeenCalled();
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('true');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('true');
 
     // simulate onresult
     act(() => { recog.onresult && recog.onresult({ resultIndex: 0, results: [{ isFinal: true, 0: { transcript: 'ok' } }] }); });
@@ -60,17 +60,17 @@ describe('useSpeechRecognition injection tests', () => {
     const errorLog = vi.fn();
     (global as any).console = { ...console, error: errorLog } as any;
     act(() => { recog.onerror && recog.onerror({ error: 'boom' }); });
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('false');
     expect(errorLog).toHaveBeenCalled();
     (global as any).console = console;
 
     // start again and then stop via toggle
     await act(async () => { container.firstChild && (container.firstChild as HTMLElement).click(); });
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('true');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('true');
 
     await act(async () => { container.firstChild && (container.firstChild as HTMLElement).click(); });
     expect(recog.stop).toHaveBeenCalled();
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('false');
   });
 
   it('clears recognition when factory changes from constructor to null', async () => {
@@ -88,12 +88,12 @@ describe('useSpeechRecognition injection tests', () => {
     const factoryA = () => MockCtor as any;
     const factoryB = () => null;
     const { rerender, container } = render(React.createElement(TestComp, { onTranscript, getFactory: factoryA }));
-    expect(container.firstChild?.getAttribute('data-supported')).toBe('true');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-supported')).toBe('true');
 
     // now rerender with factory returning null and assert recognition is cleared
     rerender(React.createElement(TestComp, { onTranscript, getFactory: factoryB }));
     // microtask tick
     await act(async () => { await Promise.resolve(); });
-    expect(container.firstChild?.getAttribute('data-supported')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-supported')).toBe('false');
   });
 });

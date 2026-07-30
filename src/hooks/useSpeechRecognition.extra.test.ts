@@ -28,20 +28,20 @@ describe('useSpeechRecognition extra behaviors', () => {
 
     // start recording
     await act(async () => { container.firstChild && (container.firstChild as HTMLElement).click(); });
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('true');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('true');
 
     // now remove recognition but leave recording flag true
     rerender(React.createElement(TestComp, { onTranscript, getFactory: factoryB }));
     await act(async () => { await Promise.resolve(); });
 
-    expect(container.firstChild?.getAttribute('data-supported')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-supported')).toBe('false');
     // toggling should attempt to stop but not throw; recording should be cleared
     const errorLog = vi.fn();
     (global as any).console = { ...console, error: errorLog } as any;
 
     await act(async () => { container.firstChild && (container.firstChild as HTMLElement).click(); });
     expect(errorLog).not.toHaveBeenCalled();
-    expect(container.firstChild?.getAttribute('data-recording')).toBe('false');
+    expect((container.firstChild as HTMLElement | null)?.getAttribute('data-recording')).toBe('false');
 
     (global as any).console = console;
   });
