@@ -2,11 +2,9 @@ name: CI
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [ "main", "master", "sevensn" ]
   pull_request:
-    branches:
-      - '**'
+    branches: [ "main", "master", "sevensn" ]
 
 jobs:
   test:
@@ -28,8 +26,14 @@ jobs:
       - name: Lint (type check)
         run: npm run lint
 
-      - name: Run tests
-        run: npm test
+      - name: Run Unit & Component Tests (Vitest)
+        run: npm run test
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run E2E Tests (Playwright)
+        run: npm run test:e2e
 
       - name: Coverage
         run: npm run test:coverage
