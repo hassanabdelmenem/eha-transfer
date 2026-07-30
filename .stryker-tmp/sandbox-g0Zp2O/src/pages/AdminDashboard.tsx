@@ -1,0 +1,160 @@
+// @ts-nocheck
+import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { BedType } from '../types';
+
+export const AdminDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const { referrals, facilities } = useData();
+
+  if (!user || (user.role !== 'system_admin' && user.role !== 'owner')) {
+    return <div className="p-8">Access Denied. Admin privileges required.</div>;
+  }
+
+  // Calculate waitlists (pending/approved but not admitted/rejected) for each bed type in each facility
+  const getWaitlist = (facilityId: string, bedType: BedType) => {
+    return referrals.filter(r => 
+      r.receivingFacilityId === facilityId && 
+      r.requiredBedType === bedType && 
+      !['admitted', 'discharged', 'rejected'].includes(r.status)
+    );
+  };
+
+  const calculateTotalCapacity = () => {
+    const totals: Record<BedType, { total: number; occupied: number; available: number }> = {
+      ICU: { total: 0, occupied: 0, available: 0 },
+      CCU: { total: 0, occupied: 0, available: 0 },
+      PICU: { total: 0, occupied: 0, available: 0 },
+      Ward: { total: 0, occupied: 0, available: 0 }
+    };
+
+    facilities.filter(f => f.type !== 'primary_care').forEach(facility => {
+      (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).forEach(bed => {
+        const cap = facility.capacity[bed];
+        if (cap) {
+          totals[bed].total += cap.total;
+          totals[bed].occupied += cap.occupied;
+          totals[bed].available += (cap.total - cap.occupied);
+        }
+      });
+    });
+
+    return totals;
+  };
+
+  const globalTotals = calculateTotalCapacity();
+
+  return (
+    <div className="space-y-6 pb-16 h-full overflow-auto">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">System Administrator Dashboard</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Global view of all facilities, bed capacities, and active waitlists.</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => (
+          <Card key={bed} className="border border-slate-200 dark:border-slate-800 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wider">{bed} Total Available</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end gap-2">
+                <span className={`text-3xl font-bold ${globalTotals[bed].available > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {globalTotals[bed].available}
+                </span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 mb-1">/ {globalTotals[bed].total}</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {facilities.filter(f => f.type !== 'primary_care').map(facility => (
+            <Card key={facility.id} className="overflow-hidden">
+              <CardHeader className="bg-slate-900 text-white pb-4">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-white text-sm">{facility.name}</CardTitle>
+                  <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded uppercase">{facility.type.replace('_', ' ')}</span>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-slate-50 dark:bg-slate-950 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-slate-800">
+                      <tr>
+                        <th className="px-4 py-3">Bed Type</th>
+                        <th className="px-4 py-3 text-center">Capacity</th>
+                        <th className="px-4 py-3 text-center">Occupied</th>
+                        <th className="px-4 py-3 text-center">Available</th>
+                        <th className="px-4 py-3 text-right">Waitlist (Active)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => {
+                        const cap = facility.capacity[bed];
+                        if (!cap || cap.total === 0) return null;
+                        const available = cap.total - cap.occupied;
+                        const waitlist = getWaitlist(facility.id, bed);
+                        const isFull = available <= 0;
+                        const isCritical = waitlist.length > available;
+    
+                        return (
+                          <tr key={bed} className="hover:bg-slate-50 dark:bg-slate-950">
+                            <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300">{bed}</td>
+                            <td className="px-4 py-3 text-center text-slate-600">{cap.total}</td>
+                            <td className="px-4 py-3 text-center text-slate-600">{cap.occupied}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isFull ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                {available}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isCritical ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                                {waitlist.length} Waiting
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Waitlist details for this facility */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
+                  <h4 className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-2">Waitlist Details by Department</h4>
+                  {facility.departments.map(dept => {
+                     const deptWaitlist = referrals.filter(r => 
+                       r.receivingFacilityId === facility.id && 
+                       r.receivingDepartments.includes(dept) &&
+                       !['admitted', 'discharged', 'rejected'].includes(r.status)
+                     );
+                     if (deptWaitlist.length === 0) return null;
+  
+                     return (
+                       <div key={dept} className="flex justify-between items-center py-1 text-xs border-b border-slate-200 dark:border-slate-800 last:border-0">
+                         <span className="font-semibold text-slate-700 dark:text-slate-300">{dept}</span>
+                         <div className="flex gap-2">
+                           {deptWaitlist.map(r => (
+                              <a 
+                                key={r.id} 
+                                href={`/referrals/${r.id}`}
+                                title={`${r.priority.toUpperCase()} - ${r.requiredBedType}`} 
+                                className={`w-3 h-3 rounded-full hover:opacity-80 transition-opacity cursor-pointer inline-block ${r.priority === 'emergency' ? 'bg-red-500' : r.priority === 'urgent' ? 'bg-amber-500' : 'bg-blue-500'}`} 
+                              />
+                           ))}
+                         </div>
+                       </div>
+                     );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+      </div>
+    </div>
+  );
+};
