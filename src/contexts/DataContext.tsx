@@ -48,53 +48,9 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Initial Mock Referral for Demo
-const INITIAL_REFERRALS: Referral[] = [
-  {
-    id: 'r-1',
-    patientId: 'p-1',
-    patientData: {
-      id: 'p-1',
-      hospitalId: 'ISM-109348',
-      nationalId: '27601011234567',
-      name: 'Mohamed Ali',
-      age: 45,
-      gender: 'male',
-      bloodType: 'O+',
-      vitalSigns: { hr: 110, bp: '150/90', spo2: 94, temp: 37.8, rr: 22, timestamp: new Date().toISOString() },
-      complaint: 'Severe chest pain radiating to left arm for 2 hours.',
-      presentation: 'Patient is diaphoretic, anxious, clutching chest.',
-      pastHistory: 'Hypertension, Dyslipidemia. No prior surgeries.',
-      medications: 'Aspirin 300mg, Nitroglycerin sublingual x1 given at primary unit.',
-      clinicalNotes: 'Patient presented with severe chest pain. Suspicion of STEMI. Needs urgent cardiology consult and likely PCI.',
-      diagnosis: 'Acute Myocardial Infarction',
-      investigations: 'ECG shows ST elevation in V1-V4. Troponin pending.',
-      attachments: []
-    },
-    referringFacilityId: 'f4', // Fayed
-    referringUserId: 'u2', // Dr Sara
-    receivingFacilityId: 'f1', // Ismailia General
-    receivingDepartments: ['Cardiology'],
-    requiredBedType: 'CCU',
-    priority: 'emergency',
-    status: 'pending',
-    reasonForReferral: 'Requires urgent PCI and CCU admission.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(), // 30 mins ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-    deptComments: [],
-    statusHistory: [
-      {
-        status: 'pending',
-        timestamp: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-        userId: 'u2',
-      }
-    ]
-  }
-];
-
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
-  const [referrals, setReferrals] = useState<Referral[]>(INITIAL_REFERRALS);
+  const [referrals, setReferrals] = useState<Referral[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [facilities, setFacilities] = useState<Facility[]>(INITIAL_FACILITIES);
   const [directAdmissions, setDirectAdmissions] = useState<DirectAdmission[]>([]);
@@ -539,7 +495,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const createNotification = (params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, targetRoles?: Role[], departments?: string[] }) => {
     // Notify relevant users
-    const relevantUsers = MOCK_USERS.filter(u => {
+    const relevantUsers = users.filter(u => {
        if (u.role === 'owner' || u.role === 'system_admin') return true; // Admins get everything (or we can filter)
        if (u.facilityId !== params.facilityId) return false;
        
