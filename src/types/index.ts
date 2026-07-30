@@ -8,9 +8,11 @@ export type Role =
   | 'consultant'
   | 'specialist'
   | 'resident'
+  | 'clinician'
   | 'nursing_supervisor'
   | 'nurse'
-  | 'er_official';
+  | 'er_official'
+  | 'er_room';
 
 export type FacilityType = 'primary_care' | 'district_hospital' | 'tertiary_care' | 'external_contracted';
 export type BedType = 'ICU' | 'CCU' | 'PICU' | 'Ward';

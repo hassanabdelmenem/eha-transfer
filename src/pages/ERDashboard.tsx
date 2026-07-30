@@ -139,7 +139,7 @@ export const ERDashboard: React.FC = () => {
                           {isIncoming ? getFacilityName(referral.referringFacilityId) : getFacilityName(referral.receivingFacilityId)}
                         </td>
                         <td className="px-4 py-3">
-                           <Badge variant={referral.status === 'emergency' ? 'danger' : 'warning'} className="capitalize">{referral.status.replace('_', ' ')}</Badge>
+                           <Badge variant={referral.priority === 'emergency' ? 'danger' : 'warning'} className="capitalize">{referral.status.replace('_', ' ')}</Badge>
                         </td>
                         <td className="px-4 py-3 text-slate-500">
                           {format(new Date(referral.updatedAt), 'MMM d, HH:mm')}

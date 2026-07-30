@@ -5,6 +5,7 @@ import { signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, signIn
 
 interface AuthContextType {
   user: User | null;
+  login?: (id: string) => void; // legacy test helper
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (e: string, p: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -66,17 +67,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async () => {
     await signInWithPopup(auth, googleProvider);
   };
-
+  
   const loginWithEmail = async (e: string, p: string) => {
     await signInWithEmailAndPassword(auth, e, p);
   };
 
+  // Legacy/test helper: simple login by id (used in tests)
+  const login = (id: string) => {
+    const mockUser: User = {
+      id,
+      name: id,
+      email: `${id}@example.com`,
+      role: 'resident'
+    } as User;
+    setUser(mockUser);
+    try {
+      localStorage.setItem('auth_user', JSON.stringify(mockUser));
+      localStorage.setItem('eha_auth_user_v2', JSON.stringify(mockUser));
+    } catch (err) {
+      // ignore
+    }
+  };
+  
   const logout = async () => {
     await firebaseSignOut(auth);
     setUser(null);
     setMfaVerifiedAt(null);
     localStorage.removeItem('eha_auth_user_v2');
     localStorage.removeItem('eha_mfa_v2');
+    // Backward compatible keys
+    localStorage.removeItem('auth_user');
+    localStorage.removeItem('mfa_timestamp');
   };
 
   const hasRole = (roles: User['role'][]) => {
@@ -89,7 +110,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (pin === '1234' || pin === '0000') {
       const now = Date.now();
       setMfaVerifiedAt(now);
-      localStorage.setItem('eha_mfa_v2', now.toString());
+      try {
+        localStorage.setItem('eha_mfa_v2', now.toString());
+        localStorage.setItem('mfa_timestamp', now.toString()); // backward compatible
+      } catch (err) {
+        // ignore
+      }
       return true;
     }
     return false;
@@ -111,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loginWithGoogle, loginWithEmail, logout, hasRole, verifyMFA, mfaVerifiedAt, updateUserProfile }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, loginWithEmail, logout, hasRole, verifyMFA, mfaVerifiedAt, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );
