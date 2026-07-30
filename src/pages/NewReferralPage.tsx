@@ -86,7 +86,7 @@ export const NewReferralPage: React.FC = () => {
 
   if (!user) return null;
 
-  const isDoctor = ['clinician', 'head_of_department', 'medical_director'].includes(user.role);
+  const isDoctor = ['consultant', 'specialist', 'resident', 'head_of_department', 'medical_director', 'owner'].includes(user.role);
   if (!isDoctor) {
     return (
       <div className="p-8 text-center text-slate-500 dark:text-slate-400">

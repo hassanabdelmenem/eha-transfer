@@ -13,20 +13,27 @@ export const FacilitySettingsPage: React.FC = () => {
   
   const [newDepartment, setNewDepartment] = useState('');
 
-  if (!user || !['hospital_manager', 'deputy_manager', 'medical_director'].includes(user.role)) {
+  const hasAccess = user && ['hospital_manager', 'deputy_manager', 'medical_director', 'owner', 'system_admin', 'head_of_department'].includes(user.role);
+  if (!hasAccess) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Access Denied. Leadership privileges required.</div>;
   }
 
+  const isGlobalAdmin = user.role === 'owner' || user.role === 'system_admin';
   const facility = facilities.find(f => f.id === user.facilityId);
-  if (!facility) return null;
+  
+  if (!facility && !isGlobalAdmin) return null;
 
-  const facilityUsers = users.filter(u => u.facilityId === facility.id);
+  let facilityUsers = isGlobalAdmin ? users : users.filter(u => u.facilityId === facility?.id);
+  if (user.role === 'head_of_department') {
+    facilityUsers = facilityUsers.filter(u => u.department === user.department);
+  }
+  
   const unverifiedUsers = facilityUsers.filter(u => u.verified === false);
   const verifiedUsers = facilityUsers.filter(u => u.verified !== false && u.id !== user.id);
 
   const handleAddDepartment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newDepartment.trim() && !facility.departments.includes(newDepartment.trim())) {
+    if (facility && newDepartment.trim() && !facility.departments.includes(newDepartment.trim())) {
       addFacilityDepartment(facility.id, newDepartment.trim());
       setNewDepartment('');
     }
@@ -35,12 +42,15 @@ export const FacilitySettingsPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Facility Settings</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage departments, staff roles, and verify new users for {facility.name}.</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{isGlobalAdmin ? 'Global User Management' : 'Facility Settings'}</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+          {isGlobalAdmin ? 'Manage staff roles and verify all users across the network.' : `Manage departments, staff roles, and verify new users for ${facility?.name}.`}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Departments Management */}
+        {facility && !['head_of_department'].includes(user.role) && (
         <Card className="border border-slate-200 dark:border-slate-800">
           <CardHeader>
             <CardTitle className="text-lg">Medical Departments</CardTitle>
@@ -77,6 +87,7 @@ export const FacilitySettingsPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* User Verification */}
         <Card className="border border-slate-200 dark:border-slate-800">
@@ -144,25 +155,40 @@ export const FacilitySettingsPage: React.FC = () => {
                        <select 
                          className="text-xs border border-slate-300 rounded p-1 bg-white dark:bg-slate-900 outline-none"
                          value={u.role}
+                         disabled={user.role !== 'owner' && u.role === 'owner'}
                          onChange={(e) => updateUserRole(u.id, e.target.value as Role, u.department)}
                        >
-                         <option value="clinician">Clinician</option>
+                         <option value="consultant">Consultant</option>
+                         <option value="specialist">Specialist</option>
+                         <option value="resident">Resident</option>
                          <option value="nurse">Nurse</option>
                          <option value="nursing_supervisor">Nursing Supervisor</option>
-                         <option value="head_of_department">Head of Department</option>
-                         <option value="deputy_manager">Deputy Manager</option>
-                         <option value="medical_director">Medical Director</option>
+                         <option value="er_official">ER Room Official</option>
+                         {!['head_of_department'].includes(user.role) && (
+                           <>
+                             <option value="head_of_department">Head of Department</option>
+                             <option value="hospital_manager">Hospital Manager</option>
+                             <option value="deputy_manager">Deputy Manager</option>
+                             <option value="medical_director">Medical Director</option>
+                           </>
+                         )}
+                         {(user.role === 'owner' || user.role === 'system_admin') && (
+                           <option value="system_admin">System Admin</option>
+                         )}
+                         {user.role === 'owner' && (
+                           <option value="owner">Owner</option>
+                         )}
                        </select>
                     </td>
                     <td className="px-4 py-3">
-                       {['clinician', 'head_of_department', 'nurse', 'nursing_supervisor'].includes(u.role) ? (
+                       {['consultant', 'specialist', 'resident', 'head_of_department', 'nurse', 'nursing_supervisor'].includes(u.role) ? (
                          <select 
                            className="text-xs border border-slate-300 rounded p-1 bg-white dark:bg-slate-900 outline-none"
                            value={u.department || ''}
                            onChange={(e) => updateUserRole(u.id, u.role, e.target.value)}
                          >
                            <option value="">No Department</option>
-                           {facility.departments.map(d => (
+                           {(isGlobalAdmin ? facilities.find(f => f.id === u.facilityId)?.departments || [] : facility?.departments || []).map(d => (
                              <option key={d} value={d}>{d}</option>
                            ))}
                          </select>

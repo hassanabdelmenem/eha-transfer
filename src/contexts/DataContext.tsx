@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { MOCK_USERS, FACILITIES as INITIAL_FACILITIES } from '../lib/mock-data';
+import { FACILITIES as INITIAL_FACILITIES } from '../lib/mock-data';
 import { useAuth } from './AuthContext';
 import { saveOfflineReferral, getOfflineReferrals, deleteOfflineReferral } from '../lib/db';
 
@@ -30,6 +30,7 @@ interface DataContextType {
   addShiftLog: (log: Omit<ShiftLog, 'id' | 'timestamp'>) => void;
   addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => void;
   updateReferralStatus: (id: string, status: Referral['status'], notes?: string) => void;
+  overrideReferralDestination: (id: string, newFacilityId: string) => void;
   addDeptComment: (id: string, status: DeptApprovalStatus, comment: string) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
@@ -48,9 +49,11 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+const INITIAL_REFERRALS: Referral[] = [];
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
-  const [referrals, setReferrals] = useState<Referral[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [referrals, setReferrals] = useState<Referral[]>(INITIAL_REFERRALS);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [facilities, setFacilities] = useState<Facility[]>(INITIAL_FACILITIES);
   const [directAdmissions, setDirectAdmissions] = useState<DirectAdmission[]>([]);
@@ -68,7 +71,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Add them to the state
         setReferrals(prev => {
           const newReferrals = [...offlineReferrals, ...prev];
-          localStorage.setItem('app_referrals', JSON.stringify(newReferrals));
+          localStorage.setItem('eha_referrals_v2', JSON.stringify(newReferrals));
           return newReferrals;
         });
         
@@ -136,55 +139,55 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load from local storage if exists
   useEffect(() => {
-    const savedUsers = localStorage.getItem('app_users');
+    const savedUsers = localStorage.getItem('eha_users_v2');
     if (savedUsers) {
       setUsers(JSON.parse(savedUsers));
     }
-    const savedReferrals = localStorage.getItem('app_referrals');
+    const savedReferrals = localStorage.getItem('eha_referrals_v2');
     if (savedReferrals) {
       setReferrals(JSON.parse(savedReferrals));
     }
-    const savedAdmissions = localStorage.getItem('app_admissions');
+    const savedAdmissions = localStorage.getItem('eha_admissions_v2');
     if (savedAdmissions) {
       setDirectAdmissions(JSON.parse(savedAdmissions));
     }
-    const savedFacilities = localStorage.getItem('app_facilities');
+    const savedFacilities = localStorage.getItem('eha_facilities_v2');
     if (savedFacilities) {
       setFacilities(JSON.parse(savedFacilities));
     }
-    const savedShifts = localStorage.getItem('app_shifts');
+    const savedShifts = localStorage.getItem('eha_shifts_v2');
     if (savedShifts) {
       setShiftAssignments(JSON.parse(savedShifts));
     }
-    const savedShiftLogs = localStorage.getItem('app_shift_logs');
+    const savedShiftLogs = localStorage.getItem('eha_shift_logs_v2');
     if (savedShiftLogs) {
       setShiftLogs(JSON.parse(savedShiftLogs));
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('app_users', JSON.stringify(users));
+    localStorage.setItem('eha_users_v2', JSON.stringify(users));
   }, [users]);
 
   // Save to local storage
   useEffect(() => {
-    localStorage.setItem('app_referrals', JSON.stringify(referrals));
+    localStorage.setItem('eha_referrals_v2', JSON.stringify(referrals));
   }, [referrals]);
 
   useEffect(() => {
-    localStorage.setItem('app_admissions', JSON.stringify(directAdmissions));
+    localStorage.setItem('eha_admissions_v2', JSON.stringify(directAdmissions));
   }, [directAdmissions]);
 
   useEffect(() => {
-    localStorage.setItem('app_facilities', JSON.stringify(facilities));
+    localStorage.setItem('eha_facilities_v2', JSON.stringify(facilities));
   }, [facilities]);
 
   useEffect(() => {
-    localStorage.setItem('app_shifts', JSON.stringify(shiftAssignments));
+    localStorage.setItem('eha_shifts_v2', JSON.stringify(shiftAssignments));
   }, [shiftAssignments]);
 
   useEffect(() => {
-    localStorage.setItem('app_shift_logs', JSON.stringify(shiftLogs));
+    localStorage.setItem('eha_shift_logs_v2', JSON.stringify(shiftLogs));
   }, [shiftLogs]);
 
   const updateUserVerified = (id: string, verified: boolean) => {
@@ -436,7 +439,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             type: status === 'rejected' ? 'warning' : 'success',
             referralId: r.id,
             facilityId: r.referringFacilityId,
-            targetRoles: ['clinician', 'medical_director']
+            targetRoles: ['consultant', 'specialist', 'resident', 'medical_director', 'er_official']
           });
 
           // Notify receiving facility members if approved or arrived
@@ -456,6 +459,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return r;
       });
     });
+  };
+
+  const overrideReferralDestination = (id: string, newFacilityId: string) => {
+    if (!user) return;
+    const now = new Date().toISOString();
+    setReferrals(prev => prev.map(r => {
+      if (r.id === id) {
+        return {
+          ...r,
+          receivingFacilityId: newFacilityId,
+          updatedAt: now,
+          statusHistory: [...r.statusHistory, { 
+            status: r.status, 
+            timestamp: now, 
+            userId: user.id, 
+            notes: `Destination manually overridden to ${facilities.find(f => f.id === newFacilityId)?.name}` 
+          }]
+        };
+      }
+      return r;
+    }));
   };
 
   const addDeptComment = (referralId: string, status: DeptApprovalStatus, comment: string) => {
@@ -500,7 +524,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
        if (u.facilityId !== params.facilityId) return false;
        
        let isDelegatedTarget = false;
-       if (params.targetRoles?.includes('head_of_department') && u.role === 'clinician') {
+       if (params.targetRoles?.includes('head_of_department') && ['consultant', 'specialist', 'resident'].includes(u.role)) {
           const assignment = shiftAssignments.find(s => 
             s.facilityId === params.facilityId && 
             s.assignedUserId === u.id && 
@@ -550,6 +574,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addShiftLog,
       addReferral, 
       updateReferralStatus, 
+      overrideReferralDestination,
       addDeptComment, 
       markNotificationRead,
       markAllNotificationsRead,

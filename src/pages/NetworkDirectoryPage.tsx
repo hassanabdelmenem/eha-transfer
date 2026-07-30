@@ -13,7 +13,7 @@ export const NetworkDirectoryPage: React.FC = () => {
   if (!user) return null;
 
   const isAdmin = user.role === 'owner' || user.role === 'system_admin';
-  const isLeadership = ['hospital_manager', 'deputy_manager', 'medical_director'].includes(user.role);
+  const isLeadership = ['hospital_manager', 'deputy_manager', 'medical_director', 'owner'].includes(user.role);
   const canViewNetwork = isAdmin || isLeadership;
 
   const allowedExternalUsers = new Set<string>();
@@ -55,18 +55,18 @@ export const NetworkDirectoryPage: React.FC = () => {
     const isOwnFacility = u.facilityId === user.facilityId || isAdmin;
     
     if (isAdmin) {
-       return ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'clinician'].includes(u.role);
+       return ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'consultant', 'specialist', 'resident'].includes(u.role);
     }
     
     if (canViewNetwork) {
        const allowedRoles = isOwnFacility 
-           ? ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'clinician']
+           ? ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'consultant', 'specialist', 'resident']
            : ['hospital_manager', 'deputy_manager', 'medical_director'];
        if (allowedRoles.includes(u.role)) return true;
        return allowedExternalUsers.has(u.id);
     } else {
        if (isOwnFacility) {
-          return ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'clinician'].includes(u.role);
+          return ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'consultant', 'specialist', 'resident'].includes(u.role);
        } else {
           return allowedExternalUsers.has(u.id);
        }
@@ -147,7 +147,7 @@ export const NetworkDirectoryPage: React.FC = () => {
                       );
                     }).map(u => {
                       let roleDisplay = u.role.replace(/_/g, ' ');
-                      if (u.role === 'head_of_department' || u.role === 'clinician') {
+                      if (u.role === 'head_of_department' || ['consultant', 'specialist', 'resident'].includes(u.role)) {
                          roleDisplay += ` (${u.department})`;
                       }
                       
@@ -155,26 +155,36 @@ export const NetworkDirectoryPage: React.FC = () => {
                       if (u.role === 'head_of_department') {
                          const assignment = (shiftAssignments || []).find(s => s.facilityId === facility.id && s.department === u.department);
                          isResponsibleNow = !assignment || !assignment.assignedUserId;
-                      } else if (u.role === 'clinician') {
+                      } else if (['consultant', 'specialist', 'resident'].includes(u.role)) {
                          const assignment = (shiftAssignments || []).find(s => s.facilityId === facility.id && s.department === u.department);
                          isResponsibleNow = assignment?.assignedUserId === u.id;
                       } else {
                          isResponsibleNow = true;
                       }
 
-                      if (u.role === 'clinician' && !isResponsibleNow) return null;
+                      if (['consultant', 'specialist', 'resident'].includes(u.role) && !isResponsibleNow) return null;
 
                       return (
-                        <tr key={u.id} className="hover:bg-slate-50 dark:bg-slate-950">
-                          <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 capitalize">{roleDisplay}</td>
-                          <td className="px-4 py-3 text-slate-800">{u.name}</td>
-                          <td className="px-4 py-3 font-mono text-slate-600">{u.phoneNumber || 'N/A'}</td>
-                          <td className="px-4 py-3">
-                            {isResponsibleNow ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">ACTIVE ON CALL</span>
-                            ) : null}
-                          </td>
-                        </tr>
+                        <React.Fragment key={u.id}>
+                          <tr className="hover:bg-slate-50 dark:bg-slate-950">
+                            <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 capitalize">{roleDisplay}</td>
+                            <td className="px-4 py-3 text-slate-800">{u.name}</td>
+                            <td className="px-4 py-3 font-mono text-slate-600">{u.phoneNumber || 'N/A'}</td>
+                            <td className="px-4 py-3">
+                              {isResponsibleNow ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">ACTIVE ON CALL</span>
+                              ) : null}
+                            </td>
+                          </tr>
+                          {u.monthlySchedule && (
+                            <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
+                              <td colSpan={4} className="px-4 py-2 text-xs text-slate-600 dark:text-slate-400">
+                                <span className="font-bold text-[9px] uppercase mr-2 text-slate-500">Monthly Schedule:</span>
+                                {u.monthlySchedule}
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       );
                     })}
                     {users.filter(u => isUserAllowed(u, facility.id)).length === 0 && (

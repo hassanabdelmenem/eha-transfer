@@ -15,7 +15,7 @@ export const DepartmentPage: React.FC = () => {
   const [targetDepartment, setTargetDepartment] = useState('');
   const [transferNotes, setTransferNotes] = useState('');
 
-  if (!user || user.role !== 'head_of_department') {
+  if (!user || (user.role !== 'head_of_department' && user.role !== 'owner')) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Access Denied. Head of Department privileges required.</div>;
   }
 
@@ -73,7 +73,7 @@ export const DepartmentPage: React.FC = () => {
   const availableDoctors = users.filter(u => 
     u.facilityId === facilityId && 
     u.department === department && 
-    u.role === 'clinician'
+    ['consultant', 'specialist'].includes(u.role)
   );
 
   return (

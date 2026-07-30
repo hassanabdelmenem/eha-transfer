@@ -11,7 +11,7 @@ export const BedManagementPage: React.FC = () => {
   const { user } = useAuth();
   const { facilities, updateFacilityCapacity } = useData();
 
-  if (!user || !['nurse', 'nursing_supervisor', 'head_of_department', 'er_room'].includes(user.role)) {
+  if (!user || !['nurse', 'nursing_supervisor', 'head_of_department', 'er_room', 'owner'].includes(user.role)) {
     return <div className="p-8 text-center text-slate-500">Access Denied. Nursing staff privileges required.</div>;
   }
 

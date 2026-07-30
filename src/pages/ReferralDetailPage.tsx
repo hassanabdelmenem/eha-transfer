@@ -18,7 +18,7 @@ import { ReferralStatus, DeptApprovalStatus } from '../types';
 export const ReferralDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { referrals, updateReferralStatus, addDeptComment, facilities, shiftAssignments, users } = useData();
+  const { referrals, updateReferralStatus, overrideReferralDestination, addDeptComment, facilities, shiftAssignments, users } = useData();
   const { user } = useAuth();
   
   const [notes, setNotes] = useState('');
@@ -26,6 +26,7 @@ export const ReferralDetailPage: React.FC = () => {
   const [deptCommentText, setDeptCommentText] = useState('');
   const [deptAction, setDeptAction] = useState<DeptApprovalStatus>('pending');
   const [copied, setCopied] = useState(false);
+  const [overrideFacilityId, setOverrideFacilityId] = useState('');
 
   const referral = referrals.find(r => r.id === id);
 
@@ -57,10 +58,10 @@ export const ReferralDetailPage: React.FC = () => {
     s.assignedUserId === user.id
   );
   
-  const isTargetDeptHead = isReceiving && (user.role === 'head_of_department' || (user.role === 'clinician' && isAssignedClinician)) && (referral.receivingDepartments.includes(user.department || '') || isAdmin);
-  const isFacilityManager = isReceiving && ['medical_director', 'hospital_manager', 'deputy_manager'].includes(user.role);
-  const isNurse = ['nurse', 'nursing_supervisor'].includes(user.role);
-  const isErRoom = user.role === 'er_room' && (user.facilityId === referral.referringFacilityId || user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && referral.candidateFacilityIds?.includes(user.facilityId || '')));
+  const isTargetDeptHead = isReceiving && (user.role === 'head_of_department' || user.role === 'owner' || (['consultant', 'specialist'].includes(user.role) && isAssignedClinician)) && (referral.receivingDepartments.includes(user.department || '') || isAdmin);
+  const isFacilityManager = isReceiving && ['medical_director', 'hospital_manager', 'deputy_manager', 'owner'].includes(user.role);
+  const isNurse = ['nurse', 'nursing_supervisor', 'owner'].includes(user.role);
+  const isErRoom = (user.role === 'er_room' || user.role === 'owner') && (user.facilityId === referral.referringFacilityId || user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && referral.candidateFacilityIds?.includes(user.facilityId || '')));
 
   
   const handleCopyId = () => {
@@ -79,6 +80,13 @@ export const ReferralDetailPage: React.FC = () => {
     addDeptComment(referral.id, deptAction, deptCommentText);
     setDeptCommentText('');
     setDeptAction('pending');
+  };
+
+  const handleDestinationOverride = () => {
+    if (overrideFacilityId) {
+      overrideReferralDestination(referral.id, overrideFacilityId);
+      setOverrideFacilityId('');
+    }
   };
 
   return (
@@ -376,8 +384,8 @@ export const ReferralDetailPage: React.FC = () => {
                 </div>
   
                 <div className="flex flex-col gap-2">
-                  {/* Manager Final Approval (Requires dept approval first, but allow if admin) */}
-                  {(isFacilityManager || isAdmin) && ['pending', 'dept_approved'].includes(referral.status) && (
+                  {/* Manager Final Approval */}
+                  {((isFacilityManager && referral.status === 'dept_approved') || (isAdmin && ['pending', 'dept_approved'].includes(referral.status))) && (
                     <>
                       <Button onClick={() => handleStatusUpdate('manager_approved')} className="w-full bg-blue-700 hover:bg-blue-800">
                         <CheckCircle className="h-4 w-4 mr-2" /> Manager Final Confirm
@@ -427,6 +435,32 @@ export const ReferralDetailPage: React.FC = () => {
                   )}
                   {referral.status === 'rejected' && (
                     <Badge variant="danger" className="w-full justify-center py-2 text-xs">Referral Rejected</Badge>
+                  )}
+                  
+                  {isAdmin && ['pending', 'dept_approved', 'manager_approved', 'accepted'].includes(referral.status) && (
+                    <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+                      <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Admin Override Destination</label>
+                      <div className="flex gap-2">
+                        <select 
+                          className="flex-1 rounded border border-slate-300 p-2 text-xs bg-white dark:bg-slate-900"
+                          value={overrideFacilityId}
+                          onChange={(e) => setOverrideFacilityId(e.target.value)}
+                        >
+                          <option value="">Select new destination...</option>
+                          {facilities.filter(f => f.id !== referral.referringFacilityId).map(f => (
+                            <option key={f.id} value={f.id}>{f.name} ({f.capacity[referral.requiredBedType]?.occupied || 0}/{f.capacity[referral.requiredBedType]?.total || 0} {referral.requiredBedType})</option>
+                          ))}
+                        </select>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          disabled={!overrideFacilityId}
+                          onClick={handleDestinationOverride}
+                        >
+                          Override
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </CardContent>
