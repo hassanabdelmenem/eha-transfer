@@ -11,7 +11,8 @@ export const DepartmentPage: React.FC = () => {
   const { user } = useAuth();
   const { shiftAssignments, assignShift, users, directAdmissions, referrals, facilities, quickTransfer } = useData();
   const [transferModalOpen, setTransferModalOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  type PatientListItem = { id: string; name: string; hospitalId: string; type: 'admission' | 'referral'; admittedAt: string };
+  const [selectedPatient, setSelectedPatient] = useState<PatientListItem | null>(null);
   const [targetDepartment, setTargetDepartment] = useState('');
   const [transferNotes, setTransferNotes] = useState('');
 

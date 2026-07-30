@@ -12,7 +12,8 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const win = window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any };
+      const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recog = new SpeechRecognition();
         recog.continuous = true;

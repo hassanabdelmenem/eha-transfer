@@ -116,10 +116,7 @@ export const NetworkDirectoryPage: React.FC = () => {
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{facility.location}</p>
                 </div>
                 
-                <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${
-                  // @ts-ignore
-                  facility.isExternal ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                }`}>
+                <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${facility.isExternal ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
                   {facility.type.replace('_', ' ')}
                 </span>
 

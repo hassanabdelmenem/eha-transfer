@@ -16,7 +16,7 @@ export const BedManagementPage: React.FC = () => {
   }
 
   const facility = facilities.find(f => f.id === user.facilityId);
-  const [capacities, setCapacities] = useState<Record<string, { total: number; occupied: number }>>({});
+  const [capacities, setCapacities] = useState<Record<BedType, { total: number; occupied: number }>>({} as Record<BedType, { total: number; occupied: number }>);
   const [saved, setSaved] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'visual'>('visual');
 

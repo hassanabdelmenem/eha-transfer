@@ -1,9 +1,11 @@
 import React from 'react';
 import { Bed } from 'lucide-react';
 
+import { BedType } from '../../types';
+
 interface InteractiveFloorPlanProps {
-  capacities: Record<string, { total: number; occupied: number }>;
-  onCapacityChange: (bedType: string, field: 'total' | 'occupied', value: number) => void;
+  capacities: Record<BedType, { total: number; occupied: number }>;
+  onCapacityChange: (bedType: BedType | string, field: 'total' | 'occupied', value: number) => void;
 }
 
 export const InteractiveFloorPlan: React.FC<InteractiveFloorPlanProps> = ({ capacities, onCapacityChange }) => {
