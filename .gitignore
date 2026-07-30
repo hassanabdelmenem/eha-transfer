@@ -10,3 +10,6 @@ coverage/
 # testing
 /playwright-report
 /test-results
+
+# temp sandboxes created by mutation testing tooling
+.stryker-tmp/

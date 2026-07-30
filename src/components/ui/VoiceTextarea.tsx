@@ -79,7 +79,8 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
           }
           
           if (newFinalTranscript) {
-            const currentVal = valueRef.current || '';
+            const currentValRaw = valueRef.current || '';
+            const currentVal = String(currentValRaw || '');
             onValueChange(currentVal + (currentVal && !currentVal.endsWith(' ') ? ' ' : '') + newFinalTranscript.trim());
           }
        };

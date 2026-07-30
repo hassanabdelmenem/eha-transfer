@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES } from '../lib/mock-data';
@@ -6,6 +6,8 @@ import { useAuth } from './AuthContext';
 import { saveOfflineReferral, getOfflineReferrals, deleteOfflineReferral } from '../lib/db';
 
 import { ShiftLog } from '../types';
+import { debouncedSetItem, safeGetItem } from '../lib/storage';
+import { compileNotifications, NotificationParams } from '../lib/notifications';
 
 export interface DirectAdmission {
   id: string;
@@ -63,51 +65,60 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
 
-  // Sync offline data
+  const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, targetRoles?: Role[], departments?: string[] }) => {
+    // Notify relevant users
+    const relevantUsers = users.filter(u => {
+       if (u.role === 'owner' || u.role === 'system_admin') return true; // Admins get everything (or we can filter)
+       if (u.facilityId !== params.facilityId) return false;
+       
+       let isDelegatedTarget = false;
+       if (params.targetRoles?.includes('head_of_department') && ['consultant', 'specialist', 'resident'].includes(u.role)) {
+          const assignment = shiftAssignments.find(s => 
+            s.facilityId === params.facilityId && 
+            s.assignedUserId === u.id && 
+            (!params.departments || params.departments.includes(s.department))
+          );
+          if (assignment) {
+             isDelegatedTarget = true;
+          }
+       }
+
+       if (params.targetRoles && !params.targetRoles.includes(u.role) && !isDelegatedTarget) return false;
+       if (params.departments && u.department && !params.departments.includes(u.department)) return false;
+       return true;
+    });
+    
+    const newNotifs = relevantUsers.map(u => ({
+      id: uuidv4(),
+      userId: u.id,
+      title: params.title,
+      message: params.message,
+      type: params.type,
+      read: false,
+      createdAt: new Date().toISOString(),
+      referralId: params.referralId
+    }));
+    setNotifications(prev => [...newNotifs, ...prev]);
+  }, [users, shiftAssignments]);
+
+  // Sync offline data (delegated to offlineSync module)
   const syncOfflineData = async () => {
     try {
-      const offlineReferrals = await getOfflineReferrals();
-      if (offlineReferrals.length > 0) {
-        // Add them to the state
+      const addReferralsToState = (refs: any[]) => {
         setReferrals(prev => {
-          const newReferrals = [...offlineReferrals, ...prev];
-          localStorage.setItem('eha_referrals_v2', JSON.stringify(newReferrals));
+          const newReferrals = [...refs, ...prev];
+          // schedule storage write
+          debouncedSetItem('eha_referrals_v2', newReferrals);
           return newReferrals;
         });
-        
-        // Notify
-        offlineReferrals.forEach(ref => {
-          if (ref.receivingFacilityId === 'auto' && ref.candidateFacilityIds) {
-            ref.candidateFacilityIds.forEach(candidateId => {
-              createNotification({
-                title: `New ${ref.priority.toUpperCase()} Referral (Auto-Routed - Synced)`,
-                message: `Referral from ${facilities.find(f => f.id === ref.referringFacilityId)?.name || 'Facility'} for ${ref.receivingDepartments.join(', ')}`,
-                type: ref.priority === 'emergency' ? 'urgent' : 'info',
-                referralId: ref.id,
-                facilityId: candidateId,
-                targetRoles: ['head_of_department', 'medical_director', 'hospital_manager'],
-                departments: ref.receivingDepartments
-              });
-            });
-          } else {
-            createNotification({
-              title: `New ${ref.priority.toUpperCase()} Referral (Synced)`,
-              message: `Referral from ${facilities.find(f => f.id === ref.referringFacilityId)?.name || 'Facility'} for ${ref.receivingDepartments.join(', ')}`,
-              type: ref.priority === 'emergency' ? 'urgent' : 'info',
-              referralId: ref.id,
-              facilityId: ref.receivingFacilityId,
-              targetRoles: ['head_of_department', 'medical_director', 'hospital_manager'],
-              departments: ref.receivingDepartments
-            });
-          }
-        });
+      };
 
-        // Clear offline DB
-        for (const ref of offlineReferrals) {
-          await deleteOfflineReferral(ref.id);
-        }
-        setPendingSyncCount(0);
-      }
+      await syncOfflineReferrals({
+        addReferralsToState,
+        createNotification: (params: any) => createNotification(params as any),
+        facilities,
+        setPendingSyncCount: (n: number) => setPendingSyncCount(n)
+      });
     } catch (err) {
       console.error('Error syncing offline referrals', err);
     }
@@ -139,75 +150,106 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load from local storage if exists
   useEffect(() => {
-    const savedUsers = localStorage.getItem('eha_users_v2');
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
-    }
-    const savedReferrals = localStorage.getItem('eha_referrals_v2');
-    if (savedReferrals) {
-      setReferrals(JSON.parse(savedReferrals));
-    }
-    const savedAdmissions = localStorage.getItem('eha_admissions_v2');
-    if (savedAdmissions) {
-      setDirectAdmissions(JSON.parse(savedAdmissions));
-    }
-    const savedFacilities = localStorage.getItem('eha_facilities_v2');
-    if (savedFacilities) {
-      setFacilities(JSON.parse(savedFacilities));
-    }
-    const savedShifts = localStorage.getItem('eha_shifts_v2');
-    if (savedShifts) {
-      setShiftAssignments(JSON.parse(savedShifts));
-    }
-    const savedShiftLogs = localStorage.getItem('eha_shift_logs_v2');
-    if (savedShiftLogs) {
-      setShiftLogs(JSON.parse(savedShiftLogs));
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const savedUsers = localStorage.getItem('eha_users_v2');
+        if (savedUsers) {
+          setUsers(JSON.parse(savedUsers));
+        }
+        const savedReferrals = localStorage.getItem('eha_referrals_v2');
+        if (savedReferrals) {
+          setReferrals(JSON.parse(savedReferrals));
+        }
+        const savedAdmissions = localStorage.getItem('eha_admissions_v2');
+        if (savedAdmissions) {
+          setDirectAdmissions(JSON.parse(savedAdmissions));
+        }
+        const savedFacilities = localStorage.getItem('eha_facilities_v2');
+        if (savedFacilities) {
+          setFacilities(JSON.parse(savedFacilities));
+        }
+        const savedShifts = localStorage.getItem('eha_shifts_v2');
+        if (savedShifts) {
+          setShiftAssignments(JSON.parse(savedShifts));
+        }
+        const savedShiftLogs = localStorage.getItem('eha_shift_logs_v2');
+        if (savedShiftLogs) {
+          setShiftLogs(JSON.parse(savedShiftLogs));
+        }
+      }
+    } catch (err) {
+      console.warn('Error reading from localStorage in DataProvider', err);
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('eha_users_v2', JSON.stringify(users));
+    try {
+      // debounce heavy writes to avoid jank
+      debouncedSetItem('eha_users_v2', users);
+    } catch (err) {
+      console.warn('Failed to schedule users to localStorage', err);
+    }
   }, [users]);
 
-  // Save to local storage
+  // Save to local storage (debounced)
   useEffect(() => {
-    localStorage.setItem('eha_referrals_v2', JSON.stringify(referrals));
+    try {
+      debouncedSetItem('eha_referrals_v2', referrals);
+    } catch (err) {
+      console.warn('Failed to schedule referrals to localStorage', err);
+    }
   }, [referrals]);
 
   useEffect(() => {
-    localStorage.setItem('eha_admissions_v2', JSON.stringify(directAdmissions));
+    try {
+      debouncedSetItem('eha_admissions_v2', directAdmissions);
+    } catch (err) {
+      console.warn('Failed to schedule admissions to localStorage', err);
+    }
   }, [directAdmissions]);
 
   useEffect(() => {
-    localStorage.setItem('eha_facilities_v2', JSON.stringify(facilities));
+    try {
+      debouncedSetItem('eha_facilities_v2', facilities);
+    } catch (err) {
+      console.warn('Failed to schedule facilities to localStorage', err);
+    }
   }, [facilities]);
 
   useEffect(() => {
-    localStorage.setItem('eha_shifts_v2', JSON.stringify(shiftAssignments));
+    try {
+      debouncedSetItem('eha_shifts_v2', shiftAssignments);
+    } catch (err) {
+      console.warn('Failed to schedule shifts to localStorage', err);
+    }
   }, [shiftAssignments]);
 
   useEffect(() => {
-    localStorage.setItem('eha_shift_logs_v2', JSON.stringify(shiftLogs));
+    try {
+      debouncedSetItem('eha_shift_logs_v2', shiftLogs);
+    } catch (err) {
+      console.warn('Failed to schedule shift logs to localStorage', err);
+    }
   }, [shiftLogs]);
 
-  const updateUserVerified = (id: string, verified: boolean) => {
+  const updateUserVerified = useCallback((id: string, verified: boolean) => {
     setUsers(prev => prev.map(u => u.id === id ? { ...u, verified } : u));
-  };
+  }, [setUsers]);
 
-  const updateUserRole = (id: string, role: Role, department?: string) => {
+  const updateUserRole = useCallback((id: string, role: Role, department?: string) => {
     setUsers(prev => prev.map(u => u.id === id ? { ...u, role, department: department ?? u.department } : u));
-  };
+  }, [setUsers]);
 
-  const addShiftLog = (logData: Omit<ShiftLog, 'id' | 'timestamp'>) => {
+  const addShiftLog = useCallback((logData: Omit<ShiftLog, 'id' | 'timestamp'>) => {
     const newLog: ShiftLog = {
       ...logData,
       id: uuidv4(),
       timestamp: new Date().toISOString()
     };
     setShiftLogs(prev => [newLog, ...prev]);
-  };
+  }, [setShiftLogs]);
 
-  const addFacilityDepartment = (facilityId: string, department: string) => {
+  const addFacilityDepartment = useCallback((facilityId: string, department: string) => {
     setFacilities(prev => prev.map(f => {
       if (f.id === facilityId) {
         if (!f.departments.includes(department)) {
@@ -216,9 +258,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return f;
     }));
-  };
+  }, [setFacilities]);
 
-  const updateFacilityCapacity = (facilityId: string, capacities: Record<string, { total: number; occupied: number }>) => {
+  const updateFacilityCapacity = useCallback((facilityId: string, capacities: Record<string, { total: number; occupied: number }>) => {
     setFacilities(prev => prev.map(f => {
       if (f.id === facilityId) {
         return {
@@ -231,18 +273,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return f;
     }));
-  };
+  }, [setFacilities]);
 
-  const removeFacilityDepartment = (facilityId: string, department: string) => {
+  const removeFacilityDepartment = useCallback((facilityId: string, department: string) => {
     setFacilities(prev => prev.map(f => {
       if (f.id === facilityId) {
         return { ...f, departments: f.departments.filter(d => d !== department) };
       }
       return f;
     }));
-  };
+  }, [setFacilities]);
 
-  const assignShift = (facilityId: string, department: string, assignedUserId: string | null) => {
+  const assignShift = useCallback((facilityId: string, department: string, assignedUserId: string | null) => {
     setShiftAssignments(prev => {
       const existing = prev.find(s => s.facilityId === facilityId && s.department === department);
       if (existing) {
@@ -257,9 +299,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }];
       }
     });
-  };
+  }, [setShiftAssignments]);
 
-  const addDirectAdmission = (admissionData: Omit<DirectAdmission, 'id' | 'admittedAt'>) => {
+  const addDirectAdmission = useCallback((admissionData: Omit<DirectAdmission, 'id' | 'admittedAt'>) => {
     const newAdmission: DirectAdmission = {
       ...admissionData,
       id: uuidv4(),
@@ -288,9 +330,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return f;
     }));
-  };
+  }, [setDirectAdmissions, setFacilities]);
 
-  const quickTransfer = (type: 'referral' | 'admission', id: string, toDepartment: string, notes: string) => {
+  const quickTransfer = useCallback((type: 'referral' | 'admission', id: string, toDepartment: string, notes: string) => {
     if (type === 'admission') {
       setDirectAdmissions(prev => prev.map(a => {
         if (a.id === id) {
@@ -312,9 +354,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return r;
       }));
     }
-  };
+  }, [setDirectAdmissions, setReferrals, user]);
 
-  const dischargeDirectAdmission = (id: string) => {
+  const dischargeDirectAdmission = useCallback((id: string) => {
     setDirectAdmissions(prev => {
       const admission = prev.find(a => a.id === id);
       if (admission && admission.status !== 'discharged') {
@@ -340,9 +382,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return prev;
     });
-  };
+  }, [setDirectAdmissions, setFacilities]);
 
-  const addReferral = (newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => {
+  const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => {
     const now = new Date().toISOString();
     const newReferral: Referral = {
       ...newReferralData,
@@ -358,7 +400,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isOnline) {
       saveOfflineReferral(newReferral).then(() => {
         setPendingSyncCount(prev => prev + 1);
-      });
+      }).catch(err => console.warn('Failed to save offline referral', err));
       // Optionally store in state too so user sees it right away locally
       setReferrals(prev => [newReferral, ...prev]);
       return;
@@ -390,9 +432,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         departments: newReferral.receivingDepartments
       });
     }
-  };
+  }, [isOnline, saveOfflineReferral, setPendingSyncCount, setReferrals, facilities, createNotification]);
 
-  const updateReferralStatus = (id: string, status: Referral['status'], notes?: string) => {
+  const updateReferralStatus = useCallback((id: string, status: Referral['status'], notes?: string) => {
     if (!user) return;
     const now = new Date().toISOString();
     
@@ -459,9 +501,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return r;
       });
     });
-  };
+  }, [user, setReferrals, setFacilities, createNotification]);
 
-  const overrideReferralDestination = (id: string, newFacilityId: string) => {
+  const overrideReferralDestination = useCallback((id: string, newFacilityId: string) => {
     if (!user) return;
     const now = new Date().toISOString();
     setReferrals(prev => prev.map(r => {
@@ -480,9 +522,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return r;
     }));
-  };
+  }, [user, setReferrals, facilities]);
 
-  const addDeptComment = (referralId: string, status: DeptApprovalStatus, comment: string) => {
+  const addDeptComment = useCallback((referralId: string, status: DeptApprovalStatus, comment: string) => {
     if (!user) return;
     const now = new Date().toISOString();
     setReferrals(prev => prev.map(r => {
@@ -515,81 +557,74 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return r;
     }));
-  };
+  }, [user, setReferrals, createNotification]);
 
-  const createNotification = (params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, targetRoles?: Role[], departments?: string[] }) => {
-    // Notify relevant users
-    const relevantUsers = users.filter(u => {
-       if (u.role === 'owner' || u.role === 'system_admin') return true; // Admins get everything (or we can filter)
-       if (u.facilityId !== params.facilityId) return false;
-       
-       let isDelegatedTarget = false;
-       if (params.targetRoles?.includes('head_of_department') && ['consultant', 'specialist', 'resident'].includes(u.role)) {
-          const assignment = shiftAssignments.find(s => 
-            s.facilityId === params.facilityId && 
-            s.assignedUserId === u.id && 
-            (!params.departments || params.departments.includes(s.department))
-          );
-          if (assignment) {
-             isDelegatedTarget = true;
-          }
-       }
 
-       if (params.targetRoles && !params.targetRoles.includes(u.role) && !isDelegatedTarget) return false;
-       if (params.departments && u.department && !params.departments.includes(u.department)) return false;
-       return true;
-    });
-    
-    const newNotifs = relevantUsers.map(u => ({
-      id: uuidv4(),
-      userId: u.id,
-      title: params.title,
-      message: params.message,
-      type: params.type,
-      read: false,
-      createdAt: new Date().toISOString(),
-      referralId: params.referralId
-    }));
-    setNotifications(prev => [...newNotifs, ...prev]);
-  };
-
-  const markNotificationRead = (id: string) => {
+  const markNotificationRead = useCallback((id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
+  }, [setNotifications]);
 
-  const markAllNotificationsRead = () => {
+  const markAllNotificationsRead = useCallback(() => {
     if (!user) return;
     setNotifications(prev => prev.map(n => n.userId === user.id ? { ...n, read: true } : n));
-  };
+  }, [user, setNotifications]);
+
+  const contextValue = useMemo(() => ({
+    users,
+    referrals,
+    notifications,
+    facilities,
+    directAdmissions,
+    shiftAssignments,
+    shiftLogs,
+    addShiftLog,
+    addReferral,
+    updateReferralStatus,
+    overrideReferralDestination,
+    addDeptComment,
+    markNotificationRead,
+    markAllNotificationsRead,
+    addDirectAdmission,
+    dischargeDirectAdmission,
+    quickTransfer,
+    assignShift,
+    updateUserVerified,
+    updateUserRole,
+    addFacilityDepartment,
+    removeFacilityDepartment,
+    updateFacilityCapacity,
+    isOnline,
+    pendingSyncCount
+  }), [
+    users,
+    referrals,
+    notifications,
+    facilities,
+    directAdmissions,
+    shiftAssignments,
+    shiftLogs,
+    addShiftLog,
+    addReferral,
+    updateReferralStatus,
+    overrideReferralDestination,
+    addDeptComment,
+    markNotificationRead,
+    markAllNotificationsRead,
+    addDirectAdmission,
+    dischargeDirectAdmission,
+    quickTransfer,
+    assignShift,
+    updateUserVerified,
+    updateUserRole,
+    addFacilityDepartment,
+    removeFacilityDepartment,
+    updateFacilityCapacity,
+    isOnline,
+    pendingSyncCount
+  ]);
 
   return (
-    <DataContext.Provider value={{ 
-      users,
-      referrals, 
-      notifications, 
-      facilities, 
-      directAdmissions, 
-      shiftAssignments,
-      shiftLogs,
-      addShiftLog,
-      addReferral, 
-      updateReferralStatus, 
-      overrideReferralDestination,
-      addDeptComment, 
-      markNotificationRead,
-      markAllNotificationsRead,
-      addDirectAdmission,
-      dischargeDirectAdmission,
-      quickTransfer,
-      assignShift,
-      updateUserVerified,
-      updateUserRole,
-      addFacilityDepartment,
-      removeFacilityDepartment,
-      updateFacilityCapacity,
-      isOnline,
-      pendingSyncCount
-    }}>
+    <DataContext.Provider value={contextValue}>
       {children}
     </DataContext.Provider>
   );
