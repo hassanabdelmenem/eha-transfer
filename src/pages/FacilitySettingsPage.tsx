@@ -28,8 +28,8 @@ export const FacilitySettingsPage: React.FC = () => {
     facilityUsers = facilityUsers.filter(u => u.department === user.department);
   }
   
-  const unverifiedUsers = facilityUsers.filter(u => u.verified === false);
-  const verifiedUsers = facilityUsers.filter(u => u.verified !== false && u.id !== user.id);
+  const unverifiedUsers = facilityUsers.filter(u => !u.verified);
+  const verifiedUsers = facilityUsers.filter(u => u.verified && u.id !== user.id);
 
   const handleAddDepartment = (e: React.FormEvent) => {
     e.preventDefault();

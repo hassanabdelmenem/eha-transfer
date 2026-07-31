@@ -24,6 +24,7 @@ export const NotificationsPage: React.FC = () => {
         </div>
         {unreadCount > 0 && markAllNotificationsRead && (
           <button 
+            type="button"
             onClick={() => markAllNotificationsRead()}
             className="text-xs font-bold uppercase text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded transition-colors"
           >

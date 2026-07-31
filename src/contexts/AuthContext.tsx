@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { auth, googleProvider } from '../lib/firebase';
+import { auth, googleProvider, db } from '../lib/firebase';
 import { signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
-  login?: (id: string) => void; // legacy test helper
+  login?: (id: string) => void;
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (e: string, p: string) => Promise<void>;
   registerWithEmail: (e: string, p: string) => Promise<void>;
@@ -13,7 +14,7 @@ interface AuthContextType {
   hasRole: (roles: User['role'][]) => boolean;
   verifyMFA: (pin: string) => boolean;
   mfaVerifiedAt: number | null;
-  updateUserProfile: (data: Partial<User>) => void;
+  updateUserProfile: (data: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,41 +29,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setMfaVerifiedAt(parseInt(savedMFA, 10));
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        const savedUsers = JSON.parse(localStorage.getItem('eha_users_v2') || '[]');
-        let foundUser = savedUsers.find((u: any) => u.email.toLowerCase() === firebaseUser.email?.toLowerCase());
-        
-        if (!foundUser && firebaseUser.email?.toLowerCase() === 'hassan.abdelmenem@gmail.com') {
-          foundUser = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'Hassan',
-            email: firebaseUser.email,
-            role: 'owner',
-            verified: true
-          };
-          savedUsers.push(foundUser);
-          localStorage.setItem('eha_users_v2', JSON.stringify(savedUsers));
-        } else if (!foundUser) {
-          foundUser = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
-            email: firebaseUser.email || '',
-            role: 'resident',
-            verified: false
-          };
-          savedUsers.push(foundUser);
-          localStorage.setItem('eha_users_v2', JSON.stringify(savedUsers));
-        }
+    let unsubscribeUserDoc: (() => void) | null = null;
 
-        setUser(foundUser);
-        localStorage.setItem('eha_auth_user_v2', JSON.stringify(foundUser));
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (unsubscribeUserDoc) {
+        unsubscribeUserDoc();
+        unsubscribeUserDoc = null;
+      }
+
+      if (firebaseUser) {
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        
+        // Listen to real-time updates for the logged-in user
+        unsubscribeUserDoc = onSnapshot(userRef, async (docSnap) => {
+          if (docSnap.exists()) {
+            setUser(docSnap.data() as User);
+          } else {
+            // Document doesn't exist, create it
+            let newUser: User;
+            if (firebaseUser.email?.toLowerCase() === 'hassan.abdelmenem@gmail.com') {
+              newUser = {
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || 'Hassan',
+                email: firebaseUser.email,
+                role: 'owner',
+                verified: true
+              };
+            } else {
+              newUser = {
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
+                email: firebaseUser.email || '',
+                role: 'resident',
+                verified: false
+              };
+            }
+            await setDoc(userRef, newUser);
+            setUser(newUser);
+          }
+        });
       } else {
         setUser(null);
-        localStorage.removeItem('eha_auth_user_v2');
       }
     });
-    return unsubscribe;
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUserDoc) unsubscribeUserDoc();
+    };
   }, []);
 
   const loginWithGoogle = async () => {
@@ -78,7 +92,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await createUserWithEmailAndPassword(auth, e, p);
   };
 
-  // Legacy/test helper: simple login by id (used in tests)
   const login = (id: string) => {
     const mockUser: User = {
       id,
@@ -87,23 +100,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: 'resident'
     } as User;
     setUser(mockUser);
-    try {
-      localStorage.setItem('auth_user', JSON.stringify(mockUser));
-      localStorage.setItem('eha_auth_user_v2', JSON.stringify(mockUser));
-    } catch (err) {
-      // ignore
-    }
   };
   
   const logout = async () => {
     await firebaseSignOut(auth);
     setUser(null);
     setMfaVerifiedAt(null);
-    localStorage.removeItem('eha_auth_user_v2');
     localStorage.removeItem('eha_mfa_v2');
-    // Backward compatible keys
-    localStorage.removeItem('auth_user');
-    localStorage.removeItem('mfa_timestamp');
   };
 
   const hasRole = (roles: User['role'][]) => {
@@ -112,34 +115,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const verifyMFA = (pin: string) => {
-    // Mock MFA verification (Accepts '1234' or '0000')
     if (pin === '1234' || pin === '0000') {
       const now = Date.now();
       setMfaVerifiedAt(now);
       try {
         localStorage.setItem('eha_mfa_v2', now.toString());
-        localStorage.setItem('mfa_timestamp', now.toString()); // backward compatible
-      } catch (err) {
-        // ignore
-      }
+      } catch (err) {}
       return true;
     }
     return false;
   };
 
-  const updateUserProfile = (data: Partial<User>) => {
+  const updateUserProfile = async (data: Partial<User>) => {
     if (!user) return;
-    const updatedUser = { ...user, ...data, profileCompleted: true };
-    setUser(updatedUser);
-    localStorage.setItem('eha_auth_user_v2', JSON.stringify(updatedUser));
-    
-    // Also update it in the main user list so DataContext can pick it up
-    const savedUsers = JSON.parse(localStorage.getItem('eha_users_v2') || '[]');
-    const newUsers = savedUsers.map((u: any) => u.id === user.id ? updatedUser : u);
-    localStorage.setItem('eha_users_v2', JSON.stringify(newUsers));
-    
-    // Trigger storage event manually in case same window needs to know
-    window.dispatchEvent(new Event('storage'));
+    const userRef = doc(db, 'users', user.id);
+    await setDoc(userRef, { ...data, profileCompleted: true }, { merge: true });
   };
 
   return (

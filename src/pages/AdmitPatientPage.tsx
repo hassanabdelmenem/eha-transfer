@@ -18,19 +18,22 @@ export const AdmitPatientPage: React.FC = () => {
   const [department, setDepartment] = useState('');
   const [bedType, setBedType] = useState<BedType>('Ward');
 
-  if (!user || !user.facilityId) {
+  const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
+
+  const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+
+  if (!user || (!user.facilityId && !isAdmin)) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Facility ID not found.</div>;
   }
 
-  const facility = facilities.find(f => f.id === user.facilityId);
-  if (!facility) return null;
+  const facility = facilities.find(f => f.id === selectedFacilityId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!patientName || !hospitalId || !department || !bedType) return;
+    if (!patientName || !hospitalId || !department || !bedType || !selectedFacilityId) return;
 
     addDirectAdmission({
-      facilityId: user.facilityId!,
+      facilityId: selectedFacilityId,
       department,
       bedType,
       patientName,
@@ -45,7 +48,7 @@ export const AdmitPatientPage: React.FC = () => {
     setBedType('Ward');
   };
 
-  const activeAdmissions = directAdmissions.filter(a => a.facilityId === user.facilityId && a.status !== 'discharged');
+  const activeAdmissions = directAdmissions.filter(a => a.facilityId === selectedFacilityId && a.status !== 'discharged');
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -56,7 +59,27 @@ export const AdmitPatientPage: React.FC = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      {isAdmin && (
+        <Card className="mb-6 border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
+          <CardContent className="p-4 flex items-center gap-4">
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Admin View:</span>
+            <select
+              value={selectedFacilityId}
+              onChange={(e) => setSelectedFacilityId(e.target.value)}
+              className="flex-1 rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+            >
+              <option value="">Select Facility to Manage...</option>
+              {facilities.map(f => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+          </CardContent>
+        </Card>
+      )}
+
+      {facility ? (
+        <>
+          <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Admission Details</CardTitle>
@@ -165,6 +188,12 @@ export const AdmitPatientPage: React.FC = () => {
           </div>
         )}
       </div>
+        </>
+      ) : (
+        <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
+          Please select a facility above to manage direct admissions.
+        </Card>
+      )}
     </div>
   );
 };

@@ -60,7 +60,8 @@ const AppRoutes = () => {
       <Route path="/pending-verification" element={<PendingVerification />} />
       
       <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-        <Route index element={<RoleBasedDashboard />} />
+        <Route index element={<Navigate to="/referrals" replace />} />
+        <Route path="dashboard" element={<RoleBasedDashboard />} />
         <Route path="referrals" element={<ReferralsPage />} />
         <Route path="referrals/new" element={<NewReferralPage />} />
         <Route path="referrals/:id" element={<ReferralDetailPage />} />

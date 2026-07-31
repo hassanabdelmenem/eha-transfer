@@ -16,16 +16,20 @@ export const DepartmentPage: React.FC = () => {
   const [targetDepartment, setTargetDepartment] = useState('');
   const [transferNotes, setTransferNotes] = useState('');
 
-  if (!user || (user.role !== 'head_of_department' && user.role !== 'owner')) {
+  const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+  const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>(user?.department || '');
+
+  if (!user || (user.role !== 'head_of_department' && !isAdmin)) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Access Denied. Head of Department privileges required.</div>;
   }
 
-  const facilityId = user.facilityId;
-  const department = user.department;
-
-  if (!facilityId || !department) {
+  if ((!user.facilityId || !user.department) && !isAdmin) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Facility or Department configuration missing.</div>;
   }
+
+  const facilityId = selectedFacilityId;
+  const department = selectedDepartment;
 
   const currentAssignment = shiftAssignments?.find(s => s.facilityId === facilityId && s.department === department);
 
@@ -80,10 +84,46 @@ export const DepartmentPage: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight uppercase">{department} Department</h1>
+        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight uppercase">{department || 'Department'} </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Manage shift assignments and delegation.</p>
       </div>
 
+      {isAdmin && (
+        <Card className="mb-6 border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
+          <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">Admin View:</span>
+            <select
+              value={selectedFacilityId}
+              onChange={(e) => { setSelectedFacilityId(e.target.value); setSelectedDepartment(''); }}
+              className="w-full sm:flex-1 rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+            >
+              <option value="">Select Facility...</option>
+              {facilities.map(f => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+            {selectedFacilityId && (
+              <select
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+                className="w-full sm:flex-1 rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+              >
+                <option value="">Select Department...</option>
+                {facilities.find(f => f.id === selectedFacilityId)?.departments.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {(!facilityId || !department) ? (
+         <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
+           Please select a facility and department above to view.
+         </Card>
+      ) : (
+        <>
       <Card>
         <CardHeader>
           <CardTitle>Admitted Patients & Internal Transfers</CardTitle>
@@ -247,6 +287,8 @@ export const DepartmentPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

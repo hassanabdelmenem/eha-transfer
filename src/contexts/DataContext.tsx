@@ -1,14 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User } from '../types';
+import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User, ShiftLog } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { FACILITIES as INITIAL_FACILITIES } from '../lib/mock-data';
+import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
 import { useAuth } from './AuthContext';
-import { saveOfflineReferral, getOfflineReferrals, deleteOfflineReferral } from '../lib/db';
-import { syncOfflineReferrals } from '../lib/offlineSync';
-
-import { ShiftLog } from '../types';
-import { debouncedSetItem, safeGetItem } from '../lib/storage';
-import { compileNotifications, NotificationParams } from '../lib/notifications';
+import { db } from '../lib/firebase';
+import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, writeBatch } from 'firebase/firestore';
 
 export interface DirectAdmission {
   id: string;
@@ -52,11 +48,9 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const INITIAL_REFERRALS: Referral[] = [];
-
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [referrals, setReferrals] = useState<Referral[]>(INITIAL_REFERRALS);
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [referrals, setReferrals] = useState<Referral[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [facilities, setFacilities] = useState<Facility[]>(INITIAL_FACILITIES);
   const [directAdmissions, setDirectAdmissions] = useState<DirectAdmission[]>([]);
@@ -66,10 +60,79 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
 
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+
+
+  // Firestore Listeners
+  useEffect(() => {
+    const unsubs: (() => void)[] = [];
+
+    // Facilities
+    unsubs.push(onSnapshot(collection(db, 'facilities'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as Facility);
+      if (data.length === 0) {
+        // Seed initial facilities
+        const batch = writeBatch(db);
+        INITIAL_FACILITIES.forEach(f => batch.set(doc(db, 'facilities', f.id), f));
+        batch.commit().catch(console.error);
+      } else {
+        setFacilities(data);
+      }
+    }));
+
+    // Users
+    unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as User);
+      if (data.length === 0) {
+        const batch = writeBatch(db);
+        INITIAL_USERS.forEach(u => batch.set(doc(db, 'users', u.id), u));
+        batch.commit().catch(console.error);
+      } else {
+        setUsers(data);
+      }
+    }));
+
+    // Referrals
+    unsubs.push(onSnapshot(collection(db, 'referrals'), (snapshot) => {
+      setReferrals(snapshot.docs.map(doc => doc.data() as Referral).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    }));
+
+    // Notifications
+    unsubs.push(onSnapshot(collection(db, 'notifications'), (snapshot) => {
+      setNotifications(snapshot.docs.map(doc => doc.data() as Notification).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    }));
+
+    // Direct Admissions
+    unsubs.push(onSnapshot(collection(db, 'directAdmissions'), (snapshot) => {
+      setDirectAdmissions(snapshot.docs.map(doc => doc.data() as DirectAdmission).sort((a, b) => new Date(b.admittedAt).getTime() - new Date(a.admittedAt).getTime()));
+    }));
+
+    // Shift Assignments
+    unsubs.push(onSnapshot(collection(db, 'shiftAssignments'), (snapshot) => {
+      setShiftAssignments(snapshot.docs.map(doc => doc.data() as ShiftAssignment));
+    }));
+
+    // Shift Logs
+    unsubs.push(onSnapshot(collection(db, 'shiftLogs'), (snapshot) => {
+      setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+    }));
+
+    return () => unsubs.forEach(u => u());
+  }, []);
+
   const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, targetRoles?: Role[], departments?: string[] }) => {
-    // Notify relevant users
     const relevantUsers = users.filter(u => {
-       if (u.role === 'owner' || u.role === 'system_admin') return true; // Admins get everything (or we can filter)
+       if (u.role === 'owner' || u.role === 'system_admin') return true;
        if (u.facilityId !== params.facilityId) return false;
        
        let isDelegatedTarget = false;
@@ -89,157 +152,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
        return true;
     });
     
-    const newNotifs = relevantUsers.map(u => ({
-      id: uuidv4(),
-      userId: u.id,
-      title: params.title,
-      message: params.message,
-      type: params.type,
-      read: false,
-      createdAt: new Date().toISOString(),
-      referralId: params.referralId
-    }));
-    setNotifications(prev => [...newNotifs, ...prev]);
+    const batch = writeBatch(db);
+    relevantUsers.forEach(u => {
+      const id = uuidv4();
+      const notif: Notification = {
+        id,
+        userId: u.id,
+        title: params.title,
+        message: params.message,
+        type: params.type,
+        read: false,
+        createdAt: new Date().toISOString(),
+        referralId: params.referralId
+      };
+      batch.set(doc(db, 'notifications', id), notif);
+    });
+    batch.commit().catch(console.error);
   }, [users, shiftAssignments]);
 
-  // Sync offline data (delegated to offlineSync module)
-  const syncOfflineData = async () => {
-    try {
-      const addReferralsToState = (refs: Referral[]) => {
-        setReferrals(prev => {
-          const newReferrals = [...refs, ...prev];
-          // schedule storage write
-          debouncedSetItem('eha_referrals_v2', newReferrals);
-          return newReferrals;
-        });
-      };
-
-      await syncOfflineReferrals({
-        addReferralsToState,
-        createNotification: (params: NotificationParams | any) => createNotification(params as NotificationParams),
-        facilities,
-        setPendingSyncCount: (n: number) => setPendingSyncCount(n)
-      });
-    } catch (err) {
-      console.error('Error syncing offline referrals', err);
-    }
-  };
-
-  useEffect(() => {
-    const checkOfflineCount = async () => {
-      const offlineReferrals = await getOfflineReferrals();
-      setPendingSyncCount(offlineReferrals.length);
-    };
-    checkOfflineCount();
-
-    const handleOnline = () => {
-      setIsOnline(true);
-      syncOfflineData();
-    };
-    const handleOffline = () => {
-      setIsOnline(false);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Load from local storage if exists
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const savedUsers = localStorage.getItem('eha_users_v2');
-        if (savedUsers) {
-          setUsers(JSON.parse(savedUsers));
-        }
-        const savedReferrals = localStorage.getItem('eha_referrals_v2');
-        if (savedReferrals) {
-          setReferrals(JSON.parse(savedReferrals));
-        }
-        const savedAdmissions = localStorage.getItem('eha_admissions_v2');
-        if (savedAdmissions) {
-          setDirectAdmissions(JSON.parse(savedAdmissions));
-        }
-        const savedFacilities = localStorage.getItem('eha_facilities_v2');
-        if (savedFacilities) {
-          setFacilities(JSON.parse(savedFacilities));
-        }
-        const savedShifts = localStorage.getItem('eha_shifts_v2');
-        if (savedShifts) {
-          setShiftAssignments(JSON.parse(savedShifts));
-        }
-        const savedShiftLogs = localStorage.getItem('eha_shift_logs_v2');
-        if (savedShiftLogs) {
-          setShiftLogs(JSON.parse(savedShiftLogs));
-        }
-      }
-    } catch (err) {
-      console.warn('Error reading from localStorage in DataProvider', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      // debounce heavy writes to avoid jank
-      debouncedSetItem('eha_users_v2', users);
-    } catch (err) {
-      console.warn('Failed to schedule users to localStorage', err);
-    }
-  }, [users]);
-
-  // Save to local storage (debounced)
-  useEffect(() => {
-    try {
-      debouncedSetItem('eha_referrals_v2', referrals);
-    } catch (err) {
-      console.warn('Failed to schedule referrals to localStorage', err);
-    }
-  }, [referrals]);
-
-  useEffect(() => {
-    try {
-      debouncedSetItem('eha_admissions_v2', directAdmissions);
-    } catch (err) {
-      console.warn('Failed to schedule admissions to localStorage', err);
-    }
-  }, [directAdmissions]);
-
-  useEffect(() => {
-    try {
-      debouncedSetItem('eha_facilities_v2', facilities);
-    } catch (err) {
-      console.warn('Failed to schedule facilities to localStorage', err);
-    }
-  }, [facilities]);
-
-  useEffect(() => {
-    try {
-      debouncedSetItem('eha_shifts_v2', shiftAssignments);
-    } catch (err) {
-      console.warn('Failed to schedule shifts to localStorage', err);
-    }
-  }, [shiftAssignments]);
-
-  useEffect(() => {
-    try {
-      debouncedSetItem('eha_shift_logs_v2', shiftLogs);
-    } catch (err) {
-      console.warn('Failed to schedule shift logs to localStorage', err);
-    }
-  }, [shiftLogs]);
-
   const updateUserVerified = useCallback((id: string, verified: boolean) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, verified } : u));
-  }, [setUsers]);
+    updateDoc(doc(db, 'users', id), { verified }).catch(console.error);
+  }, []);
 
   const updateUserRole = useCallback((id: string, role: Role, department?: string) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, role, department: department ?? u.department } : u));
-  }, [setUsers]);
+    const updates: any = { role };
+    if (department !== undefined) updates.department = department;
+    updateDoc(doc(db, 'users', id), updates).catch(console.error);
+  }, []);
 
   const addShiftLog = useCallback((logData: Omit<ShiftLog, 'id' | 'timestamp'>) => {
     const newLog: ShiftLog = {
@@ -247,60 +186,57 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: uuidv4(),
       timestamp: new Date().toISOString()
     };
-    setShiftLogs(prev => [newLog, ...prev]);
-  }, [setShiftLogs]);
+    setDoc(doc(db, 'shiftLogs', newLog.id), newLog).catch(console.error);
+  }, []);
 
   const addFacilityDepartment = useCallback((facilityId: string, department: string) => {
-    setFacilities(prev => prev.map(f => {
-      if (f.id === facilityId) {
-        if (!f.departments.includes(department)) {
-          return { ...f, departments: [...f.departments, department] };
-        }
-      }
-      return f;
-    }));
-  }, [setFacilities]);
+    const facility = facilities.find(f => f.id === facilityId);
+    if (facility && !facility.departments.includes(department)) {
+      updateDoc(doc(db, 'facilities', facilityId), {
+        departments: [...facility.departments, department]
+      }).catch(console.error);
+    }
+  }, [facilities]);
 
   const updateFacilityCapacity = useCallback((facilityId: string, capacities: Record<string, { total: number; occupied: number }>) => {
-    setFacilities(prev => prev.map(f => {
-      if (f.id === facilityId) {
-        return {
-          ...f,
-          capacity: {
-            ...f.capacity,
-            ...capacities
-          }
-        };
-      }
-      return f;
-    }));
-  }, [setFacilities]);
+    const facility = facilities.find(f => f.id === facilityId);
+    if (facility) {
+      updateDoc(doc(db, 'facilities', facilityId), {
+        capacity: {
+          ...facility.capacity,
+          ...capacities
+        }
+      }).catch(console.error);
+    }
+  }, [facilities]);
 
   const removeFacilityDepartment = useCallback((facilityId: string, department: string) => {
-    setFacilities(prev => prev.map(f => {
-      if (f.id === facilityId) {
-        return { ...f, departments: f.departments.filter(d => d !== department) };
-      }
-      return f;
-    }));
-  }, [setFacilities]);
+    const facility = facilities.find(f => f.id === facilityId);
+    if (facility) {
+      updateDoc(doc(db, 'facilities', facilityId), {
+        departments: facility.departments.filter(d => d !== department)
+      }).catch(console.error);
+    }
+  }, [facilities]);
 
   const assignShift = useCallback((facilityId: string, department: string, assignedUserId: string | null) => {
-    setShiftAssignments(prev => {
-      const existing = prev.find(s => s.facilityId === facilityId && s.department === department);
-      if (existing) {
-        return prev.map(s => s.id === existing.id ? { ...s, assignedUserId, updatedAt: new Date().toISOString() } : s);
-      } else {
-        return [...prev, {
-          id: uuidv4(),
-          facilityId,
-          department,
-          assignedUserId,
-          updatedAt: new Date().toISOString()
-        }];
-      }
-    });
-  }, [setShiftAssignments]);
+    const existing = shiftAssignments.find(s => s.facilityId === facilityId && s.department === department);
+    if (existing) {
+      updateDoc(doc(db, 'shiftAssignments', existing.id), {
+        assignedUserId,
+        updatedAt: new Date().toISOString()
+      }).catch(console.error);
+    } else {
+      const id = uuidv4();
+      setDoc(doc(db, 'shiftAssignments', id), {
+        id,
+        facilityId,
+        department,
+        assignedUserId,
+        updatedAt: new Date().toISOString()
+      }).catch(console.error);
+    }
+  }, [shiftAssignments]);
 
   const addDirectAdmission = useCallback((admissionData: Omit<DirectAdmission, 'id' | 'admittedAt'>) => {
     const newAdmission: DirectAdmission = {
@@ -310,80 +246,55 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       status: 'admitted'
     };
     
-    setDirectAdmissions(prev => [newAdmission, ...prev]);
+    setDoc(doc(db, 'directAdmissions', newAdmission.id), newAdmission).catch(console.error);
 
     // Update facility capacity
-    setFacilities(prevFacilities => prevFacilities.map(f => {
-      if (f.id === admissionData.facilityId) {
-        const bedCap = f.capacity[admissionData.bedType];
-        if (bedCap) {
-          return {
-            ...f,
-            capacity: {
-              ...f.capacity,
-              [admissionData.bedType]: {
-                ...bedCap,
-                occupied: Math.min(bedCap.total, bedCap.occupied + 1)
-              }
-            }
-          };
-        }
+    const facility = facilities.find(f => f.id === admissionData.facilityId);
+    if (facility) {
+      const bedCap = facility.capacity[admissionData.bedType];
+      if (bedCap) {
+        updateDoc(doc(db, 'facilities', facility.id), {
+          [`capacity.${admissionData.bedType}.occupied`]: Math.min(bedCap.total, bedCap.occupied + 1)
+        }).catch(console.error);
       }
-      return f;
-    }));
-  }, [setDirectAdmissions, setFacilities]);
+    }
+  }, [facilities]);
 
   const quickTransfer = useCallback((type: 'referral' | 'admission', id: string, toDepartment: string, notes: string) => {
     if (type === 'admission') {
-      setDirectAdmissions(prev => prev.map(a => {
-        if (a.id === id) {
-          return { ...a, department: toDepartment };
-        }
-        return a;
-      }));
+      updateDoc(doc(db, 'directAdmissions', id), { department: toDepartment }).catch(console.error);
     } else if (type === 'referral') {
-      setReferrals(prev => prev.map(r => {
-        if (r.id === id) {
-          const newHistory = [...r.statusHistory, {
-            status: r.status,
-            timestamp: new Date().toISOString(),
-            userId: user?.id || 'system',
-            notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
-          }];
-          return { ...r, receivingDepartments: [toDepartment], statusHistory: newHistory };
-        }
-        return r;
-      }));
+      const r = referrals.find(ref => ref.id === id);
+      if (r) {
+        const newHistory = [...r.statusHistory, {
+          status: r.status,
+          timestamp: new Date().toISOString(),
+          userId: user?.id || 'system',
+          notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
+        }];
+        updateDoc(doc(db, 'referrals', id), {
+          receivingDepartments: [toDepartment],
+          statusHistory: newHistory
+        }).catch(console.error);
+      }
     }
-  }, [setDirectAdmissions, setReferrals, user]);
+  }, [referrals, user]);
 
   const dischargeDirectAdmission = useCallback((id: string) => {
-    setDirectAdmissions(prev => {
-      const admission = prev.find(a => a.id === id);
-      if (admission && admission.status !== 'discharged') {
-        setFacilities(prevFacilities => prevFacilities.map(f => {
-          if (f.id === admission.facilityId) {
-            const bedCap = f.capacity[admission.bedType];
-            if (bedCap) {
-              return {
-                ...f,
-                capacity: {
-                  ...f.capacity,
-                  [admission.bedType]: {
-                    ...bedCap,
-                    occupied: Math.max(0, bedCap.occupied - 1)
-                  }
-                }
-              };
-            }
-          }
-          return f;
-        }));
-        return prev.map(a => a.id === id ? { ...a, status: 'discharged' } : a);
+    const admission = directAdmissions.find(a => a.id === id);
+    if (admission && admission.status !== 'discharged') {
+      const facility = facilities.find(f => f.id === admission.facilityId);
+      if (facility) {
+        const bedCap = facility.capacity[admission.bedType];
+        if (bedCap) {
+          updateDoc(doc(db, 'facilities', facility.id), {
+            [`capacity.${admission.bedType}.occupied`]: Math.max(0, bedCap.occupied - 1)
+          }).catch(console.error);
+        }
       }
-      return prev;
-    });
-  }, [setDirectAdmissions, setFacilities]);
+      updateDoc(doc(db, 'directAdmissions', id), { status: 'discharged' }).catch(console.error);
+    }
+  }, [directAdmissions, facilities]);
 
   const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => {
     const now = new Date().toISOString();
@@ -398,16 +309,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ]
     };
 
-    if (!isOnline) {
-      saveOfflineReferral(newReferral).then(() => {
-        setPendingSyncCount(prev => prev + 1);
-      }).catch(err => console.warn('Failed to save offline referral', err));
-      // Optionally store in state too so user sees it right away locally
-      setReferrals(prev => [newReferral, ...prev]);
-      return;
-    }
-
-    setReferrals(prev => [newReferral, ...prev]);
+    setDoc(doc(db, 'referrals', newReferral.id), newReferral).catch(console.error);
 
     // Generate notification for receiving facility managers/heads
     if (newReferral.receivingFacilityId === 'auto' && newReferral.candidateFacilityIds) {
@@ -433,142 +335,136 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         departments: newReferral.receivingDepartments
       });
     }
-  }, [isOnline, saveOfflineReferral, setPendingSyncCount, setReferrals, facilities, createNotification]);
+  }, [facilities, createNotification]);
 
   const updateReferralStatus = useCallback((id: string, status: Referral['status'], notes?: string) => {
     if (!user) return;
     const now = new Date().toISOString();
     
-    setReferrals(prev => {
-      const referral = prev.find(r => r.id === id);
-      if (referral && status === 'admitted' && referral.status !== 'admitted') {
-        setFacilities(prevFacilities => prevFacilities.map(f => {
-          if (f.id === referral.receivingFacilityId) {
-            const bedCap = f.capacity[referral.requiredBedType];
-            if (bedCap) {
-              return { ...f, capacity: { ...f.capacity, [referral.requiredBedType]: { ...bedCap, occupied: Math.min(bedCap.total, bedCap.occupied + 1) } } };
-            }
-          }
-          return f;
-        }));
-      } else if (referral && status === 'discharged' && referral.status !== 'discharged') {
-        setFacilities(prevFacilities => prevFacilities.map(f => {
-          if (f.id === referral.receivingFacilityId) {
-            const bedCap = f.capacity[referral.requiredBedType];
-            if (bedCap) {
-              return { ...f, capacity: { ...f.capacity, [referral.requiredBedType]: { ...bedCap, occupied: Math.max(0, bedCap.occupied - 1) } } };
-            }
-          }
-          return f;
-        }));
-      }
-      return prev.map(r => {
-        if (r.id === id) {
-          const isApproving = ['dept_approved', 'manager_approved', 'accepted'].includes(status);
-          const finalReceivingFacilityId = (r.receivingFacilityId === 'auto' && isApproving) ? (user.facilityId || r.receivingFacilityId) : r.receivingFacilityId;
-          
-          const updated = {
-            ...r,
-            status,
-            receivingFacilityId: finalReceivingFacilityId,
-            updatedAt: now,
-            statusHistory: [...r.statusHistory, { status, timestamp: now, userId: user.id, notes }]
-          };
-          
-          // Notify referring facility
-          createNotification({
-            title: `Referral Status Updated: ${status.toUpperCase()}`,
-            message: `Referral for ${r.patientData.name} is now ${status}.`,
-            type: status === 'rejected' ? 'warning' : 'success',
-            referralId: r.id,
-            facilityId: r.referringFacilityId,
-            targetRoles: ['consultant', 'specialist', 'resident', 'medical_director', 'er_official']
-          });
+    const referral = referrals.find(r => r.id === id);
+    if (!referral) return;
 
-          // Notify receiving facility members if approved or arrived
-          if (['manager_approved', 'accepted', 'arrived'].includes(status) && finalReceivingFacilityId !== 'auto') {
-            createNotification({
-              title: `Referral ${status.toUpperCase()}`,
-              message: `Patient ${r.patientData.name} referral is now ${status.replace('_', ' ')}.`,
-              type: 'info',
-              referralId: r.id,
-              facilityId: finalReceivingFacilityId
-              // No targetRoles specified means it notifies all facility members
-            });
-          }
-
-          return updated;
+    if (status === 'admitted' && referral.status !== 'admitted') {
+      const facility = facilities.find(f => f.id === referral.receivingFacilityId);
+      if (facility) {
+        const bedCap = facility.capacity[referral.requiredBedType];
+        if (bedCap) {
+          updateDoc(doc(db, 'facilities', facility.id), {
+            [`capacity.${referral.requiredBedType}.occupied`]: Math.min(bedCap.total, bedCap.occupied + 1)
+          }).catch(console.error);
         }
-        return r;
-      });
+      }
+    } else if (status === 'discharged' && referral.status !== 'discharged') {
+      const facility = facilities.find(f => f.id === referral.receivingFacilityId);
+      if (facility) {
+        const bedCap = facility.capacity[referral.requiredBedType];
+        if (bedCap) {
+          updateDoc(doc(db, 'facilities', facility.id), {
+            [`capacity.${referral.requiredBedType}.occupied`]: Math.max(0, bedCap.occupied - 1)
+          }).catch(console.error);
+        }
+      }
+    }
+
+    const isApproving = ['dept_approved', 'manager_approved', 'accepted'].includes(status);
+    const finalReceivingFacilityId = (referral.receivingFacilityId === 'auto' && isApproving) ? (user.facilityId || referral.receivingFacilityId) : referral.receivingFacilityId;
+    
+    const newHistory = [...referral.statusHistory, { status, timestamp: now, userId: user.id, notes }];
+    
+    updateDoc(doc(db, 'referrals', id), {
+      status,
+      receivingFacilityId: finalReceivingFacilityId,
+      updatedAt: now,
+      statusHistory: newHistory
+    }).catch(console.error);
+
+    // Notify referring facility
+    createNotification({
+      title: `Referral Status Updated: ${status.toUpperCase()}`,
+      message: `Referral for ${referral.patientData.name} is now ${status}.`,
+      type: status === 'rejected' ? 'warning' : 'success',
+      referralId: referral.id,
+      facilityId: referral.referringFacilityId,
+      targetRoles: ['consultant', 'specialist', 'resident', 'medical_director', 'er_official']
     });
-  }, [user, setReferrals, setFacilities, createNotification]);
+
+    // Notify receiving facility members if approved or arrived
+    if (['manager_approved', 'accepted', 'arrived'].includes(status) && finalReceivingFacilityId !== 'auto') {
+      createNotification({
+        title: `Referral ${status.toUpperCase()}`,
+        message: `Patient ${referral.patientData.name} referral is now ${status.replace('_', ' ')}.`,
+        type: 'info',
+        referralId: referral.id,
+        facilityId: finalReceivingFacilityId
+      });
+    }
+  }, [user, referrals, facilities, createNotification]);
 
   const overrideReferralDestination = useCallback((id: string, newFacilityId: string) => {
     if (!user) return;
     const now = new Date().toISOString();
-    setReferrals(prev => prev.map(r => {
-      if (r.id === id) {
-        return {
-          ...r,
-          receivingFacilityId: newFacilityId,
-          updatedAt: now,
-          statusHistory: [...r.statusHistory, { 
-            status: r.status, 
-            timestamp: now, 
-            userId: user.id, 
-            notes: `Destination manually overridden to ${facilities.find(f => f.id === newFacilityId)?.name}` 
-          }]
-        };
-      }
-      return r;
-    }));
-  }, [user, setReferrals, facilities]);
+    const r = referrals.find(ref => ref.id === id);
+    if (!r) return;
+
+    updateDoc(doc(db, 'referrals', id), {
+      receivingFacilityId: newFacilityId,
+      updatedAt: now,
+      statusHistory: [...r.statusHistory, { 
+        status: r.status, 
+        timestamp: now, 
+        userId: user.id, 
+        notes: `Destination manually overridden to ${facilities.find(f => f.id === newFacilityId)?.name}` 
+      }]
+    }).catch(console.error);
+  }, [user, referrals, facilities]);
 
   const addDeptComment = useCallback((referralId: string, status: DeptApprovalStatus, comment: string) => {
     if (!user) return;
     const now = new Date().toISOString();
-    setReferrals(prev => prev.map(r => {
-      if (r.id === referralId) {
-        const newComment = { id: uuidv4(), userId: user.id, timestamp: now, status, comment };
-        const updated = { ...r, deptComments: [...r.deptComments, newComment] };
-        
-        // Auto-update status to dept_approved if needed (simplified logic)
-        if (['direct_approval', 'urgent_approval', 'scheduled_approval'].includes(status)) {
-           if (r.status === 'pending') {
-             updated.status = 'dept_approved';
-             updated.statusHistory = [...r.statusHistory, { status: 'dept_approved', timestamp: now, userId: user.id, notes: 'Department Head Approved' }];
-             if (r.receivingFacilityId === 'auto') {
-               updated.receivingFacilityId = user.facilityId || 'auto';
-             }
-             
-             // Notify hospital manager for final approval
-             createNotification({
-               title: `Department Approved - Needs Final Approval`,
-               message: `Dr. ${user.name} approved referral ${r.id}. Needs manager approval.`,
-               type: 'info',
-               referralId: r.id,
-               facilityId: updated.receivingFacilityId,
-               targetRoles: ['medical_director', 'hospital_manager', 'deputy_manager']
-             });
-           }
-        }
-        
-        return updated;
-      }
-      return r;
-    }));
-  }, [user, setReferrals, createNotification]);
+    const r = referrals.find(ref => ref.id === referralId);
+    if (!r) return;
+
+    const newComment = { id: uuidv4(), userId: user.id, timestamp: now, status, comment };
+    let updates: any = {
+      deptComments: [...r.deptComments, newComment]
+    };
+    
+    if (['direct_approval', 'urgent_approval', 'scheduled_approval'].includes(status)) {
+       if (r.status === 'pending') {
+         updates.status = 'dept_approved';
+         updates.statusHistory = [...r.statusHistory, { status: 'dept_approved', timestamp: now, userId: user.id, notes: 'Department Head Approved' }];
+         const newReceivingFacilityId = r.receivingFacilityId === 'auto' ? (user.facilityId || 'auto') : r.receivingFacilityId;
+         updates.receivingFacilityId = newReceivingFacilityId;
+         
+         createNotification({
+           title: `Department Approved - Needs Final Approval`,
+           message: `Dr. ${user.name} approved referral ${r.id}. Needs manager approval.`,
+           type: 'info',
+           referralId: r.id,
+           facilityId: newReceivingFacilityId,
+           targetRoles: ['medical_director', 'hospital_manager', 'deputy_manager']
+         });
+       }
+    }
+    
+    updateDoc(doc(db, 'referrals', referralId), updates).catch(console.error);
+  }, [user, referrals, createNotification]);
 
 
   const markNotificationRead = useCallback((id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  }, [setNotifications]);
+    updateDoc(doc(db, 'notifications', id), { read: true }).catch(console.error);
+  }, []);
 
   const markAllNotificationsRead = useCallback(() => {
     if (!user) return;
-    setNotifications(prev => prev.map(n => n.userId === user.id ? { ...n, read: true } : n));
-  }, [user, setNotifications]);
+    const batch = writeBatch(db);
+    notifications.forEach(n => {
+      if (n.userId === user.id && !n.read) {
+        batch.update(doc(db, 'notifications', n.id), { read: true });
+      }
+    });
+    batch.commit().catch(console.error);
+  }, [user, notifications]);
 
   const contextValue = useMemo(() => ({
     users,
