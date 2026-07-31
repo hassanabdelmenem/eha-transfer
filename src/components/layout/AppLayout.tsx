@@ -81,7 +81,7 @@ export const AppLayout: React.FC = () => {
   };
   
   const navItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Referrals', path: '/referrals', icon: Users },
     { name: 'Directory', path: '/directory', icon: BookOpen },
   ];
@@ -98,51 +98,56 @@ export const AppLayout: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans overflow-hidden">
-      <header className="h-16 bg-blue-900 text-white flex items-center justify-between px-6 shrink-0 border-b-4 border-blue-700">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-md flex items-center justify-center">
+    <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans overflow-hidden w-full">
+      <header className="min-h-[4rem] h-auto py-3 md:py-2 bg-blue-900 text-white flex flex-col md:flex-row md:items-center justify-between px-3 sm:px-6 border-b-4 border-blue-700 w-full relative gap-y-3">
+        {/* Logo Section */}
+        <div className="flex items-center gap-3 shrink-0 mx-auto md:mx-0">
+          <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-md flex items-center justify-center shrink-0">
             <Activity className="h-7 w-7 text-blue-900" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight uppercase hidden sm:block">Ismailia Health Connect</h1>
-            <p className="text-[10px] opacity-80 uppercase tracking-widest hidden sm:block">Referral Coordination System</p>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase text-center md:text-left">Ismailia Health Connect</h1>
+            <p className="text-[9px] md:text-[10px] opacity-80 uppercase tracking-widest text-center md:text-left">Referral Coordination System</p>
           </div>
         </div>
-        <div className="flex items-center gap-6">
+
+        {/* Actions Section - Full width on mobile, right-aligned on desktop */}
+        <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto w-full md:w-auto mx-auto md:ml-auto md:mr-0 justify-between md:justify-end no-scrollbar pb-1">
           {!isOnline && (
-            <div className="flex items-center gap-2 bg-red-500/20 px-3 py-1.5 rounded text-red-100 text-[10px] font-bold uppercase tracking-wide" title="IndexedDB Offline Mode active">
+            <div className="flex items-center gap-2 bg-red-500/20 px-3 py-1.5 rounded text-red-100 text-[10px] font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="IndexedDB Offline Mode active">
               <WifiOff className="w-3.5 h-3.5" />
-              Offline
-              {pendingSyncCount > 0 && <span className="bg-red-500/50 px-1.5 py-0.5 rounded ml-1">{pendingSyncCount} pending upload</span>}
+              <span className="hidden sm:inline">Offline</span>
+              {pendingSyncCount > 0 && <span className="bg-red-500/50 px-1.5 py-0.5 rounded ml-1">{pendingSyncCount} <span className="hidden sm:inline">pending upload</span></span>}
             </div>
           )}
           {isOnline && pendingSyncCount > 0 && (
-            <div className="flex items-center gap-2 bg-amber-500/20 px-3 py-1.5 rounded text-amber-100 text-[10px] font-bold uppercase tracking-wide" title="Uploading IndexedDB data to server">
+            <div className="flex items-center gap-2 bg-amber-500/20 px-3 py-1.5 rounded text-amber-100 text-[10px] font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="Uploading IndexedDB data to server">
               <Database className="w-3.5 h-3.5 animate-pulse" />
-              Pending Upload ({pendingSyncCount})
+              <span className="hidden sm:inline">Pending Upload</span> ({pendingSyncCount})
             </div>
           )}
           {isOnline && pendingSyncCount === 0 && (
-            <div className="flex items-center gap-2 bg-emerald-500/20 px-3 py-1.5 rounded text-emerald-100 text-[10px] font-bold uppercase tracking-wide" title="IndexedDB fully synced with server">
+            <div className="hidden sm:flex items-center gap-2 bg-emerald-500/20 px-3 py-1.5 rounded text-emerald-100 text-[10px] font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="IndexedDB fully synced with server">
               <Cloud className="w-3.5 h-3.5" />
               Database Synced
             </div>
           )}
+          
           <button 
             onClick={() => {
               setProfilePhone(user?.phoneNumber || '');
               setProfileSchedule(user?.monthlySchedule || '');
               setShowProfile(true);
             }} 
-            className="hidden sm:flex flex-col items-end hover:opacity-80 transition-opacity text-left"
+            className="hidden lg:flex flex-col items-end hover:opacity-80 transition-opacity text-left shrink-0 whitespace-nowrap"
           >
             <span className="text-xs font-semibold">{user.name}</span>
             <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded">{user.role.replace(/_/g, ' ')} {facility ? `• ${facility.name}` : ''}</span>
           </button>
-          <div className="hidden sm:block h-10 w-px bg-blue-700"></div>
           
-          <div className="flex items-center gap-4">
+          <div className="hidden lg:block h-10 w-px bg-blue-700 shrink-0 mx-2"></div>
+          
+          <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 flex-1 md:flex-none whitespace-nowrap px-1 w-full">
             <button
               onClick={() => setShowHotline(true)}
               className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded transition-colors text-[10px] font-bold uppercase tracking-wider shadow-sm"
@@ -179,7 +184,7 @@ export const AppLayout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-w-0 w-full">
         {/* Sidebar Navigation */}
         <aside className="w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col p-4 shrink-0 hidden sm:flex">
           <nav className="space-y-1">
@@ -244,7 +249,7 @@ export const AppLayout: React.FC = () => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 min-w-0 overflow-auto p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>

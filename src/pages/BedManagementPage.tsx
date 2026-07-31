@@ -11,11 +11,14 @@ export const BedManagementPage: React.FC = () => {
   const { user } = useAuth();
   const { facilities, updateFacilityCapacity } = useData();
 
-  if (!user || !['nurse', 'nursing_supervisor', 'head_of_department', 'er_room', 'owner'].includes(user.role)) {
+  const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
+  const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+
+  if (!user || (!['nurse', 'nursing_supervisor', 'head_of_department', 'er_room'].includes(user.role) && !isAdmin)) {
     return <div className="p-8 text-center text-slate-500">Access Denied. Nursing staff privileges required.</div>;
   }
 
-  const facility = facilities.find(f => f.id === user.facilityId);
+  const facility = facilities.find(f => f.id === selectedFacilityId);
   const [capacities, setCapacities] = useState<Record<BedType, { total: number; occupied: number }>>({} as Record<BedType, { total: number; occupied: number }>);
   const [saved, setSaved] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'visual'>('visual');
@@ -26,7 +29,7 @@ export const BedManagementPage: React.FC = () => {
     }
   }, [facility]);
 
-  if (!facility) {
+  if (!user.facilityId && !isAdmin) {
     return <div className="p-8 text-center text-slate-500">Facility configuration missing.</div>;
   }
 
@@ -51,15 +54,37 @@ export const BedManagementPage: React.FC = () => {
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Bulk Bed Management</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Quickly update bed availability across {facility.name}.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Quickly update bed availability across {facility?.name || 'the facility'}.</p>
         </div>
-        <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
-          {saved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-          {saved ? 'Saved' : 'Save Changes'}
-        </Button>
+        {facility && (
+          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
+            {saved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            {saved ? 'Saved' : 'Save Changes'}
+          </Button>
+        )}
       </div>
 
-      <div className="flex items-center gap-2 mb-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-max">
+      {isAdmin && (
+        <Card className="mb-6 border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
+          <CardContent className="p-4 flex items-center gap-4">
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Admin View:</span>
+            <select
+              value={selectedFacilityId}
+              onChange={(e) => setSelectedFacilityId(e.target.value)}
+              className="flex-1 rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+            >
+              <option value="">Select Facility to Manage...</option>
+              {facilities.map(f => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+          </CardContent>
+        </Card>
+      )}
+
+      {facility ? (
+        <>
+          <div className="flex items-center gap-2 mb-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-max">
         <button
           onClick={() => setViewMode('visual')}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${viewMode === 'visual' ? 'bg-white dark:bg-slate-900 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
@@ -151,6 +176,12 @@ export const BedManagementPage: React.FC = () => {
         )}
         </CardContent>
       </Card>
+        </>
+      ) : (
+        <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
+          Please select a facility above to manage beds.
+        </Card>
+      )}
     </div>
   );
 };
