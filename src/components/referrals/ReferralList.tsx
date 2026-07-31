@@ -275,12 +275,20 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                     {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:text-slate-300 rounded text-[9px] font-bold uppercase">ROUTINE</span>}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 font-medium">
-                      {['in_transit', 'accepted', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>}
-                      {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>}
-                      {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>}
-                      {['rejected'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>}
-                      <span className="capitalize">{referral.status.replace('_', ' ')}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1 font-medium text-[10px] uppercase text-slate-600 dark:text-slate-300">
+                        {['in_transit', 'accepted', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>}
+                        {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>}
+                        {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>}
+                        {['rejected'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>}
+                        {['postponed'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>}
+                        <span className="capitalize">{referral.status.replace('_', ' ')}</span>
+                      </div>
+                      {referral.isEscalated && (
+                        <span className="px-1.5 py-0.5 bg-red-600 text-white rounded text-[8px] font-bold uppercase tracking-wider animate-pulse">
+                          ESCALATED
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">

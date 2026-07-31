@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { VoiceTextarea } from '../components/ui/VoiceTextarea';
 import { StatusTimeline } from '../components/referrals/StatusTimeline';
 import { PrintableSummary } from '../components/referrals/PrintableSummary';
-import { ArrowLeft, Printer, Check, X, Truck, Building, FileText, CheckCircle, AlertCircle, Copy, Download, Activity } from 'lucide-react';
+import { ArrowLeft, Printer, Check, X, Truck, Building, FileText, CheckCircle, AlertCircle, Copy, Download, Activity, ShieldAlert, Clock } from 'lucide-react';
 import { ECGViewerOverlay } from '../components/referrals/ECGViewerOverlay';
 import { Badge } from '../components/ui/Badge';
 import { ReferralStatus, DeptApprovalStatus } from '../types';
@@ -18,7 +18,7 @@ import { ReferralStatus, DeptApprovalStatus } from '../types';
 export const ReferralDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { referrals, updateReferralStatus, overrideReferralDestination, addDeptComment, facilities, shiftAssignments, users } = useData();
+  const { referrals, updateReferralStatus, overrideReferralDestination, toggleReferralEscalation, addDeptComment, facilities, shiftAssignments, users } = useData();
   const { user } = useAuth();
   
   const [notes, setNotes] = useState('');
@@ -27,6 +27,7 @@ export const ReferralDetailPage: React.FC = () => {
   const [deptAction, setDeptAction] = useState<DeptApprovalStatus>('pending');
   const [copied, setCopied] = useState(false);
   const [overrideFacilityId, setOverrideFacilityId] = useState('');
+  const [contractedFacilityId, setContractedFacilityId] = useState('');
 
   const referral = referrals.find(r => r.id === id);
 
@@ -112,19 +113,42 @@ export const ReferralDetailPage: React.FC = () => {
 
           </div>
         </div>
-        <Button 
-          variant="outline" 
-          className="print:hidden bg-white dark:bg-slate-900"
-          onClick={() => handlePrint()}
-        >
-          <Printer className="h-4 w-4 mr-2" />
-          Generate PDF Summary
-        </Button>
+        <div className="flex items-center gap-2 print:hidden">
+          <Button
+            variant={referral.isEscalated ? "destructive" : "outline"}
+            className={referral.isEscalated ? "bg-red-600 text-white hover:bg-red-700" : "bg-white dark:bg-slate-900"}
+            onClick={() => toggleReferralEscalation(referral.id, !referral.isEscalated)}
+          >
+            <ShieldAlert className="h-4 w-4 mr-2" />
+            {referral.isEscalated ? 'De-escalate' : 'Mark Escalated'}
+          </Button>
+          <Button 
+            variant="outline" 
+            className="bg-white dark:bg-slate-900"
+            onClick={() => handlePrint()}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Generate PDF Summary
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:hidden">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {referral.isEscalated && (
+            <div className="p-4 bg-red-600 text-white rounded-lg shadow-md flex items-center justify-between border-2 border-red-700">
+              <div className="flex items-center gap-3">
+                <ShieldAlert className="w-6 h-6 animate-pulse shrink-0" />
+                <div>
+                  <h3 className="font-bold text-sm uppercase tracking-wide">Escalated Referral (Priority Override)</h3>
+                  <p className="text-xs text-red-100">System Admins can take direct actions (Approve, Decline, Postpone) regardless of department review.</p>
+                </div>
+              </div>
+              <span className="text-[10px] bg-red-900 text-white font-bold px-2 py-1 rounded uppercase">Direct Action Enabled</span>
+            </div>
+          )}
+
           <PatientCard patient={referral.patientData} />
 
           <Card>
@@ -383,8 +407,74 @@ export const ReferralDetailPage: React.FC = () => {
                 </div>
   
                 <div className="flex flex-col gap-2">
-                  {/* Manager Final Approval */}
-                  {((isFacilityManager && referral.status === 'dept_approved') || (isAdmin && ['pending', 'dept_approved'].includes(referral.status))) && (
+                  {/* System Admin Escalated Direct Actions Section */}
+                  {isAdmin && (
+                    <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg space-y-3 mb-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-red-700 dark:text-red-400 uppercase flex items-center gap-1.5">
+                          <ShieldAlert className="w-4 h-4" /> System Admin Direct Actions
+                        </span>
+                        {referral.isEscalated && (
+                          <span className="text-[9px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded uppercase">Escalated</span>
+                        )}
+                      </div>
+
+                      {/* Contracted Facility Transfer option on Approval */}
+                      <div className="space-y-1.5 pt-1">
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase">
+                          Move/Transfer to Contracted Facility (Optional)
+                        </label>
+                        <select
+                          className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+                          value={contractedFacilityId}
+                          onChange={(e) => setContractedFacilityId(e.target.value)}
+                        >
+                          <option value="">-- No Contracted Facility (Default Destination) --</option>
+                          {facilities
+                            .filter(f => f.id !== referral.referringFacilityId && (f.isExternal || f.type === 'external_contracted' || (f.contractedServices && f.contractedServices.length > 0)))
+                            .map(f => (
+                              <option key={f.id} value={f.id}>
+                                🏥 {f.name} {f.contractedServices?.length ? `(${f.contractedServices.join(', ')})` : '(Contracted)'}
+                              </option>
+                            ))
+                          }
+                        </select>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 pt-1">
+                        <Button 
+                          onClick={() => {
+                            if (contractedFacilityId) {
+                              overrideReferralDestination(referral.id, contractedFacilityId);
+                            }
+                            handleStatusUpdate('manager_approved');
+                          }} 
+                          className="bg-green-600 hover:bg-green-700 text-xs py-1.5 h-9"
+                          title="Direct Approve Referral"
+                        >
+                          <CheckCircle className="h-3.5 h-3.5 mr-1 shrink-0" /> Approve
+                        </Button>
+                        <Button 
+                          onClick={() => handleStatusUpdate('rejected')} 
+                          variant="destructive" 
+                          className="text-xs py-1.5 h-9"
+                          title="Direct Decline Referral"
+                        >
+                          <X className="h-3.5 h-3.5 mr-1 shrink-0" /> Decline
+                        </Button>
+                        <Button 
+                          onClick={() => handleStatusUpdate('postponed')} 
+                          className="bg-amber-600 hover:bg-amber-700 text-white text-xs py-1.5 h-9"
+                          title="Direct Postpone Referral"
+                        >
+                          <Clock className="h-3.5 h-3.5 mr-1 shrink-0" /> Postpone
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Standard Manager Final Approval (non-admin) */}
+                  {!isAdmin && isFacilityManager && referral.status === 'dept_approved' && (
                     <>
                       <Button onClick={() => handleStatusUpdate('manager_approved')} className="w-full bg-blue-700 hover:bg-blue-800">
                         <CheckCircle className="h-4 w-4 mr-2" /> Manager Final Confirm
@@ -435,13 +525,16 @@ export const ReferralDetailPage: React.FC = () => {
                   {referral.status === 'rejected' && (
                     <Badge variant="danger" className="w-full justify-center py-2 text-xs">Referral Rejected</Badge>
                   )}
+                  {referral.status === 'postponed' && (
+                    <Badge variant="warning" className="w-full justify-center py-2 text-xs bg-amber-500 text-white">Referral Postponed</Badge>
+                  )}
                   
                   {isAdmin && ['pending', 'dept_approved', 'manager_approved', 'accepted'].includes(referral.status) && (
-                    <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
                       <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Admin Override Destination</label>
                       <div className="flex gap-2">
                         <select 
-                          className="flex-1 rounded border border-slate-300 p-2 text-xs bg-white dark:bg-slate-900"
+                          className="flex-1 rounded border border-slate-300 p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
                           value={overrideFacilityId}
                           onChange={(e) => setOverrideFacilityId(e.target.value)}
                         >

@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
 import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
-import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 
 export interface DirectAdmission {
   id: string;
@@ -30,6 +30,7 @@ interface DataContextType {
   addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => void;
   updateReferralStatus: (id: string, status: Referral['status'], notes?: string) => void;
   overrideReferralDestination: (id: string, newFacilityId: string) => void;
+  toggleReferralEscalation: (id: string, isEscalated: boolean) => void;
   addDeptComment: (id: string, status: DeptApprovalStatus, comment: string) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
@@ -39,6 +40,10 @@ interface DataContextType {
   assignShift: (facilityId: string, department: string, assignedUserId: string | null) => void;
   updateUserVerified: (id: string, verified: boolean) => void;
   updateUserRole: (id: string, role: Role, department?: string) => void;
+  updateUserFacility: (id: string, facilityId: string, department?: string) => void;
+  removeUser: (id: string) => void;
+  addFacility: (facility: Omit<Facility, 'id'>) => void;
+  removeFacility: (facilityId: string) => void;
   addFacilityDepartment: (facilityId: string, department: string) => void;
   removeFacilityDepartment: (facilityId: string, department: string) => void;
   updateFacilityCapacity: (facilityId: string, capacities: Record<string, { total: number; occupied: number }>) => void;
@@ -310,6 +315,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setDoc(doc(db, 'referrals', newReferral.id), newReferral).catch(console.error);
+    if (!isOnline) {
+      setPendingSyncCount(prev => prev + 1);
+    }
 
     // Generate notification for receiving facility managers/heads
     if (newReferral.receivingFacilityId === 'auto' && newReferral.candidateFacilityIds) {
@@ -451,6 +459,46 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, referrals, createNotification]);
 
 
+  const updateUserFacility = useCallback((id: string, facilityId: string, department?: string) => {
+    const updates: any = { facilityId };
+    if (department !== undefined) updates.department = department;
+    updateDoc(doc(db, 'users', id), updates).catch(console.error);
+  }, []);
+
+  const removeUser = useCallback((id: string) => {
+    deleteDoc(doc(db, 'users', id)).catch(console.error);
+  }, []);
+
+  const addFacility = useCallback((facilityData: Omit<Facility, 'id'>) => {
+    const id = uuidv4();
+    const newFacility: Facility = {
+      ...facilityData,
+      id
+    };
+    setDoc(doc(db, 'facilities', id), newFacility).catch(console.error);
+  }, []);
+
+  const removeFacility = useCallback((facilityId: string) => {
+    deleteDoc(doc(db, 'facilities', facilityId)).catch(console.error);
+  }, []);
+
+  const toggleReferralEscalation = useCallback((id: string, isEscalated: boolean) => {
+    const now = new Date().toISOString();
+    const r = referrals.find(ref => ref.id === id);
+    if (!r) return;
+
+    updateDoc(doc(db, 'referrals', id), {
+      isEscalated,
+      updatedAt: now,
+      statusHistory: [...r.statusHistory, {
+        status: r.status,
+        timestamp: now,
+        userId: user?.id || 'system',
+        notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
+      }]
+    }).catch(console.error);
+  }, [referrals, user]);
+
   const markNotificationRead = useCallback((id: string) => {
     updateDoc(doc(db, 'notifications', id), { read: true }).catch(console.error);
   }, []);
@@ -478,6 +526,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addReferral,
     updateReferralStatus,
     overrideReferralDestination,
+    toggleReferralEscalation,
     addDeptComment,
     markNotificationRead,
     markAllNotificationsRead,
@@ -487,6 +536,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     assignShift,
     updateUserVerified,
     updateUserRole,
+    updateUserFacility,
+    removeUser,
+    addFacility,
+    removeFacility,
     addFacilityDepartment,
     removeFacilityDepartment,
     updateFacilityCapacity,
@@ -504,6 +557,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addReferral,
     updateReferralStatus,
     overrideReferralDestination,
+    toggleReferralEscalation,
     addDeptComment,
     markNotificationRead,
     markAllNotificationsRead,
@@ -513,6 +567,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     assignShift,
     updateUserVerified,
     updateUserRole,
+    updateUserFacility,
+    removeUser,
+    addFacility,
+    removeFacility,
     addFacilityDepartment,
     removeFacilityDepartment,
     updateFacilityCapacity,

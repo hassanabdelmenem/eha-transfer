@@ -33,34 +33,20 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
-  const [nightShift, setNightShift] = useState<boolean>(
-    () => localStorage.getItem('app-night-shift') === 'true'
-  );
 
   useEffect(() => {
     const root = window.document.documentElement;
-    
-    // Handle night shift
-    if (nightShift) {
-      root.classList.add('night-shift-mode');
-    } else {
-      root.classList.remove('night-shift-mode');
-    }
+    root.classList.remove('night-shift-mode', 'light', 'dark');
 
-    // Handle theme
-    root.classList.remove('light', 'dark');
-    if (nightShift) {
-      root.classList.add('dark'); // Force dark mode for night shift
-    } else if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
-        .matches
+    if (theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
         ? 'dark'
         : 'light';
       root.classList.add(systemTheme);
     } else {
       root.classList.add(theme);
     }
-  }, [theme, nightShift]);
+  }, [theme]);
 
   const value = {
     theme,
@@ -68,11 +54,8 @@ export function ThemeProvider({
       localStorage.setItem(storageKey, theme);
       setTheme(theme);
     },
-    nightShift,
-    setNightShift: (enabled: boolean) => {
-      localStorage.setItem('app-night-shift', enabled.toString());
-      setNightShift(enabled);
-    }
+    nightShift: false,
+    setNightShift: () => null
   };
 
   return (

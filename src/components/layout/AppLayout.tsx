@@ -11,7 +11,7 @@ import { MOCK_USERS } from '../../lib/mock-data';
 export const AppLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const { notifications, facilities, isOnline, pendingSyncCount, referrals, directAdmissions, addShiftLog, users } = useData();
-  const { theme, setTheme, nightShift, setNightShift } = useTheme();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
 
   const [showProfile, setShowProfile] = React.useState(false);
@@ -157,13 +157,6 @@ export const AppLayout: React.FC = () => {
               <span className="hidden lg:inline">Hotline</span>
             </button>
             <div className="hidden sm:block h-6 w-px bg-blue-700 mx-1"></div>
-                        <button
-              onClick={() => setNightShift(!nightShift)}
-              className={`${nightShift ? 'text-amber-400' : 'text-blue-200'} hover:text-white transition-colors`}
-              title="Toggle Night Shift Mode"
-            >
-              <Eye className="h-5 w-5" />
-            </button>
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="text-blue-200 hover:text-white transition-colors"
