@@ -18,4 +18,4 @@ export const googleProvider = new GoogleAuthProvider();
 // Initialize Firestore with offline persistence
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache()
-});
+}, "default");

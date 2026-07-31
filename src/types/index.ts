@@ -51,7 +51,8 @@ export type ReferralStatus =
   | 'in_transit' 
   | 'arrived' 
   | 'admitted' 
-  | 'discharged';
+  | 'discharged'
+  | 'postponed';
 
 export interface Attachment {
   id: string;
@@ -114,6 +115,7 @@ export interface Referral {
   requiredBedType: BedType;
   priority: ReferralPriority;
   status: ReferralStatus;
+  isEscalated?: boolean;
   reasonForReferral: string;
   createdAt: string;
   updatedAt: string;

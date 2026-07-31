@@ -100,13 +100,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: 'resident'
     } as User;
     setUser(mockUser);
+    try {
+      localStorage.setItem('auth_user', JSON.stringify(mockUser));
+    } catch (e) {}
   };
   
   const logout = async () => {
     await firebaseSignOut(auth);
     setUser(null);
     setMfaVerifiedAt(null);
-    localStorage.removeItem('eha_mfa_v2');
+    try {
+      localStorage.removeItem('eha_mfa_v2');
+      localStorage.removeItem('mfa_timestamp');
+      localStorage.removeItem('auth_user');
+    } catch (e) {}
   };
 
   const hasRole = (roles: User['role'][]) => {
@@ -120,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setMfaVerifiedAt(now);
       try {
         localStorage.setItem('eha_mfa_v2', now.toString());
+        localStorage.setItem('mfa_timestamp', now.toString());
       } catch (err) {}
       return true;
     }
