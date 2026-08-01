@@ -41,6 +41,7 @@ interface DataContextType {
   updateUserVerified: (id: string, verified: boolean) => void;
   updateUserRole: (id: string, role: Role, department?: string) => void;
   updateUserFacility: (id: string, facilityId: string, department?: string) => void;
+  updateFacility: (facilityId: string, updates: Partial<Facility>) => void;
   removeUser: (id: string) => void;
   addFacility: (facility: Omit<Facility, 'id'>) => void;
   removeFacility: (facilityId: string) => void;
@@ -182,6 +183,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserRole = useCallback((id: string, role: Role, department?: string) => {
     const updates: any = { role };
     if (department !== undefined) updates.department = department;
+    if (role === 'system_admin') updates.facilityId = 'branch';
     updateDoc(doc(db, 'users', id), updates).catch(console.error);
   }, []);
 
@@ -476,6 +478,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id
     };
     setDoc(doc(db, 'facilities', id), newFacility).catch(console.error);
+  }, []);
+
+  const updateFacility = useCallback((facilityId: string, updates: Partial<Facility>) => {
+    updateDoc(doc(db, 'facilities', facilityId), updates).catch(console.error);
   }, []);
 
   const removeFacility = useCallback((facilityId: string) => {

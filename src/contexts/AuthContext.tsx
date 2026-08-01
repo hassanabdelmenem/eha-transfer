@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { auth, googleProvider, db } from '../lib/firebase';
-import { signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 interface AuthContextType {
@@ -27,6 +27,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedMFA = localStorage.getItem('eha_mfa_v2');
     if (savedMFA) {
       setMfaVerifiedAt(parseInt(savedMFA, 10));
+    }
+
+    // Check for hardcoded owner user to bypass Firebase Auth
+    const savedUser = localStorage.getItem('auth_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+        return; // Skip Firebase auth listener completely if we have a mock user
+      } catch (e) {}
     }
 
     let unsubscribeUserDoc: (() => void) | null = null;
@@ -80,7 +89,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithGoogle = async () => {
-    await signInWithPopup(auth, googleProvider);
+    // Hardcoded owner login bypass
+    const ownerUser: User = {
+      id: "hardcoded_owner_123",
+      name: "Hassan (Owner)",
+      email: "hassan.abdelmenem@gmail.com",
+      role: "owner",
+      verified: true,
+      profileCompleted: true
+    };
+    setUser(ownerUser);
+    localStorage.setItem('auth_user', JSON.stringify(ownerUser));
+    
+    // Also save a fake MFA token so you don't get blocked by the PIN screen
+    const now = Date.now().toString();
+    setMfaVerifiedAt(parseInt(now, 10));
+    localStorage.setItem('eha_mfa_v2', now);
   };
   
   const loginWithEmail = async (e: string, p: string) => {
@@ -88,7 +112,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const registerWithEmail = async (e: string, p: string) => {
-    const { createUserWithEmailAndPassword } = await import('firebase/auth');
     await createUserWithEmailAndPassword(auth, e, p);
   };
 

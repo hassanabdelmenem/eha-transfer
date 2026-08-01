@@ -6,7 +6,7 @@ import { Referral } from '../../types';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { formatDateTime } from '../../lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Timer, AlertTriangle } from 'lucide-react';
 
 interface ReferralListProps {
@@ -69,6 +69,7 @@ const UrgencyTimer: React.FC<{ referral: Referral }> = ({ referral }) => {
 export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, searchQuery = '', priorityFilter = 'all', statusFilter = 'all', deptFilter = 'all', bedFilter = 'all', prioritySort = false }) => {
   const { referrals, facilities } = useData();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   let filtered = referrals;
   
@@ -205,7 +206,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
         {filtered.map(referral => {
           const fromFacility = facilities.find(f => f.id === referral.referringFacilityId);
           return (
-            <Card key={referral.id} className="p-4 cursor-pointer hover:bg-slate-50 dark:bg-slate-950 transition-colors" onClick={() => window.location.href=`/referrals/${referral.id}`}>
+            <Card key={referral.id} className="p-4 cursor-pointer hover:bg-slate-50 dark:bg-slate-950 transition-colors" onClick={() => navigate(`/referrals/${referral.id}`)}>
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <div className="font-bold text-slate-800 text-sm">{referral.patientData.name || 'Unknown Patient'}</div>
@@ -262,7 +263,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               const toFacility = facilities.find(f => f.id === referral.receivingFacilityId);
               
               return (
-                <tr key={referral.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-blue-50/50 cursor-pointer transition-colors" onClick={() => window.location.href=`/referrals/${referral.id}`}>
+                <tr key={referral.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-blue-50/50 cursor-pointer transition-colors" onClick={() => navigate(`/referrals/${referral.id}`)}>
                   <td className="px-6 py-4">
                     <div className="font-bold text-slate-800">{referral.patientData.name || 'Unknown Patient'}</div>
                     <div className="text-[10px] text-slate-400 font-mono mt-1">HID: {referral.patientData.hospitalId}</div>
