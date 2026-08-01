@@ -1,6 +1,161 @@
 @import "tailwindcss";
 @custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   Anthropic brand theme
+   Remaps Tailwind's default color scales onto the brand palette so existing
+   utility classes (bg-blue-600, text-red-700, etc.) render in brand colors
+   without touching every component. Semantic groupings:
+     - slate / gray            -> brand neutrals (Dark/Light/Mid Gray/Light Gray)
+     - red / amber / yellow    -> brand orange (warm accent)
+     - blue / indigo / purple  -> brand blue (cool accent)
+     - green / emerald         -> brand green (tertiary accent)
+   ========================================================================== */
+@theme {
+  --font-heading: "Poppins", Arial, sans-serif;
+  --font-body: "Lora", Georgia, serif;
+
+  --color-white: #faf9f5;
+  --color-black: #141413;
+
+  /* Neutrals (slate + gray) */
+  --color-slate-50: #faf9f5;
+  --color-slate-100: #e8e6dc;
+  --color-slate-200: #e8e6dc;
+  --color-slate-300: #b0aea5;
+  --color-slate-400: #b0aea5;
+  --color-slate-500: #b0aea5;
+  --color-slate-600: #8a8779;
+  --color-slate-700: #5f5d54;
+  --color-slate-800: #3a392f;
+  --color-slate-900: #221f1a;
+  --color-slate-950: #141413;
+
+  --color-gray-50: #faf9f5;
+  --color-gray-100: #e8e6dc;
+  --color-gray-200: #e8e6dc;
+  --color-gray-300: #b0aea5;
+  --color-gray-400: #b0aea5;
+  --color-gray-500: #b0aea5;
+  --color-gray-600: #8a8779;
+  --color-gray-700: #5f5d54;
+  --color-gray-800: #3a392f;
+  --color-gray-900: #221f1a;
+  --color-gray-950: #141413;
+
+  /* Warm accent (orange) covers red / amber / yellow */
+  --color-red-50: #f7ece5;
+  --color-red-100: #f3dfd5;
+  --color-red-200: #edc5b6;
+  --color-red-300: #e6ab96;
+  --color-red-400: #e09177;
+  --color-red-500: #d97757;
+  --color-red-600: #ad6148;
+  --color-red-700: #814b39;
+  --color-red-800: #56352a;
+  --color-red-900: #2a1f1b;
+  --color-red-950: #141413;
+
+  --color-amber-50: #f7ece5;
+  --color-amber-100: #f3dfd5;
+  --color-amber-200: #edc5b6;
+  --color-amber-300: #e6ab96;
+  --color-amber-400: #e09177;
+  --color-amber-500: #d97757;
+  --color-amber-600: #ad6148;
+  --color-amber-700: #814b39;
+  --color-amber-800: #56352a;
+  --color-amber-900: #2a1f1b;
+  --color-amber-950: #141413;
+
+  --color-yellow-50: #f7ece5;
+  --color-yellow-100: #f3dfd5;
+  --color-yellow-200: #edc5b6;
+  --color-yellow-300: #e6ab96;
+  --color-yellow-400: #e09177;
+  --color-yellow-500: #d97757;
+  --color-yellow-600: #ad6148;
+  --color-yellow-700: #814b39;
+  --color-yellow-800: #56352a;
+  --color-yellow-900: #2a1f1b;
+  --color-yellow-950: #141413;
+
+  /* Cool accent (blue) covers blue / indigo / purple */
+  --color-blue-50: #ecf0f1;
+  --color-blue-100: #dde6ed;
+  --color-blue-200: #c0d3e5;
+  --color-blue-300: #a4c1dc;
+  --color-blue-400: #87aed4;
+  --color-blue-500: #6a9bcc;
+  --color-blue-600: #577da3;
+  --color-blue-700: #445f7a;
+  --color-blue-800: #314151;
+  --color-blue-900: #1e2328;
+  --color-blue-950: #141413;
+
+  --color-indigo-50: #ecf0f1;
+  --color-indigo-100: #dde6ed;
+  --color-indigo-200: #c0d3e5;
+  --color-indigo-300: #a4c1dc;
+  --color-indigo-400: #87aed4;
+  --color-indigo-500: #6a9bcc;
+  --color-indigo-600: #577da3;
+  --color-indigo-700: #445f7a;
+  --color-indigo-800: #314151;
+  --color-indigo-900: #1e2328;
+  --color-indigo-950: #141413;
+
+  --color-purple-50: #ecf0f1;
+  --color-purple-100: #dde6ed;
+  --color-purple-200: #c0d3e5;
+  --color-purple-300: #a4c1dc;
+  --color-purple-400: #87aed4;
+  --color-purple-500: #6a9bcc;
+  --color-purple-600: #577da3;
+  --color-purple-700: #445f7a;
+  --color-purple-800: #314151;
+  --color-purple-900: #1e2328;
+  --color-purple-950: #141413;
+
+  /* Tertiary accent (green) covers green / emerald */
+  --color-green-50: #edeee6;
+  --color-green-100: #e0e3d7;
+  --color-green-200: #c6cdb8;
+  --color-green-300: #acb89a;
+  --color-green-400: #92a27b;
+  --color-green-500: #788c5d;
+  --color-green-600: #62714d;
+  --color-green-700: #4c573c;
+  --color-green-800: #353c2c;
+  --color-green-900: #1f211b;
+  --color-green-950: #141413;
+
+  --color-emerald-50: #edeee6;
+  --color-emerald-100: #e0e3d7;
+  --color-emerald-200: #c6cdb8;
+  --color-emerald-300: #acb89a;
+  --color-emerald-400: #92a27b;
+  --color-emerald-500: #788c5d;
+  --color-emerald-600: #62714d;
+  --color-emerald-700: #4c573c;
+  --color-emerald-800: #353c2c;
+  --color-emerald-900: #1f211b;
+  --color-emerald-950: #141413;
+}
+
+body {
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
+
 @media print {
   body {
     background-color: white !important;

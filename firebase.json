@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "eha-transfer",
     "public": "dist",
     "ignore": [
       "firebase.json",

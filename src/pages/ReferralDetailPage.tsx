@@ -419,24 +419,27 @@ export const ReferralDetailPage: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Contracted Facility Transfer option on Approval */}
+                      {/* Any Facility Transfer option on Approval (System Admin Bypass) */}
                       <div className="space-y-1.5 pt-1">
                         <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase">
-                          Move/Transfer to Contracted Facility (Optional)
+                          Force Move/Transfer to Facility (Bypass Bed Check)
                         </label>
                         <select
                           className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
                           value={contractedFacilityId}
                           onChange={(e) => setContractedFacilityId(e.target.value)}
                         >
-                          <option value="">-- No Contracted Facility (Default Destination) --</option>
+                          <option value="">-- Keep Default Destination --</option>
                           {facilities
-                            .filter(f => f.id !== referral.referringFacilityId && (f.isExternal || f.type === 'external_contracted' || (f.contractedServices && f.contractedServices.length > 0)))
-                            .map(f => (
-                              <option key={f.id} value={f.id}>
-                                🏥 {f.name} {f.contractedServices?.length ? `(${f.contractedServices.join(', ')})` : '(Contracted)'}
-                              </option>
-                            ))
+                            .filter(f => f.id !== referral.referringFacilityId)
+                            .map(f => {
+                              const bedCap = f.capacity[referral.requiredBedType] || { total: 0, occupied: 0 };
+                              return (
+                                <option key={f.id} value={f.id}>
+                                  🏥 {f.name} ({bedCap.occupied}/{bedCap.total} {referral.requiredBedType})
+                                </option>
+                              );
+                            })
                           }
                         </select>
                       </div>

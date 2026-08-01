@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 import { User, Role, FacilityType, BedType } from '../types';
 import { Badge } from '../components/ui/Badge';
-import { CheckCircle, XCircle, Plus, Trash2, Building, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Plus, Trash2, Building, AlertCircle, Edit2 } from 'lucide-react';
 
 export const FacilitySettingsPage: React.FC = () => {
   const { user } = useAuth();
@@ -17,6 +17,7 @@ export const FacilitySettingsPage: React.FC = () => {
     updateUserFacility,
     removeUser,
     addFacility,
+    updateFacility,
     removeFacility,
     addFacilityDepartment, 
     removeFacilityDepartment 
@@ -24,6 +25,7 @@ export const FacilitySettingsPage: React.FC = () => {
   
   const [newDepartment, setNewDepartment] = useState('');
   const [showAddFacility, setShowAddFacility] = useState(false);
+  const [editingFacilityId, setEditingFacilityId] = useState<string | null>(null);
 
   // New facility form state
   const [facName, setFacName] = useState('');
@@ -75,6 +77,21 @@ export const FacilitySettingsPage: React.FC = () => {
     }
   };
 
+  const handleEditFacilityClick = (f: any) => {
+    setEditingFacilityId(f.id);
+    setFacName(f.name);
+    setFacType(f.type);
+    setFacLocation(f.location);
+    setFacIsExternal(f.isExternal);
+    setFacContractedServices(f.contractedServices?.join(', ') || '');
+    setFacDepts(f.departments.join(', '));
+    setIcuTotal(f.capacity.ICU.total);
+    setCcuTotal(f.capacity.CCU.total);
+    setPicuTotal(f.capacity.PICU.total);
+    setWardTotal(f.capacity.Ward.total);
+    setShowAddFacility(true);
+  };
+
   const handleAddFacilitySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!facName.trim() || !facLocation.trim()) return;
@@ -82,7 +99,7 @@ export const FacilitySettingsPage: React.FC = () => {
     const departmentsArray = facDepts.split(',').map(d => d.trim()).filter(Boolean);
     const contractedServicesArray = facContractedServices.split(',').map(s => s.trim()).filter(Boolean);
 
-    addFacility({
+    const facilityPayload = {
       name: facName.trim(),
       type: facType,
       location: facLocation.trim(),
@@ -95,9 +112,16 @@ export const FacilitySettingsPage: React.FC = () => {
         PICU: { total: Number(picuTotal) || 0, occupied: 0 },
         Ward: { total: Number(wardTotal) || 0, occupied: 0 }
       }
-    });
+    };
+
+    if (editingFacilityId) {
+      updateFacility(editingFacilityId, facilityPayload);
+    } else {
+      addFacility(facilityPayload);
+    }
 
     // Reset form
+    setEditingFacilityId(null);
     setFacName('');
     setFacLocation('');
     setFacIsExternal(false);
@@ -126,7 +150,15 @@ export const FacilitySettingsPage: React.FC = () => {
               <Building className="w-5 h-5 text-blue-600" />
               Network Facilities
             </CardTitle>
-            <Button size="sm" onClick={() => setShowAddFacility(!showAddFacility)}>
+            <Button size="sm" onClick={() => {
+              if (showAddFacility) {
+                setShowAddFacility(false);
+                setEditingFacilityId(null);
+              } else {
+                setFacName(''); setFacLocation(''); setFacIsExternal(false); setFacContractedServices(''); setFacDepts('Emergency, ICU, Surgery, Internal Medicine'); setIcuTotal(10); setCcuTotal(5); setPicuTotal(5); setWardTotal(50);
+                setShowAddFacility(true);
+              }
+            }}>
               <Plus className="w-4 h-4 mr-1.5" />
               {showAddFacility ? 'Cancel' : 'Add Facility'}
             </Button>
@@ -134,7 +166,7 @@ export const FacilitySettingsPage: React.FC = () => {
           <CardContent className="space-y-4">
             {showAddFacility && (
               <form onSubmit={handleAddFacilitySubmit} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 space-y-4 mb-4">
-                <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">Add New Facility</h4>
+                <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">{editingFacilityId ? 'Edit Facility' : 'Add New Facility'}</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Facility Name *</label>
@@ -232,8 +264,8 @@ export const FacilitySettingsPage: React.FC = () => {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="ghost" onClick={() => setShowAddFacility(false)}>Cancel</Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Create Facility</Button>
+                  <Button type="button" variant="ghost" onClick={() => { setShowAddFacility(false); setEditingFacilityId(null); }}>Cancel</Button>
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">{editingFacilityId ? 'Update Facility' : 'Create Facility'}</Button>
                 </div>
               </form>
             )}
@@ -261,14 +293,24 @@ export const FacilitySettingsPage: React.FC = () => {
                     )}
                   </div>
                   {isGlobalAdmin && (
-                    <Button 
-                      variant="ghost" 
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 shrink-0" 
-                      title="Remove Facility"
-                      onClick={() => handleRemoveFacility(f.id, f.name)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0 shrink-0" 
+                        title="Edit Facility"
+                        onClick={() => handleEditFacilityClick(f)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 shrink-0" 
+                        title="Remove Facility"
+                        onClick={() => handleRemoveFacility(f.id, f.name)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}

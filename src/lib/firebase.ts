@@ -1,21 +1,22 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, initializeFirestore, persistentLocalCache } from 'firebase/firestore';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth, initializeAuth, browserSessionPersistence, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  projectId: "eha-transfer-app",
-  appId: "1:1085449675252:web:98b6ea73a5c5806d3799a1",
-  storageBucket: "eha-transfer-app.firebasestorage.app",
-  apiKey: "AIzaSyCtU6nJVrpBF1-BytbaCNgtScAQK3sU5eM",
-  authDomain: "eha-transfer-app.firebaseapp.com",
-  messagingSenderId: "1085449675252"
+  projectId: "eha-transfer-1785622025",
+  appId: "1:467744756760:web:6fd2817e76a941e6e49f6d",
+  storageBucket: "eha-transfer-1785622025.firebasestorage.app",
+  apiKey: "AIzaSyA3T3FvdxAztldN9Nx6z7aN9VczgLXne4U",
+  authDomain: "eha-transfer-1785622025.firebaseapp.com",
+  messagingSenderId: "467744756760"
 };
 
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+// Safely initialize the app
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// Use session persistence to bypass IndexedDB locking errors in Auth
+export const auth = !getApps().length ? initializeAuth(app, { persistence: browserSessionPersistence }) : getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Initialize Firestore with offline persistence
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache()
-}, "default");
+// Initialize Firestore without persistent cache to avoid IndexedDB locking errors
+export const db = getFirestore(app);
