@@ -12,8 +12,6 @@ interface AuthContextType {
   registerWithEmail: (e: string, p: string) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (roles: User['role'][]) => boolean;
-  verifyMFA: (pin: string) => boolean;
-  mfaVerifiedAt: number | null;
   updateUserProfile: (data: Partial<User>) => Promise<void>;
 }
 
@@ -21,14 +19,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [mfaVerifiedAt, setMfaVerifiedAt] = useState<number | null>(null);
 
   useEffect(() => {
-    const savedMFA = localStorage.getItem('eha_mfa_v2');
-    if (savedMFA) {
-      setMfaVerifiedAt(parseInt(savedMFA, 10));
-    }
-
     let unsubscribeUserDoc: (() => void) | null = null;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -108,10 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     await firebaseSignOut(auth);
     setUser(null);
-    setMfaVerifiedAt(null);
     try {
-      localStorage.removeItem('eha_mfa_v2');
-      localStorage.removeItem('mfa_timestamp');
       localStorage.removeItem('auth_user');
     } catch (e) {}
   };
@@ -121,19 +110,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return roles.includes(user.role);
   };
 
-  const verifyMFA = (pin: string) => {
-    if (pin === '1234' || pin === '0000') {
-      const now = Date.now();
-      setMfaVerifiedAt(now);
-      try {
-        localStorage.setItem('eha_mfa_v2', now.toString());
-        localStorage.setItem('mfa_timestamp', now.toString());
-      } catch (err) {}
-      return true;
-    }
-    return false;
-  };
-
   const updateUserProfile = async (data: Partial<User>) => {
     if (!user) return;
     const userRef = doc(db, 'users', user.id);
@@ -141,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithGoogle, loginWithEmail, registerWithEmail, logout, hasRole, verifyMFA, mfaVerifiedAt, updateUserProfile }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, loginWithEmail, registerWithEmail, logout, hasRole, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );
