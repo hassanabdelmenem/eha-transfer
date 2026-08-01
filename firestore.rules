@@ -1,6 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function callerDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isPrivileged() {
+      return callerDoc().role in ['owner', 'system_admin'];
+    }
+    function isVerifiedCaller() {
+      return callerDoc().verified == true;
+    }
+    function isReferralParty(data) {
+      return callerDoc().facilityId == data.referringFacilityId
+          || callerDoc().facilityId == data.receivingFacilityId
+          || (data.receivingFacilityId == 'auto'
+              && data.candidateFacilityIds is list
+              && callerDoc().facilityId in data.candidateFacilityIds);
+    }
+
     match /users/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth.uid == userId || 
@@ -12,7 +29,13 @@ service cloud.firestore {
                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'system_admin'];
     }
     match /referrals/{referralId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null &&
+                  (isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data)));
+      allow create: if request.auth != null &&
+                    (isPrivileged() || (isVerifiedCaller() && callerDoc().facilityId == request.resource.data.referringFacilityId));
+      allow update: if request.auth != null &&
+                    (isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data)));
+      allow delete: if request.auth != null && isPrivileged();
     }
     match /notifications/{notificationId} {
       allow read, write: if request.auth != null;
