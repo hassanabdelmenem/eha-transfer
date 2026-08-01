@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
 import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
-import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch, increment } from 'firebase/firestore';
 
 export interface DirectAdmission {
   id: string;
@@ -259,7 +259,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const bedCap = facility.capacity[admissionData.bedType];
       if (bedCap) {
         updateDoc(doc(db, 'facilities', facility.id), {
-          [`capacity.${admissionData.bedType}.occupied`]: Math.min(bedCap.total, bedCap.occupied + 1)
+          [`capacity.${admissionData.bedType}.occupied`]: increment(1)
         }).catch(console.error);
       }
     }
@@ -293,7 +293,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const bedCap = facility.capacity[admission.bedType];
         if (bedCap) {
           updateDoc(doc(db, 'facilities', facility.id), {
-            [`capacity.${admission.bedType}.occupied`]: Math.max(0, bedCap.occupied - 1)
+            [`capacity.${admission.bedType}.occupied`]: increment(-1)
           }).catch(console.error);
         }
       }
@@ -358,7 +358,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const bedCap = facility.capacity[referral.requiredBedType];
         if (bedCap) {
           updateDoc(doc(db, 'facilities', facility.id), {
-            [`capacity.${referral.requiredBedType}.occupied`]: Math.min(bedCap.total, bedCap.occupied + 1)
+            [`capacity.${referral.requiredBedType}.occupied`]: increment(1)
           }).catch(console.error);
         }
       }
@@ -368,7 +368,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const bedCap = facility.capacity[referral.requiredBedType];
         if (bedCap) {
           updateDoc(doc(db, 'facilities', facility.id), {
-            [`capacity.${referral.requiredBedType}.occupied`]: Math.max(0, bedCap.occupied - 1)
+            [`capacity.${referral.requiredBedType}.occupied`]: increment(-1)
           }).catch(console.error);
         }
       }
