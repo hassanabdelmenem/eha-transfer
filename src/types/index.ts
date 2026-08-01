@@ -42,17 +42,19 @@ export interface User {
 }
 
 export type ReferralPriority = 'routine' | 'urgent' | 'emergency';
-export type ReferralStatus = 
-  | 'pending' 
+export type ReferralStatus =
+  | 'pending'
   | 'dept_approved'
   | 'manager_approved'
-  | 'accepted' 
-  | 'rejected' 
-  | 'in_transit' 
-  | 'arrived' 
-  | 'admitted' 
+  | 'accepted'
+  | 'patient_consented'
+  | 'rejected'
+  | 'in_transit'
+  | 'arrived'
+  | 'admitted'
   | 'discharged'
-  | 'postponed';
+  | 'postponed'
+  | 'cancelled';
 
 export interface Attachment {
   id: string;
@@ -126,6 +128,11 @@ export interface Referral {
     userId: string;
     notes?: string;
   }[];
+  // Facilities the patient has declined transfer to; excluded from future auto-routing candidates.
+  patientDeclinedFacilityIds?: string[];
+  cancelledAt?: string;
+  cancelledBy?: string;
+  cancelReason?: string;
 }
 
 export interface ShiftLog {

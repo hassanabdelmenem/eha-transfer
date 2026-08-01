@@ -137,22 +137,24 @@ export const FacilitySettingsPage: React.FC = () => {
                 <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">Add New Facility</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Facility Name *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={facName} 
-                      onChange={e => setFacName(e.target.value)} 
+                    <label htmlFor="facName" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Facility Name *</label>
+                    <input
+                      id="facName"
+                      type="text"
+                      required
+                      value={facName}
+                      onChange={e => setFacName(e.target.value)}
                       placeholder="e.g. Al-Amal Specialized Hospital"
-                      className="w-full rounded border border-slate-300 p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+                      className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Facility Type</label>
-                    <select 
-                      value={facType} 
+                    <label htmlFor="facType" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Facility Type</label>
+                    <select
+                      id="facType"
+                      value={facType}
                       onChange={e => setFacType(e.target.value as FacilityType)}
-                      className="w-full rounded border border-slate-300 p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+                      className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                     >
                       <option value="tertiary_care">Tertiary Care Hospital</option>
                       <option value="district_hospital">District Hospital</option>
@@ -161,24 +163,26 @@ export const FacilitySettingsPage: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Location / Address *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={facLocation} 
-                      onChange={e => setFacLocation(e.target.value)} 
+                    <label htmlFor="facLocation" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Location / Address *</label>
+                    <input
+                      id="facLocation"
+                      type="text"
+                      required
+                      value={facLocation}
+                      onChange={e => setFacLocation(e.target.value)}
                       placeholder="e.g. Ismailia City Center"
-                      className="w-full rounded border border-slate-300 p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+                      className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Departments (comma separated)</label>
-                    <input 
-                      type="text" 
-                      value={facDepts} 
-                      onChange={e => setFacDepts(e.target.value)} 
+                    <label htmlFor="facDepts" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Departments (comma separated)</label>
+                    <input
+                      id="facDepts"
+                      type="text"
+                      value={facDepts}
+                      onChange={e => setFacDepts(e.target.value)}
                       placeholder="Emergency, ICU, CCU, Surgery"
-                      className="w-full rounded border border-slate-300 p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+                      className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                     />
                   </div>
                 </div>
@@ -198,13 +202,14 @@ export const FacilitySettingsPage: React.FC = () => {
 
                 {(facIsExternal || facType === 'external_contracted') && (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Contracted Services (comma separated)</label>
-                    <input 
-                      type="text" 
-                      value={facContractedServices} 
-                      onChange={e => setFacContractedServices(e.target.value)} 
+                    <label htmlFor="facContractedServices" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Contracted Services (comma separated)</label>
+                    <input
+                      id="facContractedServices"
+                      type="text"
+                      value={facContractedServices}
+                      onChange={e => setFacContractedServices(e.target.value)}
                       placeholder="e.g. Specialized ICU, Cardiac Surgery, Oncology, Dialysis"
-                      className="w-full rounded border border-slate-300 p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+                      className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                     />
                   </div>
                 )}
@@ -213,20 +218,20 @@ export const FacilitySettingsPage: React.FC = () => {
                   <p className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase mb-2">Initial Bed Capacity</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-500">ICU Beds</label>
-                      <input type="number" min="0" value={icuTotal} onChange={e => setIcuTotal(Number(e.target.value))} className="w-full rounded border p-1 text-xs bg-white dark:bg-slate-900" />
+                      <label htmlFor="icuTotal" className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">ICU Beds</label>
+                      <input id="icuTotal" type="number" min="0" value={icuTotal} onChange={e => setIcuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full rounded border border-slate-300 dark:border-slate-700 p-1 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
                     </div>
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-500">CCU Beds</label>
-                      <input type="number" min="0" value={ccuTotal} onChange={e => setCcuTotal(Number(e.target.value))} className="w-full rounded border p-1 text-xs bg-white dark:bg-slate-900" />
+                      <label htmlFor="ccuTotal" className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">CCU Beds</label>
+                      <input id="ccuTotal" type="number" min="0" value={ccuTotal} onChange={e => setCcuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full rounded border border-slate-300 dark:border-slate-700 p-1 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
                     </div>
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-500">PICU Beds</label>
-                      <input type="number" min="0" value={picuTotal} onChange={e => setPicuTotal(Number(e.target.value))} className="w-full rounded border p-1 text-xs bg-white dark:bg-slate-900" />
+                      <label htmlFor="picuTotal" className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">PICU Beds</label>
+                      <input id="picuTotal" type="number" min="0" value={picuTotal} onChange={e => setPicuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full rounded border border-slate-300 dark:border-slate-700 p-1 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
                     </div>
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-500">Ward Beds</label>
-                      <input type="number" min="0" value={wardTotal} onChange={e => setWardTotal(Number(e.target.value))} className="w-full rounded border p-1 text-xs bg-white dark:bg-slate-900" />
+                      <label htmlFor="wardTotal" className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Ward Beds</label>
+                      <input id="wardTotal" type="number" min="0" value={wardTotal} onChange={e => setWardTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full rounded border border-slate-300 dark:border-slate-700 p-1 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
                     </div>
                   </div>
                 </div>
@@ -245,7 +250,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{f.name}</h4>
                       {f.isExternal && (
-                        <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold uppercase">Contracted</span>
+                        <span className="text-[9px] bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold uppercase">Contracted</span>
                       )}
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">📍 {f.location} • <span className="uppercase">{f.type.replace('_', ' ')}</span></p>
@@ -263,7 +268,7 @@ export const FacilitySettingsPage: React.FC = () => {
                   {isGlobalAdmin && (
                     <Button 
                       variant="ghost" 
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 shrink-0" 
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 min-h-[40px] min-w-[40px] p-0 shrink-0" 
                       title="Remove Facility"
                       onClick={() => handleRemoveFacility(f.id, f.name)}
                     >
@@ -303,7 +308,7 @@ export const FacilitySettingsPage: React.FC = () => {
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dept}</span>
                   <Button 
                     variant="ghost" 
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 min-h-[40px] min-w-[40px] p-0"
                     onClick={() => removeFacilityDepartment(facility.id, dept)}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -337,20 +342,20 @@ export const FacilitySettingsPage: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 {unverifiedUsers.map(u => (
-                  <div key={u.id} className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded border border-amber-100 dark:border-amber-900 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{u.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{u.email}</p>
-                      <div className="mt-1 flex gap-2">
-                         <span className="text-[10px] bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase font-bold text-slate-600 dark:text-slate-300">{u.role?.replace('_', ' ')}</span>
-                         {u.department && <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded text-blue-700 dark:text-blue-300">{u.department}</span>}
+                  <div key={u.id} className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded border border-amber-100 dark:border-amber-900 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{u.email}</p>
+                      <div className="mt-1 flex gap-2 flex-wrap">
+                         <span className="text-[10px] bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{u.role?.replace('_', ' ')}</span>
+                         {u.department && <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded text-blue-700 dark:text-blue-300 whitespace-nowrap">{u.department}</span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button onClick={() => updateUserVerified(u.id, true)} className="bg-green-600 hover:bg-green-700 text-xs py-1 h-8">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button onClick={() => updateUserVerified(u.id, true)} className="bg-green-600 hover:bg-green-700 text-xs py-1 min-h-[40px]">
                          Verify
                       </Button>
-                      <Button onClick={() => handleRemoveUser(u)} variant="ghost" className="text-red-500 hover:text-red-700 h-8 w-8 p-0">
+                      <Button onClick={() => handleRemoveUser(u)} variant="ghost" aria-label={`Remove ${u.name}`} className="text-red-500 hover:text-red-700 min-h-[40px] min-w-[40px] p-0">
                          <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -383,7 +388,7 @@ export const FacilitySettingsPage: React.FC = () => {
                 {verifiedUsers.map(u => {
                   const userFac = facilities.find(f => f.id === u.facilityId);
                   return (
-                    <tr key={u.id} className="hover:bg-slate-50 dark:bg-slate-950">
+                    <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
                       <td className="px-4 py-3">
                         <p className="font-bold text-slate-900 dark:text-slate-100">{u.name}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">{u.email}</p>
@@ -451,7 +456,7 @@ export const FacilitySettingsPage: React.FC = () => {
                       <td className="px-4 py-3 text-right">
                          <Button 
                            variant="ghost" 
-                           className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                           className="text-red-500 hover:text-red-700 hover:bg-red-50 min-h-[40px] min-w-[40px] p-0"
                            title="Remove User Completely"
                            onClick={() => handleRemoveUser(u)}
                          >

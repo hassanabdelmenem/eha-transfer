@@ -19,7 +19,7 @@ export const ERDashboard: React.FC = () => {
          (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user.facilityId || ''))
   );
 
-  const activeReferrals = facilityReferrals.filter(r => !['admitted', 'discharged', 'rejected'].includes(r.status));
+  const activeReferrals = facilityReferrals.filter(r => !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status));
 
   const getFacilityName = (id: string) => facilities.find(f => f.id === id)?.name || id;
 
@@ -52,12 +52,12 @@ export const ERDashboard: React.FC = () => {
               .filter(r => r.referringFacilityId === user.facilityId && r.status === 'accepted')
               .map(referral => (
                 <div key={referral.id} className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-bold text-slate-900 dark:text-slate-100">{referral.patientData.name}</h3>
-                      <p className="text-sm text-slate-500">To: {getFacilityName(referral.receivingFacilityId)}</p>
+                  <div className="flex justify-between items-start gap-3 mb-2">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">To: {getFacilityName(referral.receivingFacilityId)}</p>
                     </div>
-                    <Badge variant={referral.priority === 'emergency' ? 'danger' : 'warning'}>
+                    <Badge variant={referral.priority === 'emergency' ? 'danger' : 'warning'} className="shrink-0">
                       {referral.priority}
                     </Badge>
                   </div>
@@ -88,12 +88,12 @@ export const ERDashboard: React.FC = () => {
               .filter(r => r.receivingFacilityId === user.facilityId && r.status === 'in_transit')
               .map(referral => (
                 <div key={referral.id} className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-bold text-slate-900 dark:text-slate-100">{referral.patientData.name}</h3>
-                      <p className="text-sm text-slate-500">From: {getFacilityName(referral.referringFacilityId)}</p>
+                  <div className="flex justify-between items-start gap-3 mb-2">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">From: {getFacilityName(referral.referringFacilityId)}</p>
                     </div>
-                    <Badge variant="info">In Transit</Badge>
+                    <Badge variant="info" className="shrink-0">In Transit</Badge>
                   </div>
                   <Button 
                     onClick={() => handleConfirmArrival(referral.id)}
@@ -116,8 +116,8 @@ export const ERDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
            <div className="overflow-x-auto">
-             <table className="w-full text-sm text-left">
-                <thead className="text-xs text-slate-500 uppercase bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
+             <table className="w-full text-sm text-left min-w-[720px]">
+                <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="px-4 py-3">Patient</th>
                     <th className="px-4 py-3">Direction</th>
@@ -129,19 +129,24 @@ export const ERDashboard: React.FC = () => {
                 <tbody>
                   {activeReferrals.map(referral => {
                     const isIncoming = referral.receivingFacilityId === user.facilityId;
+                    const statusVariant: 'default' | 'success' | 'warning' | 'danger' | 'info' =
+                      referral.status === 'rejected' || referral.status === 'cancelled' ? 'danger' :
+                      referral.status === 'pending' ? 'warning' :
+                      referral.status === 'admitted' || referral.status === 'discharged' ? 'success' :
+                      referral.status === 'postponed' ? 'default' : 'info';
                     return (
                       <tr key={referral.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
-                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{referral.patientData.name}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100 max-w-[180px] truncate">{referral.patientData.name}</td>
                         <td className="px-4 py-3">
                            {isIncoming ? <Badge variant="info">Incoming</Badge> : <Badge variant="default">Outgoing</Badge>}
                         </td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-[180px] truncate">
                           {isIncoming ? getFacilityName(referral.referringFacilityId) : getFacilityName(referral.receivingFacilityId)}
                         </td>
                         <td className="px-4 py-3">
-                           <Badge variant={referral.priority === 'emergency' ? 'danger' : 'warning'} className="capitalize">{referral.status.replace('_', ' ')}</Badge>
+                           <Badge variant={statusVariant} className="capitalize whitespace-nowrap">{referral.status.replace(/_/g, ' ')}</Badge>
                         </td>
-                        <td className="px-4 py-3 text-slate-500">
+                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                           {format(new Date(referral.updatedAt), 'MMM d, HH:mm')}
                         </td>
                       </tr>

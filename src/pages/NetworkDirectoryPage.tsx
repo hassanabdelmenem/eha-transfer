@@ -106,17 +106,22 @@ export const NetworkDirectoryPage: React.FC = () => {
         </div>
       </div>
 
+      {filteredFacilities.length === 0 ? (
+        <Card className="p-8 text-center text-slate-500 dark:text-slate-400 border-dashed shadow-none">
+          {q ? `No facilities or staff match "${searchQuery}".` : 'No facilities to display.'}
+        </Card>
+      ) : (
       <div className="space-y-6">
         {filteredFacilities.map(facility => (
           <Card key={facility.id} className="overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
             <CardHeader className="bg-slate-50 dark:bg-slate-950 pb-4 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-slate-900 dark:text-slate-100 text-base">{facility.name}</CardTitle>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{facility.location}</p>
+              <div className="flex justify-between items-center gap-2">
+                <div className="min-w-0">
+                  <CardTitle className="text-slate-900 dark:text-slate-100 text-base truncate">{facility.name}</CardTitle>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">{facility.location}</p>
                 </div>
-                
-                <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${facility.isExternal ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+
+                <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold shrink-0 whitespace-nowrap ${facility.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>
                   {facility.type.replace('_', ' ')}
                 </span>
 
@@ -163,9 +168,9 @@ export const NetworkDirectoryPage: React.FC = () => {
 
                       return (
                         <React.Fragment key={u.id}>
-                          <tr className="hover:bg-slate-50 dark:bg-slate-950">
+                          <tr className="hover:bg-slate-50 dark:hover:bg-slate-800">
                             <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 capitalize">{roleDisplay}</td>
-                            <td className="px-4 py-3 text-slate-800">{u.name}</td>
+                            <td className="px-4 py-3 text-slate-800 dark:text-slate-200">{u.name}</td>
                             <td className="px-4 py-3 font-mono text-slate-600">{u.phoneNumber || 'N/A'}</td>
                             <td className="px-4 py-3">
                               {isResponsibleNow ? (
@@ -196,6 +201,7 @@ export const NetworkDirectoryPage: React.FC = () => {
           </Card>
         ))}
       </div>
+      )}
     </div>
   );
 };
