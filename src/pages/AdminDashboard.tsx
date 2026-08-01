@@ -1,8 +1,12 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { BedType } from '../types';
+
+const PRIORITY_LABEL: Record<string, string> = { emergency: 'E', urgent: 'U', routine: 'R' };
+const PRIORITY_DOT: Record<string, string> = { emergency: 'bg-red-500', urgent: 'bg-amber-500', routine: 'bg-blue-500' };
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -17,7 +21,7 @@ export const AdminDashboard: React.FC = () => {
     return referrals.filter(r => 
       r.receivingFacilityId === facilityId && 
       r.requiredBedType === bedType && 
-      !['admitted', 'discharged', 'rejected'].includes(r.status)
+      !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status)
     );
   };
 
@@ -74,9 +78,9 @@ export const AdminDashboard: React.FC = () => {
           {facilities.filter(f => f.type !== 'primary_care').map(facility => (
             <Card key={facility.id} className="overflow-hidden">
               <CardHeader className="bg-slate-900 text-white pb-4">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-white text-sm">{facility.name}</CardTitle>
-                  <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded uppercase">{facility.type.replace('_', ' ')}</span>
+                <div className="flex justify-between items-center gap-2">
+                  <CardTitle className="text-white text-sm min-w-0 truncate">{facility.name}</CardTitle>
+                  <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded uppercase shrink-0 whitespace-nowrap">{facility.type.replace('_', ' ')}</span>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
@@ -101,17 +105,17 @@ export const AdminDashboard: React.FC = () => {
                         const isCritical = waitlist.length > available;
     
                         return (
-                          <tr key={bed} className="hover:bg-slate-50 dark:bg-slate-950">
+                          <tr key={bed} className="hover:bg-slate-50 dark:hover:bg-slate-800">
                             <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300">{bed}</td>
-                            <td className="px-4 py-3 text-center text-slate-600">{cap.total}</td>
-                            <td className="px-4 py-3 text-center text-slate-600">{cap.occupied}</td>
+                            <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{cap.total}</td>
+                            <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{cap.occupied}</td>
                             <td className="px-4 py-3 text-center">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isFull ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isFull ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'}`}>
                                 {available}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isCritical ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isCritical ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
                                 {waitlist.length} Waiting
                               </span>
                             </td>
@@ -121,34 +125,45 @@ export const AdminDashboard: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
-                
+
                 {/* Waitlist details for this facility */}
                 <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
                   <h4 className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-2">Waitlist Details by Department</h4>
-                  {facility.departments.map(dept => {
-                     const deptWaitlist = referrals.filter(r => 
-                       r.receivingFacilityId === facility.id && 
-                       r.receivingDepartments.includes(dept) &&
-                       !['admitted', 'discharged', 'rejected'].includes(r.status)
-                     );
-                     if (deptWaitlist.length === 0) return null;
-  
-                     return (
-                       <div key={dept} className="flex justify-between items-center py-1 text-xs border-b border-slate-200 dark:border-slate-800 last:border-0">
-                         <span className="font-semibold text-slate-700 dark:text-slate-300">{dept}</span>
-                         <div className="flex gap-2">
-                           {deptWaitlist.map(r => (
-                              <a 
-                                key={r.id} 
-                                href={`/referrals/${r.id}`}
-                                title={`${r.priority.toUpperCase()} - ${r.requiredBedType}`} 
-                                className={`w-3 h-3 rounded-full hover:opacity-80 transition-opacity cursor-pointer inline-block ${r.priority === 'emergency' ? 'bg-red-500' : r.priority === 'urgent' ? 'bg-amber-500' : 'bg-blue-500'}`} 
-                              />
-                           ))}
-                         </div>
-                       </div>
-                     );
-                  })}
+                  {(() => {
+                    const rows = facility.departments.map(dept => {
+                      const deptWaitlist = referrals.filter(r =>
+                        r.receivingFacilityId === facility.id &&
+                        r.receivingDepartments.includes(dept) &&
+                        !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status)
+                      );
+                      if (deptWaitlist.length === 0) return null;
+
+                      return (
+                        <div key={dept} className="flex justify-between items-center py-1 text-xs border-b border-slate-200 dark:border-slate-800 last:border-0">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">{dept}</span>
+                          <div className="flex gap-1">
+                            {deptWaitlist.map(r => (
+                              <Link
+                                key={r.id}
+                                to={`/referrals/${r.id}`}
+                                title={`${r.priority.toUpperCase()} - ${r.requiredBedType}`}
+                                aria-label={`${r.priority} priority ${r.requiredBedType} referral — open referral`}
+                                className="w-10 h-10 flex items-center justify-center hover:opacity-80 transition-opacity"
+                              >
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white ${PRIORITY_DOT[r.priority] || 'bg-blue-500'}`}>
+                                  {PRIORITY_LABEL[r.priority] || '?'}
+                                </span>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }).filter(Boolean);
+
+                    return rows.length > 0
+                      ? rows
+                      : <p className="text-xs text-slate-400 dark:text-slate-500 italic py-2">No active waitlist for this facility.</p>;
+                  })()}
                 </div>
               </CardContent>
             </Card>

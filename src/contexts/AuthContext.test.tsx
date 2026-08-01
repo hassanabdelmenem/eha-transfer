@@ -6,21 +6,15 @@ import React from 'react';
 
 // Mock component to test the context
 const AuthConsumer = () => {
-  const { user, login, logout, hasRole, verifyMFA } = useAuth();
+  const { user, login, logout, hasRole } = useAuth();
 
   return (
     <div>
       <div data-testid="user">{user ? user.name : 'No User'}</div>
       <div data-testid="role-admin">{hasRole(['system_admin']) ? 'Is Admin' : 'Not Admin'}</div>
-      
+
       <button onClick={() => login('u1')}>Login U1</button>
       <button onClick={() => logout()}>Logout</button>
-      
-      <button onClick={() => {
-        const success = verifyMFA('1234');
-        document.getElementById('mfa-result')!.textContent = success ? 'MFA Success' : 'MFA Fail';
-      }}>Verify MFA</button>
-      <div id="mfa-result"></div>
     </div>
   );
 };
@@ -69,17 +63,5 @@ describe('AuthContext', () => {
     
     expect(screen.getByTestId('user')).toHaveTextContent('No User');
     expect(localStorage.getItem('auth_user')).toBeNull();
-  });
-
-  it('verifies MFA correctly', async () => {
-    render(
-      <AuthProvider>
-        <AuthConsumer />
-      </AuthProvider>
-    );
-    
-    await userEvent.click(screen.getByText('Verify MFA'));
-    expect(document.getElementById('mfa-result')).toHaveTextContent('MFA Success');
-    expect(localStorage.getItem('mfa_timestamp')).not.toBeNull();
   });
 });

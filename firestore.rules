@@ -1,8 +1,74 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    function callerDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isPrivileged() {
+      return callerDoc().role in ['owner', 'system_admin'];
+    }
+    function isVerifiedCaller() {
+      return callerDoc().verified == true;
+    }
+    function isReferralParty(data) {
+      return callerDoc().facilityId == data.referringFacilityId
+          || callerDoc().facilityId == data.receivingFacilityId
+          || (data.receivingFacilityId == 'auto'
+              && data.candidateFacilityIds is list
+              && callerDoc().facilityId in data.candidateFacilityIds);
+    }
+    // Mirrors SENIOR_CANCEL_ROLES / CANCEL_LOCKED_STATUSES in src/contexts/DataContext.tsx --
+    // keep both in sync.
+    function isSeniorCancelRole() {
+      return callerDoc().role in ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department'];
+    }
+    function isCancelAttempt(newData) {
+      return newData.status == 'cancelled';
+    }
+    function isCancelLocked(existingData) {
+      return existingData.status in ['in_transit', 'arrived', 'admitted', 'discharged'];
+    }
+    function canCancelReferral(existingData) {
+      return !isCancelLocked(existingData) &&
+             (isPrivileged()
+               || existingData.referringUserId == request.auth.uid
+               || (callerDoc().facilityId == existingData.referringFacilityId && isSeniorCancelRole()));
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId || 
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'system_admin'];
+    }
+    match /facilities/{facilityId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'system_admin'];
+    }
+    match /referrals/{referralId} {
+      allow read: if request.auth != null &&
+                  (isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data)));
+      allow create: if request.auth != null &&
+                    (isPrivileged() || (isVerifiedCaller() && callerDoc().facilityId == request.resource.data.referringFacilityId));
+      allow update: if request.auth != null &&
+                    (
+                      isCancelAttempt(request.resource.data)
+                        ? canCancelReferral(resource.data)
+                        : (isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data)))
+                    );
+      allow delete: if request.auth != null && isPrivileged();
+    }
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null;
+    }
+    match /directAdmissions/{admissionId} {
+      allow read, write: if request.auth != null;
+    }
+    match /shiftAssignments/{assignmentId} {
+      allow read, write: if request.auth != null;
+    }
+    match /shiftLogs/{logId} {
+      allow read, write: if request.auth != null;
     }
   }
 }

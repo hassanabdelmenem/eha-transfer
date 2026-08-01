@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { WifiOff, RefreshCw } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Bell, LogOut, Activity, Users, PlusCircle, LayoutDashboard, BookOpen, Settings, Moon, Sun, Bed, Cloud, Database, Eye, Phone, X } from 'lucide-react';
+import { Bell, LogOut, Activity, Users, PlusCircle, LayoutDashboard, BookOpen, Settings, Moon, Sun, Bed, Cloud, Database, Eye, Phone, X, User } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { MOCK_USERS } from '../../lib/mock-data';
 
@@ -22,6 +22,12 @@ export const AppLayout: React.FC = () => {
   const handleSaveProfile = () => {
     updateUserProfile({ phoneNumber: profilePhone, monthlySchedule: profileSchedule });
     setShowProfile(false);
+  };
+
+  const openProfile = () => {
+    setProfilePhone(user?.phoneNumber || '');
+    setProfileSchedule(user?.monthlySchedule || '');
+    setShowProfile(true);
   };
 
   const [showHotline, setShowHotline] = React.useState(false);
@@ -112,7 +118,7 @@ export const AppLayout: React.FC = () => {
         </div>
 
         {/* Actions Section - Full width on mobile, right-aligned on desktop */}
-        <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto w-full md:w-auto mx-auto md:ml-auto md:mr-0 justify-between md:justify-end no-scrollbar pb-1">
+        <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto w-full md:w-auto mx-auto md:ml-auto md:mr-0 justify-between md:justify-end pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!isOnline && (
             <div className="flex items-center gap-2 bg-red-500/20 px-3 py-1.5 rounded text-red-100 text-[10px] font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="IndexedDB Offline Mode active">
               <WifiOff className="w-3.5 h-3.5" />
@@ -133,25 +139,39 @@ export const AppLayout: React.FC = () => {
             </div>
           )}
           
-          <button 
-            onClick={() => {
-              setProfilePhone(user?.phoneNumber || '');
-              setProfileSchedule(user?.monthlySchedule || '');
-              setShowProfile(true);
-            }} 
-            className="hidden lg:flex flex-col items-end hover:opacity-80 transition-opacity text-left shrink-0 whitespace-nowrap"
+          {/* Desktop: full identity. Always rendered from lg up. */}
+          <button
+            onClick={openProfile}
+            className="hidden lg:flex flex-col items-end hover:opacity-80 transition-opacity text-left shrink-0 min-w-0 max-w-[16rem]"
+            title={`${user.name} — ${user.role.replace(/_/g, ' ')}${facility ? ` • ${facility.name}` : ''}`}
           >
-            <span className="text-xs font-semibold">{user.name}</span>
-            <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded">{user.role.replace(/_/g, ' ')} {facility ? `• ${facility.name}` : ''}</span>
+            <span className="text-xs font-semibold truncate max-w-full">{user.name}</span>
+            <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded truncate max-w-full">{user.role.replace(/_/g, ' ')} {facility ? `• ${facility.name}` : ''}</span>
           </button>
-          
+
+          {/* Mobile/tablet fallback: identity is still visible and profile still reachable. */}
+          <button
+            onClick={openProfile}
+            className="lg:hidden flex items-center gap-2 min-h-[40px] px-2 rounded hover:bg-blue-800/60 transition-colors shrink-0 min-w-0 max-w-[45vw]"
+            aria-label={`Profile settings for ${user.name}, ${user.role.replace(/_/g, ' ')}`}
+          >
+            <span className="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center shrink-0" aria-hidden="true">
+              <User className="w-4 h-4" />
+            </span>
+            <span className="flex flex-col items-start min-w-0 text-left">
+              <span className="text-[11px] font-semibold leading-tight truncate max-w-full">{user.name}</span>
+              <span className="text-[9px] uppercase tracking-wide opacity-80 leading-tight truncate max-w-full">{user.role.replace(/_/g, ' ')}</span>
+            </span>
+          </button>
+
           <div className="hidden lg:block h-10 w-px bg-blue-700 shrink-0 mx-2"></div>
           
           <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 flex-1 md:flex-none whitespace-nowrap px-1 w-full">
             <button
               onClick={() => setShowHotline(true)}
-              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded transition-colors text-[10px] font-bold uppercase tracking-wider shadow-sm"
+              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 min-h-[40px] rounded transition-colors text-[10px] font-bold uppercase tracking-wider shadow-sm"
               title="Emergency Hotline"
+              aria-label="Emergency Hotline"
             >
               <Phone className="w-3.5 h-3.5" />
               <span className="hidden lg:inline">Hotline</span>
@@ -159,18 +179,30 @@ export const AppLayout: React.FC = () => {
             <div className="hidden sm:block h-6 w-px bg-blue-700 mx-1"></div>
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="text-blue-200 hover:text-white transition-colors"
+              className="flex items-center justify-center min-w-[40px] min-h-[40px] text-blue-200 hover:text-white transition-colors"
               title="Toggle Theme"
+              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
             >
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
-            <Link to="/notifications" className="relative flex items-center text-blue-200 hover:text-white transition-colors">
+            <Link
+              to="/notifications"
+              className="relative flex items-center justify-center min-w-[40px] min-h-[40px] text-blue-200 hover:text-white transition-colors"
+              aria-label={unreadNotifs > 0 ? `Notifications, ${unreadNotifs} unread` : 'Notifications'}
+            >
               <Bell className="h-5 w-5" />
               {unreadNotifs > 0 && (
-                <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                  {unreadNotifs > 9 ? '9+' : unreadNotifs}
+                </span>
               )}
             </Link>
-            <button onClick={handleLogout} className="text-blue-200 hover:text-white transition-colors" title="Logout">
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-center min-w-[40px] min-h-[40px] text-blue-200 hover:text-white transition-colors"
+              title="Logout"
+              aria-label="Logout"
+            >
               <LogOut className="h-5 w-5" />
             </button>
           </div>
@@ -189,8 +221,8 @@ export const AppLayout: React.FC = () => {
                   to={item.path}
                   className={`px-2 py-3 flex items-center gap-3 transition-colors ${
                     isActive 
-                      ? 'bg-blue-50 text-blue-900 border-r-4 border-blue-900' 
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-950 border-r-4 border-transparent'
+                      ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400' 
+                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-r-4 border-transparent'
                   }`}
                 >
                   <item.icon className="w-5 h-5" />
@@ -203,8 +235,8 @@ export const AppLayout: React.FC = () => {
                 to="/referrals/new"
                 className={`px-2 py-3 flex items-center gap-3 transition-colors ${
                   location.pathname.startsWith('/referrals/new')
-                    ? 'bg-blue-50 text-blue-900 border-r-4 border-blue-900' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-950 border-r-4 border-transparent'
+                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400' 
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-r-4 border-transparent'
                 }`}
               >
                 <PlusCircle className="w-5 h-5" />
@@ -216,8 +248,8 @@ export const AppLayout: React.FC = () => {
                 to="/admissions/new"
                 className={`px-2 py-3 flex items-center gap-3 transition-colors ${
                   location.pathname.startsWith('/admissions/new')
-                    ? 'bg-blue-50 text-blue-900 border-r-4 border-blue-900' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-950 border-r-4 border-transparent'
+                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400' 
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-r-4 border-transparent'
                 }`}
               >
                 <PlusCircle className="w-5 h-5" />
@@ -226,7 +258,7 @@ export const AppLayout: React.FC = () => {
             )}
           </nav>
           
-          <div className="mt-auto p-4 bg-slate-900 rounded-lg">
+          <div className="mt-auto p-4 bg-slate-900 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-lg">
             <div className="text-[10px] text-blue-300 font-bold uppercase mb-2">Security Status</div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
@@ -242,7 +274,7 @@ export const AppLayout: React.FC = () => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 overflow-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 min-w-0 overflow-auto p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
@@ -251,49 +283,48 @@ export const AppLayout: React.FC = () => {
 
       {/* Mobile Nav */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-50">
-        <div className="flex overflow-x-auto snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          <style>{`
-            .sm\\:hidden .flex.overflow-x-auto::-webkit-scrollbar {
-              display: none;
-            }
-          `}</style>
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-            return (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] text-xs uppercase font-bold tracking-wider ${
-                  isActive ? 'text-blue-900' : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                <item.icon className="h-6 w-6 mb-1" />
-                {item.name}
-              </Link>
-            );
-          })}
-          {isDoctor && (
-          <Link
-             to="/referrals/new"
-             className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] text-xs uppercase font-bold tracking-wider ${
-                location.pathname.startsWith('/referrals/new') ? 'text-blue-900' : 'text-slate-500 dark:text-slate-400'
-             }`}
-          >
-             <PlusCircle className="h-6 w-6 mb-1" />
-             New
-          </Link>
-          )}
-          {isNurse && (
+        <div className="relative">
+          <div className="flex overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] min-h-[40px] text-xs uppercase font-bold tracking-wider ${
+                    isActive ? 'text-blue-900 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  <item.icon className="h-6 w-6 mb-1" />
+                  {item.name}
+                </Link>
+              );
+            })}
+            {isDoctor && (
             <Link
-               to="/admissions/new"
-               className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] text-xs uppercase font-bold tracking-wider ${
-                  location.pathname.startsWith('/admissions/new') ? 'text-blue-900' : 'text-slate-500 dark:text-slate-400'
+               to="/referrals/new"
+               className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] min-h-[40px] text-xs uppercase font-bold tracking-wider ${
+                  location.pathname.startsWith('/referrals/new') ? 'text-blue-900 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
                }`}
             >
                <PlusCircle className="h-6 w-6 mb-1" />
-               Admit
+               New
             </Link>
-          )}
+            )}
+            {isNurse && (
+              <Link
+                 to="/admissions/new"
+                 className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] min-h-[40px] text-xs uppercase font-bold tracking-wider ${
+                    location.pathname.startsWith('/admissions/new') ? 'text-blue-900 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
+                 }`}
+              >
+                 <PlusCircle className="h-6 w-6 mb-1" />
+                 Admit
+              </Link>
+            )}
+          </div>
+          {/* Fade cue: signals there are more nav items to scroll to on narrow screens. */}
+          <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-slate-900 to-transparent" aria-hidden="true" />
         </div>
       </div>
 
@@ -347,8 +378,8 @@ export const AppLayout: React.FC = () => {
       )}
       {showProfile && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <Settings className="w-5 h-5 text-slate-500" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">My Profile Settings</h2>
@@ -357,10 +388,11 @@ export const AppLayout: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 overflow-y-auto">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Phone Number</label>
-                <input 
+                <label htmlFor="profilePhone" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Phone Number</label>
+                <input
+                  id="profilePhone"
                   type="tel"
                   value={profilePhone}
                   onChange={e => setProfilePhone(e.target.value)}
@@ -369,8 +401,9 @@ export const AppLayout: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Monthly Schedule & Availability</label>
-                <textarea 
+                <label htmlFor="profileSchedule" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Monthly Schedule & Availability</label>
+                <textarea
+                  id="profileSchedule"
                   value={profileSchedule}
                   onChange={e => setProfileSchedule(e.target.value)}
                   placeholder="E.g. Mondays & Wednesdays 8am-8pm, On-call weekends..."

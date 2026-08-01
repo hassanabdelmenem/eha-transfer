@@ -204,7 +204,7 @@ export const DepartmentPage: React.FC = () => {
               <p className="text-sm text-slate-500 dark:text-slate-400">No available doctors found in this department.</p>
             ) : (
               availableDoctors.map(doctor => (
-                <div key={doctor.id} className="flex items-center justify-between p-3 border border-slate-100 dark:border-slate-800 rounded hover:bg-slate-50 dark:bg-slate-950 transition-colors">
+                <div key={doctor.id} className="flex items-center justify-between p-3 border border-slate-100 dark:border-slate-800 rounded hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                   <div>
                     <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{doctor.name}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">{doctor.email}</p>
