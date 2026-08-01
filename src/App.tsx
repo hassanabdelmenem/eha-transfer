@@ -44,7 +44,7 @@ const RoleBasedDashboard = () => {
   if (user?.role === 'system_admin' || user?.role === 'owner') {
     return <AdminDashboard />;
   }
-  if (user?.role === 'er_room') {
+  if (user?.role === 'er_room' || user?.role === 'er_official') {
     return <ERDashboard />;
   }
   return <Dashboard />;

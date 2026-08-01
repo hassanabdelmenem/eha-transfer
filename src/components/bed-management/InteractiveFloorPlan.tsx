@@ -29,7 +29,7 @@ export const InteractiveFloorPlan: React.FC<InteractiveFloorPlanProps> = ({ capa
           <div key={bedType} className="bg-white dark:bg-slate-950 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col">
             <div className="flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
               <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{bedType} Ward</h3>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 <span className="text-emerald-600 dark:text-emerald-400">{cap.total - cap.occupied} Free</span> / {cap.total} Total
               </div>
             </div>
@@ -37,9 +37,9 @@ export const InteractiveFloorPlan: React.FC<InteractiveFloorPlanProps> = ({ capa
             {cap.total === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-slate-400 min-h-[120px]">
                 <p className="text-sm">No beds configured</p>
-                <button 
+                <button
                   onClick={() => onCapacityChange(bedType, 'total', 1)}
-                  className="mt-2 text-xs bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  className="mt-2 text-xs bg-slate-100 dark:bg-slate-800 px-4 min-h-[40px] rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   Add Bed
                 </button>

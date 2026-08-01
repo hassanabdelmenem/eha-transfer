@@ -14,10 +14,6 @@ export const BedManagementPage: React.FC = () => {
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
   const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
 
-  if (!user || (!['nurse', 'nursing_supervisor', 'head_of_department', 'er_room'].includes(user.role) && !isAdmin)) {
-    return <div className="p-8 text-center text-slate-500">Access Denied. Nursing staff privileges required.</div>;
-  }
-
   const facility = facilities.find(f => f.id === selectedFacilityId);
   const [capacities, setCapacities] = useState<Record<BedType, { total: number; occupied: number }>>({} as Record<BedType, { total: number; occupied: number }>);
   const [saved, setSaved] = useState(false);
@@ -28,6 +24,10 @@ export const BedManagementPage: React.FC = () => {
       setCapacities(facility.capacity as any);
     }
   }, [facility]);
+
+  if (!user || (!['nurse', 'nursing_supervisor', 'head_of_department', 'er_room'].includes(user.role) && !isAdmin)) {
+    return <div className="p-8 text-center text-slate-500">Access Denied. Nursing staff privileges required.</div>;
+  }
 
   if (!user.facilityId && !isAdmin) {
     return <div className="p-8 text-center text-slate-500">Facility configuration missing.</div>;
@@ -51,13 +51,13 @@ export const BedManagementPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16 h-full overflow-auto">
-      <div className="flex justify-between items-end">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Bulk Bed Management</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Quickly update bed availability across {facility?.name || 'the facility'}.</p>
         </div>
         {facility && (
-          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 shrink-0">
             {saved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             {saved ? 'Saved' : 'Save Changes'}
           </Button>
@@ -66,12 +66,13 @@ export const BedManagementPage: React.FC = () => {
 
       {isAdmin && (
         <Card className="mb-6 border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
-          <CardContent className="p-4 flex items-center gap-4">
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Admin View:</span>
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <label htmlFor="bedMgmtFacility" className="text-sm font-bold text-slate-700 dark:text-slate-300 shrink-0">Admin View:</label>
             <select
+              id="bedMgmtFacility"
               value={selectedFacilityId}
               onChange={(e) => setSelectedFacilityId(e.target.value)}
-              className="flex-1 rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+              className="flex-1 rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[40px]"
             >
               <option value="">Select Facility to Manage...</option>
               {facilities.map(f => (
@@ -125,19 +126,22 @@ export const BedManagementPage: React.FC = () => {
                   const available = cap.total - cap.occupied;
                   const ratio = cap.total > 0 ? cap.occupied / cap.total : 0;
                   
-                  let statusColor = 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20';
+                  let statusColor = 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20';
                   let statusText = 'Available';
-                  if (available <= 0) {
-                    statusColor = 'text-red-600 bg-red-50 dark:bg-red-900/20';
+                  if (cap.total <= 0) {
+                    statusColor = 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800';
+                    statusText = 'Not Configured';
+                  } else if (available <= 0) {
+                    statusColor = 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20';
                     statusText = 'Full';
                   } else if (ratio > 0.8) {
-                    statusColor = 'text-amber-600 bg-amber-50 dark:bg-amber-900/20';
+                    statusColor = 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20';
                     statusText = 'Critical';
                   }
 
                   return (
-                    <tr key={bedType} className="hover:bg-slate-50 dark:bg-slate-900/50">
-                      <td className="px-4 py-4 font-bold text-slate-700 dark:text-slate-300">
+                    <tr key={bedType} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                      <td className="px-4 py-2 font-bold text-slate-700 dark:text-slate-300">
                         <div className="flex items-center gap-2">
                           <Bed className="w-4 h-4 text-slate-400" />
                           {bedType}
@@ -146,7 +150,8 @@ export const BedManagementPage: React.FC = () => {
                       <td className="px-4 py-2">
                         <input
                           type="number"
-                          className="w-20 border border-slate-300 dark:border-slate-700 rounded p-1.5 text-center focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900"
+                          min="0"
+                          className="w-20 border border-slate-300 dark:border-slate-700 rounded p-1.5 text-center focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                           value={cap.total}
                           onChange={(e) => handleCapacityChange(bedType, 'total', parseInt(e.target.value) || 0)}
                         />
@@ -154,7 +159,8 @@ export const BedManagementPage: React.FC = () => {
                       <td className="px-4 py-2">
                         <input
                           type="number"
-                          className="w-20 border border-slate-300 dark:border-slate-700 rounded p-1.5 text-center focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900"
+                          min="0"
+                          className="w-20 border border-slate-300 dark:border-slate-700 rounded p-1.5 text-center focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                           value={cap.occupied}
                           onChange={(e) => handleCapacityChange(bedType, 'occupied', parseInt(e.target.value) || 0)}
                         />
@@ -163,7 +169,7 @@ export const BedManagementPage: React.FC = () => {
                         {available}
                       </td>
                       <td className="px-4 py-2">
-                        <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}`}>
+                        <span className={`px-2 py-1 rounded text-xs font-bold uppercase whitespace-nowrap ${statusColor}`}>
                           {statusText}
                         </span>
                       </td>

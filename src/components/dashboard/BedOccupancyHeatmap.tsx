@@ -31,8 +31,13 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 overflow-auto">
+        {displayFacilities.length === 0 ? (
+          <p className="p-6 text-center text-sm text-slate-400 dark:text-slate-500 italic">
+            No facilities have bed capacity configured yet.
+          </p>
+        ) : (
         <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 uppercase font-bold text-[10px]">
+          <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px]">
             <tr>
               <th className="p-3 border-b border-slate-100 dark:border-slate-800">Facility</th>
               {BED_TYPES.map(bed => (
@@ -75,6 +80,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
             ))}
           </tbody>
         </table>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -16,6 +17,16 @@ export const Dashboard: React.FC = () => {
   const { referrals, facilities, directAdmissions, shiftLogs } = useData();
   const [chartPeriod, setChartPeriod] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('weekly');
   const [prioritySort, setPrioritySort] = useState(false);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const chartColors = {
+    grid: isDark ? '#334155' : '#e2e8f0',
+    tick: isDark ? '#94a3b8' : '#64748b',
+    cursor: isDark ? '#1e293b' : '#f1f5f9',
+    tooltipBg: isDark ? '#0f172a' : '#ffffff',
+    tooltipBorder: isDark ? '#334155' : '#e2e8f0',
+    tooltipText: isDark ? '#e2e8f0' : '#0f172a',
+  };
 
   if (!user) return null;
 
@@ -124,13 +135,13 @@ export const Dashboard: React.FC = () => {
 
   const pending = facilityReferrals.filter(r => r.status === 'pending').length;
   const inTransit = facilityReferrals.filter(r => r.status === 'in_transit').length;
-  const emergencies = facilityReferrals.filter(r => r.priority === 'emergency').length;
+  const emergencies = facilityReferrals.filter(r => r.priority === 'emergency' && r.status !== 'cancelled').length;
   const completed = facilityReferrals.filter(r => ['admitted', 'discharged', 'rejected'].includes(r.status)).length;
 
   const stats = [
-    { label: 'Pending Referrals', value: pending, valueColor: 'text-amber-600', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-slate-500 dark:text-slate-400', badgeBg: 'bg-amber-100', badgeText: 'text-amber-700', badgeLabel: 'Needs Action' },
-    { label: 'In Transit', value: inTransit, valueColor: 'text-slate-900 dark:text-slate-100', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-slate-500 dark:text-slate-400', badgeBg: 'bg-blue-100', badgeText: 'text-blue-500', badgeLabel: 'Real-time' },
-    { label: 'Emergencies', value: emergencies, valueColor: 'text-red-700', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-red-600', badgeBg: 'bg-red-100', badgeText: 'text-red-700', badgeLabel: 'Priority' },
+    { label: 'Pending Referrals', value: pending, valueColor: 'text-amber-600 dark:text-amber-400', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-slate-500 dark:text-slate-400', badgeBg: 'bg-amber-100 dark:bg-amber-900/40', badgeText: 'text-amber-700 dark:text-amber-300', badgeLabel: 'Needs Action' },
+    { label: 'In Transit', value: inTransit, valueColor: 'text-slate-900 dark:text-slate-100', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-slate-500 dark:text-slate-400', badgeBg: 'bg-blue-100 dark:bg-blue-900/40', badgeText: 'text-blue-500 dark:text-blue-300', badgeLabel: 'Real-time' },
+    { label: 'Emergencies', value: emergencies, valueColor: 'text-red-700 dark:text-red-400', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-red-600 dark:text-red-400', badgeBg: 'bg-red-100 dark:bg-red-900/40', badgeText: 'text-red-700 dark:text-red-300', badgeLabel: 'Priority' },
     { label: 'Completed', value: completed, valueColor: 'text-white', bg: 'bg-blue-900', labelColor: 'text-blue-200', badgeBg: 'bg-blue-800', badgeText: 'text-blue-300', badgeLabel: 'Optimal' },
   ];
 
@@ -224,12 +235,12 @@ export const Dashboard: React.FC = () => {
           <Card className="col-span-1 lg:col-span-2 flex flex-col border border-slate-200 dark:border-slate-800 shadow-sm">
             <CardHeader className="border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between py-4">
               <CardTitle className="text-sm font-bold uppercase text-slate-700 dark:text-slate-300">Facility Analytics</CardTitle>
-              <div className="flex bg-slate-100 p-1 rounded">
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded">
                 {(['weekly', 'monthly', 'quarterly', 'yearly'] as const).map(period => (
                   <button
                     key={period}
                     className={`px-3 py-1 text-xs font-medium rounded capitalize ${
-                      chartPeriod === period ? 'bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'
+                      chartPeriod === period ? 'bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                     }`}
                     onClick={() => setChartPeriod(period)}
                   >
@@ -243,10 +254,10 @@ export const Dashboard: React.FC = () => {
                 <p className="text-[10px] font-bold text-slate-500 uppercase text-center mb-2">Volume (Incoming vs Outgoing)</p>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dynamicChartData[chartPeriod]} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartColors.grid} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} />
+                    <Tooltip cursor={{ fill: chartColors.cursor }} contentStyle={{ borderRadius: '8px', border: `1px solid ${chartColors.tooltipBorder}`, fontSize: '12px', backgroundColor: chartColors.tooltipBg, color: chartColors.tooltipText }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                     <Bar dataKey="incoming" name="Incoming" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={16} />
                     <Bar dataKey="outgoing" name="Outgoing" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={16} />
@@ -257,10 +268,10 @@ export const Dashboard: React.FC = () => {
                 <p className="text-[10px] font-bold text-slate-500 uppercase text-center mb-2">Distribution by Type</p>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dynamicChartData[chartPeriod]} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartColors.grid} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} />
+                    <Tooltip cursor={{ fill: chartColors.cursor }} contentStyle={{ borderRadius: '8px', border: `1px solid ${chartColors.tooltipBorder}`, fontSize: '12px', backgroundColor: chartColors.tooltipBg, color: chartColors.tooltipText }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                     <Bar dataKey="oneWay" name="One Way" fill="#64748b" stackId="a" />
                     <Bar dataKey="serviceReturn" name="Service/Return" fill="#8b5cf6" stackId="a" />
@@ -280,10 +291,10 @@ export const Dashboard: React.FC = () => {
                 <p className="text-[10px] font-bold text-slate-500 uppercase text-center mb-2">Volume by Department</p>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={departmentChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} width={80} />
-                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', color: '#0f172a' }} />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={chartColors.grid} />
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} width={80} />
+                    <Tooltip cursor={{ fill: chartColors.cursor }} contentStyle={{ borderRadius: '8px', border: `1px solid ${chartColors.tooltipBorder}`, fontSize: '12px', backgroundColor: chartColors.tooltipBg, color: chartColors.tooltipText }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                     <Bar dataKey="incoming" name="Incoming" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={12} />
                     <Bar dataKey="outgoing" name="Outgoing" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={12} />
@@ -294,10 +305,10 @@ export const Dashboard: React.FC = () => {
                 <p className="text-[10px] font-bold text-slate-500 uppercase text-center mb-2">Referral Types by Department</p>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={departmentChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} width={80} />
-                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', color: '#0f172a' }} />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={chartColors.grid} />
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} width={80} />
+                    <Tooltip cursor={{ fill: chartColors.cursor }} contentStyle={{ borderRadius: '8px', border: `1px solid ${chartColors.tooltipBorder}`, fontSize: '12px', backgroundColor: chartColors.tooltipBg, color: chartColors.tooltipText }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                     <Bar dataKey="oneWay" name="One Way" fill="#64748b" stackId="a" />
                     <Bar dataKey="serviceReturn" name="Service/Return" fill="#8b5cf6" stackId="a" />
@@ -323,30 +334,30 @@ export const Dashboard: React.FC = () => {
               ) : (
                 <div className="divide-y divide-slate-100">
                   {activeReferralsAdmitted.map(r => (
-                    <div key={r.id} className="p-4 hover:bg-slate-50 dark:bg-slate-950 transition-colors">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{r.patientData.name}</p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">MRN: {r.patientData.hospitalId}</span>
-                            <span>{r.requiredBedType}</span>
+                    <div key={r.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}</p>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                            <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[10px] whitespace-nowrap">MRN: {r.patientData.hospitalId}</span>
+                            <span className="whitespace-nowrap">{r.requiredBedType}</span>
                           </div>
                         </div>
-                        <Badge variant="default" className="text-[10px]">Referral</Badge>
+                        <Badge variant="default" className="text-[10px] shrink-0">Referral</Badge>
                       </div>
                     </div>
                   ))}
                   {activeDirectAdmissions.map(a => (
-                    <div key={a.id} className="p-4 hover:bg-slate-50 dark:bg-slate-950 transition-colors">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{a.patientName}</p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">HID: {a.hospitalId}</span>
-                            <span>{a.bedType}</span>
+                    <div key={a.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{a.patientName}</p>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                            <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[10px] whitespace-nowrap">HID: {a.hospitalId}</span>
+                            <span className="whitespace-nowrap">{a.bedType}</span>
                           </div>
                         </div>
-                        <Badge variant="default" className="text-[10px]">Direct</Badge>
+                        <Badge variant="default" className="text-[10px] shrink-0">Direct</Badge>
                       </div>
                     </div>
                   ))}
@@ -384,7 +395,7 @@ export const Dashboard: React.FC = () => {
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {recentShiftLogs.map(log => (
-                <div key={log.id} className="p-4 hover:bg-slate-50 dark:bg-slate-950 transition-colors">
+                <div key={log.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2">
