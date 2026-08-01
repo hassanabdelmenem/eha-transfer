@@ -6,6 +6,14 @@ import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
 import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch, increment, runTransaction } from 'firebase/firestore';
 
+// Roles at the referring facility trusted to withdraw a referral they didn't personally
+// create. Exported so the UI can gate the Cancel control identically to the rules below,
+// and mirrored in firestore.rules for server-side enforcement -- keep all three in sync.
+export const SENIOR_CANCEL_ROLES: Role[] = ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department'];
+// Statuses at which the patient is already in motion or the case is closed; cancellation
+// is refused past this point (both here and in firestore.rules).
+export const CANCEL_LOCKED_STATUSES: Referral['status'][] = ['in_transit', 'arrived', 'admitted', 'discharged'];
+
 export interface DirectAdmission {
   id: string;
   facilityId: string;
@@ -32,6 +40,9 @@ interface DataContextType {
   overrideReferralDestination: (id: string, newFacilityId: string) => void;
   toggleReferralEscalation: (id: string, isEscalated: boolean) => void;
   addDeptComment: (id: string, status: DeptApprovalStatus, comment: string) => void;
+  recordPatientConsent: (id: string) => Promise<void>;
+  recordPatientDecline: (id: string, reason: string) => Promise<void>;
+  cancelReferral: (id: string, reason: string) => Promise<void>;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   addDirectAdmission: (admission: Omit<DirectAdmission, 'id' | 'admittedAt'>) => void;
@@ -363,6 +374,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         patientName = r.patientData.name;
         referringFacilityId = r.referringFacilityId;
 
+        // A patient must have a recorded consent decision before dispatch can be marked in transit.
+        if (status === 'in_transit' && r.status !== 'patient_consented') {
+          throw new Error('Cannot mark in transit before the patient has consented to this destination.');
+        }
+
         const isApproving = ['dept_approved', 'manager_approved', 'accepted'].includes(status);
         finalReceivingFacilityId = (r.receivingFacilityId === 'auto' && isApproving)
           ? (user.facilityId || r.receivingFacilityId)
@@ -516,6 +532,159 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     deleteDoc(doc(db, 'facilities', facilityId)).catch(console.error);
   }, []);
 
+  // Records that the patient agreed to be transferred to the currently proposed
+  // facility. Only valid from 'accepted'; required before dispatch can move to
+  // 'in_transit' (enforced in updateReferralStatus).
+  const recordPatientConsent = useCallback(async (id: string) => {
+    if (!user) return;
+    const now = new Date().toISOString();
+    const refDocRef = doc(db, 'referrals', id);
+    let patientName = '';
+    let receivingFacilityId: string | undefined;
+
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(refDocRef);
+      if (!snap.exists()) throw new Error('Referral not found.');
+      const r = snap.data() as Referral;
+      if (r.status !== 'accepted') {
+        throw new Error('Patient consent can only be recorded while the referral is in the accepted state.');
+      }
+      patientName = r.patientData.name;
+      receivingFacilityId = r.receivingFacilityId;
+      transaction.update(refDocRef, {
+        status: 'patient_consented',
+        updatedAt: now,
+        statusHistory: [...r.statusHistory, { status: 'patient_consented', timestamp: now, userId: user.id, notes: 'Patient consented to transfer.' }]
+      });
+    });
+
+    if (receivingFacilityId && receivingFacilityId !== 'auto') {
+      createNotification({
+        title: 'Patient Consented to Transfer',
+        message: `Patient ${patientName} has consented; dispatch can proceed.`,
+        type: 'success',
+        referralId: id,
+        facilityId: receivingFacilityId
+      });
+    }
+  }, [user, createNotification]);
+
+  // Records that the patient declined the currently proposed facility. Re-routes the
+  // referral back to auto-pending and permanently excludes the declined facility from
+  // future candidate lists for this referral.
+  const recordPatientDecline = useCallback(async (id: string, reason: string) => {
+    if (!user) return;
+    const now = new Date().toISOString();
+    const refDocRef = doc(db, 'referrals', id);
+    let patientName = '';
+    let referringFacilityId = '';
+    let remainingCandidateIds: string[] = [];
+
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(refDocRef);
+      if (!snap.exists()) throw new Error('Referral not found.');
+      const r = snap.data() as Referral;
+      if (r.status !== 'accepted') {
+        throw new Error('Patient decline can only be recorded while the referral is in the accepted state.');
+      }
+      patientName = r.patientData.name;
+      referringFacilityId = r.referringFacilityId;
+      const declinedFacilityId = r.receivingFacilityId;
+      const patientDeclinedFacilityIds = [...(r.patientDeclinedFacilityIds || []), declinedFacilityId];
+      remainingCandidateIds = (r.candidateFacilityIds || []).filter(fid => fid !== declinedFacilityId);
+
+      transaction.update(refDocRef, {
+        status: 'pending',
+        receivingFacilityId: 'auto',
+        candidateFacilityIds: remainingCandidateIds,
+        patientDeclinedFacilityIds,
+        updatedAt: now,
+        statusHistory: [...r.statusHistory, { status: 'pending', timestamp: now, userId: user.id, notes: `Patient declined transfer to this facility. Reason: ${reason || 'Not specified'}. Re-routing.` }]
+      });
+    });
+
+    createNotification({
+      title: 'Patient Declined Transfer — Re-routing',
+      message: `Patient ${patientName} declined the proposed facility; referral is back in review.`,
+      type: 'warning',
+      referralId: id,
+      facilityId: referringFacilityId,
+      targetRoles: ['consultant', 'specialist', 'resident', 'medical_director', 'er_official']
+    });
+
+    remainingCandidateIds.forEach(candidateId => {
+      createNotification({
+        title: 'Referral Re-routed After Patient Decline',
+        message: `Patient ${patientName} declined another facility; this referral is active again.`,
+        type: 'info',
+        referralId: id,
+        facilityId: candidateId,
+        targetRoles: ['head_of_department', 'medical_director', 'hospital_manager']
+      });
+    });
+  }, [user, createNotification]);
+
+  // Soft-deletes a referral: marks it cancelled and keeps the full audit trail (status
+  // history, approvals) intact rather than removing the document. Callers should catch
+  // rejections -- they carry a user-facing reason (wrong role, or already in transit).
+  const cancelReferral = useCallback(async (id: string, reason: string) => {
+    if (!user) return;
+    const now = new Date().toISOString();
+    const refDocRef = doc(db, 'referrals', id);
+    let patientName = '';
+    let referringFacilityId = '';
+    let receivingFacilityId = '';
+
+    const isPrivileged = user.role === 'owner' || user.role === 'system_admin';
+
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(refDocRef);
+      if (!snap.exists()) throw new Error('Referral not found.');
+      const r = snap.data() as Referral;
+
+      if (CANCEL_LOCKED_STATUSES.includes(r.status)) {
+        throw new Error(`Cannot cancel a referral once it is ${r.status.replace(/_/g, ' ')}.`);
+      }
+
+      const isCreator = r.referringUserId === user.id;
+      const isSeniorAtReferringFacility = user.facilityId === r.referringFacilityId && SENIOR_CANCEL_ROLES.includes(user.role);
+      if (!isPrivileged && !isCreator && !isSeniorAtReferringFacility) {
+        throw new Error('You do not have permission to cancel this referral.');
+      }
+
+      patientName = r.patientData.name;
+      referringFacilityId = r.referringFacilityId;
+      receivingFacilityId = r.receivingFacilityId;
+
+      transaction.update(refDocRef, {
+        status: 'cancelled',
+        cancelledAt: now,
+        cancelledBy: user.id,
+        cancelReason: reason || 'Not specified',
+        updatedAt: now,
+        statusHistory: [...r.statusHistory, { status: 'cancelled', timestamp: now, userId: user.id, notes: reason ? `Cancelled: ${reason}` : 'Cancelled' }]
+      });
+    });
+
+    createNotification({
+      title: 'Referral Cancelled',
+      message: `The referral for ${patientName} was cancelled by ${user.name}.`,
+      type: 'warning',
+      referralId: id,
+      facilityId: referringFacilityId,
+      targetRoles: ['consultant', 'specialist', 'resident', 'medical_director', 'er_official']
+    });
+    if (receivingFacilityId && receivingFacilityId !== 'auto' && receivingFacilityId !== referringFacilityId) {
+      createNotification({
+        title: 'Referral Cancelled',
+        message: `The referral for ${patientName} was cancelled by the referring facility.`,
+        type: 'warning',
+        referralId: id,
+        facilityId: receivingFacilityId
+      });
+    }
+  }, [user, createNotification]);
+
   const toggleReferralEscalation = useCallback((id: string, isEscalated: boolean) => {
     const now = new Date().toISOString();
     const r = referrals.find(ref => ref.id === id);
@@ -562,6 +731,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     overrideReferralDestination,
     toggleReferralEscalation,
     addDeptComment,
+    recordPatientConsent,
+    recordPatientDecline,
+    cancelReferral,
     markNotificationRead,
     markAllNotificationsRead,
     addDirectAdmission,
@@ -593,6 +765,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     overrideReferralDestination,
     toggleReferralEscalation,
     addDeptComment,
+    recordPatientConsent,
+    recordPatientDecline,
+    cancelReferral,
     markNotificationRead,
     markAllNotificationsRead,
     addDirectAdmission,

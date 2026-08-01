@@ -223,7 +223,7 @@ export const NewReferralPage: React.FC = () => {
                       className={`px-3 py-1.5 rounded text-xs font-bold transition-colors ${
                         receivingDepartments.includes(d) 
                           ? 'bg-blue-600 text-white shadow-sm' 
-                          : 'bg-white dark:bg-slate-900 border border-slate-300 text-slate-600 hover:bg-slate-50 dark:bg-slate-950'
+                          : 'bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
                       {d}
@@ -235,12 +235,12 @@ export const NewReferralPage: React.FC = () => {
               
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Receiving Facility</label>
+                  <label htmlFor="receivingFacility" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Receiving Facility</label>
                   <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={isAutoRouting} 
-                      onChange={e => setIsAutoRouting(e.target.checked)} 
+                    <input
+                      type="checkbox"
+                      checked={isAutoRouting}
+                      onChange={e => setIsAutoRouting(e.target.checked)}
                       className="rounded text-blue-600 focus:ring-blue-500"
                     />
                     Auto-Route
@@ -249,8 +249,9 @@ export const NewReferralPage: React.FC = () => {
                 <div className="flex gap-2">
                   {!isAutoRouting && (
                     <select
+                      id="receivingFacility"
                       required
-                      className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 disabled:opacity-50 bg-white dark:bg-slate-900"
+                      className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 disabled:opacity-50 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                       value={receivingFacilityId}
                       onChange={e => setReceivingFacilityId(e.target.value)}
                       disabled={receivingDepartments.length === 0 || aiTriageRunning}
@@ -329,10 +330,11 @@ export const NewReferralPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Required Bed</label>
+                <label htmlFor="requiredBedType" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Required Bed</label>
                 <select
+                  id="requiredBedType"
                   required
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                   value={requiredBedType}
                   onChange={e => setRequiredBedType(e.target.value as BedType)}
                 >
@@ -346,9 +348,10 @@ export const NewReferralPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Clinical Priority</label>
+                <label htmlFor="priority" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Clinical Priority</label>
                 <select
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500"
+                  id="priority"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                   value={priority}
                   onChange={e => setPriority(e.target.value as ReferralPriority)}
                 >
@@ -359,9 +362,10 @@ export const NewReferralPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Transfer Type</label>
+                <label htmlFor="transferType" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Transfer Type</label>
                 <select
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500"
+                  id="transferType"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                   value={transferType}
                   onChange={e => setTransferType(e.target.value as ReferralTransferType)}
                 >
@@ -372,8 +376,9 @@ export const NewReferralPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Main Reason for Transfer</label>
-                <Input 
+                <label htmlFor="reasonForReferral" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Main Reason for Transfer</label>
+                <Input
+                  id="reasonForReferral"
                   required
                   placeholder="e.g. Needs immediate PCI, No ICU beds..."
                   value={reasonForReferral}
@@ -408,29 +413,30 @@ export const NewReferralPage: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Unified Hospital ID <span className="text-red-500">*</span></label>
-                <Input required placeholder="ISM-XXXXX" value={patientData.hospitalId || ''} onChange={e => setPatientData({...patientData, hospitalId: e.target.value})} />
+                <label htmlFor="hospitalId" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Unified Hospital ID <span className="text-red-500">*</span></label>
+                <Input id="hospitalId" required placeholder="ISM-XXXXX" value={patientData.hospitalId || ''} onChange={e => setPatientData({...patientData, hospitalId: e.target.value})} />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">National ID (Optional)</label>
-                <Input placeholder="14-digit NID (auto-calculates age & sex)" value={patientData.nationalId || ''} onChange={e => handleNationalIdChange(e.target.value)} />
+                <label htmlFor="nationalId" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">National ID (Optional)</label>
+                <Input id="nationalId" placeholder="14-digit NID (auto-calculates age & sex)" value={patientData.nationalId || ''} onChange={e => handleNationalIdChange(e.target.value)} />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Full Name</label>
-                <Input required value={patientData.name || ''} onChange={e => setPatientData({...patientData, name: e.target.value})} />
+                <label htmlFor="patientName" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Full Name</label>
+                <Input id="patientName" required value={patientData.name || ''} onChange={e => setPatientData({...patientData, name: e.target.value})} />
               </div>
               <div className="grid grid-cols-2 gap-2 md:col-span-2">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Age</label>
-                  <Input type="number" required value={patientData.age || ''} onChange={e => setPatientData({...patientData, age: parseInt(e.target.value)})} />
+                  <label htmlFor="patientAge" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Age</label>
+                  <Input id="patientAge" type="number" required value={patientData.age || ''} onChange={e => setPatientData({...patientData, age: parseInt(e.target.value)})} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Gender</label>
+                  <label htmlFor="patientGender" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Gender</label>
                   <select
-                    className="w-full rounded border border-slate-300 p-2 text-sm"
+                    id="patientGender"
+                    className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                     value={patientData.gender || 'male'}
                     onChange={e => setPatientData({...patientData, gender: e.target.value as PatientData['gender']})}
                   >
@@ -445,24 +451,24 @@ export const NewReferralPage: React.FC = () => {
               <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-3">Current Vitals</h4>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div>
-                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">HR (bpm)</label>
-                  <Input type="number" value={patientData.vitalSigns?.hr || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, hr: parseInt(e.target.value)}})} />
+                  <label htmlFor="vitalHr" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">HR (bpm)</label>
+                  <Input id="vitalHr" type="number" value={patientData.vitalSigns?.hr || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, hr: parseInt(e.target.value)}})} />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">BP (mmHg)</label>
-                  <Input placeholder="120/80" value={patientData.vitalSigns?.bp || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, bp: e.target.value}})} />
+                  <label htmlFor="vitalBp" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">BP (mmHg)</label>
+                  <Input id="vitalBp" placeholder="120/80" value={patientData.vitalSigns?.bp || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, bp: e.target.value}})} />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">SpO2 (%)</label>
-                  <Input type="number" value={patientData.vitalSigns?.spo2 || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, spo2: parseInt(e.target.value)}})} />
+                  <label htmlFor="vitalSpo2" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">SpO2 (%)</label>
+                  <Input id="vitalSpo2" type="number" value={patientData.vitalSigns?.spo2 || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, spo2: parseInt(e.target.value)}})} />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Temp (°C)</label>
-                  <Input type="number" step="0.1" value={patientData.vitalSigns?.temp || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, temp: parseFloat(e.target.value)}})} />
+                  <label htmlFor="vitalTemp" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Temp (°C)</label>
+                  <Input id="vitalTemp" type="number" step="0.1" value={patientData.vitalSigns?.temp || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, temp: parseFloat(e.target.value)}})} />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">RR (/min)</label>
-                  <Input type="number" value={patientData.vitalSigns?.rr || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, rr: parseInt(e.target.value)}})} />
+                  <label htmlFor="vitalRr" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">RR (/min)</label>
+                  <Input id="vitalRr" type="number" value={patientData.vitalSigns?.rr || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, rr: parseInt(e.target.value)}})} />
                 </div>
               </div>
             </div>
@@ -475,24 +481,26 @@ export const NewReferralPage: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Main Complaint</label>
-              <Input required placeholder="Chief complaint..." value={patientData.complaint || ''} onChange={e => setPatientData({...patientData, complaint: e.target.value})} />
+              <label htmlFor="complaint" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Main Complaint</label>
+              <Input id="complaint" required placeholder="Chief complaint..." value={patientData.complaint || ''} onChange={e => setPatientData({...patientData, complaint: e.target.value})} />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">History of Present Illness (Presentation)</label>
+                <label htmlFor="presentation" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">History of Present Illness (Presentation)</label>
                 <textarea
+                  id="presentation"
                   required
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[80px]"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[80px]"
                   value={patientData.presentation || ''}
                   onChange={e => setPatientData({...patientData, presentation: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Past Medical History</label>
+                <label htmlFor="pastHistory" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Past Medical History</label>
                 <textarea
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[80px]"
+                  id="pastHistory"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[80px]"
                   value={patientData.pastHistory || ''}
                   onChange={e => setPatientData({...patientData, pastHistory: e.target.value})}
                 />
@@ -501,18 +509,20 @@ export const NewReferralPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Medications Received / Current</label>
+                <label htmlFor="medications" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Medications Received / Current</label>
                 <textarea
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[60px]"
+                  id="medications"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[60px]"
                   value={patientData.medications || ''}
                   onChange={e => setPatientData({...patientData, medications: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Provisional Diagnosis</label>
+                <label htmlFor="diagnosis" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Provisional Diagnosis</label>
                 <textarea
+                  id="diagnosis"
                   required
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[60px]"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[60px]"
                   value={patientData.diagnosis || ''}
                   onChange={e => setPatientData({...patientData, diagnosis: e.target.value})}
                 />
@@ -520,9 +530,10 @@ export const NewReferralPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Labs & Investigations Summary</label>
+              <label htmlFor="investigations" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Labs & Investigations Summary</label>
               <textarea
-                className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500"
+                id="investigations"
+                className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500"
                 rows={2}
                 value={patientData.investigations || ''}
                 onChange={e => setPatientData({...patientData, investigations: e.target.value})}
@@ -531,8 +542,8 @@ export const NewReferralPage: React.FC = () => {
 
             {/* Media Uploads Mock */}
             <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-              <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Attachments (ECG, Scans, Reports)</label>
-              
+              <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Attachments (ECG, Scans, Reports)</span>
+
               <div className="flex flex-wrap gap-4 mb-4">
                 {patientData.attachments?.map(att => (
                   <div key={att.id} className="relative w-24 h-24 border border-slate-200 dark:border-slate-800 rounded overflow-hidden group">
@@ -554,7 +565,7 @@ export const NewReferralPage: React.FC = () => {
                   </div>
                 ))}
                 
-                <label className="w-24 h-24 border-2 border-dashed border-slate-300 rounded flex flex-col items-center justify-center text-slate-400 hover:text-blue-500 hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-colors">
+                <label className="w-24 h-24 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded flex flex-col items-center justify-center text-slate-400 hover:text-blue-500 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 cursor-pointer transition-colors">
                   {uploading ? (
                     <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                   ) : (

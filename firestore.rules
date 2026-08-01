@@ -17,6 +17,23 @@ service cloud.firestore {
               && data.candidateFacilityIds is list
               && callerDoc().facilityId in data.candidateFacilityIds);
     }
+    // Mirrors SENIOR_CANCEL_ROLES / CANCEL_LOCKED_STATUSES in src/contexts/DataContext.tsx --
+    // keep both in sync.
+    function isSeniorCancelRole() {
+      return callerDoc().role in ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department'];
+    }
+    function isCancelAttempt(newData) {
+      return newData.status == 'cancelled';
+    }
+    function isCancelLocked(existingData) {
+      return existingData.status in ['in_transit', 'arrived', 'admitted', 'discharged'];
+    }
+    function canCancelReferral(existingData) {
+      return !isCancelLocked(existingData) &&
+             (isPrivileged()
+               || existingData.referringUserId == request.auth.uid
+               || (callerDoc().facilityId == existingData.referringFacilityId && isSeniorCancelRole()));
+    }
 
     match /users/{userId} {
       allow read: if request.auth != null;
@@ -34,7 +51,11 @@ service cloud.firestore {
       allow create: if request.auth != null &&
                     (isPrivileged() || (isVerifiedCaller() && callerDoc().facilityId == request.resource.data.referringFacilityId));
       allow update: if request.auth != null &&
-                    (isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data)));
+                    (
+                      isCancelAttempt(request.resource.data)
+                        ? canCancelReferral(resource.data)
+                        : (isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data)))
+                    );
       allow delete: if request.auth != null && isPrivileged();
     }
     match /notifications/{notificationId} {

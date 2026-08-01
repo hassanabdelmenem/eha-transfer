@@ -62,11 +62,12 @@ export const AdmitPatientPage: React.FC = () => {
       {isAdmin && (
         <Card className="mb-6 border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
           <CardContent className="p-4 flex items-center gap-4">
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Admin View:</span>
+            <label htmlFor="admitFacility" className="text-sm font-bold text-slate-700 dark:text-slate-300">Admin View:</label>
             <select
+              id="admitFacility"
               value={selectedFacilityId}
               onChange={(e) => setSelectedFacilityId(e.target.value)}
-              className="flex-1 rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+              className="flex-1 rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
             >
               <option value="">Select Facility to Manage...</option>
               {facilities.map(f => (
@@ -87,23 +88,25 @@ export const AdmitPatientPage: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Patient Name</label>
+                <label htmlFor="admitPatientName" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Patient Name</label>
                 <input
+                  id="admitPatientName"
                   type="text"
                   required
                   placeholder="Full Name"
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500"
                   value={patientName}
                   onChange={e => setPatientName(e.target.value)}
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Hospital ID (HID)</label>
+                <label htmlFor="admitHospitalId" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Hospital ID (HID)</label>
                 <input
+                  id="admitHospitalId"
                   type="text"
                   required
                   placeholder="e.g. H-12345"
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500"
                   value={hospitalId}
                   onChange={e => setHospitalId(e.target.value)}
                 />
@@ -112,10 +115,11 @@ export const AdmitPatientPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Admitting Department</label>
+                <label htmlFor="admitDepartment" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Admitting Department</label>
                 <select
+                  id="admitDepartment"
                   required
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                   value={department}
                   onChange={e => setDepartment(e.target.value)}
                 >
@@ -126,10 +130,11 @@ export const AdmitPatientPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Bed Type</label>
+                <label htmlFor="admitBedType" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Bed Type</label>
                 <select
+                  id="admitBedType"
                   required
-                  className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900"
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
                   value={bedType}
                   onChange={e => setBedType(e.target.value as BedType)}
                 >
@@ -161,22 +166,22 @@ export const AdmitPatientPage: React.FC = () => {
           <div className="space-y-4">
             {activeAdmissions.map(admission => (
               <Card key={admission.id} className="border border-slate-200 dark:border-slate-800">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-slate-900 dark:text-slate-100">{admission.patientName}</h3>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="font-mono bg-slate-100 px-1 py-0.5 rounded">HID: {admission.hospitalId}</span>
-                      <span>{admission.department}</span>
-                      <span>{new Date(admission.admittedAt).toLocaleDateString()}</span>
+                <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-slate-900 dark:text-slate-100 truncate">{admission.patientName}</h3>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                      <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded whitespace-nowrap">HID: {admission.hospitalId}</span>
+                      <span className="whitespace-nowrap">{admission.department}</span>
+                      <span className="whitespace-nowrap">{new Date(admission.admittedAt).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 shrink-0">
                     <div className="text-right">
                       <Badge variant="info">{admission.bedType}</Badge>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      className="border-red-200 text-red-600 hover:bg-red-50"
+                    <Button
+                      variant="outline"
+                      className="border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 min-h-[40px]"
                       onClick={() => dischargeDirectAdmission(admission.id)}
                     >
                       <UserMinus className="w-4 h-4 mr-2" /> Discharge

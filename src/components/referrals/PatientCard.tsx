@@ -1,9 +1,25 @@
 import React from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { PatientData } from '../../types';
 
 interface PatientCardProps {
   patient: PatientData;
 }
+
+// Abnormal vitals are flagged with color AND an icon + "Abnormal" label, not color alone --
+// color-only signaling is invisible to colorblind users and screen readers.
+const VitalStat: React.FC<{ label: string; value: React.ReactNode; unit?: string; abnormal: boolean }> = ({ label, value, unit, abnormal }) => (
+  <div className={`p-2 rounded border ${abnormal ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
+    <p className={`text-[9px] flex items-center gap-0.5 ${abnormal ? 'text-red-500' : 'text-slate-400'}`}>
+      {label}
+      {abnormal && <AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" />}
+    </p>
+    <p className={`text-sm font-bold ${abnormal ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>
+      {value} {unit && <span className={`text-[10px] font-normal ${abnormal ? 'text-red-600 dark:text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>{unit}</span>}
+      {abnormal && <span className="sr-only"> (abnormal)</span>}
+    </p>
+  </div>
+);
 
 export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
   return (
@@ -36,31 +52,16 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
         <div className="col-span-1 md:col-span-2">
           <span className="text-[10px] text-slate-400 font-bold uppercase">Clinical Vitals</span>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2">
-            <div className={`p-2 rounded border ${patient.vitalSigns.hr > 100 || patient.vitalSigns.hr < 60 ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
-              <p className={`text-[9px] ${patient.vitalSigns.hr > 100 || patient.vitalSigns.hr < 60 ? 'text-red-500' : 'text-slate-400'}`}>HR</p>
-              <p className={`text-sm font-bold ${patient.vitalSigns.hr > 100 || patient.vitalSigns.hr < 60 ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>{patient.vitalSigns.hr} <span className={`text-[10px] font-normal ${patient.vitalSigns.hr > 100 || patient.vitalSigns.hr < 60 ? 'text-red-600 dark:text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>bpm</span></p>
-            </div>
-            <div className={`p-2 rounded border ${parseInt(patient.vitalSigns.bp.split('/')[0]) > 140 || parseInt(patient.vitalSigns.bp.split('/')[0]) < 90 ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
-              <p className={`text-[9px] ${parseInt(patient.vitalSigns.bp.split('/')[0]) > 140 || parseInt(patient.vitalSigns.bp.split('/')[0]) < 90 ? 'text-red-500' : 'text-slate-400'}`}>BP</p>
-              <p className={`text-sm font-bold ${parseInt(patient.vitalSigns.bp.split('/')[0]) > 140 || parseInt(patient.vitalSigns.bp.split('/')[0]) < 90 ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>{patient.vitalSigns.bp} <span className={`text-[10px] font-normal ${parseInt(patient.vitalSigns.bp.split('/')[0]) > 140 || parseInt(patient.vitalSigns.bp.split('/')[0]) < 90 ? 'text-red-600 dark:text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>mmHg</span></p>
-            </div>
-            <div className={`p-2 rounded border ${patient.vitalSigns.spo2 < 95 ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
-              <p className={`text-[9px] ${patient.vitalSigns.spo2 < 95 ? 'text-red-500' : 'text-slate-400'}`}>SpO2</p>
-              <p className={`text-sm font-bold ${patient.vitalSigns.spo2 < 95 ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>{patient.vitalSigns.spo2}%</p>
-            </div>
-            <div className={`p-2 rounded border ${patient.vitalSigns.temp > 38 || patient.vitalSigns.temp < 36 ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
-              <p className={`text-[9px] ${patient.vitalSigns.temp > 38 || patient.vitalSigns.temp < 36 ? 'text-red-500' : 'text-slate-400'}`}>Temp</p>
-              <p className={`text-sm font-bold ${patient.vitalSigns.temp > 38 || patient.vitalSigns.temp < 36 ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>{patient.vitalSigns.temp}°C</p>
-            </div>
-            <div className={`p-2 rounded border ${patient.vitalSigns.rr > 20 || patient.vitalSigns.rr < 12 ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
-              <p className={`text-[9px] ${patient.vitalSigns.rr > 20 || patient.vitalSigns.rr < 12 ? 'text-red-500' : 'text-slate-400'}`}>RR</p>
-              <p className={`text-sm font-bold ${patient.vitalSigns.rr > 20 || patient.vitalSigns.rr < 12 ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>{patient.vitalSigns.rr} <span className={`text-[10px] font-normal ${patient.vitalSigns.rr > 20 || patient.vitalSigns.rr < 12 ? 'text-red-600 dark:text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>/min</span></p>
-            </div>
+            <VitalStat label="HR" value={patient.vitalSigns.hr} unit="bpm" abnormal={patient.vitalSigns.hr > 100 || patient.vitalSigns.hr < 60} />
+            <VitalStat label="BP" value={patient.vitalSigns.bp} unit="mmHg" abnormal={parseInt(patient.vitalSigns.bp.split('/')[0]) > 140 || parseInt(patient.vitalSigns.bp.split('/')[0]) < 90} />
+            <VitalStat label="SpO2" value={`${patient.vitalSigns.spo2}%`} abnormal={patient.vitalSigns.spo2 < 95} />
+            <VitalStat label="Temp" value={`${patient.vitalSigns.temp}°C`} abnormal={patient.vitalSigns.temp > 38 || patient.vitalSigns.temp < 36} />
+            <VitalStat label="RR" value={patient.vitalSigns.rr} unit="/min" abnormal={patient.vitalSigns.rr > 20 || patient.vitalSigns.rr < 12} />
           </div>
         </div>
         <div className="col-span-1 md:col-span-2">
           <span className="text-[10px] text-slate-400 font-bold uppercase">Investigations & Labs</span>
-          <p className="text-xs mt-1 leading-relaxed text-slate-800 bg-slate-50 dark:bg-slate-950 p-3 rounded border border-slate-100 dark:border-slate-800 whitespace-pre-wrap">{patient.investigations || 'None recorded'}</p>
+          <p className="text-xs mt-1 leading-relaxed text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-950 p-3 rounded border border-slate-100 dark:border-slate-800 whitespace-pre-wrap">{patient.investigations || 'None recorded'}</p>
         </div>
       </div>
     </div>

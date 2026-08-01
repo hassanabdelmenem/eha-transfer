@@ -10,17 +10,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { VoiceTextarea } from '../components/ui/VoiceTextarea';
 import { StatusTimeline } from '../components/referrals/StatusTimeline';
 import { PrintableSummary } from '../components/referrals/PrintableSummary';
-import { ArrowLeft, Printer, Check, X, Truck, Building, FileText, CheckCircle, AlertCircle, Copy, Download, Activity, ShieldAlert, Clock } from 'lucide-react';
+import { ArrowLeft, Printer, Check, X, Truck, Building, FileText, CheckCircle, AlertCircle, Copy, Download, Activity, ShieldAlert, Clock, UserCheck, UserX, Ban } from 'lucide-react';
 import { ECGViewerOverlay } from '../components/referrals/ECGViewerOverlay';
 import { Badge } from '../components/ui/Badge';
 import { ReferralStatus, DeptApprovalStatus } from '../types';
+import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataContext';
 
 export const ReferralDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { referrals, updateReferralStatus, overrideReferralDestination, toggleReferralEscalation, addDeptComment, facilities, shiftAssignments, users } = useData();
+  const { referrals, updateReferralStatus, overrideReferralDestination, toggleReferralEscalation, addDeptComment, recordPatientConsent, recordPatientDecline, cancelReferral, facilities, shiftAssignments, users } = useData();
   const { user } = useAuth();
-  
+
   const [notes, setNotes] = useState('');
   const [selectedECGUrl, setSelectedECGUrl] = useState<string | null>(null);
   const [deptCommentText, setDeptCommentText] = useState('');
@@ -28,21 +29,41 @@ export const ReferralDetailPage: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [overrideFacilityId, setOverrideFacilityId] = useState('');
   const [contractedFacilityId, setContractedFacilityId] = useState('');
+  const [showDeclineForm, setShowDeclineForm] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const [consentBusy, setConsentBusy] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState('');
 
   const referral = referrals.find(r => r.id === id);
 
-
-
-
-  if (!referral || !user) {
-    return <div className="p-8 text-center">Referral not found.</div>;
-  }
-
+  // Hooks must run unconditionally on every render -- keep these above the
+  // "not found" early return below, or navigating to a missing/loading referral
+  // throws a "rendered fewer hooks than expected" error instead of showing the message.
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: `Clinical_Summary_${referral?.patientData?.name.replace(/\s+/g, '_')}`
+    documentTitle: `Clinical_Summary_${referral?.patientData?.name.replace(/\s+/g, '_') || 'Referral'}`
   });
+
+  if (!referral || !user) {
+    return (
+      <div className="p-12 text-center max-w-md mx-auto">
+        <div className="w-14 h-14 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+          <FileText className="w-6 h-6 text-slate-400" />
+        </div>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Referral not found</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          This referral may have been cancelled, or the link is no longer valid.
+        </p>
+        <Button variant="outline" className="mt-6 bg-white dark:bg-slate-900" onClick={() => navigate('/referrals')}>
+          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Referrals
+        </Button>
+      </div>
+    );
+  }
 
   const fromFacility = facilities.find(f => f.id === referral.referringFacilityId);
   const toFacility = referral.receivingFacilityId === 'auto' ? { name: 'Auto-Routed (Pending Destination)' } : facilities.find(f => f.id === referral.receivingFacilityId);
@@ -64,7 +85,13 @@ export const ReferralDetailPage: React.FC = () => {
   const isNurse = ['nurse', 'nursing_supervisor', 'owner'].includes(user.role);
   const isErRoom = (user.role === 'er_room' || user.role === 'owner') && (user.facilityId === referral.referringFacilityId || user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && referral.candidateFacilityIds?.includes(user.facilityId || '')));
 
-  
+  // Cancellation: system admins/owner, senior staff at the initiating (referring) facility,
+  // or the clinician who personally created the referral. Server-enforced identically in
+  // firestore.rules -- this only controls whether the button is shown.
+  const isSeniorAtReferringFacility = user.facilityId === referral.referringFacilityId && SENIOR_CANCEL_ROLES.includes(user.role);
+  const isReferralCreator = user.id === referral.referringUserId;
+  const canCancel = (isAdmin || isSeniorAtReferringFacility || isReferralCreator) && !CANCEL_LOCKED_STATUSES.includes(referral.status) && referral.status !== 'cancelled';
+
   const handleCopyId = () => {
     navigator.clipboard.writeText(referral.id);
     setCopied(true);
@@ -87,6 +114,44 @@ export const ReferralDetailPage: React.FC = () => {
     if (overrideFacilityId) {
       overrideReferralDestination(referral.id, overrideFacilityId);
       setOverrideFacilityId('');
+    }
+  };
+
+  const handlePatientConsent = async () => {
+    setConsentBusy(true);
+    try {
+      await recordPatientConsent(referral.id);
+    } catch (e: any) {
+      alert(e?.message || 'Could not record patient consent.');
+    } finally {
+      setConsentBusy(false);
+    }
+  };
+
+  const handlePatientDecline = async () => {
+    setConsentBusy(true);
+    try {
+      await recordPatientDecline(referral.id, declineReason);
+      setShowDeclineForm(false);
+      setDeclineReason('');
+    } catch (e: any) {
+      alert(e?.message || 'Could not record patient decline.');
+    } finally {
+      setConsentBusy(false);
+    }
+  };
+
+  const handleCancelReferral = async () => {
+    setCancelBusy(true);
+    setCancelError('');
+    try {
+      await cancelReferral(referral.id, cancelReason);
+      setShowCancelConfirm(false);
+      setCancelReason('');
+    } catch (e: any) {
+      setCancelError(e?.message || 'Could not cancel this referral.');
+    } finally {
+      setCancelBusy(false);
     }
   };
 
@@ -161,14 +226,14 @@ export const ReferralDetailPage: React.FC = () => {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Reason for Referral</p>
-                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800 text-slate-800 text-sm leading-relaxed">
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm leading-relaxed">
                   {referral.reasonForReferral}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm mt-4">
                 <div>
                   <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Referring Physician</p>
-                  <p className="font-semibold text-slate-800">{referringUser?.name || 'Unknown'}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">{referringUser?.name || 'Unknown'}</p>
                   {referringUser?.phoneNumber && (
                     <p className="text-xs text-slate-600 font-mono mt-0.5">📞 {referringUser.phoneNumber}</p>
                   )}
@@ -178,29 +243,29 @@ export const ReferralDetailPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Target Department(s) / Bed</p>
-                  <p className="font-semibold text-slate-800 uppercase">{referral.receivingDepartments.join(', ')} / {referral.requiredBedType}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 uppercase">{referral.receivingDepartments.join(', ')} / {referral.requiredBedType}</p>
                 </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
                  <div>
                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Chief Complaint</p>
-                   <p className="text-slate-800 text-sm">{referral.patientData.complaint || 'N/A'}</p>
+                   <p className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData.complaint || 'N/A'}</p>
                  </div>
                  <div>
                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Presentation & HPI</p>
-                   <p className="text-slate-800 text-sm">{referral.patientData.presentation || 'N/A'}</p>
+                   <p className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData.presentation || 'N/A'}</p>
                  </div>
                  <div>
                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Past Medical History</p>
-                   <p className="text-slate-800 text-sm">{referral.patientData.pastHistory || 'N/A'}</p>
+                   <p className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData.pastHistory || 'N/A'}</p>
                  </div>
               </div>
               
               {referral.patientData.medications && (
                 <div className="text-sm mt-2">
                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Medications Received</p>
-                   <p className="text-slate-800 text-sm">{referral.patientData.medications}</p>
+                   <p className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData.medications}</p>
                  </div>
               )}
               
@@ -278,18 +343,16 @@ export const ReferralDetailPage: React.FC = () => {
               {(isTargetDeptHead || isAdmin) && referral.status === 'pending' && (
                 <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4 space-y-3">
                   <h4 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Add Department Review</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                     <select className="rounded border border-slate-300 p-2 text-sm" value={deptAction} onChange={e => setDeptAction(e.target.value as DeptApprovalStatus)}>
-                       <option value="pending" disabled>Select action...</option>
-                       <option value="requirements_needed">Requirements Needed</option>
-                       <option value="direct_approval">Direct Approval</option>
-                       <option value="urgent_approval">Urgent Approval</option>
-                       <option value="scheduled_approval">Scheduled Approval</option>
-                       <option value="no_role">No Role / Not Indicated</option>
-                     </select>
-                  </div>
+                  <select className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm" value={deptAction} onChange={e => setDeptAction(e.target.value as DeptApprovalStatus)}>
+                     <option value="pending" disabled>Select action...</option>
+                     <option value="requirements_needed">Requirements Needed</option>
+                     <option value="direct_approval">Direct Approval</option>
+                     <option value="urgent_approval">Urgent Approval</option>
+                     <option value="scheduled_approval">Scheduled Approval</option>
+                     <option value="no_role">No Role / Not Indicated</option>
+                  </select>
                   <VoiceTextarea
-                    className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[60px]"
+                    className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[60px]"
                     placeholder="Clinical reasoning or requirements... (Click mic to dictate)"
                     value={deptCommentText}
                     onValueChange={setDeptCommentText}
@@ -452,7 +515,7 @@ export const ReferralDetailPage: React.FC = () => {
                           className="bg-green-600 hover:bg-green-700 text-xs py-1.5 h-9"
                           title="Direct Approve Referral"
                         >
-                          <CheckCircle className="h-3.5 h-3.5 mr-1 shrink-0" /> Approve
+                          <CheckCircle className="h-3.5 w-3.5 mr-1 shrink-0" /> Approve
                         </Button>
                         <Button 
                           onClick={() => handleStatusUpdate('rejected')} 
@@ -460,14 +523,14 @@ export const ReferralDetailPage: React.FC = () => {
                           className="text-xs py-1.5 h-9"
                           title="Direct Decline Referral"
                         >
-                          <X className="h-3.5 h-3.5 mr-1 shrink-0" /> Decline
+                          <X className="h-3.5 w-3.5 mr-1 shrink-0" /> Decline
                         </Button>
                         <Button 
                           onClick={() => handleStatusUpdate('postponed')} 
                           className="bg-amber-600 hover:bg-amber-700 text-white text-xs py-1.5 h-9"
                           title="Direct Postpone Referral"
                         >
-                          <Clock className="h-3.5 h-3.5 mr-1 shrink-0" /> Postpone
+                          <Clock className="h-3.5 w-3.5 mr-1 shrink-0" /> Postpone
                         </Button>
                       </div>
                     </div>
@@ -508,13 +571,51 @@ export const ReferralDetailPage: React.FC = () => {
                     </Button>
                   )}
   
+                  {/* Patient Consent -- referring facility staff record whether the patient
+                      agreed to this destination before dispatch can be marked in transit. */}
+                  {(isReferring || isAdmin) && referral.status === 'accepted' && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg space-y-3">
+                      <span className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase flex items-center gap-1.5">
+                        <UserCheck className="w-4 h-4" /> Patient Consent
+                      </span>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        Confirm with the patient before dispatch: did they agree to transfer to {toFacility?.name || 'this facility'}?
+                      </p>
+                      {!showDeclineForm ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button onClick={handlePatientConsent} disabled={consentBusy} className="bg-green-600 hover:bg-green-700 text-xs py-1.5 min-h-[40px]">
+                            <UserCheck className="h-3.5 w-3.5 mr-1 shrink-0" /> Accepted Transfer
+                          </Button>
+                          <Button onClick={() => setShowDeclineForm(true)} disabled={consentBusy} variant="destructive" className="text-xs py-1.5 min-h-[40px]">
+                            <UserX className="h-3.5 w-3.5 mr-1 shrink-0" /> Declined This Facility
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <VoiceTextarea
+                            className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[60px]"
+                            placeholder="Reason the patient declined (optional)... (Click mic to dictate)"
+                            value={declineReason}
+                            onValueChange={setDeclineReason}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button onClick={() => { setShowDeclineForm(false); setDeclineReason(''); }} variant="ghost" className="text-xs min-h-[40px]">Cancel</Button>
+                            <Button onClick={handlePatientDecline} disabled={consentBusy} variant="destructive" className="text-xs min-h-[40px]">
+                              Confirm Decline & Re-route
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Referring Facility Actions */}
-                  {(isReferring || isErRoom) && referral.status === 'accepted' && (
+                  {(isReferring || isErRoom) && referral.status === 'patient_consented' && (
                     <Button onClick={() => handleStatusUpdate('in_transit')} className="w-full bg-blue-600 hover:bg-blue-700">
                       <Truck className="h-4 w-4 mr-2" /> Dispatch Ambulance
                     </Button>
                   )}
-  
+
                   {/* Generic state */}
                   {referral.status === 'admitted' && (
                     <Badge variant="success" className="w-full justify-center py-2 text-xs">Patient Admitted Successfully</Badge>
@@ -528,13 +629,19 @@ export const ReferralDetailPage: React.FC = () => {
                   {referral.status === 'postponed' && (
                     <Badge variant="warning" className="w-full justify-center py-2 text-xs bg-amber-500 text-white">Referral Postponed</Badge>
                   )}
-                  
+                  {referral.status === 'cancelled' && (
+                    <Badge variant="danger" className="w-full justify-center py-2 text-xs">
+                      Referral Cancelled{referral.cancelReason ? `: ${referral.cancelReason}` : ''}
+                    </Badge>
+                  )}
+
                   {isAdmin && ['pending', 'dept_approved', 'manager_approved', 'accepted'].includes(referral.status) && (
                     <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
-                      <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Admin Override Destination</label>
-                      <div className="flex gap-2">
-                        <select 
-                          className="flex-1 rounded border border-slate-300 p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+                      <label htmlFor="overrideDestination" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Admin Override Destination</label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <select
+                          id="overrideDestination"
+                          className="flex-1 min-w-0 rounded border border-slate-300 dark:border-slate-700 p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
                           value={overrideFacilityId}
                           onChange={(e) => setOverrideFacilityId(e.target.value)}
                         >
@@ -543,21 +650,56 @@ export const ReferralDetailPage: React.FC = () => {
                             <option key={f.id} value={f.id}>{f.name} ({f.capacity[referral.requiredBedType]?.occupied || 0}/{f.capacity[referral.requiredBedType]?.total || 0} {referral.requiredBedType})</option>
                           ))}
                         </select>
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
+                        <Button
+                          variant="destructive"
+                          size="sm"
                           disabled={!overrideFacilityId}
                           onClick={handleDestinationOverride}
+                          className="shrink-0"
                         >
                           Override
                         </Button>
                       </div>
                     </div>
                   )}
+
+                  {canCancel && (
+                    <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                      {!showCancelConfirm ? (
+                        <button
+                          onClick={() => { setShowCancelConfirm(true); setCancelError(''); }}
+                          className="w-full flex items-center justify-center gap-2 min-h-[40px] rounded border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        >
+                          <Ban className="w-3.5 h-3.5" /> Cancel Referral
+                        </button>
+                      ) : (
+                        <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg space-y-3">
+                          <p className="text-xs font-bold text-red-700 dark:text-red-400">
+                            This withdraws the referral and archives it with its full history. This cannot be undone once confirmed.
+                          </p>
+                          <VoiceTextarea
+                            className="w-full rounded border border-red-200 dark:border-red-900 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm min-h-[50px]"
+                            placeholder="Reason for cancellation (optional)... (Click mic to dictate)"
+                            value={cancelReason}
+                            onValueChange={setCancelReason}
+                          />
+                          {cancelError && <p className="text-xs text-red-600 dark:text-red-400">{cancelError}</p>}
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button onClick={() => { setShowCancelConfirm(false); setCancelReason(''); setCancelError(''); }} variant="ghost" className="text-xs min-h-[40px]">
+                              Keep Referral
+                            </Button>
+                            <Button onClick={handleCancelReferral} disabled={cancelBusy} variant="destructive" className="text-xs min-h-[40px]">
+                              {cancelBusy ? 'Cancelling…' : 'Confirm Cancellation'}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
-          
+
         </div>
       </div>
 
