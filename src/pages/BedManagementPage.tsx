@@ -14,10 +14,6 @@ export const BedManagementPage: React.FC = () => {
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
   const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
 
-  if (!user || (!['nurse', 'nursing_supervisor', 'head_of_department', 'er_room'].includes(user.role) && !isAdmin)) {
-    return <div className="p-8 text-center text-slate-500">Access Denied. Nursing staff privileges required.</div>;
-  }
-
   const facility = facilities.find(f => f.id === selectedFacilityId);
   const [capacities, setCapacities] = useState<Record<BedType, { total: number; occupied: number }>>({} as Record<BedType, { total: number; occupied: number }>);
   const [saved, setSaved] = useState(false);
@@ -28,6 +24,10 @@ export const BedManagementPage: React.FC = () => {
       setCapacities(facility.capacity as any);
     }
   }, [facility]);
+
+  if (!user || (!['nurse', 'nursing_supervisor', 'head_of_department', 'er_room'].includes(user.role) && !isAdmin)) {
+    return <div className="p-8 text-center text-slate-500">Access Denied. Nursing staff privileges required.</div>;
+  }
 
   if (!user.facilityId && !isAdmin) {
     return <div className="p-8 text-center text-slate-500">Facility configuration missing.</div>;

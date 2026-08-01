@@ -408,7 +408,7 @@ export const ReferralDetailPage: React.FC = () => {
   
                 <div className="flex flex-col gap-2">
                   {/* System Admin Escalated Direct Actions Section */}
-                  {isAdmin && (
+                  {isAdmin && ['pending', 'dept_approved', 'manager_approved', 'accepted', 'in_transit', 'arrived', 'postponed'].includes(referral.status) && (
                     <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg space-y-3 mb-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-red-700 dark:text-red-400 uppercase flex items-center gap-1.5">

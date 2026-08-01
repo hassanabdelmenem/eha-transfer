@@ -61,7 +61,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
                   error={error}
                   className="tracking-[1em] text-center font-mono text-lg py-3"
                 />
-                {error && <p className="text-red-600 text-xs mt-1 font-medium">Invalid PIN. Try '1234'</p>}
+                {error && <p className="text-red-600 text-xs mt-1 font-medium">Invalid PIN.</p>}
               </div>
               <Button type="submit" className="w-full">
                 <Unlock className="h-4 w-4 mr-2" />

@@ -215,10 +215,9 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                   {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-[9px] font-bold uppercase">EMERGENCY</span>}
                   {referral.priority === 'urgent' && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-bold uppercase">URGENT</span>}
                   {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:text-slate-300 rounded text-[9px] font-bold uppercase">ROUTINE</span>}
-                    <div className="mt-1">
-                      <UrgencyTimer referral={referral} />
-                    </div>
-                  <UrgencyTimer referral={referral} />
+                  <div className="mt-1">
+                    <UrgencyTimer referral={referral} />
+                  </div>
                   <div className="flex items-center gap-1 font-medium text-[10px] uppercase text-slate-600">
                     {['in_transit', 'accepted', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>}
                     {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>}
