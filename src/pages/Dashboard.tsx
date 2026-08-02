@@ -259,8 +259,8 @@ export const Dashboard: React.FC = () => {
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} />
                     <Tooltip cursor={{ fill: chartColors.cursor }} contentStyle={{ borderRadius: '8px', border: `1px solid ${chartColors.tooltipBorder}`, fontSize: '12px', backgroundColor: chartColors.tooltipBg, color: chartColors.tooltipText }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                    <Bar dataKey="incoming" name="Incoming" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={16} />
-                    <Bar dataKey="outgoing" name="Outgoing" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={16} />
+                    <Bar dataKey="incoming" name="Incoming" fill="#6a9bcc" radius={[4, 4, 0, 0]} barSize={16} />
+                    <Bar dataKey="outgoing" name="Outgoing" fill="#d97757" radius={[4, 4, 0, 0]} barSize={16} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -273,9 +273,9 @@ export const Dashboard: React.FC = () => {
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} />
                     <Tooltip cursor={{ fill: chartColors.cursor }} contentStyle={{ borderRadius: '8px', border: `1px solid ${chartColors.tooltipBorder}`, fontSize: '12px', backgroundColor: chartColors.tooltipBg, color: chartColors.tooltipText }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                    <Bar dataKey="oneWay" name="One Way" fill="#64748b" stackId="a" />
-                    <Bar dataKey="serviceReturn" name="Service/Return" fill="#8b5cf6" stackId="a" />
-                    <Bar dataKey="assessmentReturn" name="Assessment" fill="#ec4899" stackId="a" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="oneWay" name="One Way" fill="#8a8779" stackId="a" />
+                    <Bar dataKey="serviceReturn" name="Service/Return" fill="#6a9bcc" stackId="a" />
+                    <Bar dataKey="assessmentReturn" name="Assessment" fill="#788c5d" stackId="a" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -296,8 +296,8 @@ export const Dashboard: React.FC = () => {
                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} width={80} />
                     <Tooltip cursor={{ fill: chartColors.cursor }} contentStyle={{ borderRadius: '8px', border: `1px solid ${chartColors.tooltipBorder}`, fontSize: '12px', backgroundColor: chartColors.tooltipBg, color: chartColors.tooltipText }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                    <Bar dataKey="incoming" name="Incoming" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={12} />
-                    <Bar dataKey="outgoing" name="Outgoing" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={12} />
+                    <Bar dataKey="incoming" name="Incoming" fill="#6a9bcc" radius={[0, 4, 4, 0]} barSize={12} />
+                    <Bar dataKey="outgoing" name="Outgoing" fill="#d97757" radius={[0, 4, 4, 0]} barSize={12} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -310,9 +310,9 @@ export const Dashboard: React.FC = () => {
                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: chartColors.tick }} width={80} />
                     <Tooltip cursor={{ fill: chartColors.cursor }} contentStyle={{ borderRadius: '8px', border: `1px solid ${chartColors.tooltipBorder}`, fontSize: '12px', backgroundColor: chartColors.tooltipBg, color: chartColors.tooltipText }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                    <Bar dataKey="oneWay" name="One Way" fill="#64748b" stackId="a" />
-                    <Bar dataKey="serviceReturn" name="Service/Return" fill="#8b5cf6" stackId="a" />
-                    <Bar dataKey="assessmentReturn" name="Assessment" fill="#ec4899" stackId="a" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="oneWay" name="One Way" fill="#8a8779" stackId="a" />
+                    <Bar dataKey="serviceReturn" name="Service/Return" fill="#6a9bcc" stackId="a" />
+                    <Bar dataKey="assessmentReturn" name="Assessment" fill="#788c5d" stackId="a" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
