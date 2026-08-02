@@ -507,30 +507,30 @@ export const ReferralDetailPage: React.FC = () => {
                         </select>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 pt-1">
-                        <Button 
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                        <Button
                           onClick={() => {
                             if (contractedFacilityId) {
                               overrideReferralDestination(referral.id, contractedFacilityId);
                             }
                             handleStatusUpdate('manager_approved');
-                          }} 
-                          className="bg-green-600 hover:bg-green-700 text-xs py-1.5 h-9"
+                          }}
+                          className="bg-green-600 hover:bg-green-700 text-xs py-1.5 min-h-[40px] h-auto"
                           title="Direct Approve Referral"
                         >
                           <CheckCircle className="h-3.5 w-3.5 mr-1 shrink-0" /> Approve
                         </Button>
-                        <Button 
-                          onClick={() => handleStatusUpdate('rejected')} 
-                          variant="destructive" 
-                          className="text-xs py-1.5 h-9"
+                        <Button
+                          onClick={() => handleStatusUpdate('rejected')}
+                          variant="destructive"
+                          className="text-xs py-1.5 min-h-[40px] h-auto"
                           title="Direct Decline Referral"
                         >
                           <X className="h-3.5 w-3.5 mr-1 shrink-0" /> Decline
                         </Button>
-                        <Button 
-                          onClick={() => handleStatusUpdate('postponed')} 
-                          className="bg-amber-600 hover:bg-amber-700 text-white text-xs py-1.5 h-9"
+                        <Button
+                          onClick={() => handleStatusUpdate('postponed')}
+                          className="bg-amber-600 hover:bg-amber-700 text-white text-xs py-1.5 min-h-[40px] h-auto"
                           title="Direct Postpone Referral"
                         >
                           <Clock className="h-3.5 w-3.5 mr-1 shrink-0" /> Postpone

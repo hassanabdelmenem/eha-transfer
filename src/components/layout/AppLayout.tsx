@@ -117,8 +117,20 @@ export const AppLayout: React.FC = () => {
           </div>
         </div>
 
-        {/* Actions Section - Full width on mobile, right-aligned on desktop */}
-        <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto w-full md:w-auto mx-auto md:ml-auto md:mr-0 justify-between md:justify-end pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Actions Section - Full width on mobile, right-aligned on desktop.
+            md:w-max: overflow-x-auto resets this flex item's automatic min-width to 0,
+            which let the header's flex layout shrink it well below its content's natural
+            width even with plenty of spare room (it was getting squeezed to ~635px and
+            leaving ~450px of dead space next to the logo on a 1440px viewport;
+            flex-shrink-0 alone didn't stop it — the browser was still resolving
+            width:auto via shrink-to-fit against the auto margin). width:max-content
+            forces the box to size to its content instead. overflow-x-auto still applies
+            below md, where the row genuinely needs to scroll.
+            justify-start (not end): on the narrow viewports where this row *does*
+            overflow, justify-end would align the *end* of the content into view and let
+            the *start* spill past the left edge — unreachable, since browsers can't
+            scroll left past 0. Left-packing keeps everything reachable by scrolling right. */}
+        <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto w-full md:w-max mx-auto md:ml-auto md:mr-0 justify-between pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!isOnline && (
             <div className="flex items-center gap-2 bg-red-500/20 px-3 py-1.5 rounded text-red-100 text-[10px] font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="IndexedDB Offline Mode active">
               <WifiOff className="w-3.5 h-3.5" />
@@ -166,7 +178,7 @@ export const AppLayout: React.FC = () => {
 
           <div className="hidden lg:block h-10 w-px bg-blue-700 shrink-0 mx-2"></div>
           
-          <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 flex-1 md:flex-none whitespace-nowrap px-1 w-full">
+          <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 flex-1 md:flex-none whitespace-nowrap px-1 w-full md:w-auto">
             <button
               onClick={() => setShowHotline(true)}
               className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 min-h-[40px] rounded transition-colors text-[10px] font-bold uppercase tracking-wider shadow-sm"

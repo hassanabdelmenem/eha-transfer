@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, initializeAuth, browserSessionPersistence, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   projectId: "eha-transfer-1785622025",
@@ -18,5 +18,16 @@ export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = !getApps().length ? initializeAuth(app, { persistence: browserSessionPersistence }) : getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Initialize Firestore without persistent cache to avoid IndexedDB locking errors
-export const db = getFirestore(app);
+// Initialize Firestore without persistent cache to avoid IndexedDB locking errors.
+// ignoreUndefinedProperties: callers throughout the app build partial objects with
+// `field || undefined` — without this, the SDK throws on any literal `undefined`
+// field value instead of just omitting it, which silently breaks those writes.
+// initializeFirestore throws if it (or getFirestore) already ran for this app, e.g.
+// on a Vite HMR re-run of this module — fall back to the existing instance then.
+let dbInstance;
+try {
+  dbInstance = initializeFirestore(app, { ignoreUndefinedProperties: true });
+} catch {
+  dbInstance = getFirestore(app);
+}
+export const db = dbInstance;
