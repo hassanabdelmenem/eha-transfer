@@ -7,7 +7,7 @@ const firebaseConfig = {
   appId: "1:467744756760:web:6fd2817e76a941e6e49f6d",
   storageBucket: "eha-transfer-1785622025.firebasestorage.app",
   apiKey: "AIzaSyA3T3FvdxAztldN9Nx6z7aN9VczgLXne4U",
-  authDomain: "eha-transfer-1785622025.firebaseapp.com",
+  authDomain: "eha-transfer.web.app",
   messagingSenderId: "467744756760",
   projectNumber: "467744756760",
   version: "2"
