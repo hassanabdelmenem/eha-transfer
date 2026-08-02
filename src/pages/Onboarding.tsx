@@ -16,16 +16,20 @@ export const Onboarding: React.FC = () => {
   const [role, setRole] = useState<Role>(user?.role === 'owner' ? 'owner' : 'resident');
   const [facilityId, setFacilityId] = useState<string>('');
   const [department, setDepartment] = useState<string>('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserProfile({
-      name,
-      phoneNumber,
-      role,
-      facilityId: facilityId || undefined,
-      department: department || undefined
-    });
+    setSubmitting(true);
+    try {
+      const profile: { name: string; phoneNumber: string; role: Role; facilityId?: string; department?: string } = { name, phoneNumber, role };
+      if (facilityId) profile.facilityId = facilityId;
+      if (department) profile.department = department;
+      await updateUserProfile(profile);
+    } catch (err: any) {
+      alert('Could not save your profile: ' + err.message);
+      setSubmitting(false);
+    }
   };
 
   const selectedFacility = facilities.find(f => f.id === facilityId);
@@ -144,8 +148,8 @@ export const Onboarding: React.FC = () => {
                 </div>
               )}
 
-              <Button type="submit" className="w-full h-12 text-sm bg-blue-900 hover:bg-blue-800">
-                Submit Profile
+              <Button type="submit" disabled={submitting} className="w-full h-12 text-sm bg-blue-900 hover:bg-blue-800 disabled:opacity-60">
+                {submitting ? 'Saving...' : 'Submit Profile'}
               </Button>
             </form>
           </CardContent>

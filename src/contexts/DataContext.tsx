@@ -90,8 +90,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
-  // Firestore Listeners
+  // Firestore Listeners.
+  // Gated on user.id (not just truthiness of `user`, which also changes on every
+  // profile field update): Firestore permanently kills an onSnapshot listener the
+  // first time it errors, with no auto-retry. Subscribing before the user is
+  // authenticated — e.g. while still on /login — would fail permission checks and
+  // leave these listeners dead for the rest of the session, even after a
+  // successful login. Re-running only on actual sign-in/sign-out re-subscribes.
   useEffect(() => {
+    if (!user) return;
     const unsubs: (() => void)[] = [];
 
     // Facilities
@@ -145,7 +152,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
 
     return () => unsubs.forEach(u => u());
-  }, []);
+  }, [user?.id]);
 
   const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, targetRoles?: Role[], departments?: string[] }) => {
     const relevantUsers = users.filter(u => {
@@ -751,6 +758,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateUserFacility,
     removeUser,
     addFacility,
+    updateFacility,
     removeFacility,
     addFacilityDepartment,
     removeFacilityDepartment,
@@ -785,6 +793,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateUserFacility,
     removeUser,
     addFacility,
+    updateFacility,
     removeFacility,
     addFacilityDepartment,
     removeFacilityDepartment,

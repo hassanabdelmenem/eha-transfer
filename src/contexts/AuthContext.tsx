@@ -1,8 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { auth, googleProvider, db } from '../lib/firebase';
-import { signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+
+// Mobile browsers (especially iOS Safari) routinely block or break signInWithPopup —
+// third-party storage restrictions and popup blockers make the popup either never
+// open or lose the auth state before it completes. signInWithRedirect navigates the
+// whole page to Google and back instead, which works reliably on mobile.
+const isMobileDevice = () =>
+  typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
 interface AuthContextType {
   user: User | null;
@@ -29,6 +36,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return; // Skip Firebase auth listener completely if we have a mock user
       } catch (e) {}
     }
+    // Complete a pending redirect-based sign-in (mobile Google login). signInWithRedirect
+    // navigates away from the page, so there's no local call site left to catch a
+    // failure here — this is the only place that can surface one.
+    getRedirectResult(auth).catch((err) => {
+      console.error('Redirect sign-in failed:', err);
+      alert('Google sign-in failed: ' + err.message);
+    });
+
     let unsubscribeUserDoc: (() => void) | null = null;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -80,17 +95,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithGoogle = async () => {
-    // Hardcoded owner login bypass
-    const ownerUser: User = {
-      id: "hardcoded_owner_123",
-      name: "Hassan (Owner)",
-      email: "hassan.abdelmenem@gmail.com",
-      role: "owner",
-      verified: true,
-      profileCompleted: true
-    };
-    setUser(ownerUser);
-    localStorage.setItem('auth_user', JSON.stringify(ownerUser));
+    if (isMobileDevice()) {
+      await signInWithRedirect(auth, googleProvider);
+    } else {
+      await signInWithPopup(auth, googleProvider);
+    }
   };
   
   const loginWithEmail = async (e: string, p: string) => {

@@ -99,6 +99,14 @@ export const FacilitySettingsPage: React.FC = () => {
     const departmentsArray = facDepts.split(',').map(d => d.trim()).filter(Boolean);
     const contractedServicesArray = facContractedServices.split(',').map(s => s.trim()).filter(Boolean);
 
+    // Editing an existing facility must not reset how many of its beds are currently
+    // occupied — this form only edits totals, occupancy is managed in Bed Management.
+    const existingCapacity = editingFacilityId ? facilities.find(f => f.id === editingFacilityId)?.capacity : undefined;
+    const capacityFor = (bed: BedType, total: number) => ({
+      total: Number(total) || 0,
+      occupied: existingCapacity?.[bed]?.occupied ?? 0
+    });
+
     const facilityPayload = {
       name: facName.trim(),
       type: facType,
@@ -107,10 +115,10 @@ export const FacilitySettingsPage: React.FC = () => {
       contractedServices: facContractedServices ? contractedServicesArray : [],
       departments: departmentsArray.length > 0 ? departmentsArray : ['Emergency', 'General'],
       capacity: {
-        ICU: { total: Number(icuTotal) || 0, occupied: 0 },
-        CCU: { total: Number(ccuTotal) || 0, occupied: 0 },
-        PICU: { total: Number(picuTotal) || 0, occupied: 0 },
-        Ward: { total: Number(wardTotal) || 0, occupied: 0 }
+        ICU: capacityFor('ICU', icuTotal),
+        CCU: capacityFor('CCU', ccuTotal),
+        PICU: capacityFor('PICU', picuTotal),
+        Ward: capacityFor('Ward', wardTotal)
       }
     };
 
