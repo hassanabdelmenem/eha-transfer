@@ -26,12 +26,23 @@ export const app = isFirstInit ? initializeApp(firebaseConfig) : getApp();
 // resolver for you, initializeAuth() does not. Without it every signInWithPopup /
 // signInWithRedirect / getRedirectResult call fails with auth/argument-error,
 // which takes out Google sign-in entirely.
-export const auth = isFirstInit
-  ? initializeAuth(app, {
+//
+// Both browser* dependencies are real implementations only in the browser build
+// of the SDK. Under the node-esm build — which is what vitest resolves, jsdom or
+// not — initializeAuth throws "Expected a class definition" on them. Testing
+// `typeof window` is not enough for that reason, so fall back on the throw.
+function createAuth() {
+  if (!isFirstInit) return getAuth(app);
+  try {
+    return initializeAuth(app, {
       persistence: browserSessionPersistence,
       popupRedirectResolver: browserPopupRedirectResolver,
-    })
-  : getAuth(app);
+    });
+  } catch {
+    return getAuth(app);
+  }
+}
+export const auth = createAuth();
 export const googleProvider = new GoogleAuthProvider();
 
 // Initialize Firestore without persistent cache to avoid IndexedDB locking errors.
