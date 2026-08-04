@@ -23,12 +23,28 @@ export const ERDashboard: React.FC = () => {
 
   const getFacilityName = (id: string) => facilities.find(f => f.id === id)?.name || id;
 
-  const handleRequestAmbulance = (id: string) => {
-    updateReferralStatus(id, 'in_transit', 'Ambulance dispatched by ER team');
+  // Dispatch is only legal once the patient has consented to the destination -- the
+  // same gate updateReferralStatus enforces. Referrals still at 'accepted' are listed
+  // here so ER can see them coming, but the dispatch button stays disabled until
+  // consent is recorded on the referral's detail page.
+  const awaitingTransport = activeReferrals.filter(
+    r => r.referringFacilityId === user.facilityId && ['accepted', 'patient_consented'].includes(r.status)
+  );
+
+  const handleRequestAmbulance = async (id: string) => {
+    try {
+      await updateReferralStatus(id, 'in_transit', 'Ambulance dispatched by ER team');
+    } catch (e: any) {
+      alert(e?.message || 'Could not dispatch the ambulance.');
+    }
   };
 
-  const handleConfirmArrival = (id: string) => {
-    updateReferralStatus(id, 'arrived', 'Patient arrived at ER');
+  const handleConfirmArrival = async (id: string) => {
+    try {
+      await updateReferralStatus(id, 'arrived', 'Patient arrived at ER');
+    } catch (e: any) {
+      alert(e?.message || 'Could not confirm arrival.');
+    }
   };
 
   return (
@@ -48,9 +64,9 @@ export const ERDashboard: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
-            {activeReferrals
-              .filter(r => r.referringFacilityId === user.facilityId && r.status === 'accepted')
-              .map(referral => (
+            {awaitingTransport.map(referral => {
+              const consentRecorded = referral.status === 'patient_consented';
+              return (
                 <div key={referral.id} className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm">
                   <div className="flex justify-between items-start gap-3 mb-2">
                     <div className="min-w-0">
@@ -61,15 +77,22 @@ export const ERDashboard: React.FC = () => {
                       {referral.priority}
                     </Badge>
                   </div>
-                  <Button 
+                  <Button
                     onClick={() => handleRequestAmbulance(referral.id)}
-                    className="w-full mt-3 bg-blue-600 hover:bg-blue-700"
+                    disabled={!consentRecorded}
+                    className="w-full mt-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                   >
                     <Truck className="w-4 h-4 mr-2" /> Request Ambulance
                   </Button>
+                  {!consentRecorded && (
+                    <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-2 text-center">
+                      Awaiting patient consent before dispatch.
+                    </p>
+                  )}
                 </div>
-              ))}
-            {activeReferrals.filter(r => r.referringFacilityId === user.facilityId && r.status === 'accepted').length === 0 && (
+              );
+            })}
+            {awaitingTransport.length === 0 && (
               <p className="text-sm text-slate-500 text-center py-4">No patients awaiting transport.</p>
             )}
           </CardContent>

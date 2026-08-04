@@ -16,13 +16,18 @@ export const AdminDashboard: React.FC = () => {
     return <div className="p-8">Access Denied. Admin privileges required.</div>;
   }
 
+  // A referral counts against a facility once it is claimed *or* while it is still
+  // auto-routing and this facility is one of the notified candidates -- auto-route is
+  // the default, so matching only on receivingFacilityId showed an empty waitlist
+  // even with unclaimed emergencies pending.
+  const isAwaitingAt = (r: (typeof referrals)[number], facilityId: string) =>
+    (r.receivingFacilityId === facilityId ||
+      (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(facilityId))) &&
+    !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status);
+
   // Calculate waitlists (pending/approved but not admitted/rejected) for each bed type in each facility
   const getWaitlist = (facilityId: string, bedType: BedType) => {
-    return referrals.filter(r => 
-      r.receivingFacilityId === facilityId && 
-      r.requiredBedType === bedType && 
-      !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status)
-    );
+    return referrals.filter(r => isAwaitingAt(r, facilityId) && r.requiredBedType === bedType);
   };
 
   const calculateTotalCapacity = () => {
@@ -132,9 +137,7 @@ export const AdminDashboard: React.FC = () => {
                   {(() => {
                     const rows = facility.departments.map(dept => {
                       const deptWaitlist = referrals.filter(r =>
-                        r.receivingFacilityId === facility.id &&
-                        r.receivingDepartments.includes(dept) &&
-                        !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status)
+                        isAwaitingAt(r, facility.id) && r.receivingDepartments.includes(dept)
                       );
                       if (deptWaitlist.length === 0) return null;
 

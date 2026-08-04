@@ -34,11 +34,11 @@ interface DataContextType {
   directAdmissions: DirectAdmission[];
   shiftAssignments: ShiftAssignment[];
   shiftLogs: ShiftLog[];
-  addShiftLog: (log: Omit<ShiftLog, 'id' | 'timestamp'>) => void;
+  addShiftLog: (log: Omit<ShiftLog, 'id' | 'timestamp'>) => Promise<void>;
   addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => void;
-  updateReferralStatus: (id: string, status: Referral['status'], notes?: string) => void;
-  overrideReferralDestination: (id: string, newFacilityId: string) => void;
-  toggleReferralEscalation: (id: string, isEscalated: boolean) => void;
+  updateReferralStatus: (id: string, status: Referral['status'], notes?: string) => Promise<void>;
+  overrideReferralDestination: (id: string, newFacilityId: string) => Promise<void>;
+  toggleReferralEscalation: (id: string, isEscalated: boolean) => Promise<void>;
   addDeptComment: (id: string, status: DeptApprovalStatus, comment: string) => void;
   recordPatientConsent: (id: string) => Promise<void>;
   recordPatientDecline: (id: string, reason: string) => Promise<void>;
@@ -78,7 +78,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
+    // Firestore replays its own write queue on reconnect, so anything counted while
+    // offline is flushed by the time we're back. Without this reset the header badge
+    // reported "N pending upload" for the rest of the session.
+    const handleOnline = () => {
+      setIsOnline(true);
+      setPendingSyncCount(0);
+    };
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -205,13 +211,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateDoc(doc(db, 'users', id), updates).catch(console.error);
   }, []);
 
-  const addShiftLog = useCallback((logData: Omit<ShiftLog, 'id' | 'timestamp'>) => {
+  // Returns the write promise so callers that are about to tear down the session
+  // (e.g. logout) can await it -- signing out first would revoke the token this
+  // write needs and the handover log would be silently rejected.
+  const addShiftLog = useCallback(async (logData: Omit<ShiftLog, 'id' | 'timestamp'>) => {
     const newLog: ShiftLog = {
       ...logData,
       id: uuidv4(),
       timestamp: new Date().toISOString()
     };
-    setDoc(doc(db, 'shiftLogs', newLog.id), newLog).catch(console.error);
+    try {
+      await setDoc(doc(db, 'shiftLogs', newLog.id), newLog);
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
 
   const addFacilityDepartment = useCallback((facilityId: string, department: string) => {
@@ -288,38 +301,48 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const quickTransfer = useCallback((type: 'referral' | 'admission', id: string, toDepartment: string, notes: string) => {
     if (type === 'admission') {
       updateDoc(doc(db, 'directAdmissions', id), { department: toDepartment }).catch(console.error);
-    } else if (type === 'referral') {
-      const r = referrals.find(ref => ref.id === id);
-      if (r) {
-        const newHistory = [...r.statusHistory, {
+      return;
+    }
+    // Read statusHistory inside the transaction: appending to a copy taken from local
+    // state lets a concurrent write clobber whichever audit entry lands second.
+    const refDocRef = doc(db, 'referrals', id);
+    runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(refDocRef);
+      if (!snap.exists()) return;
+      const r = snap.data() as Referral;
+      transaction.update(refDocRef, {
+        receivingDepartments: [toDepartment],
+        statusHistory: [...r.statusHistory, {
           status: r.status,
           timestamp: new Date().toISOString(),
           userId: user?.id || 'system',
           notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
-        }];
-        updateDoc(doc(db, 'referrals', id), {
-          receivingDepartments: [toDepartment],
-          statusHistory: newHistory
-        }).catch(console.error);
-      }
-    }
-  }, [referrals, user]);
+        }]
+      });
+    }).catch(console.error);
+  }, [user]);
 
+  // Discharge must decide from the transactionally-read status, not from local state:
+  // two clicks (or two nurses) inside one snapshot round-trip would otherwise both
+  // pass the guard and each fire increment(-1), under-counting occupied beds.
   const dischargeDirectAdmission = useCallback((id: string) => {
-    const admission = directAdmissions.find(a => a.id === id);
-    if (admission && admission.status !== 'discharged') {
+    const admissionDocRef = doc(db, 'directAdmissions', id);
+    runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(admissionDocRef);
+      if (!snap.exists()) return;
+      const admission = snap.data() as DirectAdmission;
+      if (admission.status === 'discharged') return;
+
       const facility = facilities.find(f => f.id === admission.facilityId);
-      if (facility) {
-        const bedCap = facility.capacity[admission.bedType];
-        if (bedCap) {
-          updateDoc(doc(db, 'facilities', facility.id), {
-            [`capacity.${admission.bedType}.occupied`]: increment(-1)
-          }).catch(console.error);
-        }
+      const bedCap = facility?.capacity[admission.bedType];
+      if (facility && bedCap) {
+        transaction.update(doc(db, 'facilities', facility.id), {
+          [`capacity.${admission.bedType}.occupied`]: increment(-1)
+        });
       }
-      updateDoc(doc(db, 'directAdmissions', id), { status: 'discharged' }).catch(console.error);
-    }
-  }, [directAdmissions, facilities]);
+      transaction.update(admissionDocRef, { status: 'discharged' });
+    }).catch(console.error);
+  }, [facilities]);
 
   const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => {
     const now = new Date().toISOString();
@@ -423,8 +446,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
     } catch (e) {
+      // Rethrow: the message carries the user-facing reason (e.g. consent not yet
+      // recorded). Swallowing it here made every failed status change look like a
+      // no-op button in the UI.
       console.error(e);
-      return;
+      throw e;
     }
 
     if (!finalReceivingFacilityId) return;
@@ -451,23 +477,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, facilities, createNotification]);
 
-  const overrideReferralDestination = useCallback((id: string, newFacilityId: string) => {
+  const overrideReferralDestination = useCallback(async (id: string, newFacilityId: string) => {
     if (!user) return;
     const now = new Date().toISOString();
-    const r = referrals.find(ref => ref.id === id);
-    if (!r) return;
+    const refDocRef = doc(db, 'referrals', id);
+    const newFacilityName = facilities.find(f => f.id === newFacilityId)?.name;
 
-    updateDoc(doc(db, 'referrals', id), {
-      receivingFacilityId: newFacilityId,
-      updatedAt: now,
-      statusHistory: [...r.statusHistory, { 
-        status: r.status, 
-        timestamp: now, 
-        userId: user.id, 
-        notes: `Destination manually overridden to ${facilities.find(f => f.id === newFacilityId)?.name}` 
-      }]
-    }).catch(console.error);
-  }, [user, referrals, facilities]);
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(refDocRef);
+      if (!snap.exists()) return;
+      const r = snap.data() as Referral;
+      transaction.update(refDocRef, {
+        receivingFacilityId: newFacilityId,
+        updatedAt: now,
+        statusHistory: [...r.statusHistory, {
+          status: r.status,
+          timestamp: now,
+          userId: user.id,
+          notes: `Destination manually overridden to ${newFacilityName}`
+        }]
+      });
+    });
+  }, [user, facilities]);
 
   const addDeptComment = useCallback(async (referralId: string, status: DeptApprovalStatus, comment: string) => {
     if (!user) return;
@@ -698,22 +729,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, createNotification]);
 
-  const toggleReferralEscalation = useCallback((id: string, isEscalated: boolean) => {
+  const toggleReferralEscalation = useCallback(async (id: string, isEscalated: boolean) => {
     const now = new Date().toISOString();
-    const r = referrals.find(ref => ref.id === id);
-    if (!r) return;
+    const refDocRef = doc(db, 'referrals', id);
 
-    updateDoc(doc(db, 'referrals', id), {
-      isEscalated,
-      updatedAt: now,
-      statusHistory: [...r.statusHistory, {
-        status: r.status,
-        timestamp: now,
-        userId: user?.id || 'system',
-        notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
-      }]
-    }).catch(console.error);
-  }, [referrals, user]);
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(refDocRef);
+      if (!snap.exists()) return;
+      const r = snap.data() as Referral;
+      transaction.update(refDocRef, {
+        isEscalated,
+        updatedAt: now,
+        statusHistory: [...r.statusHistory, {
+          status: r.status,
+          timestamp: now,
+          userId: user?.id || 'system',
+          notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
+        }]
+      });
+    });
+  }, [user]);
 
   const markNotificationRead = useCallback((id: string) => {
     updateDoc(doc(db, 'notifications', id), { read: true }).catch(console.error);

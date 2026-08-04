@@ -19,9 +19,20 @@ export const AppLayout: React.FC = () => {
   const [profileSchedule, setProfileSchedule] = React.useState(user?.monthlySchedule || '');
   const { updateUserProfile } = useAuth();
 
-  const handleSaveProfile = () => {
-    updateUserProfile({ phoneNumber: profilePhone, monthlySchedule: profileSchedule });
-    setShowProfile(false);
+  const [savingProfile, setSavingProfile] = React.useState(false);
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      // Await before closing: a rejected write used to leave the dialog looking saved,
+      // so staff kept a stale on-call number in the hotline directory.
+      await updateUserProfile({ phoneNumber: profilePhone, monthlySchedule: profileSchedule });
+      setShowProfile(false);
+    } catch (err: any) {
+      alert('Could not save your profile: ' + (err?.message || 'unknown error'));
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const openProfile = () => {
@@ -46,7 +57,7 @@ export const AppLayout: React.FC = () => {
   const isHeadOfDept = user.role === 'head_of_department' || user.role === 'owner';
   const isDoctor = ['consultant', 'specialist', 'resident', 'head_of_department', 'medical_director', 'owner'].includes(user.role);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     // Generate shift log for clinical staff
     if (user.facilityId && (isDoctor || isNurse)) {
       const myFacilityId = user.facilityId;
@@ -73,7 +84,9 @@ export const AppLayout: React.FC = () => {
       }
       summary += `Currently admitted: ${admittedPatientsCount} patients.`;
 
-      addShiftLog({
+      // Await before signing out: firebaseSignOut revokes the token this write needs,
+      // so a fire-and-forget log was being rejected and lost.
+      await addShiftLog({
         userId: user.id,
         userName: user.name,
         facilityId: myFacilityId,
@@ -83,7 +96,7 @@ export const AppLayout: React.FC = () => {
         summary
       });
     }
-    logout();
+    await logout();
   };
   
   const navItems = [
@@ -424,7 +437,9 @@ export const AppLayout: React.FC = () => {
                 />
                 <p className="text-[10px] text-slate-400 mt-1">This will be visible to other staff in the Network Directory to facilitate communication.</p>
               </div>
-              <Button onClick={handleSaveProfile} className="w-full">Save Changes</Button>
+              <Button onClick={handleSaveProfile} disabled={savingProfile} className="w-full">
+                {savingProfile ? 'Saving…' : 'Save Changes'}
+              </Button>
             </div>
           </div>
         </div>

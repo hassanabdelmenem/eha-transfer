@@ -98,9 +98,13 @@ export const ReferralDetailPage: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleStatusUpdate = (status: ReferralStatus) => {
-    updateReferralStatus(referral.id, status, notes);
-    setNotes('');
+  const handleStatusUpdate = async (status: ReferralStatus) => {
+    try {
+      await updateReferralStatus(referral.id, status, notes);
+      setNotes('');
+    } catch (e: any) {
+      alert(e?.message || 'Could not update the referral status.');
+    }
   };
 
   const submitDeptComment = () => {
@@ -110,10 +114,21 @@ export const ReferralDetailPage: React.FC = () => {
     setDeptAction('pending');
   };
 
-  const handleDestinationOverride = () => {
-    if (overrideFacilityId) {
-      overrideReferralDestination(referral.id, overrideFacilityId);
+  const handleDestinationOverride = async () => {
+    if (!overrideFacilityId) return;
+    try {
+      await overrideReferralDestination(referral.id, overrideFacilityId);
       setOverrideFacilityId('');
+    } catch (e: any) {
+      alert(e?.message || 'Could not override the destination.');
+    }
+  };
+
+  const handleToggleEscalation = async () => {
+    try {
+      await toggleReferralEscalation(referral.id, !referral.isEscalated);
+    } catch (e: any) {
+      alert(e?.message || 'Could not update the escalation flag.');
     }
   };
 
@@ -182,7 +197,7 @@ export const ReferralDetailPage: React.FC = () => {
           <Button
             variant={referral.isEscalated ? "destructive" : "outline"}
             className={referral.isEscalated ? "bg-red-600 text-white hover:bg-red-700" : "bg-white dark:bg-slate-900"}
-            onClick={() => toggleReferralEscalation(referral.id, !referral.isEscalated)}
+            onClick={handleToggleEscalation}
           >
             <ShieldAlert className="h-4 w-4 mr-2" />
             {referral.isEscalated ? 'De-escalate' : 'Mark Escalated'}
@@ -509,9 +524,14 @@ export const ReferralDetailPage: React.FC = () => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
                         <Button
-                          onClick={() => {
-                            if (contractedFacilityId) {
-                              overrideReferralDestination(referral.id, contractedFacilityId);
+                          onClick={async () => {
+                            try {
+                              if (contractedFacilityId) {
+                                await overrideReferralDestination(referral.id, contractedFacilityId);
+                              }
+                            } catch (e: any) {
+                              alert(e?.message || 'Could not move the referral to that facility.');
+                              return;
                             }
                             handleStatusUpdate('manager_approved');
                           }}

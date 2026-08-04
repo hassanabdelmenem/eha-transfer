@@ -13,11 +13,15 @@ const firebaseConfig = {
   version: "2"
 };
 
-// Safely initialize the app
-export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Safely initialize the app. Capture whether *we* created it before calling
+// initializeApp -- checking getApps() again afterwards always reports >= 1, which
+// previously made the initializeAuth branch below dead code.
+const isFirstInit = !getApps().length;
+export const app = isFirstInit ? initializeApp(firebaseConfig) : getApp();
 
-// Use session persistence to bypass IndexedDB locking errors in Auth
-export const auth = !getApps().length ? initializeAuth(app, { persistence: browserSessionPersistence }) : getAuth(app);
+// Use session persistence to bypass IndexedDB locking errors in Auth. initializeAuth
+// may only run once per app, so reuse the existing instance on re-entry (HMR, tests).
+export const auth = isFirstInit ? initializeAuth(app, { persistence: browserSessionPersistence }) : getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 // Initialize Firestore without persistent cache to avoid IndexedDB locking errors.
