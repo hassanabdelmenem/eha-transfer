@@ -28,8 +28,8 @@ test('signs in and reaches the authenticated app', async ({ page }) => {
 });
 
 test('signed-in user can open the dashboard', async ({ page }) => {
-  // Use mock local user for determinism in emulator runs.
-  await page.evaluate((user) => { try { localStorage.setItem('auth_user', JSON.stringify(user)); } catch (e) {} }, { id: 'e2e-mock', name: 'E2E Clinician', email: E2E_USER.email, role: 'consultant', verified: true, profileCompleted: true });
+  // Use init script to set mock local user *before* the app's scripts run.
+  await page.addInitScript((user) => { try { localStorage.setItem('auth_user', JSON.stringify(user)); } catch (e) {} }, { id: 'e2e-mock', name: 'E2E Clinician', email: E2E_USER.email, role: 'consultant', verified: true, profileCompleted: true });
   await page.goto('/');
   await expect(page).toHaveURL(/\/referrals/, { timeout: 15000 });
 

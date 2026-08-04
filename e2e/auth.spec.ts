@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test('has title and redirects to login when unauthenticated', async ({ page }) => {
-  // Ensure no dev mock user is present in localStorage.
-  await page.evaluate(() => { try { localStorage.removeItem('auth_user'); } catch (e) {} });
+  // Ensure no dev mock user is present in localStorage for this unauthenticated test.
+  await page.addInitScript(() => { try { localStorage.removeItem('auth_user'); } catch (e) {} });
   await page.goto('/');
 
   // The app should show the login form for unauthenticated users. Wait for
