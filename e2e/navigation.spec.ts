@@ -7,6 +7,7 @@ import { E2E_USER } from './seed';
 // Signing in with email/password against the Auth emulator exercises the same
 // path (auth -> user doc -> ProtectedRoute -> authenticated shell) for real.
 test('signs in and reaches the authenticated app', async ({ page }) => {
+  await page.evaluate(() => { try { localStorage.removeItem('auth_user'); } catch (e) {} });
   await page.goto('/login');
 
   await page.getByLabel(/email address/i).fill(E2E_USER.email);
