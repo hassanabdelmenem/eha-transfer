@@ -18,7 +18,9 @@ test('signs in and reaches the authenticated app', async ({ page }) => {
   }, { id: 'e2e-mock', name: 'E2E Clinician', email: E2E_USER.email, role: 'consultant', verified: true, profileCompleted: true });
 
   await page.goto('/');
-
+  // Debug: emit localStorage so test logs show whether the mock was set.
+  // eslint-disable-next-line no-console
+  await page.evaluate(() => console.log('E2E: auth_user=' + localStorage.getItem('auth_user')));
 
   // ProtectedRoute sends a completed, verified profile to /referrals.
   await expect(page).toHaveURL(/\/referrals/, { timeout: 15000 });
