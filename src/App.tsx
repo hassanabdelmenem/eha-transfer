@@ -12,7 +12,16 @@ import { AppLayout } from './components/layout/AppLayout';
 
 // Small helper that prefers a module's default export but falls back to the module
 // itself (useful when pages export named components). Keeps typing loose for brevity.
-const lazyLoad = (factory: () => Promise<any>) => lazy(() => factory().then((m: any) => ({ default: m.default ?? m })));
+const lazyLoad = (factory: () => Promise<any>) => lazy(() => factory().then((m: any) => {
+  // Prefer default export. If absent, try to find the first named export
+  // which is a function/component and use that as the default. This handles
+  // modules that export components as named exports.
+  if (m && m.default) return { default: m.default };
+  const entry = Object.keys(m).find(k => typeof m[k] === 'function' || typeof m[k] === 'object');
+  if (entry) return { default: m[entry] };
+  // Fallback to module itself (likely invalid) so the error remains visible.
+  return { default: m };
+}));
 
 const Login = lazyLoad(() => import('./pages/Login'));
 const Dashboard = lazyLoad(() => import('./pages/Dashboard'));
