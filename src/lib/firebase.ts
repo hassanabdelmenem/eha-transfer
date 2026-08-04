@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, initializeAuth, browserSessionPersistence, browserPopupRedirectResolver, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, initializeFirestore } from 'firebase/firestore';
+import { getAuth, initializeAuth, browserSessionPersistence, browserPopupRedirectResolver, connectAuthEmulator, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore, initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 const firebaseConfig = {
   projectId: "eha-transfer-1785622025",
@@ -58,3 +58,16 @@ try {
   dbInstance = getFirestore(app);
 }
 export const db = dbInstance;
+
+// E2E only. When the dev server is started with VITE_USE_FIREBASE_EMULATORS=true
+// the app talks to local emulators instead of the live project, so Playwright can
+// sign a real user in and walk the authenticated UI without touching production
+// data or needing a Google OAuth round-trip. Never set this in a real build: the
+// flag is compile-time, so production bundles drop this branch entirely.
+// Note: no optional chaining on import.meta.env — `?.` defeats Vite's static
+// replacement, which left a live runtime check (and the localhost addresses) in
+// the production bundle. Written this way the whole block is compiled out.
+if (import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+}
