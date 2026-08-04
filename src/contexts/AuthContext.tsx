@@ -33,14 +33,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    // Check for hardcoded owner user to bypass Firebase Auth
-    const savedUser = localStorage.getItem('auth_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-        setAuthReady(true);
-        return; // Skip Firebase auth listener completely if we have a mock user
-      } catch (e) {}
+    // DEV/EMULATOR ONLY: Check for a locally-stored mock user used by tests/dev harnesses.
+    // Never accept a locally-set auth_user in production — that allows full auth bypass.
+    const isDevAuthAllowed = import.meta.env.DEV || import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true';
+    if (isDevAuthAllowed) {
+      const savedUser = localStorage.getItem('auth_user');
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+          setAuthReady(true);
+          return; // Skip Firebase auth listener completely if we have a mock user (dev only)
+        } catch (e) { /* ignore parse errors */ }
+      }
+    } else {
+      // Ensure any leftover auth_user keys don't permit bypass in production
+      try { localStorage.removeItem('auth_user'); } catch (e) {}
     }
     // Complete a pending redirect-based sign-in (mobile Google login). signInWithRedirect
     // navigates away from the page, so there's no local call site left to catch a
@@ -125,6 +132,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = (id: string) => {
+    // DEV/EMULATOR ONLY: create a local mock user. Disabled in production.
+    if (!(import.meta.env.DEV || import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true')) {
+      console.warn('Mock login is disabled in production.');
+      return;
+    }
     const mockUser: User = {
       id,
       name: id,
