@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, initializeAuth, browserSessionPersistence, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, initializeAuth, browserSessionPersistence, browserPopupRedirectResolver, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, initializeFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -21,7 +21,17 @@ export const app = isFirstInit ? initializeApp(firebaseConfig) : getApp();
 
 // Use session persistence to bypass IndexedDB locking errors in Auth. initializeAuth
 // may only run once per app, so reuse the existing instance on re-entry (HMR, tests).
-export const auth = isFirstInit ? initializeAuth(app, { persistence: browserSessionPersistence }) : getAuth(app);
+//
+// popupRedirectResolver is NOT optional here: getAuth() installs the browser
+// resolver for you, initializeAuth() does not. Without it every signInWithPopup /
+// signInWithRedirect / getRedirectResult call fails with auth/argument-error,
+// which takes out Google sign-in entirely.
+export const auth = isFirstInit
+  ? initializeAuth(app, {
+      persistence: browserSessionPersistence,
+      popupRedirectResolver: browserPopupRedirectResolver,
+    })
+  : getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 // Initialize Firestore without persistent cache to avoid IndexedDB locking errors.

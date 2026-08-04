@@ -1,0 +1,56 @@
+name: PR Preview
+
+# Builds each pull request and publishes it to a temporary Firebase Hosting
+# channel, so changes can be opened on a real phone before merging.
+#
+# NOTE: a preview build talks to the *production* Firestore project — same as a
+# local dev server does. It is not a sandbox; don't use it to try destructive
+# changes against real patient data.
+#
+# NOTE: Google sign-in only works on a preview URL if its domain is listed under
+# Firebase Console -> Authentication -> Settings -> Authorized domains. Preview
+# channels are served from <site>--<channel>-<hash>.web.app.
+on:
+  pull_request:
+
+concurrency:
+  group: firebase-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  FIREBASE_PROJECT: eha-transfer-1785622025
+
+jobs:
+  preview:
+    name: Deploy preview channel
+    runs-on: ubuntu-latest
+    # Secrets are not exposed to forked PRs, so the deploy would fail anyway.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to preview channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: eha-transfer-1785622025
+          target: eha-transfer
+          expires: 7d

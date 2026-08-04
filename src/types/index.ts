@@ -34,6 +34,9 @@ export interface User {
   name: string;
   phoneNumber?: string;
   role: Role;
+  // What the user asked for during onboarding. Carries no authority: `role` is the
+  // only field the security rules trust, and it can only be changed by an admin.
+  requestedRole?: Role;
   facilityId?: string;
   department?: string;
   verified?: boolean;

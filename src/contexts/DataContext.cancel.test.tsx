@@ -19,6 +19,10 @@ const capturedUpdates: { path: string; data: any }[] = [];
 vi.mock('firebase/firestore', () => {
   const doc = (_db: any, ...pathParts: string[]) => ({ path: pathParts.join('/') });
   const collection = (_db: any, name: string) => ({ path: name });
+  // DataContext scopes its listeners with query()/where() to match the `list`
+  // rules in firestore.rules; the stub just needs to pass the ref through.
+  const where = (field: string, op: string, value: any) => ({ field, op, value });
+  const query = (ref: any, ...constraints: any[]) => ({ ...ref, constraints });
   const onSnapshot = (_ref: any, cb: (snap: any) => void) => {
     cb({ docs: [] });
     return () => {};
@@ -44,6 +48,8 @@ vi.mock('firebase/firestore', () => {
   return {
     doc,
     collection,
+    query,
+    where,
     onSnapshot,
     setDoc: vi.fn().mockResolvedValue(undefined),
     updateDoc: vi.fn().mockResolvedValue(undefined),

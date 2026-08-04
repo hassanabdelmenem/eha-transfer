@@ -65,6 +65,30 @@ export const FacilitySettingsPage: React.FC = () => {
     }
   };
 
+  // Onboarding records what the user asked to be as `requestedRole`; it carries no
+  // authority until an approver grants it here. Approvers can't hand out a role
+  // above their own station.
+  const canGrantRole = (role: Role) => {
+    if (role === 'owner') return user.role === 'owner';
+    if (role === 'system_admin') return isGlobalAdmin;
+    if (['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department'].includes(role)) {
+      return user.role !== 'head_of_department';
+    }
+    return true;
+  };
+
+  const handleVerifyUser = (targetUser: User) => {
+    const requested = targetUser.requestedRole;
+    if (requested && requested !== targetUser.role) {
+      if (!canGrantRole(requested)) {
+        alert(`You cannot grant the role "${requested.replace(/_/g, ' ')}". Ask a system administrator to approve this account.`);
+        return;
+      }
+      updateUserRole(targetUser.id, requested, targetUser.department);
+    }
+    updateUserVerified(targetUser.id, true);
+  };
+
   const handleRemoveUser = (targetUser: User) => {
     if (window.confirm(`Are you sure you want to completely remove user "${targetUser.name}" (${targetUser.email}) from the system?`)) {
       removeUser(targetUser.id);
@@ -397,12 +421,17 @@ export const FacilitySettingsPage: React.FC = () => {
                       <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{u.email}</p>
                       <div className="mt-1 flex gap-2 flex-wrap">
-                         <span className="text-[10px] bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{u.role?.replace('_', ' ')}</span>
+                         <span className="text-[10px] bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{u.role?.replace(/_/g, ' ')}</span>
+                         {u.requestedRole && u.requestedRole !== u.role && (
+                           <span className="text-[10px] bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 rounded uppercase font-bold text-amber-700 dark:text-amber-300 whitespace-nowrap" title="Role requested during onboarding — granted when you verify">
+                             requests: {u.requestedRole.replace(/_/g, ' ')}
+                           </span>
+                         )}
                          {u.department && <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded text-blue-700 dark:text-blue-300 whitespace-nowrap">{u.department}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button onClick={() => updateUserVerified(u.id, true)} className="bg-green-600 hover:bg-green-700 text-xs py-1 min-h-[40px]">
+                      <Button onClick={() => handleVerifyUser(u)} className="bg-green-600 hover:bg-green-700 text-xs py-1 min-h-[40px]">
                          Verify
                       </Button>
                       <Button onClick={() => handleRemoveUser(u)} variant="ghost" aria-label={`Remove ${u.name}`} className="text-red-500 hover:text-red-700 min-h-[40px] min-w-[40px] p-0">

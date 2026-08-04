@@ -1,10 +1,18 @@
 name: CI
 
 on:
+  # Every branch, not just the long-lived ones: feature branches (claude/**,
+  # refactor/**, ...) previously got no checks at all, so breakage was only
+  # discovered after opening a PR.
   push:
-    branches: [ "main", "master", "sevensn" ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ "main", "master", "sevensn" ]
+  workflow_dispatch: {}
+
+# Cancel superseded runs on the same branch instead of queueing them.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -28,6 +36,17 @@ jobs:
 
       - name: Run Unit & Component Tests (Vitest)
         run: npm run test
+
+      # Guards the only server-side authorization layer this app has. Runs
+      # against the Firestore emulator, which needs a JVM.
+      - name: Set up Java (Firestore emulator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Run Firestore Security Rules Tests
+        run: npm run test:rules
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps

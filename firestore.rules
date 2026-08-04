@@ -1,24 +1,107 @@
 rules_version = '2';
+
+// These rules are the ONLY server-side authorization layer in this app — there is
+// no backend, the browser talks straight to Firestore. Anything not denied here is
+// reachable by anyone who can complete the public sign-up form on /login.
+//
+// Query shapes in src/contexts/DataContext.tsx are coupled to the `list` rules
+// below: Firestore evaluates a list against the *query*, not the results, so an
+// unfiltered collection listener is rejected outright when the rule depends on
+// `resource.data`. Change one, change the other, and run `npm run test:rules`.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function callerPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
     function callerDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return get(callerPath()).data;
+    }
+    function callerExists() {
+      return signedIn() && exists(callerPath());
     }
     function isPrivileged() {
-      return callerDoc().role in ['owner', 'system_admin'];
+      return callerExists() && callerDoc().role in ['owner', 'system_admin'];
     }
+    // Verification is an explicit act by facility leadership (FacilitySettingsPage).
+    // Everything that touches patient data requires it.
     function isVerifiedCaller() {
-      return callerDoc().verified == true;
+      return callerExists() && callerDoc().verified == true;
     }
+    function callerFacility() {
+      return callerDoc().facilityId;
+    }
+    function atFacility(facilityId) {
+      return isVerifiedCaller() && callerFacility() == facilityId;
+    }
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // ---------------------------------------------------------------- users
+    // role/verified/facilityId are the basis of every decision in this file, so a
+    // user must never be able to set them on themselves. facilityId is the one
+    // exception: it is self-selectable during onboarding and frozen the moment an
+    // admin verifies the account, which is what makes it trustworthy afterwards.
+    function privilegeFieldsUnchanged() {
+      return request.resource.data.role == resource.data.role
+          && request.resource.data.verified == resource.data.verified
+          && (resource.data.verified != true
+              || request.resource.data.facilityId == resource.data.facilityId);
+    }
+
+    match /users/{userId} {
+      // Own document must stay readable before verification — AuthContext
+      // subscribes to it to discover that verification has landed.
+      allow get: if signedIn() && (request.auth.uid == userId || isVerifiedCaller());
+      // The full roster is read by verified staff only. It is needed in full (not
+      // facility-scoped) because notification fan-out is done client-side and has
+      // to find recipients at the *receiving* facility. Moving fan-out into a
+      // Cloud Function would let this be narrowed to one facility.
+      allow list: if isVerifiedCaller();
+
+      allow create: if signedIn() && request.auth.uid == userId
+                    && request.resource.data.verified == false
+                    && (
+                      request.resource.data.role == 'resident'
+                      // Bootstrap escape hatch, mirroring the hardcoded owner in
+                      // AuthContext. The email comes from a verified Firebase token,
+                      // so it cannot be spoofed. Remove once ownership is stable.
+                      || request.auth.token.email == 'hassan.abdelmenem@gmail.com'
+                    );
+
+      allow update: if isPrivileged()
+                    || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged());
+      allow delete: if isPrivileged();
+    }
+
+    // ----------------------------------------------------------- facilities
+    // Readable pre-verification: the onboarding form has to render the hospital
+    // picker before the account exists in any facility.
+    match /facilities/{facilityId} {
+      allow read: if signedIn();
+      allow create, delete: if isPrivileged();
+      // Bed capacity and department lists are maintained by staff at that
+      // facility (BedManagementPage, FacilitySettingsPage) — previously only
+      // owner/system_admin could write, so those screens failed silently.
+      allow update: if isPrivileged()
+                    || (atFacility(facilityId)
+                        && changedKeys().hasOnly(['capacity', 'departments']));
+    }
+
+    // ------------------------------------------------------------ referrals
     function isReferralParty(data) {
-      return callerDoc().facilityId == data.referringFacilityId
-          || callerDoc().facilityId == data.receivingFacilityId
+      return callerFacility() == data.referringFacilityId
+          || callerFacility() == data.receivingFacilityId
           || (data.receivingFacilityId == 'auto'
               && data.candidateFacilityIds is list
-              && callerDoc().facilityId in data.candidateFacilityIds);
+              && callerFacility() in data.candidateFacilityIds);
     }
-    // Mirrors SENIOR_CANCEL_ROLES / CANCEL_LOCKED_STATUSES in src/contexts/DataContext.tsx --
-    // keep both in sync.
+    // Mirrors SENIOR_CANCEL_ROLES / CANCEL_LOCKED_STATUSES in
+    // src/contexts/DataContext.tsx -- keep all three in sync.
     function isSeniorCancelRole() {
       return callerDoc().role in ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department'];
     }
@@ -29,46 +112,87 @@ service cloud.firestore {
       return existingData.status in ['in_transit', 'arrived', 'admitted', 'discharged'];
     }
     function canCancelReferral(existingData) {
-      return !isCancelLocked(existingData) &&
+      // isVerifiedCaller() is required here too. Without it an unverified account
+      // could self-declare a senior role + facility and cancel live transfers.
+      return isVerifiedCaller() && !isCancelLocked(existingData) &&
              (isPrivileged()
                || existingData.referringUserId == request.auth.uid
-               || (callerDoc().facilityId == existingData.referringFacilityId && isSeniorCancelRole()));
+               || (callerFacility() == existingData.referringFacilityId && isSeniorCancelRole()));
+    }
+    // Authorization is computed from the pre-write document, so without these the
+    // payload is unconstrained: any party could rewrite patientData, forge the
+    // audit trail, or reassign referringFacilityId and lock the originating
+    // hospital out of its own patient's record.
+    function referralIdentityPinned() {
+      return request.resource.data.referringFacilityId == resource.data.referringFacilityId
+          && request.resource.data.referringUserId == resource.data.referringUserId
+          && request.resource.data.patientId == resource.data.patientId
+          && request.resource.data.createdAt == resource.data.createdAt;
+    }
+    function auditTrailAppendOnly() {
+      return request.resource.data.statusHistory is list
+          && request.resource.data.statusHistory.size() >= resource.data.statusHistory.size();
     }
 
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId || 
-                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'system_admin'];
-    }
-    match /facilities/{facilityId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'system_admin'];
-    }
     match /referrals/{referralId} {
-      allow read: if request.auth != null &&
-                  (isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data)));
-      allow create: if request.auth != null &&
-                    (isPrivileged() || (isVerifiedCaller() && callerDoc().facilityId == request.resource.data.referringFacilityId));
-      allow update: if request.auth != null &&
-                    (
+      allow read: if isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data));
+
+      allow create: if isPrivileged()
+                    || (isVerifiedCaller()
+                        && callerFacility() == request.resource.data.referringFacilityId
+                        && request.resource.data.referringUserId == request.auth.uid);
+
+      allow update: if referralIdentityPinned() && auditTrailAppendOnly() && (
                       isCancelAttempt(request.resource.data)
                         ? canCancelReferral(resource.data)
                         : (isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data)))
                     );
-      allow delete: if request.auth != null && isPrivileged();
+
+      allow delete: if isPrivileged();
     }
+
+    // -------------------------------------------------------- notifications
+    // Fan-out is client-side, so any verified caller may create a notification
+    // addressed to another user — but reads stay strictly per-recipient, and the
+    // only mutable field is the read flag.
     match /notifications/{notificationId} {
-      allow read, write: if request.auth != null;
+      allow read: if isPrivileged() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isVerifiedCaller();
+      allow update: if signedIn() && resource.data.userId == request.auth.uid
+                    && changedKeys().hasOnly(['read']);
+      allow delete: if isPrivileged();
     }
+
+    // ----------------------------------------------------- directAdmissions
+    // Identified patient records (name + hospital id + department).
     match /directAdmissions/{admissionId} {
-      allow read, write: if request.auth != null;
+      allow read: if isPrivileged() || (isVerifiedCaller() && resource.data.facilityId == callerFacility());
+      allow create: if isPrivileged() || atFacility(request.resource.data.facilityId);
+      allow update: if isPrivileged() || (isVerifiedCaller() && resource.data.facilityId == callerFacility());
+      allow delete: if isPrivileged();
     }
+
+    // ---------------------------------------------------- shiftAssignments
+    // Deliberately readable by any verified user rather than facility-scoped:
+    // createNotification resolves on-call delegation at the *receiving* facility.
+    // Safe to widen because the document holds no patient data — only a facility,
+    // a department and a user id. Writes stay facility-scoped.
     match /shiftAssignments/{assignmentId} {
-      allow read, write: if request.auth != null;
+      allow read: if isVerifiedCaller();
+      allow create: if isPrivileged() || atFacility(request.resource.data.facilityId);
+      allow update: if isPrivileged() || atFacility(resource.data.facilityId);
+      allow delete: if isPrivileged();
     }
+
+    // ------------------------------------------------------------ shiftLogs
+    // Handover summaries quote patient names, and they are an audit record:
+    // facility-scoped reads, author-pinned creates, and no edits or deletes.
     match /shiftLogs/{logId} {
-      allow read, write: if request.auth != null;
+      allow read: if isPrivileged() || (isVerifiedCaller() && resource.data.facilityId == callerFacility());
+      allow create: if isVerifiedCaller()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.facilityId == callerFacility();
+      allow update, delete: if false;
     }
   }
 }
