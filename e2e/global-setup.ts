@@ -68,7 +68,7 @@ export default async function globalSetup() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const writeRes = await (globalThis as any).fetch('http://127.0.0.1:8080/v1/projects/eha-transfer-1785622025/databases/(default)/documents/users/' + ownerLocalId, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: '******' },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
         body: JSON.stringify({ fields }),
       });
       if (!writeRes.ok) console.warn('owner user doc write failed', await writeRes.text());

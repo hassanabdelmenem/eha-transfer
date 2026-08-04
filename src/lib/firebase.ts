@@ -12,12 +12,12 @@ const getEnv = (key: string) => {
     if (typeof process !== 'undefined' && process && process.env && process.env[key]) return process.env[key];
   } catch {}
 
-  // Fall back to import.meta.env when running under Vite. Use eval to avoid
-  // referencing import.meta directly so TypeScript doesn't error when the
-  // project's tsconfig doesn't allow import.meta in tsc runs.
+  // Fall back to import.meta.env when running under Vite. Access import.meta.env
+  // directly but silence TypeScript errors — Vite performs static replacement at
+  // build time. This avoids using eval which is dangerous.
   try {
-    // eslint-disable-next-line no-eval
-    const meta = eval('typeof import.meta !== "undefined" ? import.meta.env : undefined');
+    // @ts-ignore - import.meta is replaced by Vite and may be unknown to tsc here
+    const meta = (typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined);
     if (meta && typeof meta[key] !== 'undefined') return meta[key];
   } catch {}
   return undefined;
