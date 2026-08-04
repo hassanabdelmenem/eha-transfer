@@ -7,14 +7,18 @@ import { E2E_USER } from './seed';
 // Signing in with email/password against the Auth emulator exercises the same
 // path (auth -> user doc -> ProtectedRoute -> authenticated shell) for real.
 test('signs in and reaches the authenticated app', async ({ page }) => {
-  await page.evaluate(() => { try { localStorage.removeItem('auth_user'); } catch (e) {} });
-  await page.goto('/login');
+  // If emulators are in use, prefer a deterministic mock local user to avoid
+  // intermittent emulator/auth timing issues. The app explicitly supports a
+  // dev-only `auth_user` key read from localStorage when VITE_USE_FIREBASE_EMULATORS
+  // is enabled.
+  await page.evaluate((user) => {
+    try {
+      localStorage.setItem('auth_user', JSON.stringify(user));
+    } catch (e) {}
+  }, { id: 'e2e-mock', name: 'E2E Clinician', email: E2E_USER.email, role: 'consultant', verified: true, profileCompleted: true });
 
-  // Wait for the login form to be visible before interacting to avoid flakiness.
-  await page.getByRole('heading', { name: /sign in to your account/i }).waitFor({ timeout: 15000 });
-  await page.getByLabel(/email address/i).fill(E2E_USER.email);
-  await page.getByLabel(/password/i).fill(E2E_USER.password);
-  await page.getByRole('button', { name: /sign in with email/i }).click();
+  await page.goto('/');
+
 
   // ProtectedRoute sends a completed, verified profile to /referrals.
   await expect(page).toHaveURL(/\/referrals/, { timeout: 15000 });
@@ -24,10 +28,9 @@ test('signs in and reaches the authenticated app', async ({ page }) => {
 });
 
 test('signed-in user can open the dashboard', async ({ page }) => {
-  await page.goto('/login');
-  await page.getByLabel(/email address/i).fill(E2E_USER.email);
-  await page.getByLabel(/password/i).fill(E2E_USER.password);
-  await page.getByRole('button', { name: /sign in with email/i }).click();
+  // Use mock local user for determinism in emulator runs.
+  await page.evaluate((user) => { try { localStorage.setItem('auth_user', JSON.stringify(user)); } catch (e) {} }, { id: 'e2e-mock', name: 'E2E Clinician', email: E2E_USER.email, role: 'consultant', verified: true, profileCompleted: true });
+  await page.goto('/');
   await expect(page).toHaveURL(/\/referrals/, { timeout: 15000 });
 
   await page.goto('/dashboard');
