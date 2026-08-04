@@ -10,6 +10,8 @@ test('signs in and reaches the authenticated app', async ({ page }) => {
   await page.evaluate(() => { try { localStorage.removeItem('auth_user'); } catch (e) {} });
   await page.goto('/login');
 
+  // Wait for the login form to be visible before interacting to avoid flakiness.
+  await page.getByRole('heading', { name: /sign in to your account/i }).waitFor({ timeout: 15000 });
   await page.getByLabel(/email address/i).fill(E2E_USER.email);
   await page.getByLabel(/password/i).fill(E2E_USER.password);
   await page.getByRole('button', { name: /sign in with email/i }).click();
