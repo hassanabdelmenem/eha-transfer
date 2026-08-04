@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { differenceInSeconds } from 'date-fns';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,28 +22,17 @@ interface ReferralListProps {
 
 
 
-const UrgencyTimer: React.FC<{ referral: Referral }> = ({ referral }) => {
-  const [now, setNow] = useState(new Date());
-
-  useEffect(() => {
-    if (referral.status !== 'pending') return;
-    
-    const interval = setInterval(() => {
-      setNow(new Date());
-    }, 1000); 
-    return () => clearInterval(interval);
-  }, [referral.status]);
-
+const UrgencyTimer: React.FC<{ referral: Referral; now: Date }> = ({ referral, now }) => {
+  // Render only for pending, high-priority referrals that need a timer.
   if (referral.status !== 'pending') return null;
 
   const isHighUrgency = ['emergency', 'urgent'].includes(referral.priority);
-  const isCriticalBed = ['ICU', 'CCU'].includes(referral.requiredBedType);
-  
+  const isCriticalBed = ['ICU', 'CCU', 'PICU'].includes(referral.requiredBedType);
   if (!isHighUrgency || !isCriticalBed) return null;
 
   const secondsPending = differenceInSeconds(now, new Date(referral.createdAt));
   const secondsToLimit = (30 * 60) - secondsPending;
-  
+
   if (secondsToLimit <= 0) {
     const overdueSeconds = Math.abs(secondsToLimit);
     const m = Math.floor(overdueSeconds / 60);
@@ -54,22 +43,34 @@ const UrgencyTimer: React.FC<{ referral: Referral }> = ({ referral }) => {
         <span className="text-[9px] font-bold uppercase">SLA Breach +{m}:{s.toString().padStart(2, '0')}</span>
       </div>
     );
-  } else {
-    const m = Math.floor(secondsToLimit / 60);
-    const s = secondsToLimit % 60;
-    return (
-      <div className="inline-flex items-center gap-1 mt-1 text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-        <Timer className="w-3 h-3" />
-        <span className="text-[9px] font-bold uppercase">{m}:{s.toString().padStart(2, '0')} to SLA</span>
-      </div>
-    );
   }
+
+  const m = Math.floor(secondsToLimit / 60);
+  const s = secondsToLimit % 60;
+  return (
+    <div className="inline-flex items-center gap-1 mt-1 text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+      <Timer className="w-3 h-3" />
+      <span className="text-[9px] font-bold uppercase">{m}:{s.toString().padStart(2, '0')} to SLA</span>
+    </div>
+  );
 };
 
 export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, searchQuery = '', priorityFilter = 'all', statusFilter = 'all', deptFilter = 'all', bedFilter = 'all', prioritySort = false }) => {
   const { referrals, facilities } = useData();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Create a quick lookup map for facilities to avoid O(n) finds during render
+  const facilityMap = useMemo(() => new Map(facilities.map(f => [f.id, f])), [facilities]);
+
+  // Shared timer for all list items: one interval for the whole list instead of one per row.
+  const [now, setNow] = useState<Date>(new Date());
+  useEffect(() => {
+    const hasAnyPendingUrgent = referrals.some(r => r.status === 'pending' && ['emergency', 'urgent'].includes(r.priority) && ['ICU', 'CCU', 'PICU'].includes(r.requiredBedType));
+    if (!hasAnyPendingUrgent) return;
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, [referrals]);
 
   let filtered = referrals;
   
@@ -86,7 +87,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
      filtered = referrals.filter(
       r => r.referringFacilityId === user.facilityId || 
            r.receivingFacilityId === user.facilityId || 
-           (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user.facilityId))
+           (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user?.facilityId || ''))
     );
   }
 
@@ -211,7 +212,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
       {/* Mobile View */}
       <div className="block md:hidden space-y-4">
         {filtered.map(referral => {
-          const fromFacility = facilities.find(f => f.id === referral.referringFacilityId);
+          const fromFacility = facilityMap.get(referral.referringFacilityId);
           return (
             <Card key={referral.id} className="p-4 cursor-pointer hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-800 transition-colors" onClick={() => navigate(`/referrals/${referral.id}`)}>
               <div className="flex justify-between items-start gap-3 mb-2">
@@ -224,7 +225,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                   {referral.priority === 'urgent' && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 rounded text-[9px] font-bold uppercase whitespace-nowrap">URGENT</span>}
                   {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded text-[9px] font-bold uppercase whitespace-nowrap">ROUTINE</span>}
                   <div className="mt-1">
-                    <UrgencyTimer referral={referral} />
+                    <UrgencyTimer referral={referral} now={now} />
                   </div>
                   <div className="flex items-center gap-1 font-medium text-[10px] uppercase text-slate-600 dark:text-slate-400 whitespace-nowrap">
                     {['in_transit', 'accepted', 'patient_consented', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>}
@@ -274,8 +275,8 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
           </thead>
           <tbody className="text-xs">
             {filtered.map((referral) => {
-              const fromFacility = facilities.find(f => f.id === referral.referringFacilityId);
-              const toFacility = facilities.find(f => f.id === referral.receivingFacilityId);
+              const fromFacility = facilityMap.get(referral.referringFacilityId);
+              const toFacility = facilityMap.get(referral.receivingFacilityId);
               
               return (
                 <tr key={referral.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-blue-50/50 dark:hover:bg-slate-800 cursor-pointer transition-colors" onClick={() => navigate(`/referrals/${referral.id}`)}>
