@@ -25,8 +25,22 @@ import { BedManagementPage } from './pages/BedManagementPage';
 import { Onboarding } from './pages/Onboarding';
 import { PendingVerification } from './pages/PendingVerification';
 
+// Shown while Firebase restores a session. Without it, a refresh on any deep
+// link renders one frame with user === null and redirects to /login.
+const AuthLoading = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
+      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Loading</p>
+    </div>
+  </div>
+);
+
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
+  if (!authReady) {
+    return <AuthLoading />;
+  }
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -51,8 +65,15 @@ const RoleBasedDashboard = () => {
 };
 
 const AppRoutes = () => {
-  const { user } = useAuth();
-  
+  const { user, authReady } = useAuth();
+
+  // Same reason as ProtectedRoute: /login and /onboarding branch on `user`, so
+  // rendering them before auth resolves flashes the login form at a signed-in
+  // user and can bounce them away from the page they asked for.
+  if (!authReady) {
+    return <AuthLoading />;
+  }
+
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />

@@ -13,6 +13,10 @@ const isMobileDevice = () =>
 
 interface AuthContextType {
   user: User | null;
+  // False until Firebase has reported the initial auth state. Routing must wait
+  // for this: on a page refresh the SDK restores the session asynchronously, and
+  // treating the intervening null as "signed out" bounced deep links to /login.
+  authReady: boolean;
   login?: (id: string) => void;
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (e: string, p: string) => Promise<void>;
@@ -26,6 +30,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     // Check for hardcoded owner user to bypass Firebase Auth
@@ -33,6 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedUser) {
       try {
         setUser(JSON.parse(savedUser));
+        setAuthReady(true);
         return; // Skip Firebase auth listener completely if we have a mock user
       } catch (e) {}
     }
@@ -59,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         unsubscribeUserDoc = onSnapshot(userRef, async (docSnap) => {
           if (docSnap.exists()) {
             setUser(docSnap.data() as User);
+            setAuthReady(true);
           } else {
             // Document doesn't exist, create it
             let newUser: User;
@@ -81,10 +88,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             await setDoc(userRef, newUser);
             setUser(newUser);
+            setAuthReady(true);
           }
+        }, (err) => {
+          // A denied/failed profile read must still unblock routing, or the app
+          // hangs on the loading screen forever.
+          console.error('User profile subscription failed:', err);
+          setAuthReady(true);
         });
       } else {
         setUser(null);
+        setAuthReady(true);
       }
     });
 
@@ -143,7 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithGoogle, loginWithEmail, registerWithEmail, logout, hasRole, updateUserProfile }}>
+    <AuthContext.Provider value={{ user, authReady, login, loginWithGoogle, loginWithEmail, registerWithEmail, logout, hasRole, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

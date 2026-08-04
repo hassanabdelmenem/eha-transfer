@@ -5,5 +5,16 @@
   "packageManager": "npm",
   "reporters": ["progress", "clear-text", "html"],
   "coverageAnalysis": "perTest",
-  "ignoreStatic": true
+  "ignoreStatic": true,
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "playwright-report",
+    "test-results",
+    ".firebase",
+    ".git",
+    ".github",
+    ".agents",
+    ".claude"
+  ]
 }
