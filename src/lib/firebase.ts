@@ -3,15 +3,24 @@ import { getAuth, initializeAuth, browserSessionPersistence, browserPopupRedirec
 import { getFirestore, initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 const firebaseConfig = {
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "eha-transfer-1785622025",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:467744756760:web:6fd2817e76a941e6e49f6d",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "eha-transfer-1785622025.firebasestorage.app",
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyA3T3FvdxAztldN9Nx6z7aN9VczgLXne4U",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "eha-transfer.web.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "467744756760",
-  projectNumber: import.meta.env.VITE_FIREBASE_PROJECT_NUMBER || "467744756760",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  projectNumber: import.meta.env.VITE_FIREBASE_PROJECT_NUMBER,
   version: "2"
 };
+
+// Fail fast when required config is missing in non-dev, non-emulator builds so
+// misconfigured production bundles don't accidentally ship with placeholder keys.
+if (!import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATORS !== 'true') {
+  const missing = Object.entries(firebaseConfig).filter(([k, v]) => !v).map(([k]) => k);
+  if (missing.length) {
+    throw new Error(`Missing required Firebase env vars: ${missing.join(', ')}.`);
+  }
+}
 
 // Safely initialize the app. Capture whether *we* created it before calling
 // initializeApp -- checking getApps() again afterwards always reports >= 1, which

@@ -65,8 +65,8 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users 
     });
   });
 
-  // Sort by timestamp descending (newest first)
-  events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  // Sort by timestamp descending (newest first) using string compare of ISO timestamps to avoid Date parsing
+  events.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return (
     <div className="relative pt-4 space-y-0">

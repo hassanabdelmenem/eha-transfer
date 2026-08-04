@@ -133,6 +133,9 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
     filtered = filtered.filter(r => r.status !== 'cancelled');
   }
 
+  // Pre-parse timestamps once per referral to avoid repeated Date parsing during sort
+  const enriched = filtered.map(r => ({ r, createdAtMs: Date.parse(r.createdAt) }));
+
   if (prioritySort) {
     const getPriorityWeight = (priority: string) => {
       if (priority === 'emergency') return 3000;
@@ -144,10 +147,12 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
       return 0;
     };
 
-    filtered.sort((a, b) => {
-      const now = Date.now();
-      const aTime = now - new Date(a.createdAt).getTime();
-      const bTime = now - new Date(b.createdAt).getTime();
+    const now = Date.now();
+    enriched.sort((A, B) => {
+      const a = A.r;
+      const b = B.r;
+      const aTime = now - A.createdAtMs;
+      const bTime = now - B.createdAtMs;
 
       const aTimeScore = Math.floor(aTime / 60000) * 10;
       const bTimeScore = Math.floor(bTime / 60000) * 10;
@@ -155,15 +160,16 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
       const aScore = getPriorityWeight(a.priority) + getSeverityWeight(a.requiredBedType) + (a.status === 'pending' ? aTimeScore : 0);
       const bScore = getPriorityWeight(b.priority) + getSeverityWeight(b.requiredBedType) + (b.status === 'pending' ? bTimeScore : 0);
 
-      if (aScore !== bScore) {
-        return bScore - aScore;
-      }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (aScore !== bScore) return bScore - aScore;
+      return B.createdAtMs - A.createdAtMs;
     });
   } else {
-    // Sort by latest first
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Sort by latest first (pre-parsed)
+    enriched.sort((A, B) => B.createdAtMs - A.createdAtMs);
   }
+
+  // Restore filtered array to original referral objects, now sorted
+  filtered = enriched.map(e => e.r);
 
   if (limit) {
     filtered = filtered.slice(0, limit);
