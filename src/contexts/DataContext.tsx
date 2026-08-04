@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User, ShiftLog } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
 import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
-import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch, increment, runTransaction, query, where } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch, increment, runTransaction, query, where, orderBy, limit as firestoreLimit, startAfter } from 'firebase/firestore';
 
 // Roles at the referring facility trusted to withdraw a referral they didn't personally
 // create. Exported so the UI can gate the Cancel control identically to the rules below,
@@ -36,6 +36,7 @@ interface DataContextType {
   shiftLogs: ShiftLog[];
   addShiftLog: (log: Omit<ShiftLog, 'id' | 'timestamp'>) => Promise<void>;
   addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => void;
+  loadOlderReferrals?: () => Promise<void>;
   updateReferralStatus: (id: string, status: Referral['status'], notes?: string) => Promise<void>;
   overrideReferralDestination: (id: string, newFacilityId: string) => Promise<void>;
   toggleReferralEscalation: (id: string, isEscalated: boolean) => Promise<void>;
@@ -108,6 +109,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // The query shapes below are dictated by firestore.rules: a `list` rule that
   // reads resource.data is only satisfiable by a query filtered on the same
   // field. Privileged users read across facilities, so they query unfiltered.
+  const lastVisibleReferralRef = useRef<any>(null);
+
+  const loadOlderReferrals = useCallback(async () => {
+    try {
+      const last = lastVisibleReferralRef.current;
+      if (!last) return;
+      const olderQ = query(collection(db, 'referrals'), orderBy('createdAt', 'desc'), startAfter(last), firestoreLimit(200));
+      const snap = await getDocs(olderQ);
+      if (!snap.empty) {
+        const older = snap.docs.map(d => d.data() as Referral);
+        setReferrals(prev => [...prev, ...older]);
+        lastVisibleReferralRef.current = snap.docs[snap.docs.length - 1];
+      }
+    } catch (e) {
+      console.error('Error loading older referrals', e);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     const unsubs: (() => void)[] = [];
@@ -145,11 +164,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }, console.error));
 
-    // Referrals: the read rule is per-document (referral party or privileged), so
-    // an unfiltered listener is fine — Firestore filters the result set.
-    unsubs.push(onSnapshot(collection(db, 'referrals'), (snapshot) => {
-      setReferrals(snapshot.docs.map(doc => doc.data() as Referral).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
-    }, console.error));
+    // Referrals: replace the unfiltered listener with a limited, ordered listener
+    // to reduce bandwidth and client processing. Keep a small realtime window (latest 200)
+    // and expose a function to load older referrals on demand.
+    const referralsQuery = query(collection(db, 'referrals'), orderBy('createdAt', 'desc'), firestoreLimit(200));
+    const referralsUnsub = onSnapshot(referralsQuery, (snapshot) => {
+      const docs = snapshot.docs.map(d => d.data() as Referral);
+      if (snapshot.docs.length > 0) {
+        lastVisibleReferralRef.current = snapshot.docs[snapshot.docs.length - 1];
+      }
+      setReferrals(docs);
+    }, console.error);
+    unsubs.push(referralsUnsub);
 
     // Notifications: readable only by their recipient, so the query must say so.
     unsubs.push(onSnapshot(
@@ -819,7 +845,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     removeFacilityDepartment,
     updateFacilityCapacity,
     isOnline,
-    pendingSyncCount
+    pendingSyncCount,
+    loadOlderReferrals
   }), [
     users,
     referrals,
@@ -854,7 +881,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     removeFacilityDepartment,
     updateFacilityCapacity,
     isOnline,
-    pendingSyncCount
+    pendingSyncCount,
+    loadOlderReferrals
   ]);
 
   return (
