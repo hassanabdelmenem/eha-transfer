@@ -10,22 +10,25 @@ import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 
-// Lazy-load route pages to reduce initial bundle size.
-const Login = lazy(() => import('./pages/Login'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
-const ERDashboard = lazy(() => import('./pages/ERDashboard'));
-const ReferralsPage = lazy(() => import('./pages/ReferralsPage'));
-const ReferralDetailPage = lazy(() => import('./pages/ReferralDetailPage'));
-const NewReferralPage = lazy(() => import('./pages/NewReferralPage'));
-const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
-const AdmitPatientPage = lazy(() => import('./pages/AdmitPatientPage'));
-const DepartmentPage = lazy(() => import('./pages/DepartmentPage'));
-const NetworkDirectoryPage = lazy(() => import('./pages/NetworkDirectoryPage'));
-const FacilitySettingsPage = lazy(() => import('./pages/FacilitySettingsPage'));
-const BedManagementPage = lazy(() => import('./pages/BedManagementPage'));
-const Onboarding = lazy(() => import('./pages/Onboarding'));
-const PendingVerification = lazy(() => import('./pages/PendingVerification'));
+// Small helper that prefers a module's default export but falls back to the module
+// itself (useful when pages export named components). Keeps typing loose for brevity.
+const lazyLoad = (factory: () => Promise<any>) => lazy(() => factory().then((m: any) => ({ default: m.default ?? m })));
+
+const Login = lazyLoad(() => import('./pages/Login'));
+const Dashboard = lazyLoad(() => import('./pages/Dashboard'));
+const AdminDashboard = lazyLoad(() => import('./pages/AdminDashboard'));
+const ERDashboard = lazyLoad(() => import('./pages/ERDashboard'));
+const ReferralsPage = lazyLoad(() => import('./pages/ReferralsPage'));
+const ReferralDetailPage = lazyLoad(() => import('./pages/ReferralDetailPage'));
+const NewReferralPage = lazyLoad(() => import('./pages/NewReferralPage'));
+const NotificationsPage = lazyLoad(() => import('./pages/NotificationsPage'));
+const AdmitPatientPage = lazyLoad(() => import('./pages/AdmitPatientPage'));
+const DepartmentPage = lazyLoad(() => import('./pages/DepartmentPage'));
+const NetworkDirectoryPage = lazyLoad(() => import('./pages/NetworkDirectoryPage'));
+const FacilitySettingsPage = lazyLoad(() => import('./pages/FacilitySettingsPage'));
+const BedManagementPage = lazyLoad(() => import('./pages/BedManagementPage'));
+const Onboarding = lazyLoad(() => import('./pages/Onboarding'));
+const PendingVerification = lazyLoad(() => import('./pages/PendingVerification'));
 
 
 // Shown while Firebase restores a session. Without it, a refresh on any deep
