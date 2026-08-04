@@ -3,13 +3,13 @@ import { getAuth, initializeAuth, browserSessionPersistence, browserPopupRedirec
 import { getFirestore, initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 const firebaseConfig = {
-  projectId: "eha-transfer-1785622025",
-  appId: "1:467744756760:web:6fd2817e76a941e6e49f6d",
-  storageBucket: "eha-transfer-1785622025.firebasestorage.app",
-  apiKey: "AIzaSyA3T3FvdxAztldN9Nx6z7aN9VczgLXne4U",
-  authDomain: "eha-transfer.web.app",
-  messagingSenderId: "467744756760",
-  projectNumber: "467744756760",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "eha-transfer-1785622025",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:467744756760:web:6fd2817e76a941e6e49f6d",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "eha-transfer-1785622025.firebasestorage.app",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyA3T3FvdxAztldN9Nx6z7aN9VczgLXne4U",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "eha-transfer.web.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "467744756760",
+  projectNumber: import.meta.env.VITE_FIREBASE_PROJECT_NUMBER || "467744756760",
   version: "2"
 };
 
