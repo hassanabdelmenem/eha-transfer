@@ -13,6 +13,12 @@ coverage/
 firebase-debug.log
 firestore-debug.log
 
+# Firebase Auth / Firestore exports. These contain real user PII (emails,
+# display names, uids) and must never reach the repo.
+auth.json
+*-export/
+firestore-export/
+
 # testing
 /playwright-report
 /test-results
