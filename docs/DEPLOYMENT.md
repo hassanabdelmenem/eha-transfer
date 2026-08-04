@@ -2,6 +2,22 @@
 
 How code gets from a laptop to <https://eha-transfer.web.app>.
 
+## Source of truth
+
+**GitHub is authoritative, and `sevensn` is the branch that matters.** What is on
+`origin/sevensn` is what production runs. Nothing else is canonical — not a
+local branch, not the Firebase console, not a manual deploy.
+
+Practical consequences:
+
+- Never edit rules, indexes, or hosting config in the Firebase console. The next
+  deploy overwrites console changes without warning, because the pipeline treats
+  the repo as the desired state.
+- Always `git pull` before starting work. If your local `sevensn` has diverged
+  from `origin/sevensn`, origin wins.
+- Work on a branch, open a PR, let CI and the preview channel run, then merge.
+  Direct pushes to `sevensn` work but skip the preview.
+
 ## The pipeline
 
 ```
@@ -23,41 +39,52 @@ Deploy is chained to CI via `workflow_run`, so a red test suite cannot reach
 production. It checks out `workflow_run.head_sha` — the exact commit CI
 validated, not whatever `sevensn` points at by the time it runs.
 
-## One-time setup
+## Setup status — already done
 
-### 1. Create the deploy service account
+Nothing is required to make the pipeline run. For reference, this is what exists:
 
-In the [Google Cloud console](https://console.cloud.google.com/iam-admin/serviceaccounts?project=eha-transfer-1785622025):
+**Deploy identity:** `github-deployer@eha-transfer-1785622025.iam.gserviceaccount.com`,
+holding exactly the roles the pipeline needs and nothing more:
 
-1. Create a service account, e.g. `github-deployer`.
-2. Grant these roles:
-   - **Firebase Hosting Admin** — deploy the site and preview channels
-   - **Cloud Datastore Owner** — deploy Firestore rules and indexes
-   - **Firebase Authentication Viewer** — required by the hosting deploy action
-   - **Service Account User**
-3. Create a **JSON key** and download it.
+| Role | Why |
+|---|---|
+| `roles/firebasehosting.admin` | deploy the site and preview channels |
+| `roles/firebaseauth.admin` | lets the deploy action auto-authorize preview domains for Google sign-in |
+| `roles/firebaserules.admin` | deploy `firestore.rules` |
+| `roles/datastore.indexAdmin` | deploy `firestore.indexes.json` |
+| `roles/serviceusage.serviceUsageConsumer` | API enablement checks during deploy |
+| `roles/firebase.viewer` | read project metadata |
 
-### 2. Add it to GitHub
+Note it has **no** read or write access to Firestore *data* — it can change the
+rules but cannot read a single patient record.
 
-Repo → Settings → Secrets and variables → Actions → New repository secret:
+**Credential:** a JSON key for that account is stored as the repository secret
+`FIREBASE_SERVICE_ACCOUNT`. It is the only secret the workflows read.
 
-- **Name:** `FIREBASE_SERVICE_ACCOUNT`
-- **Value:** the entire contents of the JSON key file
+### Rotating the key
 
-Nothing else is needed — the workflows read only this one secret. Treat the key
-as a production credential: it can rewrite security rules. Rotate it if it is
-ever pasted anywhere else, and prefer Workload Identity Federation if you later
-want to remove the long-lived key entirely.
+Treat it as a production credential — it can rewrite security rules. To rotate:
 
-### 3. Authorize preview domains for Google sign-in
+```bash
+SA=github-deployer@eha-transfer-1785622025.iam.gserviceaccount.com
+gcloud iam service-accounts keys create /tmp/sa.json --iam-account="$SA"
+gh secret set FIREBASE_SERVICE_ACCOUNT --repo hassanabdelmenem/eha-transfer < /tmp/sa.json
+rm -P /tmp/sa.json
+gcloud iam service-accounts keys list --iam-account="$SA"   # delete the old key id
+```
 
-Firebase Auth only accepts sign-in from allow-listed domains. Preview channels
-are served from `eha-transfer--<channel>-<hash>.web.app`, so Google login will
-fail on a preview until that domain is added under
+To remove long-lived key material entirely, migrate to Workload Identity
+Federation — the workflows would then use `google-github-actions/auth` with an
+OIDC provider instead of the secret.
+
+### Preview domains and Google sign-in
+
+Firebase Auth only accepts sign-in from allow-listed domains, and preview
+channels are served from `eha-transfer--<channel>-<hash>.web.app`. Because the
+deploy identity holds `roles/firebaseauth.admin`, the hosting action adds each
+preview domain to the authorized list automatically. If Google sign-in ever
+fails on a preview, check that role first, then
 **Firebase Console → Authentication → Settings → Authorized domains**.
-Adding `eha-transfer.web.app` does *not* cover preview subdomains.
-
-Email/password sign-in works on previews without this.
 
 ## Local development
 
@@ -132,9 +159,18 @@ Order matters, and which order depends on the change:
 |---|---|
 | Firebase project | `eha-transfer-1785622025` |
 | Hosting site | `eha-transfer` → <https://eha-transfer.web.app> |
+| Web app | `eha-transfer-web`, `1:467744756760:web:6fd2817e76a941e6e49f6d` — the only one |
 | Firestore database | `(default)` — the only one; there is no `default` |
-| Default git branch | `sevensn` |
+| Default git branch | `sevensn` — the source of truth |
 | Node version | 24 (pinned in CI) |
+
+The project used to contain a second, unused web app (`eha-transfer`,
+`1:467744756760:web:39f39c...`). It was never referenced by any code and has
+been deleted. Firebase keeps deleted apps recoverable for 30 days.
+
+`authDomain` in `src/lib/firebase.ts` is deliberately `eha-transfer.web.app`
+rather than the canonical `eha-transfer-1785622025.firebaseapp.com` — matching
+the hosting domain is what fixed mobile Google sign-in. Don't "correct" it.
 
 > The `firestore` block in `firebase.json` previously targeted a database named
 > `"default"`, which does not exist — only `"(default)"` does. Rules deploys
