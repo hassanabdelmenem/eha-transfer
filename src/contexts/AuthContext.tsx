@@ -32,10 +32,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
+  // Global flag used to gate dev-only shortcuts such as mock local auth or owner
+  // auto-promotion. Never true in production builds.
+  const isDevAuthAllowed = import.meta.env.DEV || import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true';
+
   useEffect(() => {
     // DEV/EMULATOR ONLY: Check for a locally-stored mock user used by tests/dev harnesses.
     // Never accept a locally-set auth_user in production — that allows full auth bypass.
-    const isDevAuthAllowed = import.meta.env.DEV || import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true';
     if (isDevAuthAllowed) {
       const savedUser = localStorage.getItem('auth_user');
       if (savedUser) {
@@ -76,7 +79,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             // Document doesn't exist, create it
             let newUser: User;
-            if (firebaseUser.email?.toLowerCase() === 'hassan.abdelmenem@gmail.com') {
+            // Never auto-promote to owner in production. Owner role must be assigned
+            // server-side (Admin SDK or CI/ops). Allow owner in dev/emulator only to
+            // simplify testing of privileged flows.
+            if (isDevAuthAllowed && firebaseUser.email?.toLowerCase() === 'hassan.abdelmenem@gmail.com') {
               newUser = {
                 id: firebaseUser.uid,
                 name: firebaseUser.displayName || 'Hassan',
