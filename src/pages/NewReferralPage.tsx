@@ -8,6 +8,14 @@ import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Upload, FileText, Image as ImageIcon, X, Sparkles, Activity, Bed, Zap } from 'lucide-react';
 
+// Clearing a numeric input yields '', and parseInt('') is NaN. Firestore happily
+// stores NaN as a double, which then printed as "SpO2: NaN%" on the receiving
+// hospital's clinical summary -- omit the field instead.
+const parseVital = (raw: string, parse: (s: string) => number) => {
+  const n = parse(raw);
+  return Number.isNaN(n) ? undefined : n;
+};
+
 export const NewReferralPage: React.FC = () => {
   const { user } = useAuth();
   const { addReferral, facilities } = useData();
@@ -430,7 +438,7 @@ export const NewReferralPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-2 md:col-span-2">
                 <div>
                   <label htmlFor="patientAge" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Age</label>
-                  <Input id="patientAge" type="number" required value={patientData.age || ''} onChange={e => setPatientData({...patientData, age: parseInt(e.target.value)})} />
+                  <Input id="patientAge" type="number" required value={patientData.age || ''} onChange={e => setPatientData({...patientData, age: parseVital(e.target.value, v => parseInt(v, 10))})} />
                 </div>
                 <div>
                   <label htmlFor="patientGender" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Gender</label>
@@ -452,7 +460,7 @@ export const NewReferralPage: React.FC = () => {
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div>
                   <label htmlFor="vitalHr" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">HR (bpm)</label>
-                  <Input id="vitalHr" type="number" value={patientData.vitalSigns?.hr || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, hr: parseInt(e.target.value)}})} />
+                  <Input id="vitalHr" type="number" value={patientData.vitalSigns?.hr || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, hr: parseVital(e.target.value, v => parseInt(v, 10))}})} />
                 </div>
                 <div>
                   <label htmlFor="vitalBp" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">BP (mmHg)</label>
@@ -460,15 +468,15 @@ export const NewReferralPage: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="vitalSpo2" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">SpO2 (%)</label>
-                  <Input id="vitalSpo2" type="number" value={patientData.vitalSigns?.spo2 || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, spo2: parseInt(e.target.value)}})} />
+                  <Input id="vitalSpo2" type="number" value={patientData.vitalSigns?.spo2 || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, spo2: parseVital(e.target.value, v => parseInt(v, 10))}})} />
                 </div>
                 <div>
                   <label htmlFor="vitalTemp" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Temp (°C)</label>
-                  <Input id="vitalTemp" type="number" step="0.1" value={patientData.vitalSigns?.temp || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, temp: parseFloat(e.target.value)}})} />
+                  <Input id="vitalTemp" type="number" step="0.1" value={patientData.vitalSigns?.temp || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, temp: parseVital(e.target.value, parseFloat)}})} />
                 </div>
                 <div>
                   <label htmlFor="vitalRr" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">RR (/min)</label>
-                  <Input id="vitalRr" type="number" value={patientData.vitalSigns?.rr || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, rr: parseInt(e.target.value)}})} />
+                  <Input id="vitalRr" type="number" value={patientData.vitalSigns?.rr || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, rr: parseVital(e.target.value, v => parseInt(v, 10))}})} />
                 </div>
               </div>
             </div>

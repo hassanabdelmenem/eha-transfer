@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { BedType } from '../types';
@@ -19,11 +19,17 @@ export const BedManagementPage: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'visual'>('visual');
 
+  // Seed the editor only when the selected facility actually changes. Depending on the
+  // `facility` object would re-run on every facilities snapshot -- and any admit or
+  // discharge anywhere writes that doc -- silently discarding unsaved bed edits.
+  const facilitiesRef = useRef(facilities);
+  facilitiesRef.current = facilities;
   useEffect(() => {
-    if (facility) {
-      setCapacities(facility.capacity as any);
+    const selected = facilitiesRef.current.find(f => f.id === selectedFacilityId);
+    if (selected) {
+      setCapacities(selected.capacity as any);
     }
-  }, [facility]);
+  }, [selectedFacilityId]);
 
   if (!user || (!['nurse', 'nursing_supervisor', 'head_of_department', 'er_room'].includes(user.role) && !isAdmin)) {
     return <div className="p-8 text-center text-slate-500">Access Denied. Nursing staff privileges required.</div>;
@@ -44,6 +50,7 @@ export const BedManagementPage: React.FC = () => {
   };
 
   const handleSave = () => {
+    if (!facility) return;
     updateFacilityCapacity(facility.id, capacities);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);

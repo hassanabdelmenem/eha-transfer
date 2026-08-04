@@ -59,7 +59,13 @@ export const Dashboard: React.FC = () => {
     // Helper to count for a specific date range
     const countData = (start: Date, end: Date) => {
       const relevant = facilityReferrals.filter(x => new Date(x.createdAt) >= start && new Date(x.createdAt) <= end);
-      const incoming = relevant.filter(x => x.receivingFacilityId === user.facilityId || x.receivingFacilityId === 'auto').length;
+      // An auto-routed referral only counts as incoming for a *candidate* facility --
+      // counting every 'auto' as incoming made a facility's own outbound transfers
+      // show up on both series.
+      const incoming = relevant.filter(x =>
+        x.referringFacilityId !== user.facilityId &&
+        (x.receivingFacilityId === user.facilityId || x.receivingFacilityId === 'auto')
+      ).length;
       const outgoing = relevant.filter(x => x.referringFacilityId === user.facilityId).length;
       
       const oneWay = relevant.filter(x => !x.transferType || x.transferType === 'one_way').length;
@@ -113,8 +119,9 @@ export const Dashboard: React.FC = () => {
     };
 
     facilityReferrals.forEach(ref => {
-      const isIncoming = ref.receivingFacilityId === user.facilityId || ref.receivingFacilityId === 'auto';
       const isOutgoing = ref.referringFacilityId === user.facilityId;
+      const isIncoming = !isOutgoing &&
+        (ref.receivingFacilityId === user.facilityId || ref.receivingFacilityId === 'auto');
 
       const depts = ref.receivingDepartments && ref.receivingDepartments.length > 0 ? ref.receivingDepartments : ['Unspecified'];
       

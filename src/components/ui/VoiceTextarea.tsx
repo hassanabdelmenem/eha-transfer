@@ -59,6 +59,21 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
         };
 
         setRecognition(recog);
+
+        // Without this, unmounting mid-dictation left the engine running: the mic
+        // stayed open for the rest of the session and onresult kept firing into a
+        // component that no longer exists.
+        return () => {
+          recog.onstart = null;
+          recog.onresult = null;
+          recog.onerror = null;
+          recog.onend = null;
+          try {
+            recog.abort();
+          } catch {
+            /* already stopped */
+          }
+        };
       }
     }
   }, [onValueChange]); // We intentionally do not depend on value to avoid recreating recog and breaking recording
@@ -91,10 +106,15 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
 
 
   const toggleRecording = useCallback(() => {
-    if (isRecording) {
-      if (recognition) recognition.stop();
-    } else {
-      if (recognition) recognition.start();
+    if (!recognition) return;
+    try {
+      // start() throws InvalidStateError if the engine is already running, which
+      // would otherwise surface as an unhandled error in the click handler.
+      if (isRecording) recognition.stop();
+      else recognition.start();
+    } catch (e) {
+      console.error('Speech recognition toggle failed', e);
+      setIsRecording(false);
     }
   }, [isRecording, recognition]);
 
