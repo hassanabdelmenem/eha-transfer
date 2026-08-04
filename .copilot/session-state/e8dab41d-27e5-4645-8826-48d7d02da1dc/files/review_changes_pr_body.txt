@@ -1,0 +1,22 @@
+This PR contains these main improvements made by the Copilot CLI:
+
+- AuthContext:
+  - Include Firestore document id when constructing the User object from onSnapshot.
+  - Add a dev owner allowlist (VITE_DEV_OWNER_EMAILS) and use it for dev-only owner auto-promotion.
+  - Reuse isDevAuthAllowed flag consistently when gating mock login.
+  - Replace blocking alert(...) on redirect failures with non-blocking console.error.
+  - Add runtime guards/defaults when mapping Firestore data to User typed object.
+
+- Firebase initialization:
+  - Remove hard-coded Firebase defaults and require env vars in non-dev/non-emulator builds (fail fast).
+
+- App routes:
+  - Lazy-load route pages and add a small helper to support both default and named exports.
+
+- Added .env.example to document required env variables and dev flags.
+
+Notes:
+- Typechecking and tests run locally; initial tsc failed due to missing dev-type packages which were installed. After fixes, full tsc passes.
+- These changes are conservative and aim to avoid shipping secrets, reduce bundle size, and make dev-only shortcuts explicit and configurable.
+
+If anything should be split into smaller PRs or adjusted (e.g., remove owner auto-promotion entirely), tell me and I'll update accordingly.
