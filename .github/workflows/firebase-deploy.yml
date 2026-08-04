@@ -61,10 +61,10 @@ jobs:
       # tightened rule or a new index, deploying the app first would leave a
       # window where live clients get permission-denied.
       - name: Deploy Firestore rules and indexes
-        run: npx firebase-tools@latest deploy --only firestore --project "$FIREBASE_PROJECT" --non-interactive
+        run: npx firebase-tools deploy --only firestore --project "$FIREBASE_PROJECT" --non-interactive
 
       - name: Deploy Hosting
-        run: npx firebase-tools@latest deploy --only hosting --project "$FIREBASE_PROJECT" --non-interactive
+        run: npx firebase-tools deploy --only hosting --project "$FIREBASE_PROJECT" --non-interactive
 
       - name: Clean up credentials
         if: always()
