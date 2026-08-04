@@ -22,7 +22,11 @@ export const Onboarding: React.FC = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const profile: { name: string; phoneNumber: string; role: Role; facilityId?: string; department?: string } = { name, phoneNumber, role };
+      // Submit the role as a *request* only. Writing `role` directly used to let
+      // anyone hand themselves owner/system_admin straight from this dropdown; the
+      // security rules now reject any self-write that changes it.
+      const profile: { name: string; phoneNumber: string; requestedRole: Role; facilityId?: string; department?: string } =
+        { name, phoneNumber, requestedRole: role };
       if (facilityId) profile.facilityId = facilityId;
       if (department) profile.department = department;
       await updateUserProfile(profile);
@@ -86,7 +90,9 @@ export const Onboarding: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="onboardRole" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Requested Role</label>
+                <label htmlFor="onboardRole" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">
+                  Requested Role <span className="font-normal normal-case tracking-normal text-slate-400">— confirmed by your facility during verification</span>
+                </label>
                 <select
                   id="onboardRole"
                   value={role}
@@ -95,7 +101,6 @@ export const Onboarding: React.FC = () => {
                   disabled={user?.role === 'owner'}
                 >
                   {user?.role === 'owner' && <option value="owner">Owner</option>}
-                  <option value="system_admin">System Admin</option>
                   <option value="hospital_manager">Hospital Manager</option>
                   <option value="medical_director">Medical Director</option>
                   <option value="deputy_manager">Deputy Manager</option>

@@ -7,6 +7,12 @@ coverage/
 .env*
 !.env.example
 
+# Firebase CLI deploy cache — machine-local hashes of the last upload.
+# Committing it makes deploys from a different machine (or CI) look dirty.
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
 # testing
 /playwright-report
 /test-results

@@ -23,7 +23,9 @@ export default defineConfig(() => {
       environment: 'jsdom',
       setupFiles: ['./tests/setup.ts'],
       globals: true,
-      exclude: ['e2e/**', 'node_modules/**', '.stryker-tmp/**'],
+      // Rules tests need the Firestore emulator, so they run separately via
+      // `npm run test:rules` rather than in the default unit-test sweep.
+      exclude: ['e2e/**', 'node_modules/**', '.stryker-tmp/**', 'tests/firestore.rules.test.ts'],
     },
   };
 });

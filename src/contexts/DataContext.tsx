@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
 import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
-import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch, increment, runTransaction } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch, increment, runTransaction, query, where } from 'firebase/firestore';
 
 // Roles at the referring facility trusted to withdraw a referral they didn't personally
 // create. Exported so the UI can gate the Cancel control identically to the rules below,
@@ -97,30 +97,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   // Firestore Listeners.
-  // Gated on user.id (not just truthiness of `user`, which also changes on every
-  // profile field update): Firestore permanently kills an onSnapshot listener the
-  // first time it errors, with no auto-retry. Subscribing before the user is
-  // authenticated — e.g. while still on /login — would fail permission checks and
-  // leave these listeners dead for the rest of the session, even after a
-  // successful login. Re-running only on actual sign-in/sign-out re-subscribes.
+  //
+  // Firestore permanently kills an onSnapshot listener the first time it errors,
+  // with no auto-retry, so these must not be subscribed before the caller is
+  // allowed to read them. Hence the dependency list: `verified` and `facilityId`
+  // are both inputs to the security rules, so a listener opened while the account
+  // was still pending would stay dead for the rest of the session even after an
+  // admin approved it. Re-running on those transitions re-subscribes.
+  //
+  // The query shapes below are dictated by firestore.rules: a `list` rule that
+  // reads resource.data is only satisfiable by a query filtered on the same
+  // field. Privileged users read across facilities, so they query unfiltered.
   useEffect(() => {
     if (!user) return;
     const unsubs: (() => void)[] = [];
+    const isAdmin = user.role === 'owner' || user.role === 'system_admin';
 
-    // Facilities
+    // Facilities: readable by any signed-in user — the onboarding hospital picker
+    // needs them before the account is verified.
     unsubs.push(onSnapshot(collection(db, 'facilities'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as Facility);
       if (data.length === 0) {
-        // Seed initial facilities
+        // Seed initial facilities (only a privileged caller may write these).
         const batch = writeBatch(db);
         INITIAL_FACILITIES.forEach(f => batch.set(doc(db, 'facilities', f.id), f));
         batch.commit().catch(console.error);
       } else {
         setFacilities(data);
       }
-    }));
+    }, console.error));
 
-    // Users
+    // Everything below is patient data or staff PII and is gated on verification.
+    if (!user.verified) {
+      return () => unsubs.forEach(u => u());
+    }
+
+    // Users: the full roster, needed because notification fan-out runs client-side
+    // and has to resolve recipients at other facilities.
     unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as User);
       if (data.length === 0) {
@@ -130,35 +143,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUsers(data);
       }
-    }));
+    }, console.error));
 
-    // Referrals
+    // Referrals: the read rule is per-document (referral party or privileged), so
+    // an unfiltered listener is fine — Firestore filters the result set.
     unsubs.push(onSnapshot(collection(db, 'referrals'), (snapshot) => {
       setReferrals(snapshot.docs.map(doc => doc.data() as Referral).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-    }));
+    }, console.error));
 
-    // Notifications
-    unsubs.push(onSnapshot(collection(db, 'notifications'), (snapshot) => {
-      setNotifications(snapshot.docs.map(doc => doc.data() as Notification).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-    }));
+    // Notifications: readable only by their recipient, so the query must say so.
+    unsubs.push(onSnapshot(
+      isAdmin ? collection(db, 'notifications') : query(collection(db, 'notifications'), where('userId', '==', user.id)),
+      (snapshot) => {
+        setNotifications(snapshot.docs.map(doc => doc.data() as Notification).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      }, console.error));
 
-    // Direct Admissions
-    unsubs.push(onSnapshot(collection(db, 'directAdmissions'), (snapshot) => {
-      setDirectAdmissions(snapshot.docs.map(doc => doc.data() as DirectAdmission).sort((a, b) => new Date(b.admittedAt).getTime() - new Date(a.admittedAt).getTime()));
-    }));
+    // Direct Admissions: facility-scoped patient records.
+    unsubs.push(onSnapshot(
+      isAdmin ? collection(db, 'directAdmissions') : query(collection(db, 'directAdmissions'), where('facilityId', '==', user.facilityId || '')),
+      (snapshot) => {
+        setDirectAdmissions(snapshot.docs.map(doc => doc.data() as DirectAdmission).sort((a, b) => new Date(b.admittedAt).getTime() - new Date(a.admittedAt).getTime()));
+      }, console.error));
 
-    // Shift Assignments
+    // Shift Assignments: no patient data, readable network-wide by verified staff.
     unsubs.push(onSnapshot(collection(db, 'shiftAssignments'), (snapshot) => {
       setShiftAssignments(snapshot.docs.map(doc => doc.data() as ShiftAssignment));
-    }));
+    }, console.error));
 
-    // Shift Logs
-    unsubs.push(onSnapshot(collection(db, 'shiftLogs'), (snapshot) => {
-      setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
-    }));
+    // Shift Logs: handover summaries quote patient names — facility-scoped.
+    unsubs.push(onSnapshot(
+      isAdmin ? collection(db, 'shiftLogs') : query(collection(db, 'shiftLogs'), where('facilityId', '==', user.facilityId || '')),
+      (snapshot) => {
+        setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+      }, console.error));
 
     return () => unsubs.forEach(u => u());
-  }, [user?.id]);
+  }, [user?.id, user?.verified, user?.facilityId, user?.role]);
 
   const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, targetRoles?: Role[], departments?: string[] }) => {
     const relevantUsers = users.filter(u => {

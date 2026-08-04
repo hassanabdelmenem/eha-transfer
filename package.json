@@ -12,6 +12,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
+    "test:rules": "firebase emulators:exec --only firestore --project eha-transfer-rules-test \"vitest run --config vitest.rules.config.ts\"",
     "test:coverage": "vitest --coverage",
     "mutate": "stryker run"
   },
@@ -37,6 +38,7 @@
     "vite": "^6.2.3"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@playwright/test": "^1.62.0",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/typescript": "^4.0.0",

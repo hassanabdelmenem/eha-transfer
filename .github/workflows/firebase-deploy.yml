@@ -1,0 +1,71 @@
+name: Deploy to Firebase
+
+# Production deploy. Runs only after CI passes on the default branch, so a red
+# test suite can never reach the live site.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [ "sevensn" ]
+    types: [ completed ]
+  # Manual escape hatch (e.g. to re-run a failed deploy without a new commit).
+  workflow_dispatch: {}
+
+# Never let two deploys race for the same hosting site.
+concurrency:
+  group: firebase-deploy-production
+  cancel-in-progress: false
+
+env:
+  FIREBASE_PROJECT: eha-transfer-1785622025
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    # workflow_run fires regardless of outcome; only proceed on success.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # workflow_run checks out the default branch by default; pin to the
+          # exact commit CI validated so we deploy what was actually tested.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Authenticate to Firebase
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set. See docs/DEPLOYMENT.md."
+            exit 1
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/gcp-key.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/gcp-key.json" >> "$GITHUB_ENV"
+
+      # Rules and indexes go out before hosting: if the new bundle depends on a
+      # tightened rule or a new index, deploying the app first would leave a
+      # window where live clients get permission-denied.
+      - name: Deploy Firestore rules and indexes
+        run: npx firebase-tools@latest deploy --only firestore --project "$FIREBASE_PROJECT" --non-interactive
+
+      - name: Deploy Hosting
+        run: npx firebase-tools@latest deploy --only hosting --project "$FIREBASE_PROJECT" --non-interactive
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/gcp-key.json"
