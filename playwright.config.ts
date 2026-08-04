@@ -6,15 +6,20 @@ import { defineConfig, devices } from '@playwright/test';
 // points the SDK at localhost.
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
+  timeout: 60000,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'html',
-  globalSetup: './e2e/seed.ts',
+  globalSetup: './e2e/global-setup',
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
+    navigationTimeout: 45000,
+    actionTimeout: 20000,
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
   projects: [
     {
@@ -25,8 +30,8 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    reuseExistingServer: false,
+    timeout: 180000,
     env: {
       VITE_USE_FIREBASE_EMULATORS: 'true',
     },

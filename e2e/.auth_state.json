@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "auth_user",
+          "value": "{\"id\":\"e2e-mock\",\"name\":\"E2E Clinician\",\"email\":\"e2e.clinician@example.com\",\"role\":\"consultant\",\"verified\":true,\"profileCompleted\":true}"
+        }
+      ]
+    }
+  ]
+}
