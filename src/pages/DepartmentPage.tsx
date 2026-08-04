@@ -55,7 +55,7 @@ export const DepartmentPage: React.FC = () => {
       type: 'referral',
       admittedAt: r.statusHistory.find(h => h.status === 'admitted')?.timestamp || r.updatedAt
     }))
-  ].sort((a, b) => new Date(b.admittedAt).getTime() - new Date(a.admittedAt).getTime());
+  ].sort((a, b) => b.admittedAt.localeCompare(a.admittedAt));
 
   const myFacility = facilities.find(f => f.id === facilityId);
   const otherDepartments = myFacility?.departments.filter(d => d !== department) || [];

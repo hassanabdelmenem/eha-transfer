@@ -148,21 +148,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Referrals: the read rule is per-document (referral party or privileged), so
     // an unfiltered listener is fine — Firestore filters the result set.
     unsubs.push(onSnapshot(collection(db, 'referrals'), (snapshot) => {
-      setReferrals(snapshot.docs.map(doc => doc.data() as Referral).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setReferrals(snapshot.docs.map(doc => doc.data() as Referral).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
     }, console.error));
 
     // Notifications: readable only by their recipient, so the query must say so.
     unsubs.push(onSnapshot(
       isAdmin ? collection(db, 'notifications') : query(collection(db, 'notifications'), where('userId', '==', user.id)),
       (snapshot) => {
-        setNotifications(snapshot.docs.map(doc => doc.data() as Notification).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        setNotifications(snapshot.docs.map(doc => doc.data() as Notification).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
       }, console.error));
 
     // Direct Admissions: facility-scoped patient records.
     unsubs.push(onSnapshot(
       isAdmin ? collection(db, 'directAdmissions') : query(collection(db, 'directAdmissions'), where('facilityId', '==', user.facilityId || '')),
       (snapshot) => {
-        setDirectAdmissions(snapshot.docs.map(doc => doc.data() as DirectAdmission).sort((a, b) => new Date(b.admittedAt).getTime() - new Date(a.admittedAt).getTime()));
+        setDirectAdmissions(snapshot.docs.map(doc => doc.data() as DirectAdmission).sort((a, b) => b.admittedAt.localeCompare(a.admittedAt)));
       }, console.error));
 
     // Shift Assignments: no patient data, readable network-wide by verified staff.
@@ -174,7 +174,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     unsubs.push(onSnapshot(
       isAdmin ? collection(db, 'shiftLogs') : query(collection(db, 'shiftLogs'), where('facilityId', '==', user.facilityId || '')),
       (snapshot) => {
-        setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+        setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => b.timestamp.localeCompare(a.timestamp)));
       }, console.error));
 
     return () => unsubs.forEach(u => u());

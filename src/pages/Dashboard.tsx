@@ -33,7 +33,7 @@ export const Dashboard: React.FC = () => {
   // Filter referrals related to user's facility, or show all if system admin/owner
     const recentShiftLogs = shiftLogs.filter(log => 
     log.facilityId === user.facilityId && (!user.department || log.department === user.department)
-  ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5);
+  ).sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 5);
 
   const facilityReferrals = (user.role === 'system_admin' || user.role === 'owner') 
     ? referrals 
@@ -58,7 +58,9 @@ export const Dashboard: React.FC = () => {
 
     // Helper to count for a specific date range
     const countData = (start: Date, end: Date) => {
-      const relevant = facilityReferrals.filter(x => new Date(x.createdAt) >= start && new Date(x.createdAt) <= end);
+      const sISO = start.toISOString();
+      const eISO = end.toISOString();
+      const relevant = facilityReferrals.filter(x => x.createdAt >= sISO && x.createdAt <= eISO);
       // An auto-routed referral only counts as incoming for a *candidate* facility --
       // counting every 'auto' as incoming made a facility's own outbound transfers
       // show up on both series.
