@@ -55,6 +55,15 @@ if (!isDev && !useEmulators) {
   }
 }
 
+// When running in a browser dev environment without env vars (e.g. Vite dev
+// server during E2E runs), ensure the SDK has at least an apiKey so it doesn't
+// throw. These defaults are safe for emulator/local dev only and are guarded by
+// the earlier non-dev check above.
+if (typeof window !== 'undefined' && !firebaseConfig.apiKey) {
+  firebaseConfig.apiKey = 'fake-api-key-for-dev';
+  if (!firebaseConfig.projectId) firebaseConfig.projectId = 'eha-transfer-1785622025';
+}
+
 // Safely initialize the app. Capture whether *we* created it before calling
 // initializeApp -- checking getApps() again afterwards always reports >= 1, which
 // previously made the initializeAuth branch below dead code.
