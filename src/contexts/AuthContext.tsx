@@ -35,7 +35,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Global flag used to gate dev-only shortcuts such as mock local auth or owner
   // auto-promotion. Never true in production builds.
   const isDevAuthAllowed = import.meta.env.DEV || import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true';
-  const devOwnerEmails = (import.meta.env.VITE_DEV_OWNER_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
   useEffect(() => {
     // DEV/EMULATOR ONLY: Check for a locally-stored mock user used by tests/dev harnesses.
@@ -89,26 +88,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             // Document doesn't exist, create it
             let newUser: User;
-            // Never auto-promote to owner in production. Owner role must be assigned
-            // server-side (Admin SDK or CI/ops). Allow owner in dev/emulator only to
-            // simplify testing of privileged flows.
-            if (isDevAuthAllowed && firebaseUser.email && devOwnerEmails.includes(firebaseUser.email.toLowerCase())) {
-              newUser = {
-                id: firebaseUser.uid,
-                name: firebaseUser.displayName || firebaseUser.email.split('@')[0] || 'Owner',
-                email: firebaseUser.email,
-                role: 'owner',
-                verified: true
-              };
-            } else {
-              newUser = {
-                id: firebaseUser.uid,
-                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
-                email: firebaseUser.email || '',
-                role: 'resident',
-                verified: false
-              };
-            }
+            // Always create new users as non-owners by default. Owner assignment is
+            // performed via emulator seeding or server-side admin tooling, not the
+            // client. This prevents accidental client-side privilege escalation.
+            newUser = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
+              email: firebaseUser.email || '',
+              role: 'resident',
+              verified: false
+            };
             await setDoc(userRef, newUser);
             setUser(newUser);
             setAuthReady(true);
