@@ -5,7 +5,12 @@ name: Deploy to Firebase
 on:
   workflow_run:
     workflows: ["CI"]
-    branches: [ "sevensn" ]
+    # Both names are listed so renaming the default branch does not silently
+    # disable production deploys -- `branches` is matched literally against the
+    # ref name, and a name that no longer exists simply never matches. A rename
+    # moves the ref, so only one of these can exist at any time. Once the repo
+    # has settled on one name, drop the other.
+    branches: [ "main", "sevensn" ]
     types: [ completed ]
   # Manual escape hatch (e.g. to re-run a failed deploy without a new commit).
   workflow_dispatch: {}
