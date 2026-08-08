@@ -22,7 +22,7 @@ describe('useSpeechRecognition edge behaviors', () => {
     const onTranscript = vi.fn();
 
     // provide a test SpeechRecognition that exposes the instance for assertions
-    (global as any).SpeechRecognition = function () {
+    (global as any).SpeechRecognition = function (this: any) {
       (global as any).__lastRecog = this;
       this.continuous = false;
       this.interimResults = false;
@@ -84,7 +84,7 @@ describe('useSpeechRecognition edge behaviors', () => {
 
   it('does not call onTranscript for interim (non-final) results', async () => {
     const onTranscript = vi.fn();
-    (global as any).SpeechRecognition = function () {
+    (global as any).SpeechRecognition = function (this: any) {
       (global as any).__lastRecog = this;
       this.continuous = false;
       this.interimResults = false;
@@ -109,7 +109,7 @@ describe('useSpeechRecognition edge behaviors', () => {
 
   it('recreates recognition when onTranscript callback changes and stop uses latest instance', async () => {
     const instances: any[] = [];
-    (global as any).SpeechRecognition = function () {
+    (global as any).SpeechRecognition = function (this: any) {
       instances.push(this);
       this.continuous = false;
       this.interimResults = false;

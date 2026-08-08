@@ -14,7 +14,7 @@ describe('useAudioAlert edge behaviors', () => {
     const play = vi.fn().mockResolvedValue(null);
     const constructed: any[] = [];
     // mock global Audio to capture src and play
-    (global as any).Audio = function (src: string) {
+    (global as any).Audio = function (this: any, src: string) {
       this.src = src;
       this.play = play;
       constructed.push(this);
@@ -31,7 +31,7 @@ describe('useAudioAlert edge behaviors', () => {
 
   it('does not call play when trigger is false', () => {
     const play = vi.fn();
-    (global as any).Audio = function (src: string) {
+    (global as any).Audio = function (this: any, src: string) {
       this.src = src;
       this.play = play;
     } as any;
@@ -45,7 +45,7 @@ describe('useAudioAlert edge behaviors', () => {
   it('constructs Audio only once across multiple renders and re-triggers', () => {
     const play = vi.fn().mockResolvedValue(null);
     const constructed: any[] = [];
-    (global as any).Audio = function (src: string) {
+    (global as any).Audio = function (this: any, src: string) {
       this.src = src;
       this.play = play;
       constructed.push(this);
@@ -72,7 +72,7 @@ describe('useAudioAlert edge behaviors', () => {
     const log = vi.fn();
     (global as any).console = { ...console, log } as any;
 
-    (global as any).Audio = function (src: string) {
+    (global as any).Audio = function (this: any, src: string) {
       this.src = src;
       this.play = play;
       constructed.push(this);

@@ -32,7 +32,7 @@ describe('useSpeechRecognition injection tests', () => {
   it('works when factory returns a constructor: start/stop and onerror use latest instance', async () => {
     const onTranscript = vi.fn();
     const instances: any[] = [];
-    const MockCtor = function () {
+    const MockCtor = function (this: any) {
       instances.push(this);
       this.continuous = false;
       this.interimResults = false;
@@ -76,7 +76,7 @@ describe('useSpeechRecognition injection tests', () => {
   it('clears recognition when factory changes from constructor to null', async () => {
     const onTranscript = vi.fn();
     const instances: any[] = [];
-    const MockCtor = function () {
+    const MockCtor = function (this: any) {
       instances.push(this);
       this.continuous = false;
       this.interimResults = false;

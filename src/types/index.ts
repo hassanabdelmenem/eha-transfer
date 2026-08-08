@@ -76,12 +76,17 @@ export interface PatientData {
   bloodType?: string;
   allergies?: string[];
   chronicConditions?: string[];
+  // Numeric vitals are optional: a value that was not recorded is absent, not
+  // zero. The referral form's parseVital() already returns undefined for a
+  // cleared or non-numeric field, so these were being assigned undefined while
+  // typed as required. Read them with a presence check — an absent vital must
+  // not be rendered as a number, and must not be evaluated for abnormality.
   vitalSigns: {
-    hr: number;
+    hr?: number;
     bp: string;
-    spo2: number;
-    temp: number;
-    rr: number;
+    spo2?: number;
+    temp?: number;
+    rr?: number;
     timestamp: string;
   };
   complaint: string;

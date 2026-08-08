@@ -43,7 +43,9 @@ export const BedManagementPage: React.FC = () => {
     setCapacities(prev => ({
       ...prev,
       [bedType]: {
-        ...prev[bedType],
+        // InteractiveFloorPlan's onCapacityChange is typed `BedType | string`,
+        // so the key arrives widened and has to be narrowed to index the record.
+        ...prev[bedType as BedType],
         [field]: Math.max(0, value)
       }
     }));

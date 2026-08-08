@@ -13,7 +13,8 @@ const AuthConsumer = () => {
       <div data-testid="user">{user ? user.name : 'No User'}</div>
       <div data-testid="role-admin">{hasRole(['system_admin']) ? 'Is Admin' : 'Not Admin'}</div>
 
-      <button onClick={() => login('u1')}>Login U1</button>
+      {/* `login` is optional on the context type, so it must be called optionally. */}
+      <button onClick={() => login?.('u1')}>Login U1</button>
       <button onClick={() => logout()}>Logout</button>
     </div>
   );
