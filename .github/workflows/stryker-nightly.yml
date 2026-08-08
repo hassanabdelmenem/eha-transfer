@@ -1,3 +1,20 @@
+# Nightly mutation testing.
+#
+# If this job dies with `TypeError: ts.parseConfigFileTextToJson is not a
+# function`, the cause is upstream, not this workflow: Stryker's
+# TSConfigPreprocessor calls a TypeScript compiler API that was removed in
+# TypeScript 7, which this project uses (typescript ~7.0.2 vs
+# @stryker-mutator/core 9.6.1). Every nightly run failed on it until 08 Aug.
+#
+# The workaround is in stryker.conf.json: `tsconfigFile` points at
+# tsconfig.stryker-disabled.json, a file that deliberately does not exist. The
+# preprocessor looks it up in the sandbox, gets nothing back, and returns
+# before reaching the TypeScript API. All it does is rewrite `extends` and
+# `references` paths for sandboxed builds, which this single-tsconfig project
+# has no need of — so skipping it costs nothing and mutation runs normally.
+#
+# Delete the `tsconfigFile` line once Stryker supports TypeScript 7.
+
 name: Stryker Mutation Nightly
 
 on:

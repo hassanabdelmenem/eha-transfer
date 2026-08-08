@@ -6,6 +6,7 @@
   "reporters": ["progress", "clear-text", "html"],
   "coverageAnalysis": "perTest",
   "ignoreStatic": true,
+  "tsconfigFile": "tsconfig.stryker-disabled.json",
   "ignorePatterns": [
     "dist",
     "coverage",
