@@ -6,6 +6,19 @@ interface PatientCardProps {
   patient: PatientData;
 }
 
+// An unrecorded vital renders as an em dash rather than "undefined", and is
+// never flagged abnormal: a range check against a missing value is not a
+// normal reading, and showing it as one would be misleading at the bedside.
+const NOT_RECORDED = '—';
+
+/** True only when the vital is present AND outside its range. */
+const isAbnormal = (value: number | undefined, outOfRange: (n: number) => boolean) =>
+  value !== undefined && outOfRange(value);
+
+/** Formats a vital for display, or the em dash when it was not recorded. */
+const show = (value: number | undefined, suffix = '') =>
+  value === undefined ? NOT_RECORDED : `${value}${suffix}`;
+
 // Abnormal vitals are flagged with color AND an icon + "Abnormal" label, not color alone --
 // color-only signaling is invisible to colorblind users and screen readers.
 const VitalStat: React.FC<{ label: string; value: React.ReactNode; unit?: string; abnormal: boolean }> = ({ label, value, unit, abnormal }) => (
@@ -52,11 +65,11 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
         <div className="col-span-1 md:col-span-2">
           <span className="text-[10px] text-slate-400 font-bold uppercase">Clinical Vitals</span>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2">
-            <VitalStat label="HR" value={patient.vitalSigns.hr} unit="bpm" abnormal={patient.vitalSigns.hr > 100 || patient.vitalSigns.hr < 60} />
-            <VitalStat label="BP" value={patient.vitalSigns.bp} unit="mmHg" abnormal={parseInt(patient.vitalSigns.bp.split('/')[0]) > 140 || parseInt(patient.vitalSigns.bp.split('/')[0]) < 90} />
-            <VitalStat label="SpO2" value={`${patient.vitalSigns.spo2}%`} abnormal={patient.vitalSigns.spo2 < 95} />
-            <VitalStat label="Temp" value={`${patient.vitalSigns.temp}°C`} abnormal={patient.vitalSigns.temp > 38 || patient.vitalSigns.temp < 36} />
-            <VitalStat label="RR" value={patient.vitalSigns.rr} unit="/min" abnormal={patient.vitalSigns.rr > 20 || patient.vitalSigns.rr < 12} />
+            <VitalStat label="HR" value={show(patient.vitalSigns.hr)} unit="bpm" abnormal={isAbnormal(patient.vitalSigns.hr, n => n > 100 || n < 60)} />
+            <VitalStat label="BP" value={patient.vitalSigns.bp || NOT_RECORDED} unit="mmHg" abnormal={isAbnormal(parseInt(patient.vitalSigns.bp?.split('/')[0]), n => !Number.isNaN(n) && (n > 140 || n < 90))} />
+            <VitalStat label="SpO2" value={show(patient.vitalSigns.spo2, '%')} abnormal={isAbnormal(patient.vitalSigns.spo2, n => n < 95)} />
+            <VitalStat label="Temp" value={show(patient.vitalSigns.temp, '°C')} abnormal={isAbnormal(patient.vitalSigns.temp, n => n > 38 || n < 36)} />
+            <VitalStat label="RR" value={show(patient.vitalSigns.rr)} unit="/min" abnormal={isAbnormal(patient.vitalSigns.rr, n => n > 20 || n < 12)} />
           </div>
         </div>
         <div className="col-span-1 md:col-span-2">
