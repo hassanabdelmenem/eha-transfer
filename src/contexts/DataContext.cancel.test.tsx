@@ -22,6 +22,12 @@ vi.mock('firebase/firestore', () => {
   // DataContext scopes its listeners with query()/where() to match the `list`
   // rules in firestore.rules; the stub just needs to pass the ref through.
   const where = (field: string, op: string, value: any) => ({ field, op, value });
+  // The referrals listener is paginated (orderBy + limit, startAfter when
+  // loading older pages). These are inert descriptors here, like where(), but
+  // they must exist as exports or the module mock throws on import.
+  const orderBy = (field: string, direction?: string) => ({ orderBy: field, direction });
+  const limit = (n: number) => ({ limit: n });
+  const startAfter = (...cursor: any[]) => ({ startAfter: cursor });
   const query = (ref: any, ...constraints: any[]) => ({ ...ref, constraints });
   const onSnapshot = (_ref: any, cb: (snap: any) => void) => {
     cb({ docs: [] });
@@ -50,6 +56,9 @@ vi.mock('firebase/firestore', () => {
     collection,
     query,
     where,
+    orderBy,
+    limit,
+    startAfter,
     onSnapshot,
     setDoc: vi.fn().mockResolvedValue(undefined),
     updateDoc: vi.fn().mockResolvedValue(undefined),

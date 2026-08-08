@@ -1,20 +1,58 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Ismailia Health Connect (`eha-transfer`)
 
-# Run and deploy your AI Studio app
+Inter-facility patient referral and transfer coordination: referral intake and
+triage, ECG review, bed availability across the facility network, and the
+admission handoff at the receiving end.
 
-This contains everything you need to run your app locally.
+React 19 + TypeScript + Vite, on Firebase Auth and Cloud Firestore.
 
-View your app in AI Studio: https://ai.studio/apps/33402b73-991a-4cd2-8a3f-9891bf06d489
+## Project binding
 
-## Run Locally
+This repository deploys to exactly one Firebase project, and that project is
+deployed to by exactly one repository:
 
-**Prerequisites:**  Node.js
+| Repository | Firebase project | Live site |
+| --- | --- | --- |
+| **`hassanabdelmenem/eha-transfer`** (this one) | **`eha-transfer-1785622025`** | <https://eha-transfer.web.app> |
+| `hassanabdelmenem/imc-er` | `imc-er-manager` | <https://imc-er-manager.web.app> |
+| `hassanabdelmenem/er-app-final` | `er-icu` | <https://er-icu.web.app> |
 
+The other two rows are here to make the boundary unambiguous, not because
+anything in this repo reaches them. This project shares no backend, database,
+collection, build tooling, or credentials with either of them, and nothing in
+this repository references them.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+**`sevensn` is the production branch**, not `main`. See
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the release model, the deploy
+identity and its IAM roles, and why the console is never the source of truth.
+
+## Running locally
+
+Prerequisites: Node.js.
+
+```bash
+npm install
+cp .env.example .env      # fill in the VITE_FIREBASE_* values
+npm run dev               # http://localhost:3000
+```
+
+Set `VITE_USE_FIREBASE_EMULATORS=true` to run against the local Auth and
+Firestore emulators (ports 9099 and 8080, configured in `firebase.json`)
+instead of the live project.
+
+## Scripts
+
+| Command | Does |
+| --- | --- |
+| `npm run dev` | Vite dev server on port 3000 |
+| `npm run build` | production build to `dist/` |
+| `npm run preview` | serve the built output |
+| `npm run lint` | `tsc --noEmit` typecheck |
+| `npm test` | Vitest unit tests |
+| `npm run test:rules` | Firestore security-rules tests against the emulator |
+| `npm run test:e2e` | Playwright E2E against Auth + Firestore emulators |
+| `npm run test:coverage` | unit tests with coverage |
+| `npm run mutate` | Stryker mutation testing |
+
+CI runs typecheck, unit tests, rules tests, and E2E on every branch and pull
+request; deploys are gated on it passing.

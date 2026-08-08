@@ -13,7 +13,7 @@ describe('useSpeechRecognition extra behaviors', () => {
   it('does not throw when recognition disappears while recording and toggled to stop', async () => {
     const onTranscript = vi.fn();
     const instances: any[] = [];
-    const MockCtor = function () {
+    const MockCtor = function (this: any) {
       instances.push(this);
       this.continuous = false;
       this.interimResults = false;

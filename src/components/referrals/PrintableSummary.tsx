@@ -8,6 +8,12 @@ interface PrintableSummaryProps {
   facilities: Facility[];
 }
 
+// On a printed clinical summary a blank reads as an omission rather than as
+// "not recorded", so absent vitals are shown explicitly.
+const NOT_RECORDED = '—';
+const vital = (value: number | undefined, unit: string) =>
+  value === undefined ? NOT_RECORDED : `${value}${unit}`;
+
 export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps>(
   ({ referral, users, facilities }, ref) => {
     const { patientData } = referral;
@@ -79,11 +85,11 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
         <div className="mb-6">
           <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase">Vital Signs</h2>
           <div className="flex gap-6">
-            <p><span className="font-bold">HR:</span> {patientData.vitalSigns.hr} bpm</p>
-            <p><span className="font-bold">BP:</span> {patientData.vitalSigns.bp}</p>
-            <p><span className="font-bold">SpO2:</span> {patientData.vitalSigns.spo2}%</p>
-            <p><span className="font-bold">Temp:</span> {patientData.vitalSigns.temp}°C</p>
-            <p><span className="font-bold">RR:</span> {patientData.vitalSigns.rr} /min</p>
+            <p><span className="font-bold">HR:</span> {vital(patientData.vitalSigns.hr, ' bpm')}</p>
+            <p><span className="font-bold">BP:</span> {patientData.vitalSigns.bp || NOT_RECORDED}</p>
+            <p><span className="font-bold">SpO2:</span> {vital(patientData.vitalSigns.spo2, '%')}</p>
+            <p><span className="font-bold">Temp:</span> {vital(patientData.vitalSigns.temp, '°C')}</p>
+            <p><span className="font-bold">RR:</span> {vital(patientData.vitalSigns.rr, ' /min')}</p>
           </div>
         </div>
 

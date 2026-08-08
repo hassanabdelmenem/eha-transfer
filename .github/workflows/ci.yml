@@ -22,7 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Guard: disallow emulators flag on main branch
+      # The name must stay quoted: an unquoted YAML scalar containing ": "
+      # parses as a nested mapping key and makes this whole file invalid, which
+      # GitHub reports as an instant run failure with no jobs rather than as a
+      # syntax error. That is what happened between 04 Aug and this commit.
+      - name: "Guard: disallow emulators flag on main branch"
         if: github.ref == 'refs/heads/main'
         run: |
           if [ "$VITE_USE_FIREBASE_EMULATORS" = "true" ]; then
