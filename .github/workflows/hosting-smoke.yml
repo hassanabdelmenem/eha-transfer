@@ -11,8 +11,15 @@ name: Hosting Smoke Test
 # impossible.
 
 on:
-  push:
-    branches: [ "**" ]
+  # After every production deploy: catch a release that Firebase accepted but
+  # that does not actually serve.
+  workflow_run:
+    workflows: ["Deploy to Firebase"]
+    types: [ completed ]
+  # And on a schedule, so an outage that starts between deploys is still
+  # noticed rather than waiting for the next push.
+  schedule:
+    - cron: '0 */6 * * *'
   workflow_dispatch: {}
 
 jobs:
