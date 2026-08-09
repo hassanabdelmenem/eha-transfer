@@ -172,6 +172,21 @@ been deleted. Firebase keeps deleted apps recoverable for 30 days.
 rather than the canonical `eha-transfer-1785622025.firebaseapp.com` — matching
 the hosting domain is what fixed mobile Google sign-in. Don't "correct" it.
 
+### Firebase Web config lives in the repo, not in CI
+
+`src/lib/firebase.ts` carries the production Web config as committed defaults.
+Those values are public client identifiers, not credentials — they ship to every
+browser that loads the app, and `firestore.rules` plus the Auth authorized-domain
+list are what actually enforce access. The `VITE_FIREBASE_*` variables still
+override any field, for emulator runs or a different project.
+
+> Between 04 Aug and 09 Aug the config was env-only and no workflow passed
+> `VITE_FIREBASE_*` to `npm run build`. Deploys went green, but the bundle threw
+> `Missing required Firebase env vars` at module scope before React could mount,
+> so the live site was a blank page. If you move these back behind env vars, add
+> them to **both** `firebase-deploy.yml` and `firebase-preview.yml` — a green
+> deploy does not prove the bundle boots.
+
 > The `firestore` block in `firebase.json` previously targeted a database named
 > `"default"`, which does not exist — only `"(default)"` does. Rules deploys
 > silently had no valid target. If you ever see rules changes "not taking
