@@ -23,45 +23,88 @@ const getEnv = (key: string) => {
   return undefined;
 };
 
+// A variable that exists but is empty (`VITE_FIREBASE_API_KEY=` in an .env file,
+// or an unset `${{ secrets.X }}` that a workflow expands to the empty string)
+// has to count as absent. Otherwise it wins over the defaults below and the SDK
+// is handed a half-filled config.
+const getEnvString = (key: string): string | undefined => {
+  const value = getEnv(key);
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed === '' ? undefined : trimmed;
+};
+
+const useEmulators = getEnvString('VITE_USE_FIREBASE_EMULATORS') === 'true';
+
+// `import.meta.env.DEV` is a boolean, so the old `getEnv('DEV') === 'true'` was
+// never true in a Vite build; and the other half of that check read
+// `process.env.NODE_ENV` directly, outside the guard above — a ReferenceError in
+// any browser where Vite had not statically replaced it. Accept either shape,
+// and go through getEnv so `process` is never touched unguarded.
+const devFlag = getEnv('DEV');
+const isDev =
+  devFlag === true ||
+  devFlag === 'true' ||
+  getEnv('NODE_ENV') === 'development' ||
+  getEnv('MODE') === 'development';
+
+// Firebase Web config for the production project (`eha-transfer-1785622025`).
+//
+// These are public client identifiers, not credentials. They are shipped to every
+// browser that loads the app and Google documents them as safe to embed; access is
+// enforced by `firestore.rules` and the Auth authorized-domain list, not by keeping
+// these strings out of the repo.
+//
+// They are committed on purpose. From 04 Aug the config was env-only, but nothing
+// ever passed VITE_FIREBASE_* to `npm run build` in
+// .github/workflows/firebase-deploy.yml — so every deploy shipped a bundle that
+// threw at module scope, before React could mount, and https://eha-transfer.web.app
+// served a blank page. Committed defaults mean a plain `npm run build` produces a
+// working bundle with no CI configuration; each field can still be overridden
+// per-environment through its VITE_FIREBASE_* variable.
+const PRODUCTION_FIREBASE_CONFIG = {
+  projectId: 'eha-transfer-1785622025',
+  appId: '1:467744756760:web:6fd2817e76a941e6e49f6d',
+  storageBucket: 'eha-transfer-1785622025.firebasestorage.app',
+  apiKey: 'AIzaSyA3T3FvdxAztldN9Nx6z7aN9VczgLXne4U',
+  // Deliberately the hosting domain rather than the canonical
+  // eha-transfer-1785622025.firebaseapp.com — matching the hosting domain is what
+  // fixed mobile Google sign-in. See docs/DEPLOYMENT.md; don't "correct" this.
+  authDomain: 'eha-transfer.web.app',
+  messagingSenderId: '467744756760',
+  projectNumber: '467744756760',
+};
+
+// Emulator runs get placeholders instead of the real key and domain: the SDK only
+// needs these fields to be non-empty, and connectAuthEmulator below redirects the
+// traffic anyway. Keeps `npm run test:e2e` working without a .env file.
+const EMULATOR_FIREBASE_CONFIG = {
+  ...PRODUCTION_FIREBASE_CONFIG,
+  apiKey: 'fake-api-key-for-emulator',
+  authDomain: 'localhost',
+};
+
+const defaults = useEmulators ? EMULATOR_FIREBASE_CONFIG : PRODUCTION_FIREBASE_CONFIG;
+
 const firebaseConfig = {
-  projectId: getEnv('VITE_FIREBASE_PROJECT_ID'),
-  appId: getEnv('VITE_FIREBASE_APP_ID'),
-  storageBucket: getEnv('VITE_FIREBASE_STORAGE_BUCKET'),
-  apiKey: getEnv('VITE_FIREBASE_API_KEY'),
-  authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN'),
-  messagingSenderId: getEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
-  projectNumber: getEnv('VITE_FIREBASE_PROJECT_NUMBER'),
+  projectId: getEnvString('VITE_FIREBASE_PROJECT_ID') ?? defaults.projectId,
+  appId: getEnvString('VITE_FIREBASE_APP_ID') ?? defaults.appId,
+  storageBucket: getEnvString('VITE_FIREBASE_STORAGE_BUCKET') ?? defaults.storageBucket,
+  apiKey: getEnvString('VITE_FIREBASE_API_KEY') ?? defaults.apiKey,
+  authDomain: getEnvString('VITE_FIREBASE_AUTH_DOMAIN') ?? defaults.authDomain,
+  messagingSenderId: getEnvString('VITE_FIREBASE_MESSAGING_SENDER_ID') ?? defaults.messagingSenderId,
+  projectNumber: getEnvString('VITE_FIREBASE_PROJECT_NUMBER') ?? defaults.projectNumber,
   version: "2"
 };
 
-// Fail fast when required config is missing in non-dev, non-emulator builds so
-// misconfigured production bundles don't accidentally ship with placeholder keys.
-const useEmulators = getEnv('VITE_USE_FIREBASE_EMULATORS') === 'true';
-const isDev = getEnv('DEV') === 'true' || process.env.NODE_ENV === 'development';
-
-// When running against local emulators, the SDK still expects some config fields
-// to be present. Provide safe defaults so tests and emulator runs don't require
-// copying real production keys into .env.
-if (useEmulators) {
-  if (!firebaseConfig.apiKey) firebaseConfig.apiKey = 'fake-api-key-for-emulator';
-  if (!firebaseConfig.projectId) firebaseConfig.projectId = 'eha-transfer-1785622025';
-  if (!firebaseConfig.authDomain) firebaseConfig.authDomain = 'localhost';
-}
-
+// Still fail fast rather than initializing the SDK with a half-filled config. This
+// can now only trigger when an override resolves to nothing, which is a genuine
+// misconfiguration — and a named field beats an opaque SDK error later.
 if (!isDev && !useEmulators) {
-  const missing = Object.entries(firebaseConfig).filter(([k, v]) => !v).map(([k]) => k);
+  const missing = Object.entries(firebaseConfig).filter(([, v]) => !v).map(([k]) => k);
   if (missing.length) {
-    throw new Error(`Missing required Firebase env vars: ${missing.join(', ')}.`);
+    throw new Error(`Missing required Firebase config: ${missing.join(', ')}.`);
   }
-}
-
-// When running in a browser dev environment without env vars (e.g. Vite dev
-// server during E2E runs), ensure the SDK has at least an apiKey so it doesn't
-// throw. These defaults are safe for emulator/local dev only and are guarded by
-// the earlier non-dev check above.
-if (typeof window !== 'undefined' && !firebaseConfig.apiKey) {
-  firebaseConfig.apiKey = 'fake-api-key-for-dev';
-  if (!firebaseConfig.projectId) firebaseConfig.projectId = 'eha-transfer-1785622025';
 }
 
 // Safely initialize the app. Capture whether *we* created it before calling
