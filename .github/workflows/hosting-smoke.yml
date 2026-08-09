@@ -1,0 +1,71 @@
+name: Hosting Smoke Test
+
+# Asks the live site what it is actually serving.
+#
+# The deploy workflow reports success when Firebase accepts the upload and
+# flips the release. That says nothing about what a browser gets back, which is
+# the thing users actually experience. This closes that gap: it fetches the
+# production URL and fails if the response is not the real app.
+#
+# Written while chasing a "Site Not Found" report that the deploy logs said was
+# impossible.
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    name: Probe live hosting URLs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Probe
+        run: |
+          # Informational: the two mirrors of the real site, plus the
+          # project-default site that no deploy has ever targeted.
+          for url in \
+            "https://eha-transfer.web.app/" \
+            "https://eha-transfer.firebaseapp.com/" \
+            "https://eha-transfer-1785622025.web.app/"
+          do
+            echo "=============================================================="
+            echo "GET $url"
+            echo "--------------------------------------------------------------"
+            code=$(curl -sS -o /tmp/body.html -w '%{http_code}' -L --max-time 30 "$url" || echo "000")
+            echo "status: $code"
+            echo "title:  $(grep -o '<title>[^<]*</title>' /tmp/body.html | head -1)"
+            echo "bytes:  $(wc -c < /tmp/body.html)"
+            if grep -qi 'site not found' /tmp/body.html; then
+              echo "verdict: FIREBASE 'SITE NOT FOUND' PAGE"
+            elif grep -qi 'Welcome to Firebase Hosting\|Firebase Hosting Setup Complete' /tmp/body.html; then
+              echo "verdict: FIREBASE BOILERPLATE WELCOME PAGE"
+            elif grep -qi 'ISMAILIA HEALTH CONNECT' /tmp/body.html; then
+              echo "verdict: OK - real app"
+            else
+              echo "verdict: UNKNOWN"
+            fi
+            echo "--- first 400 bytes ---"
+            head -c 400 /tmp/body.html || true
+            echo
+          done
+
+      - name: Assert production URL serves the app
+        run: |
+          curl -sS -o /tmp/prod.html -L --max-time 30 "https://eha-transfer.web.app/"
+          if ! grep -qi 'ISMAILIA HEALTH CONNECT' /tmp/prod.html; then
+            echo "::error::https://eha-transfer.web.app/ is not serving the app."
+            exit 1
+          fi
+          echo "https://eha-transfer.web.app/ is serving the app."
+
+      - name: Check the JS bundle the page references actually loads
+        run: |
+          # A 200 on index.html with a 404 on its module graph is a blank
+          # screen, which users also describe as "the site is broken".
+          bundle=$(grep -o '/assets/index-[A-Za-z0-9_-]*\.js' /tmp/prod.html | head -1)
+          echo "bundle: $bundle"
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "https://eha-transfer.web.app${bundle}")
+          echo "status: $code"
+          [ "$code" = "200" ] || { echo "::error::bundle $bundle returned $code"; exit 1; }
