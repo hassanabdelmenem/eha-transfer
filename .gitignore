@@ -6,6 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+!.env.production
 
 # Firebase CLI deploy cache — machine-local hashes of the last upload.
 # Committing it makes deploys from a different machine (or CI) look dirty.
@@ -22,6 +23,7 @@ firestore-export/
 # testing
 /playwright-report
 /test-results
+.auth_state.json
 
 # temp sandboxes created by mutation testing tooling
 .stryker-tmp/
