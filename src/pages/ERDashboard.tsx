@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 
 export const ERDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, facilities, updateReferralStatus } = useData();
+  const { referrals, facilities, facilitiesById, updateReferralStatus } = useData();
 
   if (!user) return null;
 
@@ -21,7 +21,7 @@ export const ERDashboard: React.FC = () => {
 
   const activeReferrals = facilityReferrals.filter(r => !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status));
 
-  const getFacilityName = (id: string) => facilities.find(f => f.id === id)?.name || id;
+  const getFacilityName = (id: string) => facilitiesById.get(id)?.name || id;
 
   // Dispatch is only legal once the patient has consented to the destination -- the
   // same gate updateReferralStatus enforces. Referrals still at 'accepted' are listed

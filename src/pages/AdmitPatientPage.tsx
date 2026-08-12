@@ -10,7 +10,7 @@ import { Badge } from '../components/ui/Badge';
 
 export const AdmitPatientPage: React.FC = () => {
   const { user } = useAuth();
-  const { facilities, addDirectAdmission, directAdmissions, dischargeDirectAdmission } = useData();
+  const { facilities, facilitiesById, addDirectAdmission, directAdmissions, dischargeDirectAdmission } = useData();
   const navigate = useNavigate();
 
   const [patientName, setPatientName] = useState('');
@@ -26,7 +26,7 @@ export const AdmitPatientPage: React.FC = () => {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Facility ID not found.</div>;
   }
 
-  const facility = facilities.find(f => f.id === selectedFacilityId);
+  const facility = facilitiesById.get(selectedFacilityId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

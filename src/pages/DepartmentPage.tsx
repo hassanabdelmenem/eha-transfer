@@ -9,7 +9,7 @@ import { formatDateTime } from '../lib/utils';
 
 export const DepartmentPage: React.FC = () => {
   const { user } = useAuth();
-  const { shiftAssignments, assignShift, users, directAdmissions, referrals, facilities, quickTransfer } = useData();
+  const { shiftAssignments, shiftAssignmentsByFacility, assignShift, users, usersById, directAdmissions, referrals, facilities, facilitiesById, quickTransfer } = useData();
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   type PatientListItem = { id: string; name: string; hospitalId: string; type: 'admission' | 'referral'; admittedAt: string };
   const [selectedPatient, setSelectedPatient] = useState<PatientListItem | null>(null);
@@ -31,7 +31,7 @@ export const DepartmentPage: React.FC = () => {
   const facilityId = selectedFacilityId;
   const department = selectedDepartment;
 
-  const currentAssignment = shiftAssignments?.find(s => s.facilityId === facilityId && s.department === department);
+  const currentAssignment = (shiftAssignmentsByFacility.get(facilityId || '') || []).find(s => s.department === department);
 
   const deptAdmissions = directAdmissions.filter(a => a.facilityId === facilityId && a.department === department && a.status !== 'discharged');
   const deptReferrals = referrals.filter(r => 
@@ -57,7 +57,7 @@ export const DepartmentPage: React.FC = () => {
     }))
   ].sort((a, b) => b.admittedAt.localeCompare(a.admittedAt));
 
-  const myFacility = facilities.find(f => f.id === facilityId);
+  const myFacility = facilitiesById.get(facilityId || '');
   const otherDepartments = myFacility?.departments.filter(d => d !== department) || [];
 
   const handleOpenTransfer = (patient: any) => {

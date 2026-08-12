@@ -8,7 +8,7 @@ import { Button } from '../components/ui/Button';
 
 export const ReferralsPage: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, facilities } = useData();
+  const { referrals, facilities, facilitiesById } = useData();
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -44,8 +44,8 @@ export const ReferralsPage: React.FC = () => {
     
     const headers = ['ID', 'Patient Name', 'Hospital ID', 'Priority', 'Status', 'Referring Facility', 'Receiving Facility', 'Created At'];
     const rows = myReferrals.map(r => {
-      const fromF = facilities.find(f => f.id === r.referringFacilityId)?.name || 'Unknown';
-      const toF = r.receivingFacilityId === 'auto' ? 'Auto-Routed (Pending)' : facilities.find(f => f.id === r.receivingFacilityId)?.name || 'Unknown';
+      const fromF = facilitiesById.get(r.referringFacilityId)?.name || 'Unknown';
+      const toF = r.receivingFacilityId === 'auto' ? 'Auto-Routed (Pending)' : facilitiesById.get(r.receivingFacilityId || '')?.name || 'Unknown';
       return [
         r.id,
         `"${r.patientData.name}"`,

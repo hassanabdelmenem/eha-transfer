@@ -17,8 +17,10 @@ const vital = (value: number | undefined, unit: string) =>
 export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps>(
   ({ referral, users, facilities }, ref) => {
     const { patientData } = referral;
-    const fromFacility = facilities.find(f => f.id === referral.referringFacilityId);
-    const toFacility = facilities.find(f => f.id === referral.receivingFacilityId);
+    const facilitiesById = React.useMemo(() => new Map(facilities.map(f => [f.id, f])), [facilities]);
+    const usersById = React.useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
+    const fromFacility = facilitiesById.get(referral.referringFacilityId);
+    const toFacility = facilitiesById.get(referral.receivingFacilityId);
 
     return (
       <div ref={ref} className="p-8 bg-white text-black text-sm font-sans" style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -124,7 +126,7 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
             </thead>
             <tbody>
               {referral.statusHistory.map((sh, idx) => {
-                const u = users.find(u => u.id === sh.userId);
+                const u = usersById.get(sh.userId);
                 return (
                   <tr key={idx} className="border-b border-gray-100">
                     <td className="py-2 text-xs font-mono">{format(new Date(sh.timestamp), 'MMM d, yyyy HH:mm')}</td>

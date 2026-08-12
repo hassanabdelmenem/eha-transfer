@@ -4,12 +4,21 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 
+const TEST_EXCLUDE_PATTERNS = [
+  'e2e/**',
+  'node_modules/**',
+  '.stryker-tmp/**',
+  '.claude/**',
+  '.copilot/**',
+  'tests/firestore.rules.test.ts',
+];
+
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname, '.'),
       },
     },
     server: {
@@ -25,7 +34,7 @@ export default defineConfig(() => {
       globals: true,
       // Rules tests need the Firestore emulator, so they run separately via
       // `npm run test:rules` rather than in the default unit-test sweep.
-      exclude: ['e2e/**', 'node_modules/**', '.stryker-tmp/**', 'tests/firestore.rules.test.ts'],
+      exclude: TEST_EXCLUDE_PATTERNS,
     },
   };
 });

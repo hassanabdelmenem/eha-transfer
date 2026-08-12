@@ -28,11 +28,14 @@ export interface DirectAdmission {
 
 interface DataContextType {
   users: User[];
+  usersById: Map<string, User>;
   referrals: Referral[];
   notifications: Notification[];
   facilities: Facility[];
+  facilitiesById: Map<string, Facility>;
   directAdmissions: DirectAdmission[];
   shiftAssignments: ShiftAssignment[];
+  shiftAssignmentsByFacility: Map<string, ShiftAssignment[]>;
   shiftLogs: ShiftLog[];
   addShiftLog: (log: Omit<ShiftLog, 'id' | 'timestamp'>) => Promise<void>;
   addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => void;
@@ -77,6 +80,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { user } = useAuth();
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
+
+  // Derived lookup maps to avoid repeated O(n) array scans in hot paths.
+  const facilitiesById = useMemo(() => new Map(facilities.map(f => [f.id, f])), [facilities]);
+  const usersById = useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
+  const shiftAssignmentsByFacility = useMemo(() => {
+    const m = new Map<string, ShiftAssignment[]>();
+    shiftAssignments.forEach(s => {
+      const arr = m.get(s.facilityId) || [];
+      arr.push(s);
+      m.set(s.facilityId, arr);
+    });
+    return m;
+  }, [shiftAssignments]);
 
   useEffect(() => {
     // Firestore replays its own write queue on reconnect, so anything counted while
@@ -213,8 +229,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
        
        let isDelegatedTarget = false;
        if (params.targetRoles?.includes('head_of_department') && ['consultant', 'specialist', 'resident'].includes(u.role)) {
-          const assignment = shiftAssignments.find(s => 
-            s.facilityId === params.facilityId && 
+          const assignments = shiftAssignmentsByFacility.get(params.facilityId) || [];
+          const assignment = assignments.find(s => 
             s.assignedUserId === u.id && 
             (!params.departments || params.departments.includes(s.department))
           );
@@ -244,7 +260,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       batch.set(doc(db, 'notifications', id), notif);
     });
     batch.commit().catch(console.error);
-  }, [users, shiftAssignments]);
+  }, [users, shiftAssignmentsByFacility]);
 
   const updateUserVerified = useCallback((id: string, verified: boolean) => {
     updateDoc(doc(db, 'users', id), { verified }).catch(console.error);
@@ -274,7 +290,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const addFacilityDepartment = useCallback((facilityId: string, department: string) => {
-    const facility = facilities.find(f => f.id === facilityId);
+    const facility = facilitiesById.get(facilityId);
     if (facility && !facility.departments.includes(department)) {
       updateDoc(doc(db, 'facilities', facilityId), {
         departments: [...facility.departments, department]
@@ -283,7 +299,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [facilities]);
 
   const updateFacilityCapacity = useCallback((facilityId: string, capacities: Record<string, { total: number; occupied: number }>) => {
-    const facility = facilities.find(f => f.id === facilityId);
+    const facility = facilitiesById.get(facilityId);
     if (facility) {
       updateDoc(doc(db, 'facilities', facilityId), {
         capacity: {
@@ -295,7 +311,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [facilities]);
 
   const removeFacilityDepartment = useCallback((facilityId: string, department: string) => {
-    const facility = facilities.find(f => f.id === facilityId);
+    const facility = facilitiesById.get(facilityId);
     if (facility) {
       updateDoc(doc(db, 'facilities', facilityId), {
         departments: facility.departments.filter(d => d !== department)
@@ -304,7 +320,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [facilities]);
 
   const assignShift = useCallback((facilityId: string, department: string, assignedUserId: string | null) => {
-    const existing = shiftAssignments.find(s => s.facilityId === facilityId && s.department === department);
+    const existing = (shiftAssignmentsByFacility.get(facilityId) || []).find(s => s.department === department);
     if (existing) {
       updateDoc(doc(db, 'shiftAssignments', existing.id), {
         assignedUserId,
@@ -333,7 +349,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDoc(doc(db, 'directAdmissions', newAdmission.id), newAdmission).catch(console.error);
 
     // Update facility capacity
-    const facility = facilities.find(f => f.id === admissionData.facilityId);
+    const facility = facilitiesById.get(admissionData.facilityId);
     if (facility) {
       const bedCap = facility.capacity[admissionData.bedType];
       if (bedCap) {
@@ -379,7 +395,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const admission = snap.data() as DirectAdmission;
       if (admission.status === 'discharged') return;
 
-      const facility = facilities.find(f => f.id === admission.facilityId);
+      const facility = facilitiesById.get(admission.facilityId);
       const bedCap = facility?.capacity[admission.bedType];
       if (facility && bedCap) {
         transaction.update(doc(db, 'facilities', facility.id), {
@@ -413,7 +429,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       newReferral.candidateFacilityIds.forEach(candidateId => {
         createNotification({
           title: sendCriticalAlert ? `CRITICAL ALERT: ${newReferral.priority.toUpperCase()} ${newReferral.requiredBedType} Transfer` : `New ${newReferral.priority.toUpperCase()} Referral (Auto-Routed)`,
-          message: `Referral from ${facilities.find(f => f.id === newReferral.referringFacilityId)?.name || 'Facility'} for ${newReferral.receivingDepartments.join(', ')}`,
+          message: `Referral from ${facilitiesById.get(newReferral.referringFacilityId)?.name || 'Facility'} for ${newReferral.receivingDepartments.join(', ')}`,
           type: sendCriticalAlert || newReferral.priority === 'emergency' ? 'urgent' : 'info',
           referralId: newReferral.id,
           facilityId: candidateId,
@@ -424,7 +440,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       createNotification({
         title: sendCriticalAlert ? `CRITICAL ALERT: ${newReferral.priority.toUpperCase()} ${newReferral.requiredBedType} Transfer` : `New ${newReferral.priority.toUpperCase()} Referral`,
-        message: `Referral from ${facilities.find(f => f.id === newReferral.referringFacilityId)?.name || 'Facility'} for ${newReferral.receivingDepartments.join(', ')}`,
+        message: `Referral from ${facilitiesById.get(newReferral.referringFacilityId)?.name || 'Facility'} for ${newReferral.receivingDepartments.join(', ')}`,
         type: sendCriticalAlert || newReferral.priority === 'emergency' ? 'urgent' : 'info',
         referralId: newReferral.id,
         facilityId: newReferral.receivingFacilityId,
@@ -474,7 +490,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Bed capacity is adjusted from the transactionally-read prior status,
         // so two concurrent admit/discharge calls can't both fire the increment.
         if (status === 'admitted' && r.status !== 'admitted') {
-          const facility = facilities.find(f => f.id === r.receivingFacilityId);
+          const facility = facilitiesById.get(r.receivingFacilityId);
           const bedCap = facility?.capacity[r.requiredBedType];
           if (facility && bedCap) {
             transaction.update(doc(db, 'facilities', facility.id), {
@@ -482,7 +498,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
           }
         } else if (status === 'discharged' && r.status !== 'discharged') {
-          const facility = facilities.find(f => f.id === r.receivingFacilityId);
+          const facility = facilitiesById.get(r.receivingFacilityId);
           const bedCap = facility?.capacity[r.requiredBedType];
           if (facility && bedCap) {
             transaction.update(doc(db, 'facilities', facility.id), {
@@ -527,7 +543,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     const now = new Date().toISOString();
     const refDocRef = doc(db, 'referrals', id);
-    const newFacilityName = facilities.find(f => f.id === newFacilityId)?.name;
+    const newFacilityName = facilitiesById.get(newFacilityId)?.name;
 
     await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(refDocRef);
@@ -811,13 +827,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     batch.commit().catch(console.error);
   }, [user, notifications]);
 
+  const referralsById = useMemo(() => new Map(referrals.map(r => [r.id, r])), [referrals]);
+
   const contextValue = useMemo(() => ({
     users,
+    usersById,
     referrals,
+    referralsById,
     notifications,
     facilities,
+    facilitiesById,
     directAdmissions,
     shiftAssignments,
+    shiftAssignmentsByFacility,
     shiftLogs,
     addShiftLog,
     addReferral,
@@ -849,11 +871,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadOlderReferrals
   }), [
     users,
+    usersById,
     referrals,
+    // include referralsById to ensure consistency when referrals change
+    // so consumers relying on it get updated contextValue
+    referralsById,
     notifications,
     facilities,
+    facilitiesById,
     directAdmissions,
     shiftAssignments,
+    shiftAssignmentsByFacility,
     shiftLogs,
     addShiftLog,
     addReferral,

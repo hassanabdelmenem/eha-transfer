@@ -11,6 +11,7 @@ export const FacilitySettingsPage: React.FC = () => {
   const { user } = useAuth();
   const { 
     facilities, 
+    facilitiesById,
     users, 
     updateUserVerified, 
     updateUserRole, 
@@ -45,7 +46,7 @@ export const FacilitySettingsPage: React.FC = () => {
   }
 
   const isGlobalAdmin = user?.role === 'owner' || user?.role === 'system_admin';
-  const facility = facilities.find(f => f.id === user.facilityId);
+  const facility = facilitiesById.get(user.facilityId || '');
   
   if (!facility && !isGlobalAdmin) return null;
 
@@ -125,7 +126,7 @@ export const FacilitySettingsPage: React.FC = () => {
 
     // Editing an existing facility must not reset how many of its beds are currently
     // occupied — this form only edits totals, occupancy is managed in Bed Management.
-    const existingCapacity = editingFacilityId ? facilities.find(f => f.id === editingFacilityId)?.capacity : undefined;
+    const existingCapacity = editingFacilityId ? facilitiesById.get(editingFacilityId)?.capacity : undefined;
     const capacityFor = (bed: BedType, total: number) => ({
       total: Number(total) || 0,
       occupied: existingCapacity?.[bed]?.occupied ?? 0
@@ -465,7 +466,7 @@ export const FacilitySettingsPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {verifiedUsers.map(u => {
-                  const userFac = facilities.find(f => f.id === u.facilityId);
+                  const userFac = facilitiesById.get(u.facilityId || '');
                   return (
                     <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
                       <td className="px-4 py-3">

@@ -9,7 +9,7 @@ import { User, Phone, Building2 } from 'lucide-react';
 
 export const Onboarding: React.FC = () => {
   const { user, updateUserProfile } = useAuth();
-  const { facilities } = useData();
+  const { facilities, facilitiesById } = useData();
   
   const [name, setName] = useState(user?.name || '');
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
@@ -36,7 +36,7 @@ export const Onboarding: React.FC = () => {
     }
   };
 
-  const selectedFacility = facilities.find(f => f.id === facilityId);
+  const selectedFacility = facilitiesById.get(facilityId || '');
 
   // Owners don't need onboarding if their profile is already complete, but if they land here they can just save.
   return (

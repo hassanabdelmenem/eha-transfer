@@ -19,7 +19,7 @@ import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataCon
 export const ReferralDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { referrals, updateReferralStatus, overrideReferralDestination, toggleReferralEscalation, addDeptComment, recordPatientConsent, recordPatientDecline, cancelReferral, facilities, shiftAssignments, users } = useData();
+  const { referrals, updateReferralStatus, overrideReferralDestination, toggleReferralEscalation, addDeptComment, recordPatientConsent, recordPatientDecline, cancelReferral, facilities, users, facilitiesById, usersById, shiftAssignmentsByFacility } = useData();
   const { user } = useAuth();
 
   const [notes, setNotes] = useState('');
@@ -65,17 +65,16 @@ export const ReferralDetailPage: React.FC = () => {
     );
   }
 
-  const fromFacility = facilities.find(f => f.id === referral.referringFacilityId);
-  const toFacility = referral.receivingFacilityId === 'auto' ? { name: 'Auto-Routed (Pending Destination)' } : facilities.find(f => f.id === referral.receivingFacilityId);
-  const referringUser = users.find(u => u.id === referral.referringUserId);
+  const fromFacility = facilitiesById.get(referral.referringFacilityId);
+  const toFacility = referral.receivingFacilityId === 'auto' ? { name: 'Auto-Routed (Pending Destination)' } : facilitiesById.get(referral.receivingFacilityId);
+  const referringUser = usersById.get(referral.referringUserId);
 
   // Role checks
   const isAdmin = user.role === 'system_admin' || user.role === 'owner';
   const isReceiving = user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && referral.candidateFacilityIds?.includes(user.facilityId || '')) || isAdmin;
   const isReferring = user.facilityId === referral.referringFacilityId || isAdmin;
   
-  const isAssignedClinician = shiftAssignments?.some(s => 
-    s.facilityId === user.facilityId && 
+  const isAssignedClinician = ((shiftAssignmentsByFacility.get(user.facilityId || '') || []) as any[]).some(s => 
     referral.receivingDepartments.includes(s.department) &&
     s.assignedUserId === user.id
   );
@@ -336,7 +335,7 @@ export const ReferralDetailPage: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {referral.deptComments.map(c => {
-                    const commentUser = users.find(u => u.id === c.userId);
+                    const commentUser = usersById.get(c.userId);
                     return (
                       <div key={c.id} className="p-3 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800">
                         <div className="flex justify-between items-start mb-1">
@@ -453,7 +452,7 @@ export const ReferralDetailPage: React.FC = () => {
 
               <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-0 relative">
                 <h4 className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-4">Timeline</h4>
-                <StatusTimeline referral={referral} users={users} />
+                <StatusTimeline referral={referral} usersById={usersById} />
               </div>
             </CardContent>
           </Card>

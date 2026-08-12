@@ -9,27 +9,24 @@ import { InteractiveFloorPlan } from '../components/bed-management/InteractiveFl
 
 export const BedManagementPage: React.FC = () => {
   const { user } = useAuth();
-  const { facilities, updateFacilityCapacity } = useData();
+  const { facilities, facilitiesById, updateFacilityCapacity } = useData();
 
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
   const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
 
-  const facility = facilities.find(f => f.id === selectedFacilityId);
+  const facility = facilitiesById.get(selectedFacilityId || '');
   const [capacities, setCapacities] = useState<Record<BedType, { total: number; occupied: number }>>({} as Record<BedType, { total: number; occupied: number }>);
   const [saved, setSaved] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'visual'>('visual');
 
-  // Seed the editor only when the selected facility actually changes. Depending on the
-  // `facility` object would re-run on every facilities snapshot -- and any admit or
-  // discharge anywhere writes that doc -- silently discarding unsaved bed edits.
-  const facilitiesRef = useRef(facilities);
-  facilitiesRef.current = facilities;
+  // Seed the editor only when the selected facility actually changes. Use facilitiesById
+  // lookup (O(1)) instead of scanning the array.
   useEffect(() => {
-    const selected = facilitiesRef.current.find(f => f.id === selectedFacilityId);
+    const selected = facilitiesById.get(selectedFacilityId || '');
     if (selected) {
       setCapacities(selected.capacity as any);
     }
-  }, [selectedFacilityId]);
+  }, [selectedFacilityId, facilitiesById]);
 
   if (!user || (!['nurse', 'nursing_supervisor', 'head_of_department', 'er_room'].includes(user.role) && !isAdmin)) {
     return <div className="p-8 text-center text-slate-500">Access Denied. Nursing staff privileges required.</div>;

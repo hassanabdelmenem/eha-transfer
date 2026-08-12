@@ -5,7 +5,8 @@ import { CheckCircle, XCircle, AlertCircle, Clock, Truck, MessageSquare } from '
 
 interface StatusTimelineProps {
   referral: Referral;
-  users: User[];
+  users?: User[];
+  usersById?: Map<string, User>;
 }
 
 interface TimelineEvent {
@@ -19,7 +20,7 @@ interface TimelineEvent {
   dotColor?: string;
 }
 
-export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users }) => {
+export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users, usersById }) => {
   const events: TimelineEvent[] = [];
 
   referral.statusHistory.forEach((sh, idx) => {
@@ -73,7 +74,7 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users 
       <div className="absolute left-3 top-4 bottom-2 w-0.5 bg-slate-200 dark:bg-slate-800"></div>
       
       {events.map((event) => {
-        const user = users.find(u => u.id === event.userId);
+        const user = usersById ? usersById.get(event.userId) : users?.find(u => u.id === event.userId);
         const userName = user ? user.name : 'System / Unknown';
         const userRole = user ? user.role.replace(/_/g, ' ') : '';
 

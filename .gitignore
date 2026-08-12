@@ -25,3 +25,7 @@ firestore-export/
 
 # temp sandboxes created by mutation testing tooling
 .stryker-tmp/
+
+# AI tool configuration and state
+.claude/
+.copilot/

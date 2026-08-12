@@ -18,6 +18,8 @@ export async function syncOfflineReferrals(options: {
   setPendingSyncCount?: (n: number) => void;
 }) {
   const { addReferralsToState, createNotification, facilities, setPendingSyncCount } = options;
+  // build a quick lookup map to avoid repeated linear scans when emitting notifications for many referrals
+  const facilitiesById = new Map(facilities.map(f => [f.id, f]));
   const offlineReferrals = await getOfflineReferrals();
   if (!offlineReferrals || offlineReferrals.length === 0) return;
 
@@ -30,7 +32,7 @@ export async function syncOfflineReferrals(options: {
       for (const candidateId of ref.candidateFacilityIds) {
         createNotification({
           title: `New ${ref.priority.toUpperCase()} Referral (Auto-Routed - Synced)`,
-          message: `Referral from ${facilities.find(f => f.id === ref.referringFacilityId)?.name || 'Facility'} for ${ref.receivingDepartments.join(', ')}`,
+          message: `Referral from ${facilitiesById.get(ref.referringFacilityId)?.name || 'Facility'} for ${ref.receivingDepartments.join(', ')}`,
           type: ref.priority === 'emergency' ? 'urgent' : 'info',
           referralId: ref.id,
           facilityId: candidateId,
@@ -41,7 +43,7 @@ export async function syncOfflineReferrals(options: {
     } else {
       createNotification({
         title: `New ${ref.priority.toUpperCase()} Referral (Synced)`,
-        message: `Referral from ${facilities.find(f => f.id === ref.referringFacilityId)?.name || 'Facility'} for ${ref.receivingDepartments.join(', ')}`,
+        message: `Referral from ${facilitiesById.get(ref.referringFacilityId)?.name || 'Facility'} for ${ref.receivingDepartments.join(', ')}`,
         type: ref.priority === 'emergency' ? 'urgent' : 'info',
         referralId: ref.id,
         facilityId: ref.receivingFacilityId,

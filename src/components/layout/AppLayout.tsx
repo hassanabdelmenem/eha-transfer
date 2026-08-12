@@ -10,7 +10,7 @@ import { MOCK_USERS } from '../../lib/mock-data';
 
 export const AppLayout: React.FC = () => {
   const { user, logout } = useAuth();
-  const { notifications, facilities, isOnline, pendingSyncCount, referrals, directAdmissions, addShiftLog, users } = useData();
+  const { notifications, facilities, facilitiesById, isOnline, pendingSyncCount, referrals, directAdmissions, addShiftLog, users } = useData();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
 
@@ -50,7 +50,7 @@ export const AppLayout: React.FC = () => {
 
   if (!user) return null;
 
-  const facility = facilities.find(f => f.id === user.facilityId);
+  const facility = facilitiesById.get(user.facilityId || '');
   const unreadNotifs = notifications.filter(n => n.userId === user.id && !n.read).length;
 
   const isNurse = user.role === 'nurse' || user.role === 'nursing_supervisor' || user.role === 'owner';

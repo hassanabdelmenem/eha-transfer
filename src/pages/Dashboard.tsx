@@ -14,7 +14,7 @@ import { useAudioAlert } from '../hooks/useAudioAlert';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, facilities, directAdmissions, shiftLogs } = useData();
+  const { referrals, facilities, facilitiesById, directAdmissions, shiftLogs } = useData();
   const [chartPeriod, setChartPeriod] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('weekly');
   const [prioritySort, setPrioritySort] = useState(false);
   const { theme } = useTheme();
@@ -154,7 +154,7 @@ export const Dashboard: React.FC = () => {
     { label: 'Completed', value: completed, valueColor: 'text-white', bg: 'bg-blue-900', labelColor: 'text-blue-200', badgeBg: 'bg-blue-800', badgeText: 'text-blue-300', badgeLabel: 'Optimal' },
   ];
 
-  const userFacility = facilities.find(f => f.id === user.facilityId);
+  const userFacility = facilitiesById.get(user.facilityId || '');
   const isManager = user.role === 'hospital_manager' || user.role === 'deputy_manager' || user.role === 'medical_director' || user.role === 'owner';
   const showBeds = userFacility && userFacility.type !== 'primary_care' && (isManager || ['nursing_supervisor', 'nurse', 'owner'].includes(user.role));
   
