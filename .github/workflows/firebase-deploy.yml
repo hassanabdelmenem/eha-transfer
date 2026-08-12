@@ -5,7 +5,7 @@ name: Deploy to Firebase
 on:
   workflow_run:
     workflows: ["CI"]
-    branches: [ "sevensn" ]
+    branches: [ "main" ]
     types: [ completed ]
   # Manual escape hatch (e.g. to re-run a failed deploy without a new commit).
   workflow_dispatch: {}
