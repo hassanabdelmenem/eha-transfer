@@ -218,7 +218,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               <div className="flex justify-between items-start gap-3 mb-2">
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{referral.patientData.name || 'Unknown Patient'}</div>
-                  <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">HID: {referral.patientData.hospitalId}</div>
+                  <div className="text-xs text-slate-400 font-mono mt-0.5 truncate">HID: {referral.patientData.hospitalId}</div>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded text-[9px] font-bold uppercase whitespace-nowrap">EMERGENCY</span>}
@@ -227,7 +227,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                   <div className="mt-1">
                     <UrgencyTimer referral={referral} now={now} />
                   </div>
-                  <div className="flex items-center gap-1 font-medium text-[10px] uppercase text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                  <div className="flex items-center gap-1 font-medium text-xs uppercase text-slate-600 dark:text-slate-400 whitespace-nowrap">
                     {['in_transit', 'accepted', 'patient_consented', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>}
                     {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full shrink-0"></div>}
                     {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0"></div>}
@@ -249,7 +249,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                 <Link
                   to={`/referrals/${referral.id}`}
-                  className="inline-flex items-center justify-center gap-1 min-h-[40px] px-3 rounded text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-[10px] font-bold uppercase tracking-wider transition-colors"
+                  className="inline-flex items-center justify-center gap-1 min-h-[40px] px-3 rounded text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs font-bold uppercase tracking-wider transition-colors"
                 >
                   View Card
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -263,7 +263,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
       {/* Desktop View */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 dark:bg-slate-950 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">
+          <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">
             <tr>
               <th className="px-6 py-3">Patient Identity</th>
               <th className="px-6 py-3">Origin Facility</th>
@@ -282,7 +282,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                 <tr key={referral.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-blue-50/50 dark:hover:bg-slate-800 cursor-pointer transition-colors" onClick={() => navigate(`/referrals/${referral.id}`)}>
                   <td className="px-6 py-4 max-w-[220px]">
                     <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{referral.patientData.name || 'Unknown Patient'}</div>
-                    <div className="text-[10px] text-slate-400 font-mono mt-1 truncate">HID: {referral.patientData.hospitalId}</div>
+                    <div className="text-xs text-slate-400 font-mono mt-1 truncate">HID: {referral.patientData.hospitalId}</div>
                   </td>
                   <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium max-w-[200px] truncate">{fromFacility?.name || '—'}</td>
                   <td className="px-6 py-4 uppercase text-slate-700 dark:text-slate-300 max-w-[180px] truncate">{referral.receivingDepartments?.join(', ') || 'N/A'}</td>
@@ -293,7 +293,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <div className="flex items-center gap-1 font-medium text-[10px] uppercase text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                      <div className="flex items-center gap-1 font-medium text-xs uppercase text-slate-600 dark:text-slate-300 whitespace-nowrap">
                         {['in_transit', 'accepted', 'patient_consented', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>}
                         {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full shrink-0"></div>}
                         {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0"></div>}
@@ -309,7 +309,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Link to={`/referrals/${referral.id}`} className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-400 font-bold uppercase text-[10px] border border-blue-200 dark:border-blue-800 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors whitespace-nowrap">
+                    <Link to={`/referrals/${referral.id}`} className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-400 font-bold uppercase text-xs border border-blue-200 dark:border-blue-800 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors whitespace-nowrap">
                       View Card
                       <ChevronRight className="w-3 h-3" />
                     </Link>

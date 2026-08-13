@@ -3,7 +3,9 @@ import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Fac
 import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
 import { useAuth } from './AuthContext';
-import { db } from '../lib/firebase';
+import { auth, db, googleProvider, functions } from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { toastError } from '../lib/toast';
 import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch, increment, runTransaction, query, where, orderBy, limit as firestoreLimit, startAfter } from 'firebase/firestore';
 
 // Roles at the referring facility trusted to withdraw a referral they didn't personally
@@ -69,6 +71,26 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+/**
+ * Rejection handler for the fire-and-forget writes below.
+ *
+ * Firestore rules are the only authorization layer here, so a denied write is an
+ * ordinary outcome rather than an exceptional one. These mutations all used to end
+ * in `.catch(console.error)`, which meant an unauthorized or rejected change was
+ * indistinguishable from a successful one on screen -- a clinician corrected a bed
+ * count, nothing objected, and the change had not happened.
+ *
+ * Used as `.catch(writeFailed('...'))` so the surrounding statement is untouched.
+ * It swallows rather than rethrows deliberately: these call sites are
+ * fire-and-forget by design, and rejecting would convert every permission denial
+ * into an unhandled promise rejection. The referral transactions, whose callers do
+ * need the outcome, keep their own try/catch and do not route through here.
+ */
+const writeFailed = (fallback: string) => (error: unknown) => {
+  console.error(fallback, error);
+  toastError(error, fallback);
+};
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [referrals, setReferrals] = useState<Referral[]>([]);
@@ -122,26 +144,70 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // was still pending would stay dead for the rest of the session even after an
   // admin approved it. Re-running on those transitions re-subscribes.
   //
-  // The query shapes below are dictated by firestore.rules: a `list` rule that
-  // reads resource.data is only satisfiable by a query filtered on the same
-  // field. Privileged users read across facilities, so they query unfiltered.
-  const lastVisibleReferralRef = useRef<any>(null);
+  // One cursor per referral query shape (see referralQueryShapes below). A single
+  // cursor cannot page three independent queries.
+  const referralCursorsRef = useRef<Record<string, any>>({});
+  // Latest realtime page, keyed by shape, merged into a single list for consumers.
+  const referralPagesRef = useRef<Record<string, Referral[]>>({});
+  const olderReferralsRef = useRef<Referral[]>([]);
+
+  // `read` on /referrals depends on resource.data, so Firestore rejects any query
+  // whose results it cannot prove are all readable -- rules filter nothing. A
+  // caller is a party via one of three disjoint fields and Firestore has no OR
+  // across different fields, so non-privileged users need one query per field and
+  // the results merged here. Privileged users read across facilities unfiltered.
+  //
+  // Keep these shapes in sync with isReferralParty() in firestore.rules, and with
+  // the composite indexes in firestore.indexes.json -- each shape needs one.
+  const referralQueryShapes = useCallback((facilityId: string | undefined, isAdmin: boolean) => {
+    if (isAdmin) return { all: [orderBy('createdAt', 'desc')] } as Record<string, any[]>;
+    if (!facilityId) return {} as Record<string, any[]>;
+    return {
+      referring: [where('referringFacilityId', '==', facilityId), orderBy('createdAt', 'desc')],
+      receiving: [where('receivingFacilityId', '==', facilityId), orderBy('createdAt', 'desc')],
+      candidate: [
+        where('receivingFacilityId', '==', 'auto'),
+        where('candidateFacilityIds', 'array-contains', facilityId),
+        orderBy('createdAt', 'desc'),
+      ],
+    } as Record<string, any[]>;
+  }, []);
+
+  // A referral can match more than one shape (e.g. an intra-facility transfer is
+  // both referring and receiving), so merging has to de-duplicate by id.
+  const mergeReferrals = useCallback(() => {
+    const byId = new Map<string, Referral>();
+    Object.values(referralPagesRef.current).forEach(page => page.forEach(r => byId.set(r.id, r)));
+    olderReferralsRef.current.forEach(r => { if (!byId.has(r.id)) byId.set(r.id, r); });
+    setReferrals(
+      Array.from(byId.values()).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+    );
+  }, []);
 
   const loadOlderReferrals = useCallback(async () => {
+    const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+    const shapes = referralQueryShapes(user?.facilityId, isAdmin);
     try {
-      const last = lastVisibleReferralRef.current;
-      if (!last) return;
-      const olderQ = query(collection(db, 'referrals'), orderBy('createdAt', 'desc'), startAfter(last), firestoreLimit(200));
-      const snap = await getDocs(olderQ);
-      if (!snap.empty) {
-        const older = snap.docs.map(d => d.data() as Referral);
-        setReferrals(prev => [...prev, ...older]);
-        lastVisibleReferralRef.current = snap.docs[snap.docs.length - 1];
+      const results = await Promise.all(
+        Object.entries(shapes).map(async ([key, constraints]) => {
+          const cursor = referralCursorsRef.current[key];
+          if (!cursor) return [];
+          const snap = await getDocs(
+            query(collection(db, 'referrals'), ...constraints, startAfter(cursor), firestoreLimit(200))
+          );
+          if (!snap.empty) referralCursorsRef.current[key] = snap.docs[snap.docs.length - 1];
+          return snap.docs.map(d => d.data() as Referral);
+        })
+      );
+      const older = results.flat();
+      if (older.length) {
+        olderReferralsRef.current = [...olderReferralsRef.current, ...older];
+        mergeReferrals();
       }
     } catch (e) {
       console.error('Error loading older referrals', e);
     }
-  }, []);
+  }, [user?.facilityId, user?.role, referralQueryShapes, mergeReferrals]);
 
   useEffect(() => {
     if (!user) return;
@@ -156,7 +222,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Seed initial facilities (only a privileged caller may write these).
         const batch = writeBatch(db);
         INITIAL_FACILITIES.forEach(f => batch.set(doc(db, 'facilities', f.id), f));
-        batch.commit().catch(console.error);
+        batch.commit().catch(writeFailed("Could not seed the facility list."));
       } else {
         setFacilities(data);
       }
@@ -167,31 +233,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return () => unsubs.forEach(u => u());
     }
 
-    // Users: the full roster, needed because notification fan-out runs client-side
-    // and has to resolve recipients at other facilities.
-    unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
+    // Users: full roster is no longer needed client-side since notification
+    // fan-out happens in a Cloud Function. We only need the user's own facility.
+    const usersQuery = isAdmin ? collection(db, 'users') : query(collection(db, 'users'), where('facilityId', '==', user.facilityId));
+    unsubs.push(onSnapshot(usersQuery, (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as User);
-      if (data.length === 0) {
+      if (data.length === 0 && isAdmin) {
         const batch = writeBatch(db);
         INITIAL_USERS.forEach(u => batch.set(doc(db, 'users', u.id), u));
-        batch.commit().catch(console.error);
+        batch.commit().catch(writeFailed("Could not seed the user roster."));
       } else {
         setUsers(data);
       }
     }, console.error));
 
-    // Referrals: replace the unfiltered listener with a limited, ordered listener
-    // to reduce bandwidth and client processing. Keep a small realtime window (latest 200)
-    // and expose a function to load older referrals on demand.
-    const referralsQuery = query(collection(db, 'referrals'), orderBy('createdAt', 'desc'), firestoreLimit(200));
-    const referralsUnsub = onSnapshot(referralsQuery, (snapshot) => {
-      const docs = snapshot.docs.map(d => d.data() as Referral);
-      if (snapshot.docs.length > 0) {
-        lastVisibleReferralRef.current = snapshot.docs[snapshot.docs.length - 1];
-      }
-      setReferrals(docs);
-    }, console.error);
-    unsubs.push(referralsUnsub);
+    // Referrals: one bounded realtime listener per party-shape (see
+    // referralQueryShapes). An unfiltered query here is rejected outright for
+    // non-privileged callers, and Firestore never retries a failed onSnapshot --
+    // which silently emptied the referrals list for all non-admin staff.
+    referralPagesRef.current = {};
+    olderReferralsRef.current = [];
+    referralCursorsRef.current = {};
+    Object.entries(referralQueryShapes(user.facilityId, isAdmin)).forEach(([key, constraints]) => {
+      const q = query(collection(db, 'referrals'), ...constraints, firestoreLimit(200));
+      unsubs.push(onSnapshot(q, (snapshot) => {
+        if (snapshot.docs.length > 0) {
+          referralCursorsRef.current[key] = snapshot.docs[snapshot.docs.length - 1];
+        }
+        referralPagesRef.current[key] = snapshot.docs.map(d => d.data() as Referral);
+        mergeReferrals();
+      }, (err) => {
+        // Surfaced, not just logged. A dead referrals listener empties the app's
+        // main screen, and routing that to console.error alone is precisely how
+        // the unfiltered-query bug stayed invisible.
+        console.error(`Referrals listener (${key}) failed:`, err);
+        toastError(err, 'Could not load referrals. Try reloading the page.');
+      }));
+    });
 
     // Notifications: readable only by their recipient, so the query must say so.
     unsubs.push(onSnapshot(
@@ -207,8 +285,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDirectAdmissions(snapshot.docs.map(doc => doc.data() as DirectAdmission).sort((a, b) => b.admittedAt.localeCompare(a.admittedAt)));
       }, console.error));
 
-    // Shift Assignments: no patient data, readable network-wide by verified staff.
-    unsubs.push(onSnapshot(collection(db, 'shiftAssignments'), (snapshot) => {
+    // Shift Assignments: readable only for the user's facility (unless admin).
+    // Cloud Functions fetch the rest for network-wide fan-out.
+    const assignmentsQuery = isAdmin ? collection(db, 'shiftAssignments') : query(collection(db, 'shiftAssignments'), where('facilityId', '==', user.facilityId));
+    unsubs.push(onSnapshot(assignmentsQuery, (snapshot) => {
       setShiftAssignments(snapshot.docs.map(doc => doc.data() as ShiftAssignment));
     }, console.error));
 
@@ -223,54 +303,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user?.id, user?.verified, user?.facilityId, user?.role]);
 
   const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, targetRoles?: Role[], departments?: string[] }) => {
-    const relevantUsers = users.filter(u => {
-       if (u.role === 'owner' || u.role === 'system_admin') return true;
-       if (u.facilityId !== params.facilityId) return false;
-       
-       let isDelegatedTarget = false;
-       if (params.targetRoles?.includes('head_of_department') && ['consultant', 'specialist', 'resident'].includes(u.role)) {
-          const assignments = shiftAssignmentsByFacility.get(params.facilityId) || [];
-          const assignment = assignments.find(s => 
-            s.assignedUserId === u.id && 
-            (!params.departments || params.departments.includes(s.department))
-          );
-          if (assignment) {
-             isDelegatedTarget = true;
-          }
-       }
-
-       if (params.targetRoles && !params.targetRoles.includes(u.role) && !isDelegatedTarget) return false;
-       if (params.departments && u.department && !params.departments.includes(u.department)) return false;
-       return true;
+    const sendNotif = httpsCallable(functions, 'sendNotification');
+    sendNotif(params).catch(err => {
+      console.error("Failed to send notification via Cloud Function:", err);
     });
-    
-    const batch = writeBatch(db);
-    relevantUsers.forEach(u => {
-      const id = uuidv4();
-      const notif: Notification = {
-        id,
-        userId: u.id,
-        title: params.title,
-        message: params.message,
-        type: params.type,
-        read: false,
-        createdAt: new Date().toISOString(),
-        referralId: params.referralId
-      };
-      batch.set(doc(db, 'notifications', id), notif);
-    });
-    batch.commit().catch(console.error);
-  }, [users, shiftAssignmentsByFacility]);
+  }, []);
 
   const updateUserVerified = useCallback((id: string, verified: boolean) => {
-    updateDoc(doc(db, 'users', id), { verified }).catch(console.error);
+    updateDoc(doc(db, 'users', id), { verified }).catch(writeFailed("Could not change that user's verification status."));
   }, []);
 
   const updateUserRole = useCallback((id: string, role: Role, department?: string) => {
     const updates: any = { role };
     if (department !== undefined) updates.department = department;
     if (role === 'system_admin') updates.facilityId = 'branch';
-    updateDoc(doc(db, 'users', id), updates).catch(console.error);
+    updateDoc(doc(db, 'users', id), updates).catch(writeFailed("Could not change that user's role."));
   }, []);
 
   // Returns the write promise so callers that are about to tear down the session
@@ -294,7 +341,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (facility && !facility.departments.includes(department)) {
       updateDoc(doc(db, 'facilities', facilityId), {
         departments: [...facility.departments, department]
-      }).catch(console.error);
+      }).catch(writeFailed("Could not add the department."));
     }
   }, [facilities]);
 
@@ -306,7 +353,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...facility.capacity,
           ...capacities
         }
-      }).catch(console.error);
+      }).catch(writeFailed("Could not update bed capacity."));
     }
   }, [facilities]);
 
@@ -315,7 +362,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (facility) {
       updateDoc(doc(db, 'facilities', facilityId), {
         departments: facility.departments.filter(d => d !== department)
-      }).catch(console.error);
+      }).catch(writeFailed("Could not remove the department."));
     }
   }, [facilities]);
 
@@ -325,7 +372,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateDoc(doc(db, 'shiftAssignments', existing.id), {
         assignedUserId,
         updatedAt: new Date().toISOString()
-      }).catch(console.error);
+      }).catch(writeFailed("Could not update the shift assignment."));
     } else {
       const id = uuidv4();
       setDoc(doc(db, 'shiftAssignments', id), {
@@ -334,7 +381,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         department,
         assignedUserId,
         updatedAt: new Date().toISOString()
-      }).catch(console.error);
+      }).catch(writeFailed("Could not create the shift assignment."));
     }
   }, [shiftAssignments]);
 
@@ -346,7 +393,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       status: 'admitted'
     };
     
-    setDoc(doc(db, 'directAdmissions', newAdmission.id), newAdmission).catch(console.error);
+    setDoc(doc(db, 'directAdmissions', newAdmission.id), newAdmission).catch(writeFailed("Could not record the admission."));
 
     // Update facility capacity
     const facility = facilitiesById.get(admissionData.facilityId);
@@ -355,14 +402,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (bedCap) {
         updateDoc(doc(db, 'facilities', facility.id), {
           [`capacity.${admissionData.bedType}.occupied`]: increment(1)
-        }).catch(console.error);
+        }).catch(writeFailed("Could not update bed capacity for this admission."));
       }
     }
   }, [facilities]);
 
   const quickTransfer = useCallback((type: 'referral' | 'admission', id: string, toDepartment: string, notes: string) => {
     if (type === 'admission') {
-      updateDoc(doc(db, 'directAdmissions', id), { department: toDepartment }).catch(console.error);
+      updateDoc(doc(db, 'directAdmissions', id), { department: toDepartment }).catch(writeFailed("Could not move the patient to that department."));
       return;
     }
     // Read statusHistory inside the transaction: appending to a copy taken from local
@@ -373,15 +420,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!snap.exists()) return;
       const r = snap.data() as Referral;
       transaction.update(refDocRef, {
-        receivingDepartments: [toDepartment],
-        statusHistory: [...r.statusHistory, {
-          status: r.status,
-          timestamp: new Date().toISOString(),
-          userId: user?.id || 'system',
-          notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
-        }]
+        receivingDepartments: [toDepartment]
       });
-    }).catch(console.error);
+      const histId = uuidv4();
+      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
+        id: histId,
+        status: r.status,
+        timestamp: new Date().toISOString(),
+        userId: user?.id || 'system',
+        notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
+      });
+    }).catch(writeFailed("Could not complete the transfer."));
   }, [user]);
 
   // Discharge must decide from the transactionally-read status, not from local state:
@@ -403,7 +452,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
       transaction.update(admissionDocRef, { status: 'discharged' });
-    }).catch(console.error);
+    }).catch(writeFailed("Could not complete the transfer."));
   }, [facilities]);
 
   const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => {
@@ -413,13 +462,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: uuidv4(),
       createdAt: now,
       updatedAt: now,
-      deptComments: [],
-      statusHistory: [
-        { status: newReferralData.status, timestamp: now, userId: newReferralData.referringUserId }
-      ]
+      deptComments: []
     };
 
-    setDoc(doc(db, 'referrals', newReferral.id), newReferral).catch(console.error);
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'referrals', newReferral.id), newReferral);
+    const histId = uuidv4();
+    batch.set(doc(db, 'referrals', newReferral.id, 'statusHistory', histId), {
+      id: histId,
+      status: newReferralData.status,
+      timestamp: now,
+      userId: newReferralData.referringUserId
+    });
+    batch.commit().catch(writeFailed("Could not create the referral."));
+    
     if (!isOnline) {
       setPendingSyncCount(prev => prev + 1);
     }
@@ -478,33 +534,55 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? (user.facilityId || r.receivingFacilityId)
           : r.receivingFacilityId;
 
-        const newHistory = [...r.statusHistory, { status, timestamp: now, userId: user.id, notes }];
-
-        transaction.update(refDocRef, {
+        const updates: any = {
           status,
           receivingFacilityId: finalReceivingFacilityId,
-          updatedAt: now,
-          statusHistory: newHistory
+          updatedAt: now
+        };
+        if (status === 'admitted' && r.status !== 'admitted') {
+          updates.admittedAt = now;
+        }
+
+        transaction.update(refDocRef, updates);
+
+        const histId = uuidv4();
+        transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
+          id: histId,
+          status,
+          timestamp: now,
+          userId: user.id,
+          notes
         });
 
         // Bed capacity is adjusted from the transactionally-read prior status,
         // so two concurrent admit/discharge calls can't both fire the increment.
+        //
+        // The facility write is only attempted by someone the rules will actually
+        // let write it -- a verified account at the receiving facility, or an
+        // admin. Attempted from the referring side it is denied, and because it
+        // shares this transaction the denial rolled back the status change too, so
+        // the admission silently failed as a whole rather than just skipping the
+        // bed count.
+        const canAdjustCapacity =
+          user.role === 'owner' ||
+          user.role === 'system_admin' ||
+          (!!user.facilityId && user.facilityId === r.receivingFacilityId);
+
+        const applyCapacityDelta = (delta: 1 | -1) => {
+          if (!canAdjustCapacity) return;
+          const facility = facilitiesById.get(r.receivingFacilityId);
+          const bedCap = facility?.capacity[r.requiredBedType];
+          if (facility && bedCap) {
+            transaction.update(doc(db, 'facilities', facility.id), {
+              [`capacity.${r.requiredBedType}.occupied`]: increment(delta)
+            });
+          }
+        };
+
         if (status === 'admitted' && r.status !== 'admitted') {
-          const facility = facilitiesById.get(r.receivingFacilityId);
-          const bedCap = facility?.capacity[r.requiredBedType];
-          if (facility && bedCap) {
-            transaction.update(doc(db, 'facilities', facility.id), {
-              [`capacity.${r.requiredBedType}.occupied`]: increment(1)
-            });
-          }
+          applyCapacityDelta(1);
         } else if (status === 'discharged' && r.status !== 'discharged') {
-          const facility = facilitiesById.get(r.receivingFacilityId);
-          const bedCap = facility?.capacity[r.requiredBedType];
-          if (facility && bedCap) {
-            transaction.update(doc(db, 'facilities', facility.id), {
-              [`capacity.${r.requiredBedType}.occupied`]: increment(-1)
-            });
-          }
+          applyCapacityDelta(-1);
         }
       });
     } catch (e) {
@@ -551,13 +629,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const r = snap.data() as Referral;
       transaction.update(refDocRef, {
         receivingFacilityId: newFacilityId,
-        updatedAt: now,
-        statusHistory: [...r.statusHistory, {
-          status: r.status,
-          timestamp: now,
-          userId: user.id,
-          notes: `Destination manually overridden to ${newFacilityName}`
-        }]
+        updatedAt: now
+      });
+      const histId = uuidv4();
+      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
+        id: histId,
+        status: r.status,
+        timestamp: now,
+        userId: user.id,
+        notes: `Destination manually overridden to ${newFacilityName}`
       });
     });
   }, [user, facilities]);
@@ -587,8 +667,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isApprovalStatus && r.status === 'pending') {
           claimedReceivingFacilityId = r.receivingFacilityId === 'auto' ? (user.facilityId || 'auto') : r.receivingFacilityId;
           updates.status = 'dept_approved';
-          updates.statusHistory = [...r.statusHistory, { status: 'dept_approved', timestamp: now, userId: user.id, notes: 'Department Head Approved' }];
           updates.receivingFacilityId = claimedReceivingFacilityId;
+          
+          const histId = uuidv4();
+          transaction.set(doc(db, 'referrals', referralId, 'statusHistory', histId), {
+            id: histId,
+            status: 'dept_approved',
+            timestamp: now,
+            userId: user.id,
+            notes: 'Department Head Approved'
+          });
         }
 
         transaction.update(refDocRef, updates);
@@ -614,11 +702,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserFacility = useCallback((id: string, facilityId: string, department?: string) => {
     const updates: any = { facilityId };
     if (department !== undefined) updates.department = department;
-    updateDoc(doc(db, 'users', id), updates).catch(console.error);
+    updateDoc(doc(db, 'users', id), updates).catch(writeFailed("Could not change that user's facility."));
   }, []);
 
   const removeUser = useCallback((id: string) => {
-    deleteDoc(doc(db, 'users', id)).catch(console.error);
+    deleteDoc(doc(db, 'users', id)).catch(writeFailed("Could not remove that user."));
   }, []);
 
   const addFacility = useCallback((facilityData: Omit<Facility, 'id'>) => {
@@ -627,15 +715,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...facilityData,
       id
     };
-    setDoc(doc(db, 'facilities', id), newFacility).catch(console.error);
+    setDoc(doc(db, 'facilities', id), newFacility).catch(writeFailed("Could not add the facility."));
   }, []);
 
   const updateFacility = useCallback((facilityId: string, updates: Partial<Facility>) => {
-    updateDoc(doc(db, 'facilities', facilityId), updates).catch(console.error);
+    updateDoc(doc(db, 'facilities', facilityId), updates).catch(writeFailed("Could not update the facility."));
   }, []);
 
   const removeFacility = useCallback((facilityId: string) => {
-    deleteDoc(doc(db, 'facilities', facilityId)).catch(console.error);
+    deleteDoc(doc(db, 'facilities', facilityId)).catch(writeFailed("Could not remove the facility."));
   }, []);
 
   // Records that the patient agreed to be transferred to the currently proposed
@@ -659,8 +747,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       receivingFacilityId = r.receivingFacilityId;
       transaction.update(refDocRef, {
         status: 'patient_consented',
-        updatedAt: now,
-        statusHistory: [...r.statusHistory, { status: 'patient_consented', timestamp: now, userId: user.id, notes: 'Patient consented to transfer.' }]
+        updatedAt: now
+      });
+      const histId = uuidv4();
+      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
+        id: histId,
+        status: 'patient_consented',
+        timestamp: now,
+        userId: user.id,
+        notes: 'Patient consented to transfer.'
       });
     });
 
@@ -704,8 +799,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         receivingFacilityId: 'auto',
         candidateFacilityIds: remainingCandidateIds,
         patientDeclinedFacilityIds,
-        updatedAt: now,
-        statusHistory: [...r.statusHistory, { status: 'pending', timestamp: now, userId: user.id, notes: `Patient declined transfer to this facility. Reason: ${reason || 'Not specified'}. Re-routing.` }]
+        updatedAt: now
+      });
+      const histId = uuidv4();
+      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
+        id: histId,
+        status: 'pending',
+        timestamp: now,
+        userId: user.id,
+        notes: `Patient declined transfer to this facility. Reason: ${reason || 'Not specified'}. Re-routing.`
       });
     });
 
@@ -767,8 +869,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cancelledAt: now,
         cancelledBy: user.id,
         cancelReason: reason || 'Not specified',
-        updatedAt: now,
-        statusHistory: [...r.statusHistory, { status: 'cancelled', timestamp: now, userId: user.id, notes: reason ? `Cancelled: ${reason}` : 'Cancelled' }]
+        updatedAt: now
+      });
+      const histId = uuidv4();
+      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
+        id: histId,
+        status: 'cancelled',
+        timestamp: now,
+        userId: user.id,
+        notes: reason ? `Cancelled: ${reason}` : 'Cancelled'
       });
     });
 
@@ -801,19 +910,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const r = snap.data() as Referral;
       transaction.update(refDocRef, {
         isEscalated,
-        updatedAt: now,
-        statusHistory: [...r.statusHistory, {
-          status: r.status,
-          timestamp: now,
-          userId: user?.id || 'system',
-          notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
-        }]
+        updatedAt: now
+      });
+      const histId = uuidv4();
+      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
+        id: histId,
+        status: r.status,
+        timestamp: now,
+        userId: user?.id || 'system',
+        notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
       });
     });
   }, [user]);
 
   const markNotificationRead = useCallback((id: string) => {
-    updateDoc(doc(db, 'notifications', id), { read: true }).catch(console.error);
+    updateDoc(doc(db, 'notifications', id), { read: true }).catch(writeFailed("Could not mark the notification as read."));
   }, []);
 
   const markAllNotificationsRead = useCallback(() => {
@@ -824,7 +935,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         batch.update(doc(db, 'notifications', n.id), { read: true });
       }
     });
-    batch.commit().catch(console.error);
+    batch.commit().catch(writeFailed("Could not mark all notifications as read."));
   }, [user, notifications]);
 
   const referralsById = useMemo(() => new Map(referrals.map(r => [r.id, r])), [referrals]);

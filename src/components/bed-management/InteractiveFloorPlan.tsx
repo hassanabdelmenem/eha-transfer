@@ -99,7 +99,7 @@ export const InteractiveFloorPlan: React.FC<InteractiveFloorPlanProps> = ({ capa
                     title={`Bed ${idx + 1} - ${isOccupied ? 'Occupied (Tap to free)' : 'Free (Tap to occupy)'}`}
                   >
                     <Bed className="w-6 h-6 mb-1" />
-                    <span className="text-[10px] font-bold">{idx + 1}</span>
+                    <span className="text-xs font-bold">{idx + 1}</span>
                     {isOccupied && (
                       <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-950 animate-pulse"></span>
                     )}

@@ -88,7 +88,7 @@ export const AdmitPatientPage: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="admitPatientName" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Patient Name</label>
+                <label htmlFor="admitPatientName" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Patient Name</label>
                 <input
                   id="admitPatientName"
                   type="text"
@@ -100,7 +100,7 @@ export const AdmitPatientPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label htmlFor="admitHospitalId" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Hospital ID (HID)</label>
+                <label htmlFor="admitHospitalId" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Hospital ID (HID)</label>
                 <input
                   id="admitHospitalId"
                   type="text"
@@ -115,7 +115,7 @@ export const AdmitPatientPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="admitDepartment" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Admitting Department</label>
+                <label htmlFor="admitDepartment" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Admitting Department</label>
                 <select
                   id="admitDepartment"
                   required
@@ -130,7 +130,7 @@ export const AdmitPatientPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label htmlFor="admitBedType" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Bed Type</label>
+                <label htmlFor="admitBedType" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Bed Type</label>
                 <select
                   id="admitBedType"
                   required

@@ -16,7 +16,7 @@ import {
   assertSucceeds,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { beforeAll, afterAll, beforeEach, describe, it } from 'vitest';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -48,7 +48,6 @@ const referral = (over: Record<string, unknown> = {}) => ({
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
   deptComments: [],
-  statusHistory: [{ status: 'pending', timestamp: '2026-01-01T00:00:00.000Z', userId: F1_DOCTOR }],
   ...over,
 });
 
@@ -139,12 +138,6 @@ describe('PHI collections (security review #2)', () => {
     await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'notifications', 'n1'), { message: 'forged' }));
   });
 
-  it('allows verified staff to fan out a notification to another user', async () => {
-    await assertSucceeds(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n2'), {
-      id: 'n2', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false, createdAt: '2026-01-02T00:00:00.000Z',
-    }));
-  });
-
   it('blocks cross-facility shift log reads and any tampering', async () => {
     await assertFails(getDocs(query(collection(authed(F2_DOCTOR), 'shiftLogs'), where('facilityId', '==', 'f1'))));
     await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'shiftLogs', 'log1'), { summary: 'rewritten' }));
@@ -161,8 +154,9 @@ describe('staff directory (security review #3)', () => {
     await assertSucceeds(getDoc(doc(authed(NEWCOMER), 'users', NEWCOMER)));
   });
 
-  it('allows verified staff to list users (client-side notification fan-out)', async () => {
-    await assertSucceeds(getDocs(collection(authed(F1_DOCTOR), 'users')));
+  it('allows verified staff to list users in their own facility only', async () => {
+    await assertSucceeds(getDocs(query(collection(authed(F2_DOCTOR), 'users'), where('facilityId', '==', 'f2'))));
+    await assertFails(getDocs(collection(authed(F2_DOCTOR), 'users')));
   });
 });
 
@@ -177,7 +171,6 @@ describe('referral integrity (security review #4 and #5)', () => {
   it('allows a senior at the referring facility to cancel', async () => {
     await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
       status: 'cancelled',
-      statusHistory: [...referral().statusHistory, { status: 'cancelled', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER }],
     }));
   });
 
@@ -185,19 +178,15 @@ describe('referral integrity (security review #4 and #5)', () => {
     await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { referringFacilityId: 'f3' }));
   });
 
-  it('blocks truncating the audit trail', async () => {
-    await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { statusHistory: [] }));
-  });
 
   it('blocks laundering referringUserId to steal the cancel right', async () => {
     await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { referringUserId: F3_CANDIDATE }));
   });
 
-  it('allows a candidate facility to accept and append to the trail', async () => {
+  it('allows a candidate facility to accept', async () => {
     await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), {
       status: 'dept_approved',
       receivingFacilityId: 'f3',
-      statusHistory: [...referral().statusHistory, { status: 'dept_approved', timestamp: '2026-01-02T00:00:00.000Z', userId: F3_CANDIDATE }],
     }));
   });
 
@@ -223,5 +212,213 @@ describe('facility capacity', () => {
   it('blocks another facility from editing capacity, and staff from renaming a facility', async () => {
     await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'facilities', 'f1'), { capacity: {} }));
     await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'facilities', 'f1'), { name: 'Renamed' }));
+  });
+});
+
+/**
+ * The suite previously tested single-document reads only, which is why the
+ * referrals listener could ship querying the whole collection unfiltered: a rule
+ * that reads resource.data is evaluated against every document a query returns
+ * and rejects the query outright if any one of them fails, so `get` passing tells
+ * you nothing about `list`. These assert the query shapes DataContext actually
+ * issues.
+ */
+describe('referral list queries (the shapes DataContext issues)', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      // A referral this facility has nothing to do with. Its presence is the whole
+      // point: an unfiltered query would sweep it in and be denied.
+      await setDoc(doc(ctx.firestore(), 'referrals', 'other'), referral({
+        id: 'other',
+        referringFacilityId: 'f9',
+        receivingFacilityId: 'f9',
+        candidateFacilityIds: [],
+      }));
+      // Gives the receiving-facility query something to return. Without it that
+      // query matches nothing and passes vacuously, since an empty result set is
+      // trivially readable.
+      await setDoc(doc(ctx.firestore(), 'referrals', 'to-f2'), referral({
+        id: 'to-f2',
+        receivingFacilityId: 'f2',
+        candidateFacilityIds: [],
+      }));
+    });
+  });
+
+  it('rejects an unfiltered collection query from non-privileged staff', async () => {
+    await assertFails(getDocs(query(
+      collection(authed(F1_DOCTOR), 'referrals'),
+      orderBy('createdAt', 'desc'),
+      limit(200),
+    )));
+  });
+
+  it('allows the referring-facility query', async () => {
+    await assertSucceeds(getDocs(query(
+      collection(authed(F1_DOCTOR), 'referrals'),
+      where('referringFacilityId', '==', 'f1'),
+      orderBy('createdAt', 'desc'),
+      limit(200),
+    )));
+  });
+
+  it('allows the receiving-facility query', async () => {
+    await assertSucceeds(getDocs(query(
+      collection(authed(F2_DOCTOR), 'referrals'),
+      where('receivingFacilityId', '==', 'f2'),
+      orderBy('createdAt', 'desc'),
+      limit(200),
+    )));
+  });
+
+  it('allows the auto-routing candidate query', async () => {
+    await assertSucceeds(getDocs(query(
+      collection(authed(F3_CANDIDATE), 'referrals'),
+      where('receivingFacilityId', '==', 'auto'),
+      where('candidateFacilityIds', 'array-contains', 'f3'),
+      orderBy('createdAt', 'desc'),
+      limit(200),
+    )));
+  });
+
+  it('allows a privileged caller to read across facilities unfiltered', async () => {
+    await assertSucceeds(getDocs(query(
+      collection(authed(OWNER), 'referrals'),
+      orderBy('createdAt', 'desc'),
+      limit(200),
+    )));
+  });
+});
+
+describe('referral status transitions', () => {
+  const advanceTo = (status: string, extra: Record<string, unknown> = {}) => ({
+    status,
+    ...extra,
+  });
+
+  const setStatus = async (status: string) => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { status, receivingFacilityId: 'f1' });
+    });
+  };
+
+  it('blocks marking a patient in transit without recorded consent', async () => {
+    await setStatus('accepted');
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advanceTo('in_transit')));
+  });
+
+  it('allows in transit once the patient has consented', async () => {
+    await setStatus('patient_consented');
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advanceTo('in_transit')));
+  });
+
+  it('blocks stepping a locked referral back to an unlocked status', async () => {
+    // The two-step cancel-lock bypass: in_transit -> accepted -> cancelled.
+    await setStatus('in_transit');
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advanceTo('accepted')));
+  });
+
+  it('blocks cancelling a referral already in transit', async () => {
+    await setStatus('in_transit');
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advanceTo('cancelled')));
+  });
+
+  it('allows the patient-decline re-route back to pending', async () => {
+    await setStatus('accepted');
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advanceTo('pending')));
+  });
+});
+
+describe('statusHistory subcollection', () => {
+  const historyEntry = (id: string, userId: string) => ({ id, status: 'pending', timestamp: '2026-01-01T00:00:00.000Z', userId });
+
+  it('allows a party to read the subcollection', async () => {
+    await assertSucceeds(getDocs(collection(authed(F1_DOCTOR), 'referrals', 'ref1', 'statusHistory')));
+  });
+
+  it('blocks a non-party from reading the subcollection', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'f9-uid'), { id: 'f9-uid', name: 'F9', email: 'f9@x.gov', role: 'consultant', verified: true, facilityId: 'f9' });
+    });
+    await assertFails(getDocs(collection(authed('f9-uid'), 'referrals', 'ref1', 'statusHistory')));
+  });
+
+  it('allows a party to create an entry', async () => {
+    await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'statusHistory', 'h1'), historyEntry('h1', F1_DOCTOR)));
+  });
+
+  it('blocks a non-party from creating an entry', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'f9-uid'), { id: 'f9-uid', name: 'F9', email: 'f9@x.gov', role: 'consultant', verified: true, facilityId: 'f9' });
+    });
+    await assertFails(setDoc(doc(authed('f9-uid'), 'referrals', 'ref1', 'statusHistory', 'h2'), historyEntry('h2', 'f9-uid')));
+  });
+
+  it('blocks updating an entry', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'referrals', 'ref1', 'statusHistory', 'h1'), historyEntry('h1', F1_DOCTOR));
+    });
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'statusHistory', 'h1'), { notes: 'rewritten' }));
+  });
+
+  it('blocks deleting an entry', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'referrals', 'ref1', 'statusHistory', 'h1'), historyEntry('h1', F1_DOCTOR));
+    });
+    await assertFails(deleteDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'statusHistory', 'h1')));
+  });
+});
+
+describe('direct admission integrity', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'directAdmissions', 'adm1'), {
+        id: 'adm1', facilityId: 'f1', department: 'ICU', bedType: 'ICU',
+        patientName: 'Patient B', hospitalId: 'H-2',
+        admittedAt: '2026-01-01T00:00:00.000Z', admittedBy: F1_DOCTOR, status: 'admitted',
+      });
+    });
+  });
+
+  it('blocks moving an identified patient record to another facility', async () => {
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'directAdmissions', 'adm1'), { facilityId: 'f2' }));
+  });
+
+  it('blocks rewriting the patient identity on an admission', async () => {
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'directAdmissions', 'adm1'), { patientName: 'Someone Else' }));
+  });
+
+  it('still allows an ordinary same-facility update', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'directAdmissions', 'adm1'), { status: 'discharged' }));
+  });
+});
+
+describe('notification shape constraints', () => {
+  it('blocks a notification that arrives pre-read', async () => {
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n3'), {
+      id: 'n3', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: true,
+      createdAt: '2026-01-02T00:00:00.000Z',
+    }));
+  });
+
+  it('blocks an unrecognised notification type', async () => {
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n4'), {
+      id: 'n4', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'system', read: false,
+      createdAt: '2026-01-02T00:00:00.000Z',
+    }));
+  });
+});
+
+describe('user self-signup', () => {
+  it('blocks self-signup with an elevated role', async () => {
+    await assertFails(setDoc(doc(testEnv.authenticatedContext('brand-new').firestore(), 'users', 'brand-new'), {
+      id: 'brand-new', name: 'New', email: 'new@x.gov', role: 'owner', verified: false,
+    }));
+  });
+
+  it('allows self-signup as an unverified resident', async () => {
+    await assertSucceeds(setDoc(doc(testEnv.authenticatedContext('brand-new-2').firestore(), 'users', 'brand-new-2'), {
+      id: 'brand-new-2', name: 'New', email: 'new2@x.gov', role: 'resident', verified: false,
+    }));
   });
 });

@@ -121,7 +121,7 @@ export const NetworkDirectoryPage: React.FC = () => {
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">{facility.location}</p>
                 </div>
 
-                <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold shrink-0 whitespace-nowrap ${facility.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>
+                <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold shrink-0 whitespace-nowrap ${facility.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>
                   {facility.type.replace('_', ' ')}
                 </span>
 
@@ -130,7 +130,7 @@ export const NetworkDirectoryPage: React.FC = () => {
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm whitespace-nowrap">
-                  <thead className="bg-white dark:bg-slate-900 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-100 dark:border-slate-800">
+                  <thead className="bg-white dark:bg-slate-900 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-100 dark:border-slate-800">
                     <tr>
                       <th className="px-4 py-3">Role / Department</th>
                       <th className="px-4 py-3">Name</th>
@@ -174,7 +174,7 @@ export const NetworkDirectoryPage: React.FC = () => {
                             <td className="px-4 py-3 font-mono text-slate-600">{u.phoneNumber || 'N/A'}</td>
                             <td className="px-4 py-3">
                               {isResponsibleNow ? (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">ACTIVE ON CALL</span>
+                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-200">ACTIVE ON CALL</span>
                               ) : null}
                             </td>
                           </tr>

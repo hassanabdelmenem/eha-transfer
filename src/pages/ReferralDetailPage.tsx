@@ -13,8 +13,11 @@ import { PrintableSummary } from '../components/referrals/PrintableSummary';
 import { ArrowLeft, Printer, Check, X, Truck, Building, FileText, CheckCircle, AlertCircle, Copy, Download, Activity, ShieldAlert, Clock, UserCheck, UserX, Ban } from 'lucide-react';
 import { ECGViewerOverlay } from '../components/referrals/ECGViewerOverlay';
 import { Badge } from '../components/ui/Badge';
-import { ReferralStatus, DeptApprovalStatus } from '../types';
+import { ReferralStatus, DeptApprovalStatus, StatusHistoryEntry } from '../types';
 import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataContext';
+import { toastError } from '../lib/toast';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 export const ReferralDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,8 +39,20 @@ export const ReferralDetailPage: React.FC = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  const [history, setHistory] = useState<StatusHistoryEntry[]>([]);
 
   const referral = referrals.find(r => r.id === id);
+
+  React.useEffect(() => {
+    if (!id) return;
+    const q = query(collection(db, 'referrals', id, 'statusHistory'), orderBy('timestamp', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StatusHistoryEntry)));
+    }, (error) => {
+      console.error("Error fetching statusHistory subcollection:", error);
+    });
+    return () => unsubscribe();
+  }, [id]);
 
   // Hooks must run unconditionally on every render -- keep these above the
   // "not found" early return below, or navigating to a missing/loading referral
@@ -102,7 +117,7 @@ export const ReferralDetailPage: React.FC = () => {
       await updateReferralStatus(referral.id, status, notes);
       setNotes('');
     } catch (e: any) {
-      alert(e?.message || 'Could not update the referral status.');
+      toastError(e, 'Could not update the referral status.');
     }
   };
 
@@ -119,7 +134,7 @@ export const ReferralDetailPage: React.FC = () => {
       await overrideReferralDestination(referral.id, overrideFacilityId);
       setOverrideFacilityId('');
     } catch (e: any) {
-      alert(e?.message || 'Could not override the destination.');
+      toastError(e, 'Could not override the destination.');
     }
   };
 
@@ -127,7 +142,7 @@ export const ReferralDetailPage: React.FC = () => {
     try {
       await toggleReferralEscalation(referral.id, !referral.isEscalated);
     } catch (e: any) {
-      alert(e?.message || 'Could not update the escalation flag.');
+      toastError(e, 'Could not update the escalation flag.');
     }
   };
 
@@ -136,7 +151,7 @@ export const ReferralDetailPage: React.FC = () => {
     try {
       await recordPatientConsent(referral.id);
     } catch (e: any) {
-      alert(e?.message || 'Could not record patient consent.');
+      toastError(e, 'Could not record patient consent.');
     } finally {
       setConsentBusy(false);
     }
@@ -149,7 +164,7 @@ export const ReferralDetailPage: React.FC = () => {
       setShowDeclineForm(false);
       setDeclineReason('');
     } catch (e: any) {
-      alert(e?.message || 'Could not record patient decline.');
+      toastError(e, 'Could not record patient decline.');
     } finally {
       setConsentBusy(false);
     }
@@ -173,8 +188,8 @@ export const ReferralDetailPage: React.FC = () => {
     <div className="space-y-6 pb-16 sm:pb-0 max-w-5xl mx-auto print:max-w-none print:pb-0 print:m-0 print:space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="print:hidden">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="print:hidden" aria-label="Go back">
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Referral Details</h1>
@@ -224,7 +239,7 @@ export const ReferralDetailPage: React.FC = () => {
                   <p className="text-xs text-red-100">System Admins can take direct actions (Approve, Decline, Postpone) regardless of department review.</p>
                 </div>
               </div>
-              <span className="text-[10px] bg-red-900 text-white font-bold px-2 py-1 rounded uppercase">Direct Action Enabled</span>
+              <span className="text-xs bg-red-900 text-white font-bold px-2 py-1 rounded uppercase">Direct Action Enabled</span>
             </div>
           )}
 
@@ -239,14 +254,14 @@ export const ReferralDetailPage: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Reason for Referral</p>
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Reason for Referral</p>
                 <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm leading-relaxed">
                   {referral.reasonForReferral}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm mt-4">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Referring Physician</p>
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Referring Physician</p>
                   <p className="font-semibold text-slate-800 dark:text-slate-200">{referringUser?.name || 'Unknown'}</p>
                   {referringUser?.phoneNumber && (
                     <p className="text-xs text-slate-600 font-mono mt-0.5">📞 {referringUser.phoneNumber}</p>
@@ -256,36 +271,36 @@ export const ReferralDetailPage: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Target Department(s) / Bed</p>
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Target Department(s) / Bed</p>
                   <p className="font-semibold text-slate-800 dark:text-slate-200 uppercase">{referral.receivingDepartments.join(', ')} / {referral.requiredBedType}</p>
                 </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
                  <div>
-                   <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Chief Complaint</p>
+                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Chief Complaint</p>
                    <p className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData.complaint || 'N/A'}</p>
                  </div>
                  <div>
-                   <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Presentation & HPI</p>
+                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Presentation & HPI</p>
                    <p className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData.presentation || 'N/A'}</p>
                  </div>
                  <div>
-                   <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Past Medical History</p>
+                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Past Medical History</p>
                    <p className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData.pastHistory || 'N/A'}</p>
                  </div>
               </div>
               
               {referral.patientData.medications && (
                 <div className="text-sm mt-2">
-                   <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Medications Received</p>
+                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Medications Received</p>
                    <p className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData.medications}</p>
                  </div>
               )}
               
               {referral.patientData.attachments && referral.patientData.attachments.length > 0 && (
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-4 mt-4">
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-3">Clinical Attachments</p>
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3">Clinical Attachments</p>
                   <div className="flex flex-wrap gap-4">
                     {referral.patientData.attachments.map(att => (
                       <div key={att.id} className="relative w-24 h-24 border border-slate-200 dark:border-slate-800 rounded overflow-hidden group bg-slate-50 dark:bg-slate-950">
@@ -356,7 +371,7 @@ export const ReferralDetailPage: React.FC = () => {
 
               {(isTargetDeptHead || isAdmin) && referral.status === 'pending' && (
                 <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4 space-y-3">
-                  <h4 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Add Department Review</h4>
+                  <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Add Department Review</h4>
                   <select className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm" value={deptAction} onChange={e => setDeptAction(e.target.value as DeptApprovalStatus)}>
                      <option value="pending" disabled>Select action...</option>
                      <option value="requirements_needed">Requirements Needed</option>
@@ -394,7 +409,7 @@ export const ReferralDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase">{fromFacility?.name}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Origin</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Origin</p>
                   </div>
                 </div>
 
@@ -404,7 +419,7 @@ export const ReferralDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase">Outbound Transfer</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">{referral.status === 'in_transit' ? 'Currently in transit' : 'Pending'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{referral.status === 'in_transit' ? 'Currently in transit' : 'Pending'}</p>
                   </div>
                 </div>
 
@@ -421,7 +436,7 @@ export const ReferralDetailPage: React.FC = () => {
                       )}
                     </div>
 
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Destination ({referral.requiredBedType})</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Destination ({referral.requiredBedType})</p>
                   </div>
                 </div>
 
@@ -433,7 +448,7 @@ export const ReferralDetailPage: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase">Return Transfer</p>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400">Pending Return</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Pending Return</p>
                       </div>
                     </div>
                     
@@ -443,7 +458,7 @@ export const ReferralDetailPage: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase">{fromFacility?.name}</p>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400">Final Return</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Final Return</p>
                       </div>
                     </div>
                   </>
@@ -451,8 +466,8 @@ export const ReferralDetailPage: React.FC = () => {
               </div>
 
               <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-0 relative">
-                <h4 className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-4">Timeline</h4>
-                <StatusTimeline referral={referral} usersById={usersById} />
+                <h4 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-4">Timeline</h4>
+                <StatusTimeline referral={referral} history={history} usersById={usersById} />
               </div>
             </CardContent>
           </Card>
@@ -473,7 +488,7 @@ export const ReferralDetailPage: React.FC = () => {
                 )}
   
                 <div className="text-sm">
-                  <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Action Notes (Optional)</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Action Notes (Optional)</label>
                   <VoiceTextarea
                     className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                     rows={2}
@@ -498,7 +513,7 @@ export const ReferralDetailPage: React.FC = () => {
 
                       {/* Any Facility Transfer option on Approval (System Admin Bypass) */}
                       <div className="space-y-1.5 pt-1">
-                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase">
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">
                           Force Move/Transfer to Facility (Bypass Bed Check)
                         </label>
                         <select
@@ -529,7 +544,7 @@ export const ReferralDetailPage: React.FC = () => {
                                 await overrideReferralDestination(referral.id, contractedFacilityId);
                               }
                             } catch (e: any) {
-                              alert(e?.message || 'Could not move the referral to that facility.');
+                              toastError(e, 'Could not move the referral to that facility.');
                               return;
                             }
                             handleStatusUpdate('manager_approved');
@@ -659,7 +674,7 @@ export const ReferralDetailPage: React.FC = () => {
 
                   {isAdmin && ['pending', 'dept_approved', 'manager_approved', 'accepted'].includes(referral.status) && (
                     <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
-                      <label htmlFor="overrideDestination" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Admin Override Destination</label>
+                      <label htmlFor="overrideDestination" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Admin Override Destination</label>
                       <div className="flex flex-col sm:flex-row gap-2">
                         <select
                           id="overrideDestination"
@@ -727,7 +742,7 @@ export const ReferralDetailPage: React.FC = () => {
 
       {/* Hidden Printable Summary for react-to-print */}
       <div style={{ display: 'none' }}>
-        <PrintableSummary ref={printRef} referral={referral} users={users} facilities={facilities} />
+        <PrintableSummary ref={printRef} referral={referral} history={history} users={users} facilities={facilities} />
       </div>
     </div>
   );

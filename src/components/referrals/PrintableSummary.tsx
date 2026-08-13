@@ -1,9 +1,10 @@
 import React, { forwardRef } from 'react';
-import { Referral, User, Facility } from '../../types';
+import { Referral, User, Facility, StatusHistoryEntry } from '../../types';
 import { format } from 'date-fns';
 
 interface PrintableSummaryProps {
   referral: Referral;
+  history: StatusHistoryEntry[];
   users: User[];
   facilities: Facility[];
 }
@@ -15,7 +16,7 @@ const vital = (value: number | undefined, unit: string) =>
   value === undefined ? NOT_RECORDED : `${value}${unit}`;
 
 export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps>(
-  ({ referral, users, facilities }, ref) => {
+  ({ referral, history, users, facilities }, ref) => {
     const { patientData } = referral;
     const facilitiesById = React.useMemo(() => new Map(facilities.map(f => [f.id, f])), [facilities]);
     const usersById = React.useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
@@ -125,7 +126,7 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
               </tr>
             </thead>
             <tbody>
-              {referral.statusHistory.map((sh, idx) => {
+              {history.map((sh, idx) => {
                 const u = usersById.get(sh.userId);
                 return (
                   <tr key={idx} className="border-b border-gray-100">

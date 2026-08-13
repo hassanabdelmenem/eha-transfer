@@ -7,6 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { Bell, LogOut, Activity, Users, PlusCircle, LayoutDashboard, BookOpen, Settings, Moon, Sun, Bed, Cloud, Database, Eye, Phone, X, User } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { MOCK_USERS } from '../../lib/mock-data';
+import { toastError } from '../../lib/toast';
 
 export const AppLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -29,7 +30,7 @@ export const AppLayout: React.FC = () => {
       await updateUserProfile({ phoneNumber: profilePhone, monthlySchedule: profileSchedule });
       setShowProfile(false);
     } catch (err: any) {
-      alert('Could not save your profile: ' + (err?.message || 'unknown error'));
+      toastError(err, "Could not save your profile.");
     } finally {
       setSavingProfile(false);
     }
@@ -122,11 +123,15 @@ export const AppLayout: React.FC = () => {
         {/* Logo Section */}
         <div className="flex items-center gap-3 shrink-0 mx-auto md:mx-0">
           <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-md flex items-center justify-center shrink-0">
-            <Activity className="h-7 w-7 text-blue-900" />
+            <Activity className="h-9 w-9 text-blue-900" />
           </div>
           <div>
-            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase text-center md:text-left">Ismailia Health Connect</h1>
-            <p className="text-[9px] md:text-[10px] opacity-80 uppercase tracking-widest text-center md:text-left">Referral Coordination System</p>
+            {/* Not an h1: every routed page below already declares its own, and two
+                h1 elements per document leaves screen-reader users without a single
+                unambiguous page title. The app name is a banner label, not the
+                heading of the content. */}
+            <p className="text-lg md:text-xl font-bold tracking-tight uppercase text-center md:text-left">Ismailia Health Connect</p>
+            <p className="text-[9px] md:text-xs opacity-80 uppercase tracking-widest text-center md:text-left">Referral Coordination System</p>
           </div>
         </div>
 
@@ -145,20 +150,20 @@ export const AppLayout: React.FC = () => {
             scroll left past 0. Left-packing keeps everything reachable by scrolling right. */}
         <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto w-full md:w-max mx-auto md:ml-auto md:mr-0 justify-between pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!isOnline && (
-            <div className="flex items-center gap-2 bg-red-500/20 px-3 py-1.5 rounded text-red-100 text-[10px] font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="IndexedDB Offline Mode active">
+            <div className="flex items-center gap-2 bg-red-500/20 px-3 py-1.5 rounded text-red-100 text-xs font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="IndexedDB Offline Mode active">
               <WifiOff className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Offline</span>
               {pendingSyncCount > 0 && <span className="bg-red-500/50 px-1.5 py-0.5 rounded ml-1">{pendingSyncCount} <span className="hidden sm:inline">pending upload</span></span>}
             </div>
           )}
           {isOnline && pendingSyncCount > 0 && (
-            <div className="flex items-center gap-2 bg-amber-500/20 px-3 py-1.5 rounded text-amber-100 text-[10px] font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="Uploading IndexedDB data to server">
+            <div className="flex items-center gap-2 bg-amber-500/20 px-3 py-1.5 rounded text-amber-100 text-xs font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="Uploading IndexedDB data to server">
               <Database className="w-3.5 h-3.5 animate-pulse" />
               <span className="hidden sm:inline">Pending Upload</span> ({pendingSyncCount})
             </div>
           )}
           {isOnline && pendingSyncCount === 0 && (
-            <div className="hidden sm:flex items-center gap-2 bg-emerald-500/20 px-3 py-1.5 rounded text-emerald-100 text-[10px] font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="IndexedDB fully synced with server">
+            <div className="hidden sm:flex items-center gap-2 bg-emerald-500/20 px-3 py-1.5 rounded text-emerald-100 text-xs font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="IndexedDB fully synced with server">
               <Cloud className="w-3.5 h-3.5" />
               Database Synced
             </div>
@@ -171,7 +176,7 @@ export const AppLayout: React.FC = () => {
             title={`${user.name} — ${user.role.replace(/_/g, ' ')}${facility ? ` • ${facility.name}` : ''}`}
           >
             <span className="text-xs font-semibold truncate max-w-full">{user.name}</span>
-            <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded truncate max-w-full">{user.role.replace(/_/g, ' ')} {facility ? `• ${facility.name}` : ''}</span>
+            <span className="text-xs bg-blue-800 px-2 py-0.5 rounded truncate max-w-full">{user.role.replace(/_/g, ' ')} {facility ? `• ${facility.name}` : ''}</span>
           </button>
 
           {/* Mobile/tablet fallback: identity is still visible and profile still reachable. */}
@@ -180,7 +185,7 @@ export const AppLayout: React.FC = () => {
             className="lg:hidden flex items-center gap-2 min-h-[40px] px-2 rounded hover:bg-blue-800/60 transition-colors shrink-0 min-w-0 max-w-[45vw]"
             aria-label={`Profile settings for ${user.name}, ${user.role.replace(/_/g, ' ')}`}
           >
-            <span className="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center shrink-0" aria-hidden="true">
+            <span className="w-9 h-9 rounded-full bg-blue-700 flex items-center justify-center shrink-0" aria-hidden="true">
               <User className="w-4 h-4" />
             </span>
             <span className="flex flex-col items-start min-w-0 text-left">
@@ -194,7 +199,7 @@ export const AppLayout: React.FC = () => {
           <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 flex-1 md:flex-none whitespace-nowrap px-1 w-full md:w-auto">
             <button
               onClick={() => setShowHotline(true)}
-              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 min-h-[40px] rounded transition-colors text-[10px] font-bold uppercase tracking-wider shadow-sm"
+              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 min-h-[40px] rounded transition-colors text-xs font-bold uppercase tracking-wider shadow-sm"
               title="Emergency Hotline"
               aria-label="Emergency Hotline"
             >
@@ -284,7 +289,7 @@ export const AppLayout: React.FC = () => {
           </nav>
           
           <div className="mt-auto p-4 bg-slate-900 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-lg">
-            <div className="text-[10px] text-blue-300 font-bold uppercase mb-2">Security Status</div>
+            <div className="text-xs text-blue-300 font-bold uppercase mb-2">Security Status</div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-[9px] text-white">AES-256</span>
@@ -366,7 +371,7 @@ export const AppLayout: React.FC = () => {
               </button>
             </div>
             <div className="p-4 max-h-[60vh] overflow-y-auto">
-              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Clinical Leadership Directory</p>
+              <p className="text-xs uppercase font-bold tracking-wider text-slate-500 mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Clinical Leadership Directory</p>
               {hotlineContacts.length > 0 ? (
                 <div className="space-y-3">
                   {hotlineContacts.map(contact => (
@@ -374,7 +379,7 @@ export const AppLayout: React.FC = () => {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
                           <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{contact.name}</p>
-                          <p className="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">{contact.role.replace(/_/g, ' ')} {contact.department ? `• ${contact.department}` : ''}</p>
+                          <p className="text-xs text-slate-500 uppercase tracking-wide mt-0.5">{contact.role.replace(/_/g, ' ')} {contact.department ? `• ${contact.department}` : ''}</p>
                         </div>
                         {contact.phoneNumber ? (
                           <a href={`tel:${contact.phoneNumber}`} className="flex items-center justify-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-4 py-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold uppercase hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shrink-0">
@@ -382,11 +387,11 @@ export const AppLayout: React.FC = () => {
                             Call
                           </a>
                         ) : (
-                          <span className="text-[10px] uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">No Number</span>
+                          <span className="text-xs uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">No Number</span>
                         )}
                       </div>
                       {contact.monthlySchedule && (
-                        <div className="bg-slate-100 dark:bg-slate-800 p-2 text-[10px] text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700">
+                        <div className="bg-slate-100 dark:bg-slate-800 p-2 text-xs text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700">
                           <span className="font-bold uppercase mr-1">Schedule:</span>
                           {contact.monthlySchedule}
                         </div>
@@ -415,7 +420,7 @@ export const AppLayout: React.FC = () => {
             </div>
             <div className="p-4 space-y-4 overflow-y-auto">
               <div>
-                <label htmlFor="profilePhone" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Phone Number</label>
+                <label htmlFor="profilePhone" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Phone Number</label>
                 <input
                   id="profilePhone"
                   type="tel"
@@ -426,7 +431,7 @@ export const AppLayout: React.FC = () => {
                 />
               </div>
               <div>
-                <label htmlFor="profileSchedule" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Monthly Schedule & Availability</label>
+                <label htmlFor="profileSchedule" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Monthly Schedule & Availability</label>
                 <textarea
                   id="profileSchedule"
                   value={profileSchedule}
@@ -435,7 +440,7 @@ export const AppLayout: React.FC = () => {
                   rows={4}
                   className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">This will be visible to other staff in the Network Directory to facilitate communication.</p>
+                <p className="text-xs text-slate-400 mt-1">This will be visible to other staff in the Network Directory to facilitate communication.</p>
               </div>
               <Button onClick={handleSaveProfile} disabled={savingProfile} className="w-full">
                 {savingProfile ? 'Saving…' : 'Save Changes'}

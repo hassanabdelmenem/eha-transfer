@@ -85,13 +85,13 @@ export const AdminDashboard: React.FC = () => {
               <CardHeader className="bg-slate-900 text-white pb-4">
                 <div className="flex justify-between items-center gap-2">
                   <CardTitle className="text-white text-sm min-w-0 truncate">{facility.name}</CardTitle>
-                  <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded uppercase shrink-0 whitespace-nowrap">{facility.type.replace('_', ' ')}</span>
+                  <span className="text-xs bg-blue-800 px-2 py-0.5 rounded uppercase shrink-0 whitespace-nowrap">{facility.type.replace('_', ' ')}</span>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-slate-50 dark:bg-slate-950 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-slate-800">
+                    <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-slate-800">
                       <tr>
                         <th className="px-4 py-3">Bed Type</th>
                         <th className="px-4 py-3 text-center">Capacity</th>
@@ -115,12 +115,12 @@ export const AdminDashboard: React.FC = () => {
                             <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{cap.total}</td>
                             <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{cap.occupied}</td>
                             <td className="px-4 py-3 text-center">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isFull ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'}`}>
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${isFull ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'}`}>
                                 {available}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isCritical ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${isCritical ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
                                 {waitlist.length} Waiting
                               </span>
                             </td>
@@ -133,7 +133,7 @@ export const AdminDashboard: React.FC = () => {
 
                 {/* Waitlist details for this facility */}
                 <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
-                  <h4 className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-2">Waitlist Details by Department</h4>
+                  <h4 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-2">Waitlist Details by Department</h4>
                   {(() => {
                     const rows = facility.departments.map(dept => {
                       const deptWaitlist = referrals.filter(r =>

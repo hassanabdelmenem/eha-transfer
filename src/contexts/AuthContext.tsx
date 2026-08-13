@@ -76,13 +76,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (docSnap.exists()) {
             // Ensure the Firestore document id is included — callers expect `user.id`.
             const data = docSnap.data() as Partial<User> | undefined;
+            // The spread has to come FIRST. With it last, every key present in the
+            // document overwrote the normalized value below it, which made these
+            // defaults dead code -- a document carrying verified: "false" (the
+            // string) sailed past the typeof guard and read as truthy, routing an
+            // unverified account into the authenticated shell where every listener
+            // then failed on the rules.
             setUser({
+              ...data,
               id: docSnap.id,
               name: data?.name || 'Unknown',
               email: data?.email || '',
               role: (data?.role as User['role']) || 'resident',
-              verified: typeof data?.verified === 'boolean' ? data!.verified! : false,
-              ...data,
+              verified: data?.verified === true,
             } as User);
             setAuthReady(true);
           } else {

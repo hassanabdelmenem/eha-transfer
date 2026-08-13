@@ -118,7 +118,7 @@ export const BedManagementPage: React.FC = () => {
           ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 dark:bg-slate-950 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-slate-800">
+              <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="px-4 py-3">Bed Type</th>
                   <th className="px-4 py-3">Total Beds</th>

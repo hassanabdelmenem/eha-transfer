@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { User, Role, FacilityType, BedType } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { CheckCircle, XCircle, Plus, Trash2, Building, AlertCircle, Edit2 } from 'lucide-react';
+import { showToast } from '../lib/toast';
 
 export const FacilitySettingsPage: React.FC = () => {
   const { user } = useAuth();
@@ -82,7 +83,7 @@ export const FacilitySettingsPage: React.FC = () => {
     const requested = targetUser.requestedRole;
     if (requested && requested !== targetUser.role) {
       if (!canGrantRole(requested)) {
-        alert(`You cannot grant the role "${requested.replace(/_/g, ' ')}". Ask a system administrator to approve this account.`);
+        showToast(`You cannot grant the role "${requested.replace(/_/g, ' ')}". Ask a system administrator to approve this account.`, 'error');
         return;
       }
       updateUserRole(targetUser.id, requested, targetUser.department);
@@ -283,19 +284,19 @@ export const FacilitySettingsPage: React.FC = () => {
                   <p className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase mb-2">Initial Bed Capacity</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
-                      <label htmlFor="icuTotal" className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">ICU Beds</label>
+                      <label htmlFor="icuTotal" className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400">ICU Beds</label>
                       <input id="icuTotal" type="number" min="0" value={icuTotal} onChange={e => setIcuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full rounded border border-slate-300 dark:border-slate-700 p-1 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
                     </div>
                     <div>
-                      <label htmlFor="ccuTotal" className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">CCU Beds</label>
+                      <label htmlFor="ccuTotal" className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400">CCU Beds</label>
                       <input id="ccuTotal" type="number" min="0" value={ccuTotal} onChange={e => setCcuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full rounded border border-slate-300 dark:border-slate-700 p-1 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
                     </div>
                     <div>
-                      <label htmlFor="picuTotal" className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">PICU Beds</label>
+                      <label htmlFor="picuTotal" className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400">PICU Beds</label>
                       <input id="picuTotal" type="number" min="0" value={picuTotal} onChange={e => setPicuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full rounded border border-slate-300 dark:border-slate-700 p-1 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
                     </div>
                     <div>
-                      <label htmlFor="wardTotal" className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Ward Beds</label>
+                      <label htmlFor="wardTotal" className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400">Ward Beds</label>
                       <input id="wardTotal" type="number" min="0" value={wardTotal} onChange={e => setWardTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full rounded border border-slate-300 dark:border-slate-700 p-1 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
                     </div>
                   </div>
@@ -321,11 +322,11 @@ export const FacilitySettingsPage: React.FC = () => {
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">📍 {f.location} • <span className="uppercase">{f.type.replace('_', ' ')}</span></p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {f.departments.map(d => (
-                        <span key={d} className="text-[10px] bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">{d}</span>
+                        <span key={d} className="text-xs bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">{d}</span>
                       ))}
                     </div>
                     {f.contractedServices && f.contractedServices.length > 0 && (
-                      <p className="text-[10px] text-purple-600 dark:text-purple-400 mt-1 font-semibold">
+                      <p className="text-xs text-purple-600 dark:text-purple-400 mt-1 font-semibold">
                         Services: {f.contractedServices.join(', ')}
                       </p>
                     )}
@@ -422,13 +423,13 @@ export const FacilitySettingsPage: React.FC = () => {
                       <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{u.email}</p>
                       <div className="mt-1 flex gap-2 flex-wrap">
-                         <span className="text-[10px] bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{u.role?.replace(/_/g, ' ')}</span>
+                         <span className="text-xs bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{u.role?.replace(/_/g, ' ')}</span>
                          {u.requestedRole && u.requestedRole !== u.role && (
-                           <span className="text-[10px] bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 rounded uppercase font-bold text-amber-700 dark:text-amber-300 whitespace-nowrap" title="Role requested during onboarding — granted when you verify">
+                           <span className="text-xs bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 rounded uppercase font-bold text-amber-700 dark:text-amber-300 whitespace-nowrap" title="Role requested during onboarding — granted when you verify">
                              requests: {u.requestedRole.replace(/_/g, ' ')}
                            </span>
                          )}
-                         {u.department && <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded text-blue-700 dark:text-blue-300 whitespace-nowrap">{u.department}</span>}
+                         {u.department && <span className="text-xs bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded text-blue-700 dark:text-blue-300 whitespace-nowrap">{u.department}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -455,7 +456,7 @@ export const FacilitySettingsPage: React.FC = () => {
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 dark:bg-slate-950 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-slate-800">
+              <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="px-4 py-3">Name / Email</th>
                   <th className="px-4 py-3">Facility Location</th>

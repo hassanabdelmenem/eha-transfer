@@ -57,11 +57,11 @@ export const NotificationsPage: React.FC = () => {
                     </h4>
                     <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 font-medium">{notif.message}</p>
                     <div className="flex flex-wrap justify-between items-center gap-2 mt-3">
-                      <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{formatDateTime(notif.createdAt)}</span>
+                      <span className="text-xs font-mono text-slate-400 dark:text-slate-500">{formatDateTime(notif.createdAt)}</span>
                       {notif.referralId && (
                         <Link
                           to={`/referrals/${notif.referralId}`}
-                          className="text-[10px] font-bold uppercase text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                          className="text-xs font-bold uppercase text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                           onClick={() => markNotificationRead(notif.id)}
                         >
                           View Referral &rarr;

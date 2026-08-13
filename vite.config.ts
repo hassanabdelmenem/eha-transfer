@@ -7,6 +7,7 @@ import {defineConfig} from 'vite';
 const TEST_EXCLUDE_PATTERNS = [
   'e2e/**',
   'node_modules/**',
+  'functions/node_modules/**',
   '.stryker-tmp/**',
   '.claude/**',
   '.copilot/**',

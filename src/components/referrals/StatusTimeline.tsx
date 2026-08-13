@@ -1,10 +1,11 @@
 import React from 'react';
-import { Referral, User } from '../../types';
+import { Referral, User, StatusHistoryEntry } from '../../types';
 import { formatDateTime } from '../../lib/utils';
 import { CheckCircle, XCircle, AlertCircle, Clock, Truck, MessageSquare } from 'lucide-react';
 
 interface StatusTimelineProps {
   referral: Referral;
+  history: StatusHistoryEntry[];
   users?: User[];
   usersById?: Map<string, User>;
 }
@@ -20,10 +21,10 @@ interface TimelineEvent {
   dotColor?: string;
 }
 
-export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users, usersById }) => {
+export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, history, users, usersById }) => {
   const events: TimelineEvent[] = [];
 
-  referral.statusHistory.forEach((sh, idx) => {
+  history.forEach((sh, idx) => {
     let dotColor = 'bg-slate-300 dark:bg-slate-600';
     let icon = <Clock className="w-3 h-3 text-white" />;
     
@@ -87,17 +88,17 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users,
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1 gap-1 sm:gap-4">
               <div>
                 <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">{event.title}</span>
-                <p className="text-[10px] text-slate-500 font-medium">by {userName} <span className="opacity-70">({userRole})</span></p>
+                <p className="text-xs text-slate-500 font-medium">by {userName} <span className="opacity-70">({userRole})</span></p>
               </div>
-              <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+              <span className="text-xs text-slate-400 font-mono whitespace-nowrap bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
                 {formatDateTime(event.timestamp)}
               </span>
             </div>
             
             {event.description && (
               <div className="text-slate-700 dark:text-slate-300 text-xs bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg mt-2 border border-slate-100 dark:border-slate-800 shadow-sm leading-relaxed">
-                {event.type === 'dept_comment' && <div className="text-[10px] font-bold text-purple-600 mb-1 uppercase tracking-wider">Department Note</div>}
-                {event.type === 'status_change' && <div className="text-[10px] font-bold text-blue-600 mb-1 uppercase tracking-wider">Action Note</div>}
+                {event.type === 'dept_comment' && <div className="text-xs font-bold text-purple-600 mb-1 uppercase tracking-wider">Department Note</div>}
+                {event.type === 'status_change' && <div className="text-xs font-bold text-blue-600 mb-1 uppercase tracking-wider">Action Note</div>}
                 <p className="whitespace-pre-wrap">{event.description}</p>
               </div>
             )}

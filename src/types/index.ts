@@ -130,17 +130,20 @@ export interface Referral {
   createdAt: string;
   updatedAt: string;
   deptComments: DeptComment[];
-  statusHistory: {
-    status: ReferralStatus;
-    timestamp: string;
-    userId: string;
-    notes?: string;
-  }[];
+  admittedAt?: string;
   // Facilities the patient has declined transfer to; excluded from future auto-routing candidates.
   patientDeclinedFacilityIds?: string[];
   cancelledAt?: string;
   cancelledBy?: string;
   cancelReason?: string;
+}
+
+export interface StatusHistoryEntry {
+  id: string;
+  status: ReferralStatus;
+  timestamp: string;
+  userId: string;
+  notes?: string;
 }
 
 export interface ShiftLog {

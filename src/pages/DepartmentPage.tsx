@@ -53,7 +53,7 @@ export const DepartmentPage: React.FC = () => {
       name: r.patientData.name,
       hospitalId: r.patientData.hospitalId,
       type: 'referral',
-      admittedAt: r.statusHistory.find(h => h.status === 'admitted')?.timestamp || r.updatedAt
+      admittedAt: r.admittedAt || r.updatedAt
     }))
   ].sort((a, b) => b.admittedAt.localeCompare(a.admittedAt));
 
@@ -142,8 +142,8 @@ export const DepartmentPage: React.FC = () => {
                     <div>
                       <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{patient.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono">{patient.hospitalId}</span>
-                        <span className="text-[10px] text-slate-500">Admitted: {formatDateTime(patient.admittedAt)}</span>
+                        <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono">{patient.hospitalId}</span>
+                        <span className="text-xs text-slate-500">Admitted: {formatDateTime(patient.admittedAt)}</span>
                       </div>
                     </div>
                   </div>
@@ -171,7 +171,7 @@ export const DepartmentPage: React.FC = () => {
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {users.find(u => u.id === currentAssignment.assignedUserId)?.name}
                   </p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
                     <Clock className="w-3 h-3" />
                     Assigned at {formatDateTime(currentAssignment.updatedAt)}
                   </p>

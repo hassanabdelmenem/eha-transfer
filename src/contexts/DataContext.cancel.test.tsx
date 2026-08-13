@@ -48,6 +48,9 @@ vi.mock('firebase/firestore', () => {
       update: vi.fn((ref: any, data: any) => {
         capturedUpdates.push({ path: ref.path, data });
       }),
+      set: vi.fn((ref: any, data: any) => {
+        capturedUpdates.push({ path: ref.path, data });
+      }),
     };
     return updateFn(tx);
   };
@@ -70,7 +73,10 @@ vi.mock('firebase/firestore', () => {
   };
 });
 
-vi.mock('../lib/firebase', () => ({ db: {} }));
+vi.mock('../lib/firebase', () => ({ db: {}, functions: {} }));
+vi.mock('firebase/functions', () => ({
+  httpsCallable: vi.fn(() => vi.fn().mockResolvedValue({ data: 'success' })),
+}));
 
 function makeReferral(overrides: Partial<Referral> = {}): Referral {
   const now = new Date().toISOString();
@@ -95,7 +101,7 @@ function makeReferral(overrides: Partial<Referral> = {}): Referral {
     createdAt: now,
     updatedAt: now,
     deptComments: [],
-    statusHistory: [{ status: 'pending', timestamp: now, userId: 'creator-1' }],
+
     ...overrides,
   };
 }

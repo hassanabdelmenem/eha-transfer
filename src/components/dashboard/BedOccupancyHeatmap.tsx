@@ -37,7 +37,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
           </p>
         ) : (
         <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 uppercase font-bold text-[10px]">
+          <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 uppercase font-bold text-xs">
             <tr>
               <th className="p-3 border-b border-slate-100 dark:border-slate-800">Facility</th>
               {BED_TYPES.map(bed => (
@@ -57,7 +57,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
                   if (!cap || cap.total === 0) {
                     return (
                       <td key={bed} className="p-2 text-center">
-                        <div className="w-full h-full min-h-[32px] rounded flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 text-[10px]">
+                        <div className="w-full h-full min-h-[32px] rounded flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 text-xs">
                           -
                         </div>
                       </td>

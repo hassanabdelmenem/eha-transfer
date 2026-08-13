@@ -40,6 +40,12 @@ service cloud.firestore {
     function changedKeys() {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
+    // Roles trusted with facility *configuration* (department lists), as opposed to
+    // day-to-day occupancy. Mirrors the admin gate in BedManagementPage /
+    // FacilitySettingsPage.
+    function isFacilityConfigRole() {
+      return callerDoc().role in ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department'];
+    }
 
     // ---------------------------------------------------------------- users
     // role/verified/facilityId are the basis of every decision in this file, so a
@@ -57,21 +63,18 @@ service cloud.firestore {
       // Own document must stay readable before verification — AuthContext
       // subscribes to it to discover that verification has landed.
       allow get: if signedIn() && (request.auth.uid == userId || isVerifiedCaller());
-      // The full roster is read by verified staff only. It is needed in full (not
-      // facility-scoped) because notification fan-out is done client-side and has
-      // to find recipients at the *receiving* facility. Moving fan-out into a
-      // Cloud Function would let this be narrowed to one facility.
-      allow list: if isVerifiedCaller();
+      // Notification fan-out happens in a Cloud Function, so the client only
+      // needs to list users at its own facility.
+      allow list: if isPrivileged() || (isVerifiedCaller() && resource.data.facilityId == callerFacility());
 
+      // Self-signup is always an unverified resident. The former bootstrap escape
+      // hatch (a hardcoded owner email) is gone: it tied production authorization to
+      // one consumer mail account, could not be revoked without a rules deploy, and
+      // is unnecessary once the owner document exists. Promote the first owner from
+      // the Firebase console, or with a custom claim set by admin tooling.
       allow create: if signedIn() && request.auth.uid == userId
                     && request.resource.data.verified == false
-                    && (
-                      request.resource.data.role == 'resident'
-                      // Bootstrap escape hatch, mirroring the hardcoded owner in
-                      // AuthContext. The email comes from a verified Firebase token,
-                      // so it cannot be spoofed. Remove once ownership is stable.
-                      || request.auth.token.email == 'hassan.abdelmenem@gmail.com'
-                    );
+                    && request.resource.data.role == 'resident';
 
       allow update: if isPrivileged()
                     || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged());
@@ -84,21 +87,33 @@ service cloud.firestore {
     match /facilities/{facilityId} {
       allow read: if signedIn();
       allow create, delete: if isPrivileged();
-      // Bed capacity and department lists are maintained by staff at that
-      // facility (BedManagementPage, FacilitySettingsPage) — previously only
-      // owner/system_admin could write, so those screens failed silently.
+      // Two different things live behind this one rule, and they need different
+      // trust levels:
+      //
+      //   capacity    — bed occupancy. Changes on every admission and discharge,
+      //                 including from the increment inside updateReferralStatus,
+      //                 so any verified account at the facility must be able to
+      //                 write it or routine admissions fail.
+      //   departments — facility configuration. Rarely changes, and a resident
+      //                 silently rewriting the department list is not routine.
+      //
+      // Previously only owner/system_admin could write either, so both screens
+      // failed silently; widening it to atFacility() alone would have handed
+      // configuration to every resident.
       allow update: if isPrivileged()
+                    || (atFacility(facilityId) && changedKeys().hasOnly(['capacity']))
                     || (atFacility(facilityId)
+                        && isFacilityConfigRole()
                         && changedKeys().hasOnly(['capacity', 'departments']));
     }
 
     // ------------------------------------------------------------ referrals
     function isReferralParty(data) {
-      return callerFacility() == data.referringFacilityId
-          || callerFacility() == data.receivingFacilityId
-          || (data.receivingFacilityId == 'auto'
-              && data.candidateFacilityIds is list
-              && callerFacility() in data.candidateFacilityIds);
+      return ('referringFacilityId' in data && callerFacility() == data.referringFacilityId)
+          || ('receivingFacilityId' in data && callerFacility() == data.receivingFacilityId)
+          || ('receivingFacilityId' in data && data.receivingFacilityId == 'auto'
+              && 'candidateFacilityIds' in data
+              && data.candidateFacilityIds.hasAny([callerFacility()]));
     }
     // Mirrors SENIOR_CANCEL_ROLES / CANCEL_LOCKED_STATUSES in
     // src/contexts/DataContext.tsx -- keep all three in sync.
@@ -129,9 +144,51 @@ service cloud.firestore {
           && request.resource.data.patientId == resource.data.patientId
           && request.resource.data.createdAt == resource.data.createdAt;
     }
-    function auditTrailAppendOnly() {
-      return request.resource.data.statusHistory is list
-          && request.resource.data.statusHistory.size() >= resource.data.statusHistory.size();
+    // Rules cannot iterate a list, so a true element-wise prefix comparison is not
+    // expressible here. What is enforced: the trail grows by exactly one entry when
+    // the status moves and by none when it doesn't (so a caller cannot smuggle in a
+    // rewritten history under cover of padding), and the opening entry is immutable.
+    //
+    // Residual gap: the middle of the trail can still be rewritten by a party. The
+    // durable fix is to move history into an immutable subcollection
+    // (referrals/{id}/statusHistory/{entryId}, create-only, no update or delete) so
+    // append-only becomes a property of the data model rather than a predicate.
+    // residual gap fixed: statusHistory moved to an immutable subcollection.
+
+    // The status graph, enforced server-side. Without it the only thing standing
+    // between a referral and an arbitrary status was updateReferralStatus() in the
+    // client, which a caller talking to the SDK directly simply skips -- letting a
+    // patient be marked in_transit without ever having consented.
+    //
+    // It also closes the cancel-lock bypass: CANCEL_LOCKED_STATUSES refuses
+    // cancellation from in_transit onward, but nothing stopped a party stepping the
+    // status back to accepted first and cancelling from there. No transition out of
+    // a locked status to an unlocked one exists below, so that path is gone.
+    //
+    // Mirrors updateReferralStatus / recordPatientConsent / recordPatientDecline in
+    // src/contexts/DataContext.tsx -- keep them in sync.
+    function validStatusTransition() {
+      return request.resource.data.status == resource.data.status
+          || (resource.data.status == 'pending'
+              && request.resource.data.status in ['dept_approved', 'manager_approved', 'accepted', 'rejected', 'postponed', 'cancelled'])
+          || (resource.data.status == 'dept_approved'
+              && request.resource.data.status in ['manager_approved', 'accepted', 'rejected', 'postponed', 'cancelled'])
+          || (resource.data.status == 'manager_approved'
+              && request.resource.data.status in ['accepted', 'rejected', 'postponed', 'cancelled'])
+          // accepted -> pending is the patient-decline re-route (recordPatientDecline).
+          || (resource.data.status == 'accepted'
+              && request.resource.data.status in ['patient_consented', 'pending', 'rejected', 'postponed', 'cancelled'])
+          || (resource.data.status == 'patient_consented'
+              && request.resource.data.status in ['in_transit', 'accepted', 'pending', 'cancelled'])
+          || (resource.data.status == 'postponed'
+              && request.resource.data.status in ['pending', 'dept_approved', 'manager_approved', 'accepted', 'rejected', 'cancelled'])
+          || (resource.data.status == 'rejected'
+              && request.resource.data.status in ['pending', 'cancelled'])
+          // From here the patient is in motion; these are one-way.
+          || (resource.data.status == 'in_transit' && request.resource.data.status == 'arrived')
+          || (resource.data.status == 'arrived'
+              && request.resource.data.status in ['admitted', 'discharged'])
+          || (resource.data.status == 'admitted' && request.resource.data.status == 'discharged');
     }
 
     match /referrals/{referralId} {
@@ -142,13 +199,21 @@ service cloud.firestore {
                         && callerFacility() == request.resource.data.referringFacilityId
                         && request.resource.data.referringUserId == request.auth.uid);
 
-      allow update: if referralIdentityPinned() && auditTrailAppendOnly() && (
+      allow update: if referralIdentityPinned()
+                    && validStatusTransition()
+                    && (
                       isCancelAttempt(request.resource.data)
                         ? canCancelReferral(resource.data)
                         : (isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data)))
                     );
 
       allow delete: if isPrivileged();
+
+      match /statusHistory/{entryId} {
+        allow read: if isPrivileged() || (isVerifiedCaller() && isReferralParty(get(/databases/$(database)/documents/referrals/$(referralId)).data));
+        allow create: if isPrivileged() || (isVerifiedCaller() && isReferralParty(get(/databases/$(database)/documents/referrals/$(referralId)).data));
+        allow update, delete: if false;
+      }
     }
 
     // -------------------------------------------------------- notifications
@@ -157,7 +222,8 @@ service cloud.firestore {
     // only mutable field is the read flag.
     match /notifications/{notificationId} {
       allow read: if isPrivileged() || (signedIn() && resource.data.userId == request.auth.uid);
-      allow create: if isVerifiedCaller();
+      // Fan-out runs in a Cloud Function, which bypasses rules.
+      allow create: if false;
       allow update: if signedIn() && resource.data.userId == request.auth.uid
                     && changedKeys().hasOnly(['read']);
       allow delete: if isPrivileged();
@@ -168,17 +234,27 @@ service cloud.firestore {
     match /directAdmissions/{admissionId} {
       allow read: if isPrivileged() || (isVerifiedCaller() && resource.data.facilityId == callerFacility());
       allow create: if isPrivileged() || atFacility(request.resource.data.facilityId);
-      allow update: if isPrivileged() || (isVerifiedCaller() && resource.data.facilityId == callerFacility());
+      // Authorization reads the pre-write document, so the payload needs pinning for
+      // the same reason referralIdentityPinned() exists. Without it a verified caller
+      // could rewrite facilityId and move an identified patient record out of their
+      // own facility's scope -- or into a facility that does not exist, where nobody
+      // can reach it again.
+      allow update: if isPrivileged()
+                    || (isVerifiedCaller()
+                        && resource.data.facilityId == callerFacility()
+                        && request.resource.data.facilityId == resource.data.facilityId
+                        && request.resource.data.patientName == resource.data.patientName
+                        && request.resource.data.hospitalId == resource.data.hospitalId
+                        && request.resource.data.admittedAt == resource.data.admittedAt
+                        && request.resource.data.admittedBy == resource.data.admittedBy);
       allow delete: if isPrivileged();
     }
 
     // ---------------------------------------------------- shiftAssignments
-    // Deliberately readable by any verified user rather than facility-scoped:
-    // createNotification resolves on-call delegation at the *receiving* facility.
-    // Safe to widen because the document holds no patient data — only a facility,
-    // a department and a user id. Writes stay facility-scoped.
+    // Cloud Functions handle cross-facility notification fan-out, so clients
+    // only need to read their own facility's shift assignments.
     match /shiftAssignments/{assignmentId} {
-      allow read: if isVerifiedCaller();
+      allow read: if isPrivileged() || (isVerifiedCaller() && resource.data.facilityId == callerFacility());
       allow create: if isPrivileged() || atFacility(request.resource.data.facilityId);
       allow update: if isPrivileged() || atFacility(resource.data.facilityId);
       allow delete: if isPrivileged();

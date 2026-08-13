@@ -226,7 +226,7 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
           <div key={i} className={`p-4 border border-slate-200 dark:border-slate-800 rounded shadow-sm flex flex-col justify-between ${stat.bg}`}>
-            <span className={`text-[10px] font-bold uppercase ${stat.labelColor}`}>{stat.label}</span>
+            <span className={`text-xs font-bold uppercase ${stat.labelColor}`}>{stat.label}</span>
             <div className="flex items-baseline gap-2 mt-2">
               <span className={`text-3xl font-light ${stat.valueColor}`}>{stat.value}</span>
               <span className={`text-xs px-1 rounded ${stat.badgeBg} ${stat.badgeText}`}>{stat.badgeLabel}</span>
@@ -260,7 +260,7 @@ export const Dashboard: React.FC = () => {
             </CardHeader>
             <CardContent className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[300px]">
               <div className="h-[250px] w-full">
-                <p className="text-[10px] font-bold text-slate-500 uppercase text-center mb-2">Volume (Incoming vs Outgoing)</p>
+                <p className="text-xs font-bold text-slate-500 uppercase text-center mb-2">Volume (Incoming vs Outgoing)</p>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dynamicChartData[chartPeriod]} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartColors.grid} />
@@ -274,7 +274,7 @@ export const Dashboard: React.FC = () => {
                 </ResponsiveContainer>
               </div>
               <div className="h-[250px] w-full">
-                <p className="text-[10px] font-bold text-slate-500 uppercase text-center mb-2">Distribution by Type</p>
+                <p className="text-xs font-bold text-slate-500 uppercase text-center mb-2">Distribution by Type</p>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dynamicChartData[chartPeriod]} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartColors.grid} />
@@ -297,7 +297,7 @@ export const Dashboard: React.FC = () => {
             </CardHeader>
             <CardContent className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[300px]">
               <div className="h-[250px] w-full">
-                <p className="text-[10px] font-bold text-slate-500 uppercase text-center mb-2">Volume by Department</p>
+                <p className="text-xs font-bold text-slate-500 uppercase text-center mb-2">Volume by Department</p>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={departmentChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={chartColors.grid} />
@@ -311,7 +311,7 @@ export const Dashboard: React.FC = () => {
                 </ResponsiveContainer>
               </div>
               <div className="h-[250px] w-full">
-                <p className="text-[10px] font-bold text-slate-500 uppercase text-center mb-2">Referral Types by Department</p>
+                <p className="text-xs font-bold text-slate-500 uppercase text-center mb-2">Referral Types by Department</p>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={departmentChartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={chartColors.grid} />
@@ -348,11 +348,11 @@ export const Dashboard: React.FC = () => {
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}</p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                            <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[10px] whitespace-nowrap">MRN: {r.patientData.hospitalId}</span>
+                            <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-xs whitespace-nowrap">MRN: {r.patientData.hospitalId}</span>
                             <span className="whitespace-nowrap">{r.requiredBedType}</span>
                           </div>
                         </div>
-                        <Badge variant="default" className="text-[10px] shrink-0">Referral</Badge>
+                        <Badge variant="default" className="text-xs shrink-0">Referral</Badge>
                       </div>
                     </div>
                   ))}
@@ -362,11 +362,11 @@ export const Dashboard: React.FC = () => {
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{a.patientName}</p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                            <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[10px] whitespace-nowrap">HID: {a.hospitalId}</span>
+                            <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-xs whitespace-nowrap">HID: {a.hospitalId}</span>
                             <span className="whitespace-nowrap">{a.bedType}</span>
                           </div>
                         </div>
-                        <Badge variant="default" className="text-[10px] shrink-0">Direct</Badge>
+                        <Badge variant="default" className="text-xs shrink-0">Direct</Badge>
                       </div>
                     </div>
                   ))}
@@ -409,13 +409,13 @@ export const Dashboard: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{log.userName}</span>
-                        {log.department && <Badge variant="default" className="text-[10px]">{log.department}</Badge>}
+                        {log.department && <Badge variant="default" className="text-xs">{log.department}</Badge>}
                       </div>
                       <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{log.summary}</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-400 font-mono">{format(new Date(log.timestamp), "MMM d, h:mm a")}</span>
-                      <div className="flex items-center gap-2 mt-1 justify-end text-[10px] font-bold">
+                      <span className="text-xs text-slate-400 font-mono">{format(new Date(log.timestamp), "MMM d, h:mm a")}</span>
+                      <div className="flex items-center gap-2 mt-1 justify-end text-xs font-bold">
                         <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">Pending: {log.pendingTransfersCount}</span>
                         <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Admitted: {log.admittedPatientsCount}</span>
                       </div>

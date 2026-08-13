@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { User, Phone, Building2 } from 'lucide-react';
+import { toastError } from '../lib/toast';
 
 export const Onboarding: React.FC = () => {
   const { user, updateUserProfile } = useAuth();
@@ -31,7 +32,7 @@ export const Onboarding: React.FC = () => {
       if (department) profile.department = department;
       await updateUserProfile(profile);
     } catch (err: any) {
-      alert('Could not save your profile: ' + err.message);
+      toastError(err, "Could not save your profile.");
       setSubmitting(false);
     }
   };
@@ -45,7 +46,7 @@ export const Onboarding: React.FC = () => {
         <h2 className="mt-6 text-center text-3xl font-light text-slate-900 dark:text-slate-100 tracking-tight">
           Complete Your Profile
         </h2>
-        <p className="mt-2 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
           Required for Verification
         </p>
       </div>
@@ -58,7 +59,7 @@ export const Onboarding: React.FC = () => {
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="onboardName" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Full Name</label>
+                <label htmlFor="onboardName" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                   <Input
@@ -74,7 +75,7 @@ export const Onboarding: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="onboardPhone" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Phone Number</label>
+                <label htmlFor="onboardPhone" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Phone Number</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                   <Input
@@ -90,7 +91,7 @@ export const Onboarding: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="onboardRole" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">
+                <label htmlFor="onboardRole" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">
                   Requested Role <span className="font-normal normal-case tracking-normal text-slate-400">— confirmed by your facility during verification</span>
                 </label>
                 <select
@@ -116,7 +117,7 @@ export const Onboarding: React.FC = () => {
 
               {role !== 'system_admin' && role !== 'owner' && (
                 <div>
-                  <label htmlFor="onboardFacility" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Hospital</label>
+                  <label htmlFor="onboardFacility" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Hospital</label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                     <select
@@ -137,7 +138,7 @@ export const Onboarding: React.FC = () => {
 
               {(role === 'consultant' || role === 'specialist' || role === 'resident' || role === 'head_of_department' || role === 'nurse' || role === 'nursing_supervisor') && selectedFacility && (
                 <div>
-                  <label htmlFor="onboardDepartment" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Department</label>
+                  <label htmlFor="onboardDepartment" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Department</label>
                   <select
                     id="onboardDepartment"
                     required

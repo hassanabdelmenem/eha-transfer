@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, initializeAuth, browserSessionPersistence, browserPopupRedirectResolver, connectAuthEmulator, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, initializeAuth, browserLocalPersistence, browserPopupRedirectResolver, connectAuthEmulator, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 // Read env values from import.meta.env when available (Vite) or fall back to
 // process.env for Node-based test runners (vitest) where import.meta.env isn't set.
@@ -113,8 +114,16 @@ if (!isDev && !useEmulators) {
 const isFirstInit = !getApps().length;
 export const app = isFirstInit ? initializeApp(firebaseConfig) : getApp();
 
-// Use session persistence to bypass IndexedDB locking errors in Auth. initializeAuth
-// may only run once per app, so reuse the existing instance on re-entry (HMR, tests).
+// Persistence is browserLocalPersistence, so a session survives a browser restart
+// rather than ending with the tab. That is what keeps clinicians from being
+// signed out mid-shift, and it replaced browserSessionPersistence, which had been
+// chosen to dodge IndexedDB locking errors in Auth -- if those return, the fix is
+// to diagnose the lock rather than to silently shorten every session.
+//
+// The trade-off is real on a shared ER workstation: the next person to open the
+// browser is signed in as the previous clinician. This needs an idle timeout that
+// calls signOut() after a period of inactivity; until that exists, treat shared
+// terminals as requiring an explicit sign-out at handover.
 //
 // popupRedirectResolver is NOT optional here: getAuth() installs the browser
 // resolver for you, initializeAuth() does not. Without it every signInWithPopup /
@@ -129,7 +138,7 @@ function createAuth() {
   if (!isFirstInit) return getAuth(app);
   try {
     return initializeAuth(app, {
-      persistence: browserSessionPersistence,
+      persistence: browserLocalPersistence,
       popupRedirectResolver: browserPopupRedirectResolver,
     });
   } catch {
@@ -153,6 +162,8 @@ try {
 }
 export const db = dbInstance;
 
+export const functions = getFunctions(app);
+
 // E2E only. When the dev server is started with VITE_USE_FIREBASE_EMULATORS=true
 // the app talks to local emulators instead of the live project, so Playwright can
 // sign a real user in and walk the authenticated UI without touching production
@@ -164,4 +175,5 @@ export const db = dbInstance;
 if (useEmulators) {
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
   connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
 }

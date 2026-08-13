@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Clock, Truck, Check } from 'lucide-react';
 import { format } from 'date-fns';
+import { toastError } from '../lib/toast';
 
 export const ERDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -35,7 +36,7 @@ export const ERDashboard: React.FC = () => {
     try {
       await updateReferralStatus(id, 'in_transit', 'Ambulance dispatched by ER team');
     } catch (e: any) {
-      alert(e?.message || 'Could not dispatch the ambulance.');
+      toastError(e, "Could not dispatch the ambulance.");
     }
   };
 
@@ -43,7 +44,7 @@ export const ERDashboard: React.FC = () => {
     try {
       await updateReferralStatus(id, 'arrived', 'Patient arrived at ER');
     } catch (e: any) {
-      alert(e?.message || 'Could not confirm arrival.');
+      toastError(e, "Could not confirm arrival.");
     }
   };
 

@@ -28,7 +28,7 @@ const VitalStat: React.FC<{ label: string; value: React.ReactNode; unit?: string
       {abnormal && <AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" />}
     </p>
     <p className={`text-sm font-bold ${abnormal ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>
-      {value} {unit && <span className={`text-[10px] font-normal ${abnormal ? 'text-red-600 dark:text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>{unit}</span>}
+      {value} {unit && <span className={`text-xs font-normal ${abnormal ? 'text-red-600 dark:text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>{unit}</span>}
       {abnormal && <span className="sr-only"> (abnormal)</span>}
     </p>
   </div>
@@ -39,13 +39,13 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
     <div className="h-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col md:flex-row shadow-sm">
       <div className="w-full md:w-1/3 bg-slate-900 text-white p-6 flex flex-col shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none">
         <div className="flex justify-between items-center mb-2">
-          <div className="text-[10px] text-blue-400 font-bold uppercase">Live Case Detail</div>
+          <div className="text-xs text-blue-400 font-bold uppercase">Live Case Detail</div>
         </div>
         <div>
           <h4 className="text-xl font-light">{patient.name}</h4>
           <p className="text-xs opacity-60 mt-1">Age: {patient.age} • {patient.gender} • {patient.bloodType || 'Unknown'} Blood</p>
         </div>
-        <div className="mt-6 grid grid-cols-2 gap-4 text-[10px] border-t border-slate-800 pt-4">
+        <div className="mt-6 grid grid-cols-2 gap-4 text-xs border-t border-slate-800 pt-4">
           <div>
             <p className="opacity-40">Hospital ID</p>
             <p className="font-mono mt-0.5">{patient.hospitalId}</p>
@@ -58,12 +58,12 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
       </div>
       <div className="flex-1 p-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white dark:bg-slate-900 rounded-b-lg md:rounded-r-lg md:rounded-bl-none">
         <div className="col-span-1 md:col-span-2">
-          <span className="text-[10px] text-slate-400 font-bold uppercase">Primary Diagnosis & Notes</span>
+          <span className="text-xs text-slate-400 font-bold uppercase">Primary Diagnosis & Notes</span>
           <p className="text-sm mt-1 leading-relaxed font-medium">{patient.diagnosis}</p>
           <p className="text-xs mt-2 opacity-80 whitespace-pre-wrap">{patient.clinicalNotes}</p>
         </div>
         <div className="col-span-1 md:col-span-2">
-          <span className="text-[10px] text-slate-400 font-bold uppercase">Clinical Vitals</span>
+          <span className="text-xs text-slate-400 font-bold uppercase">Clinical Vitals</span>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2">
             <VitalStat label="HR" value={show(patient.vitalSigns.hr)} unit="bpm" abnormal={isAbnormal(patient.vitalSigns.hr, n => n > 100 || n < 60)} />
             <VitalStat label="BP" value={patient.vitalSigns.bp || NOT_RECORDED} unit="mmHg" abnormal={isAbnormal(parseInt(patient.vitalSigns.bp?.split('/')[0]), n => !Number.isNaN(n) && (n > 140 || n < 90))} />
@@ -73,7 +73,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
           </div>
         </div>
         <div className="col-span-1 md:col-span-2">
-          <span className="text-[10px] text-slate-400 font-bold uppercase">Investigations & Labs</span>
+          <span className="text-xs text-slate-400 font-bold uppercase">Investigations & Labs</span>
           <p className="text-xs mt-1 leading-relaxed text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-950 p-3 rounded border border-slate-100 dark:border-slate-800 whitespace-pre-wrap">{patient.investigations || 'None recorded'}</p>
         </div>
       </div>
