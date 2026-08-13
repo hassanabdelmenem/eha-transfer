@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "eha-transfer",
+    "site": "imc-er-manager",
     "public": "dist",
     "ignore": [
       "firebase.json",
