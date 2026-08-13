@@ -101,7 +101,6 @@ function makeReferral(overrides: Partial<Referral> = {}): Referral {
     createdAt: now,
     updatedAt: now,
     deptComments: [],
-
     ...overrides,
   };
 }

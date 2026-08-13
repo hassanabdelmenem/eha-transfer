@@ -53,7 +53,7 @@ export const DepartmentPage: React.FC = () => {
       name: r.patientData.name,
       hospitalId: r.patientData.hospitalId,
       type: 'referral',
-      admittedAt: r.admittedAt || r.updatedAt
+      admittedAt: r.updatedAt
     }))
   ].sort((a, b) => b.admittedAt.localeCompare(a.admittedAt));
 

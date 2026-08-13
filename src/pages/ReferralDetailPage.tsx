@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { useData } from '../contexts/DataContext';
@@ -13,11 +13,30 @@ import { PrintableSummary } from '../components/referrals/PrintableSummary';
 import { ArrowLeft, Printer, Check, X, Truck, Building, FileText, CheckCircle, AlertCircle, Copy, Download, Activity, ShieldAlert, Clock, UserCheck, UserX, Ban } from 'lucide-react';
 import { ECGViewerOverlay } from '../components/referrals/ECGViewerOverlay';
 import { Badge } from '../components/ui/Badge';
-import { ReferralStatus, DeptApprovalStatus, StatusHistoryEntry } from '../types';
+import { ReferralStatus, DeptApprovalStatus, Referral } from '../types';
 import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataContext';
 import { toastError } from '../lib/toast';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { SLA_MINUTES } from '../lib/sla';
 import { db } from '../lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+
+// Escalation copy, keyed by reason. Kept beside the component rather than inline
+// so the four cases stay visibly distinct and exhaustive.
+type EscalationKey = NonNullable<Referral['escalationReason']>;
+
+const ESCALATION_HEADLINE: Record<EscalationKey, string> = {
+  sla_breach: `Auto-Escalated \u2014 No Response in ${SLA_MINUTES} Minutes`,
+  no_matching_facility: 'Top-Level Escalation \u2014 No Matching Facility',
+  no_beds_available: 'Top-Level Escalation \u2014 No Beds Available',
+  manual: 'Escalated Referral (Priority Override)',
+};
+
+const ESCALATION_DETAIL: Record<EscalationKey, string> = {
+  sla_breach: `No facility responded within ${SLA_MINUTES} minutes of this referral being raised. System Admins can take direct actions regardless of department review.`,
+  no_matching_facility: 'No facility in the network provides the required departments and bed type. Only a system administrator can place this patient \u2014 chasing the receiving facilities will not help.',
+  no_beds_available: 'Every matching facility is at full capacity for the required bed type. Only a system administrator can place this patient \u2014 chasing the receiving facilities will not help.',
+  manual: 'System Admins can take direct actions (Approve, Decline, Postpone) regardless of department review.',
+};
 
 export const ReferralDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,17 +58,21 @@ export const ReferralDetailPage: React.FC = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState('');
-  const [history, setHistory] = useState<StatusHistoryEntry[]>([]);
+  const [statusHistory, setStatusHistory] = useState<any[]>([]);
 
   const referral = referrals.find(r => r.id === id);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!id) return;
-    const q = query(collection(db, 'referrals', id, 'statusHistory'), orderBy('timestamp', 'asc'));
+    const q = query(
+      collection(db, 'referrals', id, 'statusHistory'),
+      orderBy('timestamp', 'asc')
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StatusHistoryEntry)));
+      const history = snapshot.docs.map(doc => doc.data());
+      setStatusHistory(history);
     }, (error) => {
-      console.error("Error fetching statusHistory subcollection:", error);
+      console.error('Error fetching status history:', error);
     });
     return () => unsubscribe();
   }, [id]);
@@ -234,9 +257,19 @@ export const ReferralDetailPage: React.FC = () => {
             <div className="p-4 bg-red-600 text-white rounded-lg shadow-md flex items-center justify-between border-2 border-red-700">
               <div className="flex items-center gap-3">
                 <ShieldAlert className="w-6 h-6 animate-pulse shrink-0" />
+                {/* The four escalation reasons mean genuinely different things and
+                    call for different responses: nobody answered, nobody can take
+                    the patient at all, everyone is full, or a human judged it
+                    urgent. Collapsing them into one sentence loses the only
+                    information the reader needs to decide what to do next. */}
                 <div>
-                  <h3 className="font-bold text-sm uppercase tracking-wide">Escalated Referral (Priority Override)</h3>
-                  <p className="text-xs text-red-100">System Admins can take direct actions (Approve, Decline, Postpone) regardless of department review.</p>
+                  <h3 className="font-bold text-sm uppercase tracking-wide">
+                    {ESCALATION_HEADLINE[referral.escalationReason || 'manual']}
+                  </h3>
+                  <p className="text-xs text-red-100">
+                    {ESCALATION_DETAIL[referral.escalationReason || 'manual']}
+                    {referral.escalatedAt ? ` Escalated ${formatDateTime(referral.escalatedAt)}.` : ''}
+                  </p>
                 </div>
               </div>
               <span className="text-xs bg-red-900 text-white font-bold px-2 py-1 rounded uppercase">Direct Action Enabled</span>
@@ -467,7 +500,7 @@ export const ReferralDetailPage: React.FC = () => {
 
               <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-0 relative">
                 <h4 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-4">Timeline</h4>
-                <StatusTimeline referral={referral} history={history} usersById={usersById} />
+                <StatusTimeline referral={referral} history={statusHistory} usersById={usersById} />
               </div>
             </CardContent>
           </Card>
@@ -742,7 +775,7 @@ export const ReferralDetailPage: React.FC = () => {
 
       {/* Hidden Printable Summary for react-to-print */}
       <div style={{ display: 'none' }}>
-        <PrintableSummary ref={printRef} referral={referral} history={history} users={users} facilities={facilities} />
+        <PrintableSummary ref={printRef} referral={referral} history={statusHistory} users={users} facilities={facilities} />
       </div>
     </div>
   );

@@ -1,191 +1,232 @@
 # Prompt for Antigravity IDE
 
-Paste everything below the line into Antigravity, with the `eha-transfer` repo open.
+Paste everything below the line into Antigravity with the `eha-transfer` repo open.
 
 ---
 
-You are working in the `eha-transfer` repo (React 19 + Vite + Firebase/Firestore,
-a hospital patient-transfer system for Ismailia). Read `REVIEW.md` first — it is a
-security and design review with a status table at the top listing 15 findings and
-how each was addressed.
+You are working in the `eha-transfer` repo: React 19 + Vite + Firebase/Firestore,
+a hospital patient-transfer system for Ismailia. **This project is on the Firebase
+Spark (free) plan.** That constraint drives several decisions below — do not
+assume Cloud Functions are available.
 
-**Critical context:** a previous agent applied all of those fixes in a sandbox
-that had no network access to npm. **Nothing in the current working tree has ever
-been installed, compiled, linted, tested, or built.** It was verified with a
-syntax-only `tsc` parse and nothing more. Treat the entire change set as
-unverified. `git status` will show ~34 changed files.
+Read `REVIEW.md` first for background: it is a security and design review whose
+findings have already been applied.
 
-Work through the phases below **in order**. Do not start a phase until the
-previous one is green. Stop and report at each **STOP GATE** rather than pushing
-through.
+**Critical context:** everything currently in the working tree was written in a
+sandbox with no npm access. It has **never been installed, compiled, linted,
+tested, or built.** Individual pure modules were verified by compiling and
+executing them (`src/lib/sla.ts`, `src/lib/routing.ts` — 45 assertions passing),
+but nothing else. `git status` shows roughly 15 changed or new files. Treat the
+whole change set as unverified.
+
+Work the phases in order. Do not begin a phase until the previous one is green.
+Stop and report at each **STOP GATE**.
 
 ---
 
-## Phase 0 — Make the existing change set actually build
+## What the recent work does
 
-The `package.json` dependency block changed: `express`, `@types/express` and
-`fast-check` were removed; `@google/genai`, `dotenv`, `@tailwindcss/vite` and
-`@vitejs/plugin-react` moved to `devDependencies`; a duplicated `vite` entry was
-removed from `dependencies`. So the lockfile is stale.
+Two escalation triggers were added to the referral workflow. Both write the same
+fields (`isEscalated`, `escalatedAt`, `escalatedBy`, `escalationReason`,
+`escalationLevel`) and both are idempotent — the condition is re-checked inside a
+Firestore transaction, so concurrent writers cannot double-escalate.
 
-1. **Delete the `_to_delete/` folder at the repo root, first, before running any
-   tests.** It holds 14 scaffolding files (`sum.ts`, `multiply.ts`, `async.ts`,
+**1. SLA breach (30 minutes).** A pending, emergency-or-urgent referral for an
+ICU/CCU/PICU bed that nobody has responded to within 30 minutes escalates
+automatically. Previously the 30-minute rule existed *only* as a countdown badge
+in `ReferralList.tsx`; it turned red and nothing happened, because the sole
+writer of `isEscalated` was a manual button. The rule now lives in
+`src/lib/sla.ts` and is shared by the badge and the escalation. Notifies senior
+staff at the referring and candidate facilities, plus all admins.
+
+**2. No route for the patient (top-level).** Either no facility in the network
+provides the required departments *and* bed type, or every matching facility is
+full. Escalates to `escalationLevel: 'system'` and notifies **owners and
+system_admins only** — deliberately not the facilities, because the whole point
+is that no facility can take the patient. Logic lives in `src/lib/routing.ts`.
+Evaluated both when a referral is created and on every sweep tick, since beds
+fill up after creation.
+
+Two behaviour changes worth knowing before you test:
+
+- The new-referral form **no longer refuses to submit** when nothing matches. It
+  previously showed a red toast and dropped the referral entirely, so the most
+  urgent case in the system produced no record and notified nobody. It now
+  creates the referral, escalates it, and tells the clinician that is what
+  happened.
+- Candidate facilities now require the **bed type to be configured**, not just
+  the departments. A hospital with Cardiology but zero ICU beds was previously
+  offered ICU transfers it could never accept.
+
+---
+
+## Phase 0 — Make it build
+
+1. **Delete the `_to_delete/` folder at the repo root before running any tests.**
+   It holds 14 scaffolding files (`sum.ts`, `multiply.ts`, `async.ts`,
    `format.ts` and their tests) that were moved rather than deleted, because the
-   tool that wrote them could not delete. This matters more than it looks:
-   `vite.config.ts` does not exclude `_to_delete/**` from the vitest sweep, so
-   those tests will still be collected and run — silently undoing the cleanup and
-   re-inflating the coverage number with tests that assert `sum(2,2) === 4`.
-   Also remove the now-empty `src/__snapshots__/` directory.
+   tool that wrote them could not delete. This matters: `vite.config.ts` does not
+   exclude `_to_delete/**` from the vitest sweep, and the files were moved as
+   complete units — tests *and* their sources — so their imports still resolve.
+   They would run, pass, and silently restore the coverage inflation the cleanup
+   removed. Also remove the empty `src/__snapshots__/` directory.
 
-2. Run, in order, fixing what breaks before moving on:
+2. Run in order, fixing what breaks before moving on:
    ```
    npm install
    npm run lint      # tsc --noEmit
    npm run test      # vitest
    npm run build     # vite build
+   npm run test:rules   # needs the Firestore emulator
    ```
 
-3. Then the rules tests, which need the Firestore emulator:
-   ```
-   npm run test:rules
-   ```
+**Where breakage is most likely:**
 
-**Likely breakage, so you know where to look:**
+- `src/contexts/DataContext.tsx` has by far the largest change. Watch the
+  `useCallback` ordering: `escalateForCapacity` and `autoEscalateReferral` are
+  referenced in the dependency array of the sweep `useEffect` and must be
+  declared *above* it, or you get a temporal-dead-zone `ReferenceError` on first
+  render. This was already hit and fixed once.
+- `functions/src/index.ts` is type-checked by the root `tsc` even though it is a
+  separate package (the root tsconfig has no `include`). It resolves its imports
+  from `functions/node_modules`.
+- `src/lib/sla.test.ts` imports `../../functions/src/sla` on purpose — see
+  Phase 2.
+- Coverage will drop once the scaffolding tests are gone. **That is correct** —
+  they asserted `sum(2, 2) === 4`. Do not restore them or add filler tests to
+  hit a threshold. If a gate fails, tell me the number and which real modules
+  are untested.
 
-- `src/contexts/DataContext.tsx` has the largest change (~200 lines). The
-  referrals listener was replaced with three party-scoped listeners built from a
-  `referralQueryShapes()` helper returning `Record<string, any[]>` of Firestore
-  constraints, spread into `query(...)`. If TypeScript objects to the spread,
-  type the arrays as `QueryConstraint[]` rather than loosening to `any`.
-- `src/App.tsx` replaced a reflective `lazyLoad()` helper with 15 explicit named
-  imports (`import('./pages/X').then(m => ({ default: m.X }))`). All 15 were
-  checked to have a matching named export and no default export, but this is the
-  most likely place for a typo to surface.
-- `src/App.test.tsx` may assert against the old lazy-loading behaviour.
-- Coverage will drop once the scaffolding tests are gone. **This is correct** —
-  they were measuring `sum(a, b)`, not the application. Do not restore them or
-  add filler tests to hit a threshold. If a coverage gate fails, tell me the
-  number and which real modules are actually untested; do not paper over it.
-- 7 new rules tests cover the status-transition graph, and 2 of them depend on
-  Firestore rules list-index syntax (`request.resource.data.statusHistory[0] ==
-  resource.data.statusHistory[0]`). If the emulator rejects that expression,
-  report it — do not silently weaken `auditTrailAppendOnly()` to make it pass.
-
-**STOP GATE 1 — report:** what failed, what you changed to fix it, and the final
-pass/fail of all five commands. Do not deploy anything yet.
+**STOP GATE 1 — report** what failed, what you changed, and the final result of
+all five commands. Deploy nothing yet.
 
 ---
 
-## Phase 1 — Deploy, in a specific order
+## Phase 1 — Deploy (Spark plan)
 
-Do not deploy until Phase 0 is fully green.
+1. **Verify the owner account first.** In the Firebase console for
+   `eha-transfer-1785622025`, open Firestore → `users` and confirm the document
+   for `hassan.abdelmenem@gmail.com` has `role: 'owner'` and `verified: true`.
+   A previous change removed a hardcoded bootstrap escape hatch from the rules
+   that let that one email self-assign a privileged role. If the owner document
+   is missing or wrong, fix it in the console **before** deploying rules, or
+   nobody can be promoted from the client afterwards.
 
-1. **Before anything else, verify the owner account still exists.** In the
-   Firebase console for project `eha-transfer-1785622025`, open Firestore →
-   `users` and confirm the document for `hassan.abdelmenem@gmail.com` has
-   `role: 'owner'` and `verified: true`.
-
-   The new rules removed a hardcoded bootstrap escape hatch that let that one
-   email address self-assign a privileged role. If the owner document is missing
-   or wrong, **fix it in the console before deploying rules**, or the deploy
-   leaves the project with no way to promote anyone from the client.
-
-2. **Deploy indexes first and wait for them to finish building.**
+2. **Deploy indexes and wait for them to finish building.**
    ```
    firebase deploy --only firestore:indexes
    ```
-   `firestore.indexes.json` gained three composite indexes that the new referral
-   queries require (`referringFacilityId+createdAt`,
-   `receivingFacilityId+createdAt`, and
-   `receivingFacilityId+candidateFacilityIds+createdAt`). Watch the console until
-   all three report **Enabled**, not Building. If the app ships first, the
-   referrals screen fails on a missing index.
+   `firestore.indexes.json` contains composite indexes the referral listeners
+   depend on. Watch the console until every index reads **Enabled**, not
+   Building. If the app ships first, the referrals screen fails on a missing
+   index rather than showing data.
 
-3. Then rules:
+3. **Rules, then hosting.**
    ```
    firebase deploy --only firestore:rules
+   npm run build
+   firebase deploy --only hosting
    ```
 
-4. Then the app (`npm run build` then `firebase deploy --only hosting`, or let CI
-   do it).
+4. **Do not run a bare `firebase deploy`.** `firebase.json` contains a
+   `functions` block (it always has), and deploying Cloud Functions requires the
+   Blaze plan. On Spark that command fails partway through. Always use `--only`
+   as above. Nothing in `functions/` is deployed, and nothing in the app calls
+   it — the escalation features work without it.
 
-5. **Smoke-test with a real non-admin account before calling it done.** The
-   headline bug was that the referrals listener queried the whole collection
-   unfiltered, which Firestore rejects wholesale for non-privileged users — so
-   every non-admin clinician saw an empty referrals list, and it only ever worked
-   when tested as an owner. Sign in as an ordinary clinician account and confirm:
-   - referrals appear on the dashboard
-   - a referral where the facility is the *referring* party appears
-   - a referral where it is the *receiving* party appears
-   - an auto-routing referral where it is a *candidate* appears
-   - "load older referrals" pages correctly across all three
+5. **Smoke-test as a real non-admin clinician**, not as the owner. The original
+   referrals bug was invisible to admins by construction, so owner-only testing
+   proves little. Confirm:
+   - referrals appear on the dashboard for an ordinary clinician
+   - **SLA escalation:** create a pending emergency ICU referral, leave the app
+     open, and confirm that at 30 minutes the badge flips from `SLA Breach` to
+     `Escalated` and an urgent notification arrives. To test faster, temporarily
+     lower `SLA_MINUTES` in **both** `src/lib/sla.ts` and `functions/src/sla.ts`
+     (see Phase 2) — and put it back to 30 before deploying.
+   - **No-match escalation:** create a referral requiring a department or bed
+     type no facility offers. It should be created (not rejected), immediately
+     flagged `Top-Level Escalation — No Matching Facility`, and notify the
+     system admin only.
+   - **No-beds escalation:** set every matching facility's bed type to
+     `occupied == total` on the Bed Management screen, then create a referral for
+     that bed type. Expect `Top-Level Escalation — No Beds Available`.
 
-**STOP GATE 2 — report** deploy results and smoke-test findings before moving on.
+**STOP GATE 2 — report** deploy results and each smoke-test outcome.
 
 ---
 
-## Phase 2 — The work that was deliberately left undone
+## Phase 2 — Known gaps, in priority order
 
-These were judged too large to fold into an unverified change set. Do them one at
-a time, each as its own commit, with tests. Ask me before starting each one.
+Do these one at a time, each as its own commit with tests. Ask me before starting
+each.
 
-**2a. Make the audit trail genuinely append-only (finding H1 — highest value).**
+**2a. The overnight escalation gap (the important one).**
+
+On Spark, escalation runs **only in the browser**, in a 30-second sweep inside
+`DataContext`. It therefore only fires for referrals a signed-in user is
+currently watching. A referral raised at 3am with nobody logged in does not
+escalate until someone next opens the app — which is exactly the scenario
+escalation exists for.
+
+`functions/src/index.ts` already contains a finished scheduled function
+(`escalateBreachedReferrals`, every minute) that closes this. It is written,
+type-checked, and **not deployed**, because scheduled functions require Blaze.
+Its header comment has the exact steps. When the plan is upgraded: deploy it,
+add the `(status, createdAt)` composite index it queries, and no other change is
+needed — both writers guard the same transaction, so they coexist safely.
+
+Until then, be explicit with the clinical team that overnight escalation is not
+automatic. Do not describe this feature as fully working.
+
+**2b. The duplicated SLA constant.**
+
+`functions/src/sla.ts` is a deliberate self-contained copy of `src/lib/sla.ts`.
+Sharing the real module would require pointing the functions `rootDir` at the
+repo root, which moves every emitted path and changes the deploy entrypoint from
+`lib/index.js`. The duplication is guarded: `src/lib/sla.test.ts` imports both
+copies and fails if the threshold or tracked scope drift apart. **If you change
+the SLA rule, change both files** and let that test confirm it.
+
+**2c. Make the audit trail genuinely append-only.**
 
 `statusHistory` is an array on the referral document. Firestore rules cannot
-iterate a list, so the current rule can only enforce that the array grows by
-exactly one entry per status change and that entry `[0]` is unchanged. The middle
-of the trail is still rewritable by any party to the referral. In a system whose
-audit trail is the record of who authorised moving a patient, that is the weakest
-remaining guarantee.
+iterate a list, so `auditTrailAppendOnly()` can only enforce that the array grows
+by at most one entry per write and that entry `[0]` is unchanged. The middle of
+the trail is still rewritable by any party. For a system whose audit trail
+records who authorised moving a patient, this is the weakest remaining guarantee.
+Migrate to `referrals/{id}/statusHistory/{entryId}` as a create-only
+subcollection. Needs a rules change, a backfill migration, and updates to every
+read path (`StatusTimeline`, `ReferralDetailPage`, and the transaction bodies in
+`DataContext` that spread `[...r.statusHistory, entry]`). Plan before coding.
 
-Migrate to `referrals/{id}/statusHistory/{entryId}` as a subcollection with
-`allow create` only — no update, no delete — so append-only becomes a property of
-the data model rather than a predicate that has to be expressible in the rules
-language. This needs: a rules change, a backfill migration for existing
-referrals, and updates to every read path (`StatusTimeline`,
-`ReferralDetailPage`, and the transaction bodies in `DataContext` that currently
-spread `[...r.statusHistory, newEntry]`). Plan the migration before writing code.
+**2d. Idle timeout on auth.**
 
-**2b. Move notification fan-out server-side (finding M5).**
+Auth uses `browserLocalPersistence` so clinicians are not signed out mid-shift.
+On a shared ER workstation the next person to open the browser is signed in as
+the previous clinician. Add an inactivity timeout calling `signOut()` — 15–30
+minutes is typical for clinical systems. Confirm the duration with me.
 
-Fan-out currently runs in the browser: the client resolves recipients and writes
-notification documents directly, which is why `/notifications` allows create by
-any verified user and why `/users` must expose the entire staff roster across
-every facility. Replace it with a Cloud Function triggered on referral writes.
-Then tighten both rules: `/notifications` create becomes deny-from-client, and
-`/users` list narrows to the caller's own facility.
+**2e. Typography and touch targets.**
 
-**2c. Add an idle timeout to auth (see the comment in `src/lib/firebase.ts`).**
-
-Auth persistence was changed from `browserSessionPersistence` to
-`browserLocalPersistence` so clinicians are not signed out mid-shift. The
-trade-off on a shared ER workstation is that the next person to open the browser
-is signed in as the previous clinician. Add an inactivity timeout that calls
-`signOut()` — 15–30 minutes is typical for clinical systems. Confirm the duration
-with me.
-
-**2d. Typography and touch targets (finding M6).**
-
-Deliberately not changed, because these are consistent design choices rather than
-defects and altering them shifts every screen. For an ER app used on phones,
-`text-[10px]` and `text-[9px]` label text and `h-7` small buttons are below
-comfortable minimums (WCAG 2.1 AA suggests a 24px minimum target; 44px is the
-practical touch standard). Propose a typography scale and a button-size change,
-show me before/after screenshots of the dashboard and referral detail screens,
-and wait for approval before applying.
+`text-[10px]`/`text-[9px]` labels and `h-7` buttons are below comfortable
+minimums for phone use in an ER (WCAG 2.1 AA suggests 24px minimum targets; 44px
+is the practical touch standard). These are consistent design choices rather than
+defects, so propose a scale, show me before/after screenshots of the dashboard
+and referral detail screens, and wait for approval.
 
 ---
 
 ## Ground rules
 
-- Do not weaken a Firestore rule to make a test pass. If a rule and a test
-  disagree, work out which one is wrong and tell me.
-- Do not restore the deleted scaffolding tests or add trivial tests to lift
+- Never weaken a Firestore rule to make a test pass. If a rule and a test
+  disagree, work out which is wrong and tell me.
+- Never restore the deleted scaffolding tests or add trivial tests to lift
   coverage.
-- `firestore.rules` and `src/contexts/DataContext.tsx` must stay in sync — the
-  query shapes in `referralQueryShapes()` mirror `isReferralParty()` in the
-  rules, and the status graph in `validStatusTransition()` mirrors
-  `updateReferralStatus` / `recordPatientConsent` / `recordPatientDecline`.
-  Both files carry comments saying so. If you change one, change the other and
-  the tests.
-- Commit in logical units with real messages, not one giant "fix everything".
+- Keep the mirrored logic in sync. `firestore.rules` mirrors
+  `src/contexts/DataContext.tsx` (query shapes ↔ `isReferralParty`, status graph
+  ↔ `validStatusTransition`), and `functions/src/sla.ts` mirrors
+  `src/lib/sla.ts`. Each file says so in a comment. Change one, change the other,
+  and update the tests.
+- `SLA_MINUTES` is a clinical threshold. Do not change it as a side effect of
+  anything, and never leave a lowered test value committed.
+- Commit in logical units with real messages, not one sweeping "fix everything".

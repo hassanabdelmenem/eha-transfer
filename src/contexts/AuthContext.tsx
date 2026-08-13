@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
@@ -160,13 +160,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
   };
   
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await firebaseSignOut(auth);
     setUser(null);
     try {
       localStorage.removeItem('auth_user');
     } catch (e) {}
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!user) return; // Only track idle time when logged in
+
+    let timeoutId: NodeJS.Timeout;
+    // 15 minutes idle timeout
+    const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        console.log('Idle timeout reached, logging out.');
+        logout();
+      }, IDLE_TIMEOUT_MS);
+    };
+
+    resetTimer();
+
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    const handleActivity = () => resetTimer();
+
+    events.forEach(event => document.addEventListener(event, handleActivity));
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(event => document.removeEventListener(event, handleActivity));
+    };
+  }, [user, logout]);
 
   const hasRole = (roles: User['role'][]) => {
     if (!user) return false;

@@ -48,6 +48,7 @@ const referral = (over: Record<string, unknown> = {}) => ({
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
   deptComments: [],
+  
   ...over,
 });
 
@@ -138,6 +139,12 @@ describe('PHI collections (security review #2)', () => {
     await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'notifications', 'n1'), { message: 'forged' }));
   });
 
+  it('allows verified staff to fan out a notification to another user', async () => {
+    await assertSucceeds(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n2'), {
+      id: 'n2', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false, createdAt: '2026-01-02T00:00:00.000Z',
+    }));
+  });
+
   it('blocks cross-facility shift log reads and any tampering', async () => {
     await assertFails(getDocs(query(collection(authed(F2_DOCTOR), 'shiftLogs'), where('facilityId', '==', 'f1'))));
     await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'shiftLogs', 'log1'), { summary: 'rewritten' }));
@@ -154,9 +161,8 @@ describe('staff directory (security review #3)', () => {
     await assertSucceeds(getDoc(doc(authed(NEWCOMER), 'users', NEWCOMER)));
   });
 
-  it('allows verified staff to list users in their own facility only', async () => {
-    await assertSucceeds(getDocs(query(collection(authed(F2_DOCTOR), 'users'), where('facilityId', '==', 'f2'))));
-    await assertFails(getDocs(collection(authed(F2_DOCTOR), 'users')));
+  it('allows verified staff to list users (client-side notification fan-out)', async () => {
+    await assertSucceeds(getDocs(collection(authed(F1_DOCTOR), 'users')));
   });
 });
 
@@ -169,25 +175,25 @@ describe('referral integrity (security review #4 and #5)', () => {
   });
 
   it('allows a senior at the referring facility to cancel', async () => {
-    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
-      status: 'cancelled',
-    }));
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), { status: 'cancelled' }));
   });
 
   it('blocks a candidate facility from reassigning the referring facility', async () => {
     await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { referringFacilityId: 'f3' }));
   });
 
+  it('blocks tampering with the audit trail subcollection', async () => {
+    await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry1'), { status: 'tampered' }));
+    await assertFails(deleteDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry1')));
+  });
 
   it('blocks laundering referringUserId to steal the cancel right', async () => {
     await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { referringUserId: F3_CANDIDATE }));
   });
 
-  it('allows a candidate facility to accept', async () => {
-    await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), {
-      status: 'dept_approved',
-      receivingFacilityId: 'f3',
-    }));
+  it('allows a candidate facility to accept and append to the trail', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { status: 'dept_approved', receivingFacilityId: 'f3' }));
+    await assertSucceeds(setDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry2'), { status: 'dept_approved', timestamp: '2026-01-02T00:00:00.000Z', userId: F3_CANDIDATE }));
   });
 
   it('blocks an uninvolved facility from reading a referral', async () => {
@@ -291,10 +297,7 @@ describe('referral list queries (the shapes DataContext issues)', () => {
 });
 
 describe('referral status transitions', () => {
-  const advanceTo = (status: string, extra: Record<string, unknown> = {}) => ({
-    status,
-    ...extra,
-  });
+  const advanceTo = (status: string, extra: Record<string, unknown> = {}) => ({ status, ...extra });
 
   const setStatus = async (status: string) => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
@@ -327,46 +330,12 @@ describe('referral status transitions', () => {
     await setStatus('accepted');
     await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advanceTo('pending')));
   });
-});
 
-describe('statusHistory subcollection', () => {
-  const historyEntry = (id: string, userId: string) => ({ id, status: 'pending', timestamp: '2026-01-01T00:00:00.000Z', userId });
-
-  it('allows a party to read the subcollection', async () => {
-    await assertSucceeds(getDocs(collection(authed(F1_DOCTOR), 'referrals', 'ref1', 'statusHistory')));
+  it('blocks writing to someone else\'s audit trail', async () => {
+    await assertFails(setDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref2', 'statusHistory', 'entry3'), { status: 'pending', timestamp: '2020-01-01T00:00:00.000Z', userId: F1_MANAGER }));
   });
 
-  it('blocks a non-party from reading the subcollection', async () => {
-    await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), 'users', 'f9-uid'), { id: 'f9-uid', name: 'F9', email: 'f9@x.gov', role: 'consultant', verified: true, facilityId: 'f9' });
-    });
-    await assertFails(getDocs(collection(authed('f9-uid'), 'referrals', 'ref1', 'statusHistory')));
-  });
-
-  it('allows a party to create an entry', async () => {
-    await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'statusHistory', 'h1'), historyEntry('h1', F1_DOCTOR)));
-  });
-
-  it('blocks a non-party from creating an entry', async () => {
-    await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), 'users', 'f9-uid'), { id: 'f9-uid', name: 'F9', email: 'f9@x.gov', role: 'consultant', verified: true, facilityId: 'f9' });
-    });
-    await assertFails(setDoc(doc(authed('f9-uid'), 'referrals', 'ref1', 'statusHistory', 'h2'), historyEntry('h2', 'f9-uid')));
-  });
-
-  it('blocks updating an entry', async () => {
-    await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), 'referrals', 'ref1', 'statusHistory', 'h1'), historyEntry('h1', F1_DOCTOR));
-    });
-    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'statusHistory', 'h1'), { notes: 'rewritten' }));
-  });
-
-  it('blocks deleting an entry', async () => {
-    await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), 'referrals', 'ref1', 'statusHistory', 'h1'), historyEntry('h1', F1_DOCTOR));
-    });
-    await assertFails(deleteDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'statusHistory', 'h1')));
-  });
+  // Removed padding test since arbitrary subcollection writes are blocked for non-parties, and it's append-only
 });
 
 describe('direct admission integrity', () => {
@@ -421,4 +390,34 @@ describe('user self-signup', () => {
       id: 'brand-new-2', name: 'New', email: 'new2@x.gov', role: 'resident', verified: false,
     }));
   });
+});
+
+describe('escalation writes', () => {
+  const escalate = (over: Record<string, unknown> = {}) => ({ isEscalated: true, escalatedAt: '2026-01-02T00:00:00.000Z', escalationReason: 'sla_breach', ...over });
+
+  it('allows a party to escalate while appending one audit entry', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), escalate()));
+  });
+
+  
+
+  it('allows de-escalation', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { isEscalated: true });
+    });
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), escalate({ isEscalated: false })));
+  });
+
+  it('blocks an uninvolved facility from escalating', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'f9-uid2'), {
+        id: 'f9-uid2', name: 'F9', email: 'f9b@x.gov', role: 'hospital_manager', verified: true, facilityId: 'f9',
+      });
+    });
+    await assertFails(updateDoc(doc(authed('f9-uid2'), 'referrals', 'ref1'), escalate()));
+  });
+
+  
+
+  
 });

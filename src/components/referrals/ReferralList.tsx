@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { differenceInSeconds } from 'date-fns';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Referral } from '../../types';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { formatDateTime } from '../../lib/utils';
+import { isSlaTracked, secondsUntilSlaBreach } from '../../lib/sla';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Timer, AlertTriangle } from 'lucide-react';
 
@@ -23,24 +23,33 @@ interface ReferralListProps {
 
 
 const UrgencyTimer: React.FC<{ referral: Referral; now: Date }> = ({ referral, now }) => {
-  // Render only for pending, high-priority referrals that need a timer.
-  if (referral.status !== 'pending') return null;
+  // Scope and threshold both come from lib/sla so this badge cannot drift out of
+  // step with the escalation that acts on it.
+  if (!isSlaTracked(referral)) return null;
 
-  const isHighUrgency = ['emergency', 'urgent'].includes(referral.priority);
-  const isCriticalBed = ['ICU', 'CCU', 'PICU'].includes(referral.requiredBedType);
-  if (!isHighUrgency || !isCriticalBed) return null;
-
-  const secondsPending = differenceInSeconds(now, new Date(referral.createdAt));
-  const secondsToLimit = (30 * 60) - secondsPending;
+  const secondsToLimit = secondsUntilSlaBreach(referral, now);
+  // Unreadable createdAt: show nothing rather than a countdown built on NaN.
+  if (secondsToLimit === null) return null;
 
   if (secondsToLimit <= 0) {
     const overdueSeconds = Math.abs(secondsToLimit);
     const m = Math.floor(overdueSeconds / 60);
     const s = overdueSeconds % 60;
+    // Distinguish "escalated" from "breached but not yet escalated". The badge
+    // used to claim a breach while nothing had actually happened; if escalation
+    // has not landed yet (offline, or the sweep has not run), say so plainly
+    // rather than implying the system has taken over.
     return (
-      <div className="inline-flex items-center gap-1 mt-1 text-red-700 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded animate-pulse border border-red-200 dark:border-red-800" title="Immediate administrative intervention required">
-        <AlertTriangle className="w-3 h-3" />
-        <span className="text-[9px] font-bold uppercase">SLA Breach +{m}:{s.toString().padStart(2, '0')}</span>
+      <div
+        className="inline-flex items-center gap-1 mt-1 text-red-700 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded animate-pulse border border-red-200 dark:border-red-800"
+        title={referral.isEscalated
+          ? 'Escalated for administrative intervention'
+          : 'SLA breached — escalation pending'}
+      >
+        <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+        <span className="text-[9px] font-bold uppercase">
+          {referral.isEscalated ? 'Escalated' : 'SLA Breach'} +{m}:{s.toString().padStart(2, '0')}
+        </span>
       </div>
     );
   }
@@ -66,8 +75,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
   // Shared timer for all list items: one interval for the whole list instead of one per row.
   const [now, setNow] = useState<Date>(new Date());
   useEffect(() => {
-    const hasAnyPendingUrgent = referrals.some(r => r.status === 'pending' && ['emergency', 'urgent'].includes(r.priority) && ['ICU', 'CCU', 'PICU'].includes(r.requiredBedType));
-    if (!hasAnyPendingUrgent) return;
+    if (!referrals.some(isSlaTracked)) return;
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, [referrals]);

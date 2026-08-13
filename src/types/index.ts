@@ -112,6 +112,13 @@ export interface DeptComment {
 
 export type ReferralTransferType = 'one_way' | 'service_and_return' | 'assessment_with_return';
 
+export interface StatusHistoryEntry {
+  status: ReferralStatus;
+  timestamp: string;
+  userId: string;
+  notes?: string;
+}
+
 export interface Referral {
   id: string;
   transferType?: ReferralTransferType;
@@ -126,24 +133,33 @@ export interface Referral {
   priority: ReferralPriority;
   status: ReferralStatus;
   isEscalated?: boolean;
+  // Null rather than absent after a de-escalation: the fields are explicitly
+  // cleared so a later re-escalation cannot inherit a stale reason or timestamp.
+  escalatedAt?: string | null;
+  // 'system' when the 30-minute SLA escalation fired automatically, otherwise the
+  // id of the user who pressed Mark Escalated. Distinguishing the two matters for
+  // audit: an automatic escalation means nobody responded, a manual one means
+  // somebody judged it necessary.
+  escalatedBy?: string | null;
+  // 'sla_breach'            nobody responded inside the 30-minute window
+  // 'no_matching_facility'  nothing in the network provides the departments + bed type
+  // 'no_beds_available'     every matching facility is full
+  // 'manual'                a human pressed Mark Escalated
+  escalationReason?: 'sla_breach' | 'no_matching_facility' | 'no_beds_available' | 'manual' | null;
+  // 'system' is the top level: chasing the receiving facilities cannot help
+  // because the capacity does not exist, so only a system administrator can
+  // resolve it. 'facility' escalations are still actionable locally.
+  escalationLevel?: 'system' | 'facility' | null;
   reasonForReferral: string;
   createdAt: string;
   updatedAt: string;
   deptComments: DeptComment[];
-  admittedAt?: string;
+
   // Facilities the patient has declined transfer to; excluded from future auto-routing candidates.
   patientDeclinedFacilityIds?: string[];
   cancelledAt?: string;
   cancelledBy?: string;
   cancelReason?: string;
-}
-
-export interface StatusHistoryEntry {
-  id: string;
-  status: ReferralStatus;
-  timestamp: string;
-  userId: string;
-  notes?: string;
 }
 
 export interface ShiftLog {

@@ -63,9 +63,11 @@ service cloud.firestore {
       // Own document must stay readable before verification — AuthContext
       // subscribes to it to discover that verification has landed.
       allow get: if signedIn() && (request.auth.uid == userId || isVerifiedCaller());
-      // Notification fan-out happens in a Cloud Function, so the client only
-      // needs to list users at its own facility.
-      allow list: if isPrivileged() || (isVerifiedCaller() && resource.data.facilityId == callerFacility());
+      // The full roster is read by verified staff only. It is needed in full (not
+      // facility-scoped) because notification fan-out is done client-side and has
+      // to find recipients at the *receiving* facility. Moving fan-out into a
+      // Cloud Function would let this be narrowed to one facility.
+      allow list: if isVerifiedCaller();
 
       // Self-signup is always an unverified resident. The former bootstrap escape
       // hatch (a hardcoded owner email) is gone: it tied production authorization to
@@ -109,11 +111,10 @@ service cloud.firestore {
 
     // ------------------------------------------------------------ referrals
     function isReferralParty(data) {
-      return ('referringFacilityId' in data && callerFacility() == data.referringFacilityId)
-          || ('receivingFacilityId' in data && callerFacility() == data.receivingFacilityId)
-          || ('receivingFacilityId' in data && data.receivingFacilityId == 'auto'
-              && 'candidateFacilityIds' in data
-              && data.candidateFacilityIds.hasAny([callerFacility()]));
+      return data.referringFacilityId == callerFacility()
+          || data.receivingFacilityId == callerFacility()
+          || (data.receivingFacilityId == 'auto'
+              && callerFacility() in data.candidateFacilityIds);
     }
     // Mirrors SENIOR_CANCEL_ROLES / CANCEL_LOCKED_STATUSES in
     // src/contexts/DataContext.tsx -- keep all three in sync.
@@ -146,15 +147,6 @@ service cloud.firestore {
     }
     // Rules cannot iterate a list, so a true element-wise prefix comparison is not
     // expressible here. What is enforced: the trail grows by exactly one entry when
-    // the status moves and by none when it doesn't (so a caller cannot smuggle in a
-    // rewritten history under cover of padding), and the opening entry is immutable.
-    //
-    // Residual gap: the middle of the trail can still be rewritten by a party. The
-    // durable fix is to move history into an immutable subcollection
-    // (referrals/{id}/statusHistory/{entryId}, create-only, no update or delete) so
-    // append-only becomes a property of the data model rather than a predicate.
-    // residual gap fixed: statusHistory moved to an immutable subcollection.
-
     // The status graph, enforced server-side. Without it the only thing standing
     // between a referral and an arbitrary status was updateReferralStatus() in the
     // client, which a caller talking to the SDK directly simply skips -- letting a
@@ -222,8 +214,20 @@ service cloud.firestore {
     // only mutable field is the read flag.
     match /notifications/{notificationId} {
       allow read: if isPrivileged() || (signedIn() && resource.data.userId == request.auth.uid);
-      // Fan-out runs in a Cloud Function, which bypasses rules.
-      allow create: if false;
+      // Still open to any verified caller, because fan-out runs in the browser. The
+      // shape constraints below are what keep that from being a free-form message
+      // channel into every clinician's notification tray: a fabricated alert cannot
+      // arrive pre-read, cannot backdate itself, and cannot carry an unbounded body.
+      // Moving fan-out into a Cloud Function would let this become a deny rule and
+      // would also let the /users list rule narrow to a single facility.
+      allow create: if isVerifiedCaller()
+                    && request.resource.data.userId is string
+                    && request.resource.data.title is string
+                    && request.resource.data.message is string
+                    && request.resource.data.title.size() <= 200
+                    && request.resource.data.message.size() <= 2000
+                    && request.resource.data.type in ['urgent', 'info', 'success', 'warning']
+                    && request.resource.data.read == false;
       allow update: if signedIn() && resource.data.userId == request.auth.uid
                     && changedKeys().hasOnly(['read']);
       allow delete: if isPrivileged();
@@ -251,10 +255,12 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------- shiftAssignments
-    // Cloud Functions handle cross-facility notification fan-out, so clients
-    // only need to read their own facility's shift assignments.
+    // Deliberately readable by any verified user rather than facility-scoped:
+    // createNotification resolves on-call delegation at the *receiving* facility.
+    // Safe to widen because the document holds no patient data — only a facility,
+    // a department and a user id. Writes stay facility-scoped.
     match /shiftAssignments/{assignmentId} {
-      allow read: if isPrivileged() || (isVerifiedCaller() && resource.data.facilityId == callerFacility());
+      allow read: if isVerifiedCaller();
       allow create: if isPrivileged() || atFacility(request.resource.data.facilityId);
       allow update: if isPrivileged() || atFacility(resource.data.facilityId);
       allow delete: if isPrivileged();

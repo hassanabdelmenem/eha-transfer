@@ -3,9 +3,11 @@ import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Fac
 import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
 import { useAuth } from './AuthContext';
-import { auth, db, googleProvider, functions } from '../lib/firebase';
-import { httpsCallable } from 'firebase/functions';
+import { db } from '../lib/firebase';
 import { toastError } from '../lib/toast';
+import { formatDateTime } from '../lib/utils';
+import { SLA_MINUTES, needsAutoEscalation } from '../lib/sla';
+import { capacityEscalationReason, describeCapacityEscalation, CapacityEscalationReason } from '../lib/routing';
 import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch, increment, runTransaction, query, where, orderBy, limit as firestoreLimit, startAfter } from 'firebase/firestore';
 
 // Roles at the referring facility trusted to withdraw a referral they didn't personally
@@ -40,7 +42,7 @@ interface DataContextType {
   shiftAssignmentsByFacility: Map<string, ShiftAssignment[]>;
   shiftLogs: ShiftLog[];
   addShiftLog: (log: Omit<ShiftLog, 'id' | 'timestamp'>) => Promise<void>;
-  addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => void;
+  addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'deptComments'>, sendCriticalAlert?: boolean) => void;
   loadOlderReferrals?: () => Promise<void>;
   updateReferralStatus: (id: string, status: Referral['status'], notes?: string) => Promise<void>;
   overrideReferralDestination: (id: string, newFacilityId: string) => Promise<void>;
@@ -233,12 +235,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return () => unsubs.forEach(u => u());
     }
 
-    // Users: full roster is no longer needed client-side since notification
-    // fan-out happens in a Cloud Function. We only need the user's own facility.
-    const usersQuery = isAdmin ? collection(db, 'users') : query(collection(db, 'users'), where('facilityId', '==', user.facilityId));
-    unsubs.push(onSnapshot(usersQuery, (snapshot) => {
+    // Users: the full roster, needed because notification fan-out runs client-side
+    // and has to resolve recipients at other facilities.
+    unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as User);
-      if (data.length === 0 && isAdmin) {
+      if (data.length === 0) {
         const batch = writeBatch(db);
         INITIAL_USERS.forEach(u => batch.set(doc(db, 'users', u.id), u));
         batch.commit().catch(writeFailed("Could not seed the user roster."));
@@ -285,10 +286,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDirectAdmissions(snapshot.docs.map(doc => doc.data() as DirectAdmission).sort((a, b) => b.admittedAt.localeCompare(a.admittedAt)));
       }, console.error));
 
-    // Shift Assignments: readable only for the user's facility (unless admin).
-    // Cloud Functions fetch the rest for network-wide fan-out.
-    const assignmentsQuery = isAdmin ? collection(db, 'shiftAssignments') : query(collection(db, 'shiftAssignments'), where('facilityId', '==', user.facilityId));
-    unsubs.push(onSnapshot(assignmentsQuery, (snapshot) => {
+    // Shift Assignments: no patient data, readable network-wide by verified staff.
+    unsubs.push(onSnapshot(collection(db, 'shiftAssignments'), (snapshot) => {
       setShiftAssignments(snapshot.docs.map(doc => doc.data() as ShiftAssignment));
     }, console.error));
 
@@ -302,12 +301,53 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubs.forEach(u => u());
   }, [user?.id, user?.verified, user?.facilityId, user?.role]);
 
-  const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, targetRoles?: Role[], departments?: string[] }) => {
-    const sendNotif = httpsCallable(functions, 'sendNotification');
-    sendNotif(params).catch(err => {
-      console.error("Failed to send notification via Cloud Function:", err);
+  // `facilityIds` spans several facilities in one call. Fanning out by calling this
+  // once per facility would work for facility staff but would deliver one copy per
+  // call to every owner/system_admin, since they match unconditionally on the line
+  // below. Escalation needs to reach the referring facility and every candidate at
+  // once, so the recipient set is built in a single pass instead.
+  const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, facilityIds?: string[], targetRoles?: Role[], departments?: string[] }) => {
+    const targetFacilityIds = params.facilityIds ?? [params.facilityId];
+    const relevantUsers = users.filter(u => {
+       if (u.role === 'owner' || u.role === 'system_admin') return true;
+       if (!u.facilityId || !targetFacilityIds.includes(u.facilityId)) return false;
+
+       let isDelegatedTarget = false;
+       if (params.targetRoles?.includes('head_of_department') && ['consultant', 'specialist', 'resident'].includes(u.role)) {
+          // Keyed off the recipient's own facility, not the first one in the list,
+          // so delegated on-call cover still resolves in a multi-facility fan-out.
+          const assignments = shiftAssignmentsByFacility.get(u.facilityId) || [];
+          const assignment = assignments.find(s => 
+            s.assignedUserId === u.id && 
+            (!params.departments || params.departments.includes(s.department))
+          );
+          if (assignment) {
+             isDelegatedTarget = true;
+          }
+       }
+
+       if (params.targetRoles && !params.targetRoles.includes(u.role) && !isDelegatedTarget) return false;
+       if (params.departments && u.department && !params.departments.includes(u.department)) return false;
+       return true;
     });
-  }, []);
+    
+    const batch = writeBatch(db);
+    relevantUsers.forEach(u => {
+      const id = uuidv4();
+      const notif: Notification = {
+        id,
+        userId: u.id,
+        title: params.title,
+        message: params.message,
+        type: params.type,
+        read: false,
+        createdAt: new Date().toISOString(),
+        referralId: params.referralId
+      };
+      batch.set(doc(db, 'notifications', id), notif);
+    });
+    batch.commit().catch(writeFailed("Could not send notifications for that update."));
+  }, [users, shiftAssignmentsByFacility]);
 
   const updateUserVerified = useCallback((id: string, verified: boolean) => {
     updateDoc(doc(db, 'users', id), { verified }).catch(writeFailed("Could not change that user's verification status."));
@@ -422,14 +462,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       transaction.update(refDocRef, {
         receivingDepartments: [toDepartment]
       });
-      const histId = uuidv4();
-      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
-        id: histId,
-        status: r.status,
-        timestamp: new Date().toISOString(),
-        userId: user?.id || 'system',
-        notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
-      });
+      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), {
+          status: r.status,
+          timestamp: new Date().toISOString(),
+          userId: user?.id || 'system',
+          notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
+        });
     }).catch(writeFailed("Could not complete the transfer."));
   }, [user]);
 
@@ -455,27 +493,73 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }).catch(writeFailed("Could not complete the transfer."));
   }, [facilities]);
 
-  const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => {
+  /**
+   * Top-level escalation: the patient has nowhere to go.
+   *
+   * Notified to owners and system_admins only. Deliberately not sent to the
+   * receiving facilities: the whole point of this state is that no facility can
+   * take the patient, so paging them adds noise to an alert that nobody local
+   * can act on. `facilityIds: []` matches no facility-scoped staff, leaving the
+   * unconditional owner/system_admin branch in createNotification as the only
+   * way through.
+   */
+  const notifyCapacityEscalation = useCallback((referral: Referral, reason: CapacityEscalationReason) => {
+    createNotification({
+      title: reason === 'no_matching_facility'
+        ? 'ESCALATION: No Matching Facility'
+        : 'ESCALATION: No Beds Available',
+      message: `${referral.patientData?.name || 'A patient'} needs ${referral.receivingDepartments.join(', ')} (${referral.requiredBedType}). ${describeCapacityEscalation(reason)} Administrative placement required.`,
+      type: 'urgent',
+      referralId: referral.id,
+      facilityId: referral.referringFacilityId,
+      facilityIds: [],
+    });
+  }, [createNotification]);
+
+  const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'deptComments'>, sendCriticalAlert?: boolean) => {
     const now = new Date().toISOString();
-    const newReferral: Referral = {
+    const baseReferral: Referral = {
       ...newReferralData,
       id: uuidv4(),
       createdAt: now,
       updatedAt: now,
-      deptComments: []
+      deptComments: [],
     };
+
+    // Escalate at creation when there is nowhere to send the patient. The
+    // referral is still created: previously the form refused to submit at all,
+    // which left the most urgent case in the system -- a patient nobody can
+    // take -- with no record, no audit trail and nobody notified.
+    const capacityReason = capacityEscalationReason(baseReferral, facilitiesById);
+    const newReferral: Referral = capacityReason
+      ? {
+          ...baseReferral,
+          isEscalated: true,
+          escalatedAt: now,
+          escalatedBy: 'system',
+          escalationReason: capacityReason,
+          escalationLevel: 'system',
+        }
+      : baseReferral;
 
     const batch = writeBatch(db);
     batch.set(doc(db, 'referrals', newReferral.id), newReferral);
-    const histId = uuidv4();
-    batch.set(doc(db, 'referrals', newReferral.id, 'statusHistory', histId), {
-      id: histId,
-      status: newReferralData.status,
+    batch.set(doc(db, 'referrals', newReferral.id, 'statusHistory', uuidv4()), {
+      status: baseReferral.status,
       timestamp: now,
       userId: newReferralData.referringUserId
     });
-    batch.commit().catch(writeFailed("Could not create the referral."));
     
+    if (capacityReason) {
+      batch.set(doc(db, 'referrals', newReferral.id, 'statusHistory', uuidv4()), {
+        status: baseReferral.status,
+        timestamp: now,
+        userId: 'system',
+        notes: describeCapacityEscalation(capacityReason) + ' Escalated for administrative placement.',
+      });
+    }
+
+    batch.commit().catch(writeFailed("Could not create the referral."));
     if (!isOnline) {
       setPendingSyncCount(prev => prev + 1);
     }
@@ -504,7 +588,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         departments: newReferral.receivingDepartments
       });
     }
-  }, [facilities, createNotification]);
+
+    if (capacityReason) notifyCapacityEscalation(newReferral, capacityReason);
+  }, [facilitiesById, isOnline, createNotification, notifyCapacityEscalation]);
 
   const updateReferralStatus = useCallback(async (id: string, status: Referral['status'], notes?: string) => {
     if (!user) return;
@@ -534,25 +620,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? (user.facilityId || r.receivingFacilityId)
           : r.receivingFacilityId;
 
-        const updates: any = {
+        transaction.update(refDocRef, {
           status,
           receivingFacilityId: finalReceivingFacilityId,
           updatedAt: now
-        };
-        if (status === 'admitted' && r.status !== 'admitted') {
-          updates.admittedAt = now;
-        }
-
-        transaction.update(refDocRef, updates);
-
-        const histId = uuidv4();
-        transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
-          id: histId,
-          status,
-          timestamp: now,
-          userId: user.id,
-          notes
         });
+        transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), { status, timestamp: now, userId: user.id, notes });
 
         // Bed capacity is adjusted from the transactionally-read prior status,
         // so two concurrent admit/discharge calls can't both fire the increment.
@@ -631,14 +704,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         receivingFacilityId: newFacilityId,
         updatedAt: now
       });
-      const histId = uuidv4();
-      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
-        id: histId,
-        status: r.status,
-        timestamp: now,
-        userId: user.id,
-        notes: `Destination manually overridden to ${newFacilityName}`
-      });
+      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), {
+          status: r.status,
+          timestamp: now,
+          userId: user.id,
+          notes: `Destination manually overridden to ${newFacilityName}`
+        });
     });
   }, [user, facilities]);
 
@@ -668,15 +739,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           claimedReceivingFacilityId = r.receivingFacilityId === 'auto' ? (user.facilityId || 'auto') : r.receivingFacilityId;
           updates.status = 'dept_approved';
           updates.receivingFacilityId = claimedReceivingFacilityId;
-          
-          const histId = uuidv4();
-          transaction.set(doc(db, 'referrals', referralId, 'statusHistory', histId), {
-            id: histId,
-            status: 'dept_approved',
-            timestamp: now,
-            userId: user.id,
-            notes: 'Department Head Approved'
-          });
+          transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), { status: 'dept_approved', timestamp: now, userId: user.id, notes: 'Department Head Approved' });
         }
 
         transaction.update(refDocRef, updates);
@@ -749,14 +812,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         status: 'patient_consented',
         updatedAt: now
       });
-      const histId = uuidv4();
-      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
-        id: histId,
-        status: 'patient_consented',
-        timestamp: now,
-        userId: user.id,
-        notes: 'Patient consented to transfer.'
-      });
+      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), { status: 'patient_consented', timestamp: now, userId: user.id, notes: 'Patient consented to transfer.' });
     });
 
     if (receivingFacilityId && receivingFacilityId !== 'auto') {
@@ -801,14 +857,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         patientDeclinedFacilityIds,
         updatedAt: now
       });
-      const histId = uuidv4();
-      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
-        id: histId,
-        status: 'pending',
-        timestamp: now,
-        userId: user.id,
-        notes: `Patient declined transfer to this facility. Reason: ${reason || 'Not specified'}. Re-routing.`
-      });
+      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), { status: 'pending', timestamp: now, userId: user.id, notes: `Patient declined transfer to this facility. Reason: ${reason || 'Not specified'}. Re-routing.` });
     });
 
     createNotification({
@@ -871,14 +920,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cancelReason: reason || 'Not specified',
         updatedAt: now
       });
-      const histId = uuidv4();
-      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
-        id: histId,
-        status: 'cancelled',
-        timestamp: now,
-        userId: user.id,
-        notes: reason ? `Cancelled: ${reason}` : 'Cancelled'
-      });
+      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), { status: 'cancelled', timestamp: now, userId: user.id, notes: reason ? `Cancelled: ${reason}` : 'Cancelled' });
     });
 
     createNotification({
@@ -910,18 +952,176 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const r = snap.data() as Referral;
       transaction.update(refDocRef, {
         isEscalated,
+        // Recorded so an automatic escalation is distinguishable from a manual one
+        // after the fact. De-escalating clears them, otherwise a re-escalation
+        // would inherit a stale reason.
+        escalatedAt: isEscalated ? now : null,
+        escalatedBy: isEscalated ? (user?.id || 'system') : null,
+        escalationReason: isEscalated ? 'manual' : null,
         updatedAt: now
       });
-      const histId = uuidv4();
-      transaction.set(doc(db, 'referrals', id, 'statusHistory', histId), {
-        id: histId,
-        status: r.status,
-        timestamp: now,
-        userId: user?.id || 'system',
-        notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
-      });
+      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), {
+          status: r.status,
+          timestamp: now,
+          userId: user?.id || 'system',
+          notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
+        });
     });
   }, [user]);
+
+  /**
+   * Escalates a referral whose 30-minute response window has elapsed.
+   *
+   * Idempotent by construction: `needsAutoEscalation` is re-evaluated against the
+   * document read *inside* the transaction, so if another client or the scheduled
+   * Cloud Function got there first, this writes nothing. That is what makes it
+   * safe for every online client to run the sweep concurrently.
+   */
+  const autoEscalateReferral = useCallback(async (id: string) => {
+    const refDocRef = doc(db, 'referrals', id);
+    let escalated: Referral | null = null;
+
+    await runTransaction(db, async (transaction) => {
+      // Reset per attempt: runTransaction retries its body on contention, and a
+      // retry that finds the referral already escalated must not leave a value
+      // set by the previous attempt behind.
+      escalated = null;
+      const snap = await transaction.get(refDocRef);
+      if (!snap.exists()) return;
+      const r = snap.data() as Referral;
+      if (!needsAutoEscalation(r, Date.now())) return;
+
+      const now = new Date().toISOString();
+      transaction.update(refDocRef, {
+        isEscalated: true,
+        escalatedAt: now,
+        escalatedBy: 'system',
+        escalationReason: 'sla_breach',
+        updatedAt: now,
+      });
+      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), {
+          status: r.status,
+          timestamp: now,
+          userId: 'system',
+          notes: `No response within ${SLA_MINUTES} minutes. Automatically escalated for administrative intervention.`,
+        });
+      escalated = r;
+    });
+
+    if (!escalated) return;
+    const r: Referral = escalated;
+    createNotification({
+      title: `Referral Escalated — No Response in ${SLA_MINUTES} Minutes`,
+      message: `${r.patientData.name} (${r.priority} ${r.requiredBedType}) has had no response since ${formatDateTime(r.createdAt)} and has been escalated for intervention.`,
+      type: 'urgent',
+      referralId: r.id,
+      facilityId: r.referringFacilityId,
+      // The referring facility must chase it; the candidates are the ones who
+      // have not answered. Owners and system_admins are included regardless.
+      facilityIds: [r.referringFacilityId, ...(r.candidateFacilityIds || [])],
+      targetRoles: ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department', 'er_official'],
+    });
+  }, [createNotification]);
+
+  /**
+   * Escalates a pending referral that has run out of anywhere to go.
+   *
+   * Separate from the SLA path because the trigger is different: this fires the
+   * moment capacity disappears rather than after a fixed wait, and it goes
+   * straight to system administrators because no receiving facility can act on
+   * it. Idempotent in the same way -- the condition is re-checked inside the
+   * transaction against the stored document.
+   */
+  const escalateForCapacity = useCallback(async (id: string, reason: CapacityEscalationReason) => {
+    const refDocRef = doc(db, 'referrals', id);
+    let escalated: Referral | null = null;
+
+    await runTransaction(db, async (transaction) => {
+      escalated = null;
+      const snap = await transaction.get(refDocRef);
+      if (!snap.exists()) return;
+      const r = snap.data() as Referral;
+      if (r.isEscalated || r.status !== 'pending') return;
+
+      const now = new Date().toISOString();
+      transaction.update(refDocRef, {
+        isEscalated: true,
+        escalatedAt: now,
+        escalatedBy: 'system',
+        escalationReason: reason,
+        escalationLevel: 'system',
+        updatedAt: now,
+      });
+      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), {
+          status: r.status,
+          timestamp: now,
+          userId: 'system',
+          notes: describeCapacityEscalation(reason) + ' Escalated for administrative placement.',
+        });
+      escalated = r;
+    });
+
+    if (escalated) notifyCapacityEscalation({ ...(escalated as Referral), id }, reason);
+  }, [notifyCapacityEscalation]);
+
+  /**
+   * Client-side half of the SLA escalation.
+   *
+   * The scheduled Cloud Function (functions/src/index.ts) is the authoritative
+   * writer, because it runs whether or not anyone is signed in -- and a referral
+   * that breaches at 3am with nobody watching is exactly the case escalation
+   * exists for. This sweep exists so escalation still works before that function
+   * is deployed, and so it lands within seconds rather than up to a minute while
+   * staff are actually looking at the screen.
+   *
+   * Scoped to the referring facility (plus admins) rather than every party: the
+   * referring facility owns chasing the referral, and it keeps a breached
+   * referral visible to several candidate facilities from producing one
+   * transaction attempt per facility per minute. The transaction is idempotent
+   * regardless, so overlap is safe -- this is about contention, not correctness.
+   */
+  useEffect(() => {
+    if (!user?.verified) return;
+    const isAdmin = user.role === 'owner' || user.role === 'system_admin';
+    if (!isAdmin && !user.facilityId) return;
+
+    const sweep = () => {
+      const now = Date.now();
+      const mine = referrals.filter(r => isAdmin || r.referringFacilityId === user.facilityId);
+
+      // Silence, measured by the clock.
+      mine
+        .filter(r => needsAutoEscalation(r, now))
+        .forEach(r => {
+          autoEscalateReferral(r.id).catch(err => {
+            // Not surfaced as a toast: this is background housekeeping the user
+            // did not initiate, and a permission error here (someone else's
+            // referral, or a rules change) would otherwise pop on a loop.
+            console.error(`Auto-escalation failed for referral ${r.id}:`, err);
+          });
+        });
+
+      // Nowhere to go, which can become true after creation as beds fill up.
+      // Checked every tick rather than only at creation for that reason.
+      mine
+        .filter(r => r.status === 'pending' && !r.isEscalated)
+        .forEach(r => {
+          const reason = capacityEscalationReason(r, facilitiesById, {
+            facilitiesLoaded: facilities.length > 0,
+          });
+          if (!reason) return;
+          escalateForCapacity(r.id, reason).catch(err => {
+            console.error(`Capacity escalation failed for referral ${r.id}:`, err);
+          });
+        });
+    };
+
+    sweep();
+    // 30s: the SLA is measured in minutes, so second-level precision buys nothing
+    // and costs a transaction attempt per tick.
+    const id = setInterval(sweep, 30_000);
+    return () => clearInterval(id);
+  }, [referrals, facilities, facilitiesById, user?.verified, user?.role, user?.facilityId, autoEscalateReferral, escalateForCapacity]);
 
   const markNotificationRead = useCallback((id: string) => {
     updateDoc(doc(db, 'notifications', id), { read: true }).catch(writeFailed("Could not mark the notification as read."));

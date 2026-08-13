@@ -8,6 +8,7 @@ import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Upload, FileText, Image as ImageIcon, X, Sparkles, Activity, Bed, Zap } from 'lucide-react';
 import { showToast } from '../lib/toast';
+import { findCandidateFacilities } from '../lib/routing';
 
 // Clearing a numeric input yields '', and parseInt('') is NaN. Firestore happily
 // stores NaN as a double, which then printed as "SpO2: NaN%" on the receiving
@@ -108,18 +109,29 @@ export const NewReferralPage: React.FC = () => {
     e.preventDefault();
     if (receivingDepartments.length === 0 || !patientData.name || !patientData.hospitalId) return;
     
-    // Calculate matching facilities for auto-routing
-    const candidateIds = facilities.filter(f => 
-      f.id !== user.facilityId && 
-      receivingDepartments.every(d => f.departments.includes(d))
-    ).map(f => f.id);
+    // Candidates now also require the facility to be configured for the bed type,
+    // not just to run the departments -- a hospital with Cardiology but no ICU
+    // beds was previously offered an ICU transfer it could never accept.
+    const { matching, withBeds } = findCandidateFacilities(facilities, {
+      departments: receivingDepartments,
+      bedType: requiredBedType,
+      excludeFacilityId: user.facilityId,
+    });
+    const candidateIds = matching.map(f => f.id);
 
-    if (isAutoRouting && candidateIds.length === 0) {
-      showToast('No facilities match the required departments.', 'error');
-      return;
-    }
-    
     if (!isAutoRouting && !receivingFacilityId) return;
+
+    // No longer blocks. Refusing to submit meant the most urgent case in the
+    // system -- a patient nobody can take -- produced no record and notified
+    // nobody; the clinician was left holding it with a red toast. The referral is
+    // created and escalated to system administrators instead (addReferral detects
+    // the condition and flags it), so there is something to act on and an audit
+    // trail of when it started.
+    if (isAutoRouting && matching.length === 0) {
+      showToast('No facility matches this request. Referral created and escalated to system administrators.', 'error');
+    } else if (isAutoRouting && withBeds.length === 0) {
+      showToast('All matching facilities are full. Referral created and escalated to system administrators.', 'error');
+    }
 
     addReferral({
       patientId: `p-${Math.random().toString(36).substring(7)}`,
