@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  FIREBASE_PROJECT: eha-transfer-1785622025
+  FIREBASE_PROJECT: imc-er-manager
 
 jobs:
   deploy:

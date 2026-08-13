@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FIREBASE_PROJECT: eha-transfer-1785622025
+  FIREBASE_PROJECT: imc-er-manager
 
 jobs:
   preview:
@@ -51,6 +51,6 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: eha-transfer-1785622025
+          projectId: imc-er-manager
           target: eha-transfer
           expires: 7d
