@@ -18,19 +18,19 @@ describe('Badge', () => {
   it('applies success variant classes', () => {
     render(<Badge variant="success" data-testid="badge">Success</Badge>);
     const badge = screen.getByTestId('badge');
-    expect(badge).toHaveClass('bg-green-100');
+    expect(badge).toHaveClass('bg-success-100');
   });
 
   it('applies warning variant classes', () => {
     render(<Badge variant="warning" data-testid="badge">Warning</Badge>);
     const badge = screen.getByTestId('badge');
-    expect(badge).toHaveClass('bg-amber-100');
+    expect(badge).toHaveClass('bg-warning-100');
   });
 
   it('applies danger variant classes', () => {
     render(<Badge variant="danger" data-testid="badge">Danger</Badge>);
     const badge = screen.getByTestId('badge');
-    expect(badge).toHaveClass('bg-red-100');
+    expect(badge).toHaveClass('bg-critical-100');
   });
 
   it('passes through additional props', () => {

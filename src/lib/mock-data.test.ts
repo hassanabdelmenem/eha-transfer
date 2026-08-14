@@ -122,30 +122,30 @@ describe('lib/mock-data (strong assertions)', () => {
     });
 
     const u0 = MOCK_USERS.find(u => u.id === 'u0');
-    expect(u0).toEqual({ id: 'u0', name: 'Hassan (Owner)', email: 'hassan.abdelmenem@gmail.com', role: 'owner', phoneNumber: '+20 100 000 0000' });
+    expect(u0).toEqual({ id: 'u0', name: 'Owner (seed)', email: 'owner@example.invalid', role: 'owner' });
 
     const uAdmin = MOCK_USERS.find(u => u.id === 'u_admin');
-    expect(uAdmin).toEqual({ id: 'u_admin', name: 'System Admin', email: 'admin@ismailiahealth.gov', role: 'system_admin', phoneNumber: '+20 100 000 0001' });
+    expect(uAdmin).toEqual({ id: 'u_admin', name: 'System Admin (seed)', email: 'admin@example.invalid', role: 'system_admin' });
 
     const u1 = MOCK_USERS.find(u => u.id === 'u1');
-    expect(u1).toEqual({ id: 'u1', name: 'Dr. Ahmed Youssef', email: 'ahmed.y@ismailiahealth.gov', role: 'medical_director', facilityId: 'f1', phoneNumber: '+20 120 123 4567' });
+    expect(u1).toEqual({ id: 'u1', name: 'Medical Director (seed)', email: 'director@example.invalid', role: 'medical_director', facilityId: 'f1' });
 
     const u2 = MOCK_USERS.find(u => u.id === 'u2');
-    expect(u2).toEqual({ id: 'u2', name: 'Dr. Sara Mahmoud', email: 'sara.m@ismailiahealth.gov', role: 'clinician', facilityId: 'f4', department: 'Emergency', phoneNumber: '+20 101 234 5678' });
+    expect(u2).toEqual({ id: 'u2', name: 'Clinician (seed)', email: 'clinician@example.invalid', role: 'clinician', facilityId: 'f4', department: 'Emergency' });
 
     const u3 = MOCK_USERS.find(u => u.id === 'u3');
-    expect(u3).toEqual({ id: 'u3', name: 'Dr. Khaled Ibrahim', email: 'khaled.i@ismailiahealth.gov', role: 'head_of_department', facilityId: 'f1', department: 'Cardiology', phoneNumber: '+20 111 345 6789' });
+    expect(u3).toEqual({ id: 'u3', name: 'Head of Department (seed)', email: 'hod@example.invalid', role: 'head_of_department', facilityId: 'f1', department: 'Cardiology' });
 
     const u4 = MOCK_USERS.find(u => u.id === 'u4');
-    expect(u4).toEqual({ id: 'u4', name: 'Nrs. Fatima Ali', email: 'fatima.a@ismailiahealth.gov', role: 'nursing_supervisor', facilityId: 'f2', phoneNumber: '+20 155 456 7890' });
+    expect(u4).toEqual({ id: 'u4', name: 'Nursing Supervisor (seed)', email: 'nursing@example.invalid', role: 'nursing_supervisor', facilityId: 'f2' });
 
     const u5 = MOCK_USERS.find(u => u.id === 'u5');
-    expect(u5).toEqual({ id: 'u5', name: 'Dr. Tarek Hassan', email: 'tarek.h@ismailiahealth.gov', role: 'hospital_manager', facilityId: 'f1', phoneNumber: '+20 122 567 8901' });
+    expect(u5).toEqual({ id: 'u5', name: 'Hospital Manager (seed)', email: 'manager@example.invalid', role: 'hospital_manager', facilityId: 'f1' });
 
     const u6 = MOCK_USERS.find(u => u.id === 'u6');
-    expect(u6).toEqual({ id: 'u6', name: 'ER Dispatch Team', email: 'er.f1@ismailiahealth.gov', role: 'er_room', facilityId: 'f1', phoneNumber: '+20 123 456 7890' });
+    expect(u6).toEqual({ id: 'u6', name: 'ER Dispatch (seed)', email: 'er.f1@example.invalid', role: 'er_room', facilityId: 'f1' });
 
     const u7 = MOCK_USERS.find(u => u.id === 'u7');
-    expect(u7).toEqual({ id: 'u7', name: 'ER Dispatch Team', email: 'er.f2@ismailiahealth.gov', role: 'er_room', facilityId: 'f2', phoneNumber: '+20 123 456 7891' });
+    expect(u7).toEqual({ id: 'u7', name: 'ER Dispatch (seed)', email: 'er.f2@example.invalid', role: 'er_room', facilityId: 'f2' });
   });
 });

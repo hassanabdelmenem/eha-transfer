@@ -76,6 +76,10 @@ describe('DataContext offline addReferral', () => {
       </AuthProvider>
     );
 
+    act(() => {
+      window.dispatchEvent(new Event('offline'));
+    });
+
     await act(async () => {
       screen.getByText('Add').click();
     });

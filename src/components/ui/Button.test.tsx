@@ -19,7 +19,7 @@ describe('Button', () => {
   it('applies destructive variant classes', () => {
     render(<Button variant="destructive">Destructive</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-red-600');
+    expect(button).toHaveClass('bg-critical-600');
   });
 
   it('applies large size classes', () => {
