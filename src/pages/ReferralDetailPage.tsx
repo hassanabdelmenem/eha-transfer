@@ -69,7 +69,7 @@ export const ReferralDetailPage: React.FC = () => {
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: `Clinical_Summary_${referral?.patientData?.name.replace(/\s+/g, '_') || 'Referral'}`
+    documentTitle: `Clinical_Summary_${referral?.patientData?.name?.replace(/\s+/g, '_') || 'Referral'}`
   });
 
   // A referral that hasn't arrived yet and a referral that genuinely does not
@@ -408,7 +408,7 @@ export const ReferralDetailPage: React.FC = () => {
                     return (
                       <div key={c.id} className="p-3 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800">
                         <div className="flex justify-between items-start mb-1">
-                          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{commentUser?.name} ({commentUser?.role.replace(/_/g, ' ')})</span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{commentUser?.name || 'System'} {commentUser?.role ? `(${commentUser.role.replace(/_/g, ' ')})` : ''}</span>
                           <span className="text-xs text-slate-400 font-mono">{formatDateTime(c.timestamp)}</span>
                         </div>
                         <div className="mb-2">
@@ -579,7 +579,7 @@ export const ReferralDetailPage: React.FC = () => {
                           {facilities
                             .filter(f => f.id !== referral.referringFacilityId)
                             .map(f => {
-                              const bedCap = f.capacity[referral.requiredBedType] || { total: 0, occupied: 0 };
+                              const bedCap = f.capacity?.[referral.requiredBedType] || { total: 0, occupied: 0 };
                               return (
                                 <option key={f.id} value={f.id}>
                                   🏥 {f.name} ({bedCap.occupied}/{bedCap.total} {referral.requiredBedType})
@@ -738,7 +738,7 @@ export const ReferralDetailPage: React.FC = () => {
                         >
                           <option value="">Select new destination...</option>
                           {facilities.filter(f => f.id !== referral.referringFacilityId).map(f => (
-                            <option key={f.id} value={f.id}>{f.name} ({f.capacity[referral.requiredBedType]?.occupied || 0}/{f.capacity[referral.requiredBedType]?.total || 0} {referral.requiredBedType})</option>
+                            <option key={f.id} value={f.id}>{f.name} ({f.capacity?.[referral.requiredBedType]?.occupied || 0}/{f.capacity?.[referral.requiredBedType]?.total || 0} {referral.requiredBedType})</option>
                           ))}
                         </select>
                         <Button

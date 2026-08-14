@@ -197,24 +197,24 @@ export const AppLayout: React.FC = () => {
           <button
             onClick={openProfile}
             className="hidden lg:flex flex-col items-end hover:opacity-80 transition-opacity text-left shrink-0 min-w-0 max-w-[16rem]"
-            title={`${user.name} — ${user.role.replace(/_/g, ' ')}${facility ? ` • ${facility.name}` : ''}`}
+            title={`${user.name} — ${user.role?.replace(/_/g, ' ')}${facility ? ` • ${facility.name}` : ''}`}
           >
             <span className="text-xs font-semibold truncate max-w-full">{user.name}</span>
-            <span className="text-xs bg-blue-800 px-2 py-0.5 rounded truncate max-w-full">{user.role.replace(/_/g, ' ')} {facility ? `• ${facility.name}` : ''}</span>
+            <span className="text-xs bg-blue-800 px-2 py-0.5 rounded truncate max-w-full">{user.role?.replace(/_/g, ' ')} {facility ? `• ${facility.name}` : ''}</span>
           </button>
 
           {/* Mobile/tablet fallback: identity is still visible and profile still reachable. */}
           <button
             onClick={openProfile}
             className="lg:hidden flex items-center gap-2 min-h-[40px] px-2 rounded hover:bg-blue-800/60 transition-colors shrink-0 min-w-0 max-w-[45vw]"
-            aria-label={`Profile settings for ${user.name}, ${user.role.replace(/_/g, ' ')}`}
+            aria-label={`Profile settings for ${user.name}, ${user.role?.replace(/_/g, ' ')}`}
           >
             <span className="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center shrink-0" aria-hidden="true">
               <User className="w-4 h-4" />
             </span>
             <span className="flex flex-col items-start min-w-0 text-left">
               <span className="text-xs font-semibold leading-tight truncate max-w-full">{user.name}</span>
-              <span className="text-xs uppercase tracking-wide opacity-80 leading-tight truncate max-w-full">{user.role.replace(/_/g, ' ')}</span>
+              <span className="text-xs uppercase tracking-wide opacity-80 leading-tight truncate max-w-full">{user.role?.replace(/_/g, ' ')}</span>
             </span>
           </button>
 
@@ -409,7 +409,7 @@ export const AppLayout: React.FC = () => {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
                           <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{contact.name}</p>
-                          <p className="text-xs text-slate-500 uppercase tracking-wide mt-0.5">{contact.role.replace(/_/g, ' ')} {contact.department ? `• ${contact.department}` : ''}</p>
+                          <p className="text-xs text-slate-500 uppercase tracking-wide mt-0.5">{contact.role?.replace(/_/g, ' ')} {contact.department ? `• ${contact.department}` : ''}</p>
                         </div>
                         {contact.phoneNumber ? (
                           <a href={`tel:${contact.phoneNumber}`} className="flex items-center justify-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-4 py-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold uppercase hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shrink-0">

@@ -293,7 +293,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                     {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-warning-500 rounded-full shrink-0"></div>}
                     {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-success-500 rounded-full shrink-0"></div>}
                     {['rejected', 'cancelled'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-critical-500 rounded-full shrink-0"></div>}
-                    <span className="capitalize">{referral.status.replace(/_/g, ' ')}</span>
+                    <span className="capitalize">{referral.status?.replace(/_/g, ' ') || 'UNKNOWN'}</span>
                   </div>
                 </div>
               </div>
@@ -360,7 +360,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                         {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-success-500 rounded-full shrink-0"></div>}
                         {['rejected', 'cancelled'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-critical-500 rounded-full shrink-0"></div>}
                         {['postponed'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-purple-500 rounded-full shrink-0"></div>}
-                        <span className="capitalize">{referral.status.replace(/_/g, ' ')}</span>
+                        <span className="capitalize">{referral.status?.replace(/_/g, ' ') || 'UNKNOWN'}</span>
                       </div>
                       {referral.isEscalated && (
                         <span className="px-2 py-0.5 bg-critical-700 text-white rounded text-xs font-sans font-bold uppercase tracking-wider motion-safe:animate-pulse whitespace-nowrap">

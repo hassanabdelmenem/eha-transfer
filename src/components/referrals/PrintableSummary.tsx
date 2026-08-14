@@ -42,7 +42,7 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
           <div className="p-3 bg-gray-50 border border-gray-200 rounded">
             <p className="text-xs font-bold uppercase text-gray-500">From</p>
             <p className="font-bold">{fromFacility?.name || 'Unknown'}</p>
-            <p className="text-xs text-gray-600 mt-1">Status: {referral.status.replace(/_/g, ' ')}</p>
+            <p className="text-xs text-gray-600 mt-1">Status: {referral.status?.replace(/_/g, ' ') || 'UNKNOWN'}</p>
           </div>
           <div className="p-3 bg-gray-50 border border-gray-200 rounded">
             <p className="text-xs font-bold uppercase text-gray-500">To</p>
@@ -133,7 +133,7 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
                 return (
                   <tr key={idx} className="border-b border-gray-100">
                     <td className="py-2 text-xs font-mono">{dateStr}</td>
-                    <td className="py-2 font-medium capitalize">{sh.status.replace(/_/g, ' ')}</td>
+                    <td className="py-2 font-medium capitalize">{sh.status?.replace(/_/g, ' ') || 'UNKNOWN'}</td>
                     <td className="py-2 text-sm">{u ? u.name : 'System'}</td>
                   </tr>
                 );

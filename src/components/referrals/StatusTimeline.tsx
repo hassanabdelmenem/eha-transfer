@@ -49,7 +49,7 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users,
       type: 'status_change',
       timestamp: sh.timestamp,
       userId: sh.userId,
-      title: `Status: ${sh.status.replace(/_/g, ' ').toUpperCase()}`,
+      title: `Status: ${sh.status?.replace(/_/g, ' ').toUpperCase() || 'UNKNOWN'}`,
       description: sh.notes,
       dotColor,
       icon,
@@ -63,7 +63,7 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users,
       type: 'dept_comment',
       timestamp: dc.timestamp,
       userId: dc.userId,
-      title: `Dept Review: ${dc.status.replace(/_/g, ' ').toUpperCase()}`,
+      title: `Dept Review: ${dc.status?.replace(/_/g, ' ').toUpperCase() || 'UNKNOWN'}`,
       description: dc.comment,
       dotColor: 'bg-purple-500',
       icon: <MessageSquare className="w-3 h-3 text-white" />,
@@ -80,7 +80,7 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users,
       {events.map((event) => {
         const user = usersById ? usersById.get(event.userId) : users?.find(u => u.id === event.userId);
         const userName = user ? user.name : 'System / Unknown';
-        const userRole = user ? user.role.replace(/_/g, ' ') : '';
+        const userRole = user?.role ? user.role.replace(/_/g, ' ') : '';
 
         return (
           <div key={event.id} className="relative pl-10 pb-6 group">
