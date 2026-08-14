@@ -23,7 +23,7 @@ interface TimelineEvent {
 export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users, usersById }) => {
   const events: TimelineEvent[] = [];
 
-  const safeStatusHistory = referral.statusHistory || [];
+  const safeStatusHistory = Array.isArray(referral.statusHistory) ? referral.statusHistory : [];
   safeStatusHistory.forEach((sh, idx) => {
     let dotColor = 'bg-slate-300 dark:bg-slate-600';
     let icon = <Clock className="w-3 h-3 text-white" />;
@@ -56,7 +56,7 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users,
     });
   });
 
-  const safeDeptComments = referral.deptComments || [];
+  const safeDeptComments = Array.isArray(referral.deptComments) ? referral.deptComments : [];
   safeDeptComments.forEach((dc) => {
     events.push({
       id: `dc-${dc.id}`,
@@ -71,7 +71,7 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users,
   });
 
   // Sort by timestamp descending (newest first) using string compare of ISO timestamps to avoid Date parsing
-  events.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  events.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
 
   return (
     <div className="relative pt-4 space-y-0">

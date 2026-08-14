@@ -54,9 +54,9 @@ export const DepartmentPage: React.FC = () => {
       name: r.patientData.name,
       hospitalId: r.patientData.hospitalId,
       type: 'referral',
-      admittedAt: r.statusHistory.find(h => h.status === 'admitted')?.timestamp || r.updatedAt
+      admittedAt: (Array.isArray(r.statusHistory) ? r.statusHistory : []).find(h => h.status === 'admitted')?.timestamp || r.updatedAt
     }))
-  ].sort((a, b) => b.admittedAt.localeCompare(a.admittedAt));
+  ].sort((a, b) => (b.admittedAt || '').localeCompare(a.admittedAt || ''));
 
   const myFacility = facilitiesById.get(facilityId || '');
   const otherDepartments = myFacility?.departments.filter(d => d !== department) || [];

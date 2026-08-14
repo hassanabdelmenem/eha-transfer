@@ -34,7 +34,7 @@ export const Dashboard: React.FC = () => {
   // Filter referrals related to user's facility, or show all if system admin/owner
     const recentShiftLogs = shiftLogs.filter(log => 
     log.facilityId === user.facilityId && (!user.department || log.department === user.department)
-  ).sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 5);
+  ).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')).slice(0, 5);
 
   const facilityReferrals = (user.role === 'system_admin' || user.role === 'owner') 
     ? referrals 

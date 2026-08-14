@@ -386,7 +386,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAdmin ? collection(db, 'directAdmissions') : query(collection(db, 'directAdmissions'), where('facilityId', '==', user.facilityId || '')),
       (snapshot) => {
         markOnline();
-        setDirectAdmissions(snapshot.docs.map(doc => doc.data() as DirectAdmission).sort((a, b) => b.admittedAt.localeCompare(a.admittedAt)));
+        setDirectAdmissions(snapshot.docs.map(doc => doc.data() as DirectAdmission).sort((a, b) => (b.admittedAt || '').localeCompare(a.admittedAt || '')));
       }, logAndCheckOffline));
 
     // Shift Assignments: no patient data, readable network-wide by verified staff.
@@ -400,7 +400,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAdmin ? collection(db, 'shiftLogs') : query(collection(db, 'shiftLogs'), where('facilityId', '==', user.facilityId || '')),
       (snapshot) => {
         markOnline();
-        setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => b.timestamp.localeCompare(a.timestamp)));
+        setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')));
       }, logAndCheckOffline));
 
     return () => unsubs.forEach(u => u());
@@ -996,7 +996,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const r = snap.data() as Referral;
 
       if (CANCEL_LOCKED_STATUSES.includes(r.status)) {
-        throw new Error(`Cannot cancel a referral once it is ${r.(status || "").replace(/_/g, ' ')}.`);
+        throw new Error(`Cannot cancel a referral once it is ${(r.status || "").replace(/_/g, ' ')}.`);
       }
 
       const isCreator = r.referringUserId === user.id;

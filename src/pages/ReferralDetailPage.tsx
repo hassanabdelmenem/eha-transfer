@@ -121,11 +121,11 @@ export const ReferralDetailPage: React.FC = () => {
   const isReferring = user.facilityId === referral.referringFacilityId || isAdmin;
   
   const isAssignedClinician = ((shiftAssignmentsByFacility.get(user.facilityId || '') || []) as any[]).some(s => 
-    (referral.receivingDepartments || []).includes(s.department) &&
+    (Array.isArray(referral.receivingDepartments) ? referral.receivingDepartments : (referral.receivingDepartments ? [referral.receivingDepartments] : [])).includes(s.department) &&
     s.assignedUserId === user.id
   );
   
-  const isTargetDeptHead = isReceiving && (user.role === 'head_of_department' || user.role === 'owner' || (['consultant', 'specialist'].includes(user.role) && isAssignedClinician)) && ((referral.receivingDepartments || []).includes(user.department || '') || isAdmin);
+  const isTargetDeptHead = isReceiving && (user.role === 'head_of_department' || user.role === 'owner' || (['consultant', 'specialist'].includes(user.role) && isAssignedClinician)) && ((Array.isArray(referral.receivingDepartments) ? referral.receivingDepartments : []).includes(user.department || '') || isAdmin);
   const isFacilityManager = isReceiving && ['medical_director', 'hospital_manager', 'deputy_manager', 'owner'].includes(user.role);
   const isNurse = ['nurse', 'nursing_supervisor', 'owner'].includes(user.role);
   const isErRoom = (user.role === 'er_room' || user.role === 'owner') && (user.facilityId === referral.referringFacilityId || user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && referral.candidateFacilityIds?.includes(user.facilityId || '')));
@@ -326,7 +326,7 @@ export const ReferralDetailPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Target Department(s) / Bed</p>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 uppercase">{(referral.receivingDepartments || []).join(', ')} / {referral.requiredBedType}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 uppercase">{(Array.isArray(referral.receivingDepartments) ? referral.receivingDepartments : (referral.receivingDepartments ? [referral.receivingDepartments] : [])).join(', ')} / {referral.requiredBedType}</p>
                 </div>
               </div>
               
@@ -356,7 +356,7 @@ export const ReferralDetailPage: React.FC = () => {
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-4 mt-4">
                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3">Clinical Attachments</p>
                   <div className="flex flex-wrap gap-4">
-                    {referral.patientData.attachments.map(att => (
+                    {(Array.isArray(referral.patientData.attachments) ? referral.patientData.attachments : []).map(att => (
                       <div key={att.id} className="relative w-24 h-24 border border-slate-200 dark:border-slate-800 rounded overflow-hidden group bg-slate-50 dark:bg-slate-950">
                         {att.type === 'image' ? (
                           <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
@@ -403,7 +403,7 @@ export const ReferralDetailPage: React.FC = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400 italic">No department comments yet.</p>
               ) : (
                 <div className="space-y-3">
-                  {referral.deptComments.map(c => {
+                  {(Array.isArray(referral.deptComments) ? referral.deptComments : []).map(c => {
                     const commentUser = usersById.get(c.userId);
                     return (
                       <div key={c.id} className="p-3 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800">
