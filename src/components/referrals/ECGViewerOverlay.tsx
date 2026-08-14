@@ -37,27 +37,34 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
               ECG Quick-Viewer
             </h2>
             <div className="flex items-center gap-1 sm:gap-2">
-              <button 
-                onClick={() => setHighContrast(!highContrast)} 
+              {/* aria-label, not just the visible label: the "High Contrast"
+                  <span> is hidden below the sm breakpoint, which on a phone
+                  left this button with no accessible name at all despite
+                  looking labelled on desktop. */}
+              <button
+                onClick={() => setHighContrast(!highContrast)}
                 className={`flex items-center px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-colors ${highContrast ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                aria-label="Toggle high contrast"
+                aria-pressed={highContrast}
               >
-                <Contrast className="w-4 h-4 sm:mr-2" />
+                <Contrast className="w-4 h-4 sm:mr-2" aria-hidden="true" />
                 <span className="hidden sm:inline">High Contrast</span>
               </button>
               <div className="w-px h-6 bg-slate-700 mx-1 sm:mx-2"></div>
-              <button onClick={handleZoomOut} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors">
-                <ZoomOut className="w-5 h-5" />
+              <button onClick={handleZoomOut} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors" aria-label="Zoom out">
+                <ZoomOut className="w-5 h-5" aria-hidden="true" />
               </button>
-              <span className="text-xs font-mono w-10 text-center text-slate-400">{Math.round(scale * 100)}%</span>
-              <button onClick={handleZoomIn} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors">
-                <ZoomIn className="w-5 h-5" />
+              <span className="text-xs font-mono w-10 text-center text-slate-400" aria-hidden="true">{Math.round(scale * 100)}%</span>
+              <span className="sr-only" role="status">{Math.round(scale * 100)}% zoom</span>
+              <button onClick={handleZoomIn} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors" aria-label="Zoom in">
+                <ZoomIn className="w-5 h-5" aria-hidden="true" />
               </button>
-              <button onClick={handleReset} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors" title="Reset View">
-                <RefreshCcw className="w-4 h-4" />
+              <button onClick={handleReset} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors" title="Reset View" aria-label="Reset view">
+                <RefreshCcw className="w-4 h-4" aria-hidden="true" />
               </button>
               <div className="w-px h-6 bg-slate-700 mx-1 sm:mx-2"></div>
-              <button onClick={onClose} className="p-2 text-red-400 hover:text-red-300 hover:bg-slate-800 rounded transition-colors">
-                <X className="w-6 h-6" />
+              <button onClick={onClose} className="p-2 text-critical-400 hover:text-critical-300 hover:bg-slate-800 rounded transition-colors" aria-label="Close ECG viewer">
+                <X className="w-6 h-6" aria-hidden="true" />
               </button>
             </div>
           </div>

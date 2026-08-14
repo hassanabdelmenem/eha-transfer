@@ -68,14 +68,26 @@ export const FACILITIES: Facility[] = [
   },
 ];
 
+// Placeholder seed roster, used only to populate an empty `users` collection on a
+// brand-new project.
+//
+// These were previously real staff identities -- actual names, work email
+// addresses and mobile numbers, including the owner's personal account. Because
+// this module is imported at the top level of DataContext, every one of them was
+// compiled into the JavaScript bundle served to any unauthenticated visitor of
+// the hosting site: a ready-made phishing target list for the whole network,
+// readable without signing in.
+//
+// Keep this file free of real identities. Real accounts are created by staff
+// signing up and being verified by their facility leadership.
 export const MOCK_USERS: User[] = [
-  { id: 'u0', name: 'Hassan (Owner)', email: 'hassan.abdelmenem@gmail.com', role: 'owner', phoneNumber: '+20 100 000 0000' },
-  { id: 'u_admin', name: 'System Admin', email: 'admin@ismailiahealth.gov', role: 'system_admin', phoneNumber: '+20 100 000 0001' },
-  { id: 'u1', name: 'Dr. Ahmed Youssef', email: 'ahmed.y@ismailiahealth.gov', role: 'medical_director', facilityId: 'f1', phoneNumber: '+20 120 123 4567' },
-  { id: 'u2', name: 'Dr. Sara Mahmoud', email: 'sara.m@ismailiahealth.gov', role: 'clinician', facilityId: 'f4', department: 'Emergency', phoneNumber: '+20 101 234 5678' },
-  { id: 'u3', name: 'Dr. Khaled Ibrahim', email: 'khaled.i@ismailiahealth.gov', role: 'head_of_department', facilityId: 'f1', department: 'Cardiology', phoneNumber: '+20 111 345 6789' },
-  { id: 'u4', name: 'Nrs. Fatima Ali', email: 'fatima.a@ismailiahealth.gov', role: 'nursing_supervisor', facilityId: 'f2', phoneNumber: '+20 155 456 7890' },
-  { id: 'u5', name: 'Dr. Tarek Hassan', email: 'tarek.h@ismailiahealth.gov', role: 'hospital_manager', facilityId: 'f1', phoneNumber: '+20 122 567 8901' },
-  { id: 'u6', name: 'ER Dispatch Team', email: 'er.f1@ismailiahealth.gov', role: 'er_room', facilityId: 'f1', phoneNumber: '+20 123 456 7890' },
-  { id: 'u7', name: 'ER Dispatch Team', email: 'er.f2@ismailiahealth.gov', role: 'er_room', facilityId: 'f2', phoneNumber: '+20 123 456 7891' }
+  { id: 'u0', name: 'Owner (seed)', email: 'owner@example.invalid', role: 'owner' },
+  { id: 'u_admin', name: 'System Admin (seed)', email: 'admin@example.invalid', role: 'system_admin' },
+  { id: 'u1', name: 'Medical Director (seed)', email: 'director@example.invalid', role: 'medical_director', facilityId: 'f1' },
+  { id: 'u2', name: 'Clinician (seed)', email: 'clinician@example.invalid', role: 'clinician', facilityId: 'f4', department: 'Emergency' },
+  { id: 'u3', name: 'Head of Department (seed)', email: 'hod@example.invalid', role: 'head_of_department', facilityId: 'f1', department: 'Cardiology' },
+  { id: 'u4', name: 'Nursing Supervisor (seed)', email: 'nursing@example.invalid', role: 'nursing_supervisor', facilityId: 'f2' },
+  { id: 'u5', name: 'Hospital Manager (seed)', email: 'manager@example.invalid', role: 'hospital_manager', facilityId: 'f1' },
+  { id: 'u6', name: 'ER Dispatch (seed)', email: 'er.f1@example.invalid', role: 'er_room', facilityId: 'f1' },
+  { id: 'u7', name: 'ER Dispatch (seed)', email: 'er.f2@example.invalid', role: 'er_room', facilityId: 'f2' }
 ];

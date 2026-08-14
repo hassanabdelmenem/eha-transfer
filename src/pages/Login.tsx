@@ -106,7 +106,7 @@ export const Login: React.FC = () => {
             {error && (
               <div
                 role="alert"
-                className="rounded border-l-4 border-l-red-600 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-900 dark:text-red-200"
+                className="rounded border-l-4 border-l-critical-600 bg-critical-50 dark:bg-critical-950/40 px-4 py-3 text-sm text-critical-900 dark:text-critical-200"
               >
                 {error}
               </div>

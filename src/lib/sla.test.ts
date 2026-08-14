@@ -112,6 +112,10 @@ describe('needsAutoEscalation', () => {
     expect(needsAutoEscalation(referral(), at(SLA_SECONDS - 1))).toBe(false);
   });
 
+  it('is false once a human has de-escalated, so De-escalate is not undone on the next sweep', () => {
+    expect(needsAutoEscalation(referral({ autoEscalationSuppressed: true }), at(SLA_SECONDS + 600))).toBe(false);
+  });
+
   it('is false for a referral that was accepted inside the window', () => {
     // The clinically important case: responded to at 29 minutes, so it must not
     // escalate at 31 just because the document is still around.
@@ -147,6 +151,7 @@ describe('functions/src/sla.ts stays in step with this module', () => {
     ['ward bed', referral({ requiredBedType: 'Ward' }), SLA_SECONDS + 1, false],
     ['already accepted', referral({ status: 'accepted' }), SLA_SECONDS + 1, false],
     ['unparseable timestamp', referral({ createdAt: 'nope' }), SLA_SECONDS + 1, false],
+    ['manually de-escalated', referral({ autoEscalationSuppressed: true }), SLA_SECONDS + 1, false],
   ] as const)('reaches the same verdict: %s', (_label, r, offset, expected) => {
     const now = at(offset);
     expect(needsAutoEscalation(r, now)).toBe(expected);

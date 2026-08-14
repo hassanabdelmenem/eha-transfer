@@ -7,7 +7,11 @@ import { db } from '../lib/firebase';
 import { toastError } from '../lib/toast';
 import { formatDateTime } from '../lib/utils';
 import { SLA_MINUTES, needsAutoEscalation } from '../lib/sla';
-import { capacityEscalationReason, describeCapacityEscalation, CapacityEscalationReason } from '../lib/routing';
+import { capacityEscalationReason, describeCapacityEscalation } from '../lib/routing';
+// Type-only: `isolatedModules` is on, so esbuild transpiles this file without
+// cross-file type information and would emit a runtime import for a binding that
+// only exists at compile time.
+import type { CapacityEscalationReason } from '../lib/routing';
 import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch, increment, runTransaction, query, where, orderBy, limit as firestoreLimit, startAfter } from 'firebase/firestore';
 
 // Roles at the referring facility trusted to withdraw a referral they didn't personally
@@ -31,6 +35,8 @@ export interface DirectAdmission {
 }
 
 interface DataContextType {
+  /** True until facilities and this user's referrals have both loaded once. */
+  loading: boolean;
   users: User[];
   usersById: Map<string, User>;
   referrals: Referral[];
@@ -42,7 +48,7 @@ interface DataContextType {
   shiftAssignmentsByFacility: Map<string, ShiftAssignment[]>;
   shiftLogs: ShiftLog[];
   addShiftLog: (log: Omit<ShiftLog, 'id' | 'timestamp'>) => Promise<void>;
-  addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'deptComments'>, sendCriticalAlert?: boolean) => void;
+  addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => void;
   loadOlderReferrals?: () => Promise<void>;
   updateReferralStatus: (id: string, status: Referral['status'], notes?: string) => Promise<void>;
   overrideReferralDestination: (id: string, newFacilityId: string) => Promise<void>;
@@ -94,16 +100,51 @@ const writeFailed = (fallback: string) => (error: unknown) => {
 };
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  // Empty, not seeded with the mock lists.
+  //
+  // Seeding state with INITIAL_* meant that before the first Firestore snapshot
+  // the app was operating on fabricated hospitals and staff: capacity decisions
+  // were computed from mock bed counts, and notification fan-out addressed mock
+  // user ids. INITIAL_* is now used only in the explicit "collection is empty,
+  // seed it" branches of the listeners below.
+  const [users, setUsers] = useState<User[]>([]);
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [facilities, setFacilities] = useState<Facility[]>(INITIAL_FACILITIES);
+  const [facilities, setFacilities] = useState<Facility[]>([]);
   const [directAdmissions, setDirectAdmissions] = useState<DirectAdmission[]>([]);
   const [shiftAssignments, setShiftAssignments] = useState<ShiftAssignment[]>([]);
   const [shiftLogs, setShiftLogs] = useState<ShiftLog[]>([]);
   const { user } = useAuth();
+
+  // Whether the real Firestore snapshots have actually arrived.
+  //
+  // These cannot be inferred from the arrays, because `users` and `facilities`
+  // are seeded with mock data above rather than with []. That made the
+  // "have the facilities loaded yet?" guard on the capacity sweep permanently
+  // true, so during the window before the first snapshot a real referral was
+  // judged against hardcoded mock bed counts -- and mock f2 has ICU 8/8. A
+  // referral to a hospital that genuinely had beds would be escalated
+  // `no_beds_available`, attributed to 'system', and never de-escalated, because
+  // capacity escalation is one-way. The notification fan-out had the same
+  // problem in reverse: it resolved recipients against MOCK_USERS and wrote
+  // alerts addressed to user ids that do not exist, which fail silently.
+  const facilitiesLoadedRef = useRef(false);
+  const usersLoadedRef = useRef(false);
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
+
+  // True until the facility list and this user's referrals have both come back
+  // from Firestore at least once. Consumers use this to show a skeleton instead
+  // of an empty state — without it, "no referrals yet" and "still loading" were
+  // visually identical, which is misleading on a screen clinicians use to
+  // decide whether a bed is actually free right now. Like facilitiesLoadedRef,
+  // this only ever goes true -> it is not reset on a later re-subscribe.
+  const [dataLoading, setDataLoading] = useState(true);
+  const referralsReadyRef = useRef(false);
+  const referralShapeKeysLoadedRef = useRef<Set<string>>(new Set());
+  const markDataReadyIfSettled = useCallback(() => {
+    if (facilitiesLoadedRef.current && referralsReadyRef.current) setDataLoading(false);
+  }, []);
 
   // Derived lookup maps to avoid repeated O(n) array scans in hot paths.
   const facilitiesById = useMemo(() => new Map(facilities.map(f => [f.id, f])), [facilities]);
@@ -227,11 +268,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         batch.commit().catch(writeFailed("Could not seed the facility list."));
       } else {
         setFacilities(data);
+        // Only now is `facilities` real rather than the mock seed. The capacity
+        // sweep must not run before this point.
+        facilitiesLoadedRef.current = true;
+        markDataReadyIfSettled();
       }
     }, console.error));
 
     // Everything below is patient data or staff PII and is gated on verification.
     if (!user.verified) {
+      // No referrals listener will ever be opened for this session, so don't
+      // leave dataLoading stuck true — Onboarding/PendingVerification only need
+      // the facility list, which is already handled above.
+      referralsReadyRef.current = true;
+      markDataReadyIfSettled();
       return () => unsubs.forEach(u => u());
     }
 
@@ -245,6 +295,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         batch.commit().catch(writeFailed("Could not seed the user roster."));
       } else {
         setUsers(data);
+        // Guards the notification fan-out, which resolves recipients from this
+        // list and would otherwise address real alerts to mock user ids.
+        usersLoadedRef.current = true;
       }
     }, console.error));
 
@@ -255,7 +308,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     referralPagesRef.current = {};
     olderReferralsRef.current = [];
     referralCursorsRef.current = {};
-    Object.entries(referralQueryShapes(user.facilityId, isAdmin)).forEach(([key, constraints]) => {
+    referralShapeKeysLoadedRef.current = new Set();
+    const referralShapes = referralQueryShapes(user.facilityId, isAdmin);
+    const referralShapeKeys = Object.keys(referralShapes);
+    // Marks one shape's query as "settled" -- it has come back at least once,
+    // successfully or not -- and flips dataLoading once every shape has. A
+    // permission error still counts as settled so a rejected query doesn't
+    // leave the skeleton spinning forever.
+    const settleReferralShape = (key: string) => {
+      referralShapeKeysLoadedRef.current.add(key);
+      if (referralShapeKeysLoadedRef.current.size >= referralShapeKeys.length) {
+        referralsReadyRef.current = true;
+        markDataReadyIfSettled();
+      }
+    };
+    if (referralShapeKeys.length === 0) {
+      // Nothing to subscribe to for this user (no facility, non-privileged) --
+      // don't wait on a listener that will never open.
+      referralsReadyRef.current = true;
+      markDataReadyIfSettled();
+    }
+    referralShapeKeys.forEach((key) => {
+      const constraints = referralShapes[key];
       const q = query(collection(db, 'referrals'), ...constraints, firestoreLimit(200));
       unsubs.push(onSnapshot(q, (snapshot) => {
         if (snapshot.docs.length > 0) {
@@ -263,12 +337,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         referralPagesRef.current[key] = snapshot.docs.map(d => d.data() as Referral);
         mergeReferrals();
+        settleReferralShape(key);
       }, (err) => {
         // Surfaced, not just logged. A dead referrals listener empties the app's
         // main screen, and routing that to console.error alone is precisely how
         // the unfiltered-query bug stayed invisible.
         console.error(`Referrals listener (${key}) failed:`, err);
         toastError(err, 'Could not load referrals. Try reloading the page.');
+        settleReferralShape(key);
       }));
     });
 
@@ -276,7 +352,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     unsubs.push(onSnapshot(
       isAdmin ? collection(db, 'notifications') : query(collection(db, 'notifications'), where('userId', '==', user.id)),
       (snapshot) => {
-        setNotifications(snapshot.docs.map(doc => doc.data() as Notification).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+        // Sorted on createdAtMs, which the rules bound against server time.
+        // Sorting on the createdAt string left the ordering forgeable: any
+        // verified user could write a notification dated to the year 9999 and pin
+        // it to the top of a clinician's tray permanently. Older notifications
+        // predate the field, so fall back to the string for those.
+        setNotifications(
+          snapshot.docs
+            .map(doc => doc.data() as Notification)
+            .sort((a, b) => (b.createdAtMs ?? Date.parse(b.createdAt) ?? 0) - (a.createdAtMs ?? Date.parse(a.createdAt) ?? 0))
+        );
       }, console.error));
 
     // Direct Admissions: facility-scoped patient records.
@@ -332,6 +417,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     
     const batch = writeBatch(db);
+    const createdAt = new Date().toISOString();
+    const createdAtMs = Date.parse(createdAt);
     relevantUsers.forEach(u => {
       const id = uuidv4();
       const notif: Notification = {
@@ -341,7 +428,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         message: params.message,
         type: params.type,
         read: false,
-        createdAt: new Date().toISOString(),
+        createdAt,
+        // Bounded against server time by the rules; also what the tray sorts on.
+        createdAtMs,
         referralId: params.referralId
       };
       batch.set(doc(db, 'notifications', id), notif);
@@ -460,14 +549,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!snap.exists()) return;
       const r = snap.data() as Referral;
       transaction.update(refDocRef, {
-        receivingDepartments: [toDepartment]
-      });
-      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), {
+        receivingDepartments: [toDepartment],
+        statusHistory: [...r.statusHistory, {
           status: r.status,
           timestamp: new Date().toISOString(),
           userId: user?.id || 'system',
           notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
-        });
+        }]
+      });
     }).catch(writeFailed("Could not complete the transfer."));
   }, [user]);
 
@@ -516,50 +605,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, [createNotification]);
 
-  const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'deptComments'>, sendCriticalAlert?: boolean) => {
+  const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => {
     const now = new Date().toISOString();
-    const baseReferral: Referral = {
+    // Referrals are always created unescalated, with exactly one history entry.
+    //
+    // Escalating here as well as in the sweep meant the create rule had to accept
+    // an already-escalated referral carrying two history entries, which is also
+    // the shape an attacker needs to forge one. Creating in a single known state
+    // lets the rules pin it exactly, and the sweep escalates a capacity-blocked
+    // referral on the very next snapshot -- which is the write this component
+    // triggers, so the gap is milliseconds.
+    //
+    // createdAtMs is the SLA clock. It duplicates createdAt because Firestore
+    // rules cannot parse an ISO string, and comparing it against request.time is
+    // what lets them verify that a claimed 30-minute breach really has elapsed.
+    const newReferral: Referral = {
       ...newReferralData,
       id: uuidv4(),
       createdAt: now,
+      createdAtMs: Date.parse(now),
       updatedAt: now,
+      isEscalated: false,
       deptComments: [],
+      statusHistory: [
+        { status: newReferralData.status, timestamp: now, userId: newReferralData.referringUserId }
+      ]
     };
 
-    // Escalate at creation when there is nowhere to send the patient. The
-    // referral is still created: previously the form refused to submit at all,
-    // which left the most urgent case in the system -- a patient nobody can
-    // take -- with no record, no audit trail and nobody notified.
-    const capacityReason = capacityEscalationReason(baseReferral, facilitiesById);
-    const newReferral: Referral = capacityReason
-      ? {
-          ...baseReferral,
-          isEscalated: true,
-          escalatedAt: now,
-          escalatedBy: 'system',
-          escalationReason: capacityReason,
-          escalationLevel: 'system',
-        }
-      : baseReferral;
-
-    const batch = writeBatch(db);
-    batch.set(doc(db, 'referrals', newReferral.id), newReferral);
-    batch.set(doc(db, 'referrals', newReferral.id, 'statusHistory', uuidv4()), {
-      status: baseReferral.status,
-      timestamp: now,
-      userId: newReferralData.referringUserId
-    });
-    
-    if (capacityReason) {
-      batch.set(doc(db, 'referrals', newReferral.id, 'statusHistory', uuidv4()), {
-        status: baseReferral.status,
-        timestamp: now,
-        userId: 'system',
-        notes: describeCapacityEscalation(capacityReason) + ' Escalated for administrative placement.',
-      });
-    }
-
-    batch.commit().catch(writeFailed("Could not create the referral."));
+    setDoc(doc(db, 'referrals', newReferral.id), newReferral).catch(writeFailed("Could not create the referral."));
     if (!isOnline) {
       setPendingSyncCount(prev => prev + 1);
     }
@@ -589,8 +662,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
 
-    if (capacityReason) notifyCapacityEscalation(newReferral, capacityReason);
-  }, [facilitiesById, isOnline, createNotification, notifyCapacityEscalation]);
+    // No capacity escalation here — the sweep owns it, and fires on the snapshot
+    // this write produces.
+  }, [facilitiesById, isOnline, createNotification]);
 
   const updateReferralStatus = useCallback(async (id: string, status: Referral['status'], notes?: string) => {
     if (!user) return;
@@ -620,12 +694,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? (user.facilityId || r.receivingFacilityId)
           : r.receivingFacilityId;
 
+        const newHistory = [...r.statusHistory, { status, timestamp: now, userId: user.id, notes }];
+
         transaction.update(refDocRef, {
           status,
           receivingFacilityId: finalReceivingFacilityId,
-          updatedAt: now
+          updatedAt: now,
+          statusHistory: newHistory
         });
-        transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), { status, timestamp: now, userId: user.id, notes });
 
         // Bed capacity is adjusted from the transactionally-read prior status,
         // so two concurrent admit/discharge calls can't both fire the increment.
@@ -702,14 +778,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const r = snap.data() as Referral;
       transaction.update(refDocRef, {
         receivingFacilityId: newFacilityId,
-        updatedAt: now
-      });
-      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), {
+        updatedAt: now,
+        statusHistory: [...r.statusHistory, {
           status: r.status,
           timestamp: now,
           userId: user.id,
           notes: `Destination manually overridden to ${newFacilityName}`
-        });
+        }]
+      });
     });
   }, [user, facilities]);
 
@@ -738,8 +814,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isApprovalStatus && r.status === 'pending') {
           claimedReceivingFacilityId = r.receivingFacilityId === 'auto' ? (user.facilityId || 'auto') : r.receivingFacilityId;
           updates.status = 'dept_approved';
+          updates.statusHistory = [...r.statusHistory, { status: 'dept_approved', timestamp: now, userId: user.id, notes: 'Department Head Approved' }];
           updates.receivingFacilityId = claimedReceivingFacilityId;
-          transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), { status: 'dept_approved', timestamp: now, userId: user.id, notes: 'Department Head Approved' });
         }
 
         transaction.update(refDocRef, updates);
@@ -810,9 +886,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       receivingFacilityId = r.receivingFacilityId;
       transaction.update(refDocRef, {
         status: 'patient_consented',
-        updatedAt: now
+        updatedAt: now,
+        statusHistory: [...r.statusHistory, { status: 'patient_consented', timestamp: now, userId: user.id, notes: 'Patient consented to transfer.' }]
       });
-      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), { status: 'patient_consented', timestamp: now, userId: user.id, notes: 'Patient consented to transfer.' });
     });
 
     if (receivingFacilityId && receivingFacilityId !== 'auto') {
@@ -855,9 +931,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         receivingFacilityId: 'auto',
         candidateFacilityIds: remainingCandidateIds,
         patientDeclinedFacilityIds,
-        updatedAt: now
+        updatedAt: now,
+        statusHistory: [...r.statusHistory, { status: 'pending', timestamp: now, userId: user.id, notes: `Patient declined transfer to this facility. Reason: ${reason || 'Not specified'}. Re-routing.` }]
       });
-      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), { status: 'pending', timestamp: now, userId: user.id, notes: `Patient declined transfer to this facility. Reason: ${reason || 'Not specified'}. Re-routing.` });
     });
 
     createNotification({
@@ -918,9 +994,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cancelledAt: now,
         cancelledBy: user.id,
         cancelReason: reason || 'Not specified',
-        updatedAt: now
+        updatedAt: now,
+        statusHistory: [...r.statusHistory, { status: 'cancelled', timestamp: now, userId: user.id, notes: reason ? `Cancelled: ${reason}` : 'Cancelled' }]
       });
-      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), { status: 'cancelled', timestamp: now, userId: user.id, notes: reason ? `Cancelled: ${reason}` : 'Cancelled' });
     });
 
     createNotification({
@@ -958,14 +1034,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         escalatedAt: isEscalated ? now : null,
         escalatedBy: isEscalated ? (user?.id || 'system') : null,
         escalationReason: isEscalated ? 'manual' : null,
-        updatedAt: now
-      });
-      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), {
+        // Required by escalationClaimValid() in firestore.rules: a manual
+        // escalation must be signed by the human making it, and carry a level.
+        escalationLevel: isEscalated ? 'facility' : null,
+        // A human has judged this referral does not need escalating. Both
+        // automatic triggers stand down permanently for it; clearing the flag on
+        // a manual re-escalation lets them resume if it is dismissed again.
+        autoEscalationSuppressed: !isEscalated,
+        updatedAt: now,
+        statusHistory: [...r.statusHistory, {
           status: r.status,
           timestamp: now,
           userId: user?.id || 'system',
           notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
-        });
+        }]
+      });
     });
   }, [user]);
 
@@ -979,17 +1062,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const autoEscalateReferral = useCallback(async (id: string) => {
     const refDocRef = doc(db, 'referrals', id);
-    let escalated: Referral | null = null;
 
-    await runTransaction(db, async (transaction) => {
-      // Reset per attempt: runTransaction retries its body on contention, and a
-      // retry that finds the referral already escalated must not leave a value
-      // set by the previous attempt behind.
-      escalated = null;
+    // The escalated document comes back as the transaction's return value rather
+    // than through a captured variable. Two reasons: runTransaction retries its
+    // body on contention, so a captured variable can carry a value from an
+    // abandoned attempt; and TypeScript does not track assignments made inside a
+    // closure, so a `let` initialised to null narrows to `never` after the guard
+    // below and every later use of it is unchecked.
+    const escalated = await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(refDocRef);
-      if (!snap.exists()) return;
+      if (!snap.exists()) return null;
       const r = snap.data() as Referral;
-      if (!needsAutoEscalation(r, Date.now())) return;
+      if (!needsAutoEscalation(r, Date.now())) return null;
 
       const now = new Date().toISOString();
       transaction.update(refDocRef, {
@@ -997,19 +1081,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         escalatedAt: now,
         escalatedBy: 'system',
         escalationReason: 'sla_breach',
+        escalationLevel: 'facility',
         updatedAt: now,
-      });
-      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), {
+        statusHistory: [...r.statusHistory, {
           status: r.status,
           timestamp: now,
           userId: 'system',
           notes: `No response within ${SLA_MINUTES} minutes. Automatically escalated for administrative intervention.`,
-        });
-      escalated = r;
+        }],
+      });
+      return { ...r, id };
     });
 
     if (!escalated) return;
-    const r: Referral = escalated;
+    const r = escalated;
     createNotification({
       title: `Referral Escalated — No Response in ${SLA_MINUTES} Minutes`,
       message: `${r.patientData.name} (${r.priority} ${r.requiredBedType}) has had no response since ${formatDateTime(r.createdAt)} and has been escalated for intervention.`,
@@ -1034,14 +1119,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const escalateForCapacity = useCallback(async (id: string, reason: CapacityEscalationReason) => {
     const refDocRef = doc(db, 'referrals', id);
-    let escalated: Referral | null = null;
 
-    await runTransaction(db, async (transaction) => {
-      escalated = null;
+    // Returned from the transaction rather than captured -- see the note in
+    // autoEscalateReferral for why a captured variable is wrong here.
+    const escalated = await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(refDocRef);
-      if (!snap.exists()) return;
+      if (!snap.exists()) return null;
       const r = snap.data() as Referral;
-      if (r.isEscalated || r.status !== 'pending') return;
+      // autoEscalationSuppressed: a human de-escalated this. Re-raising it on the
+      // next tick made the De-escalate button look broken and spammed every
+      // administrator with a fresh urgent alert each time.
+      if (r.isEscalated || r.autoEscalationSuppressed || r.status !== 'pending') return null;
 
       const now = new Date().toISOString();
       transaction.update(refDocRef, {
@@ -1051,17 +1139,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         escalationReason: reason,
         escalationLevel: 'system',
         updatedAt: now,
-      });
-      transaction.set(doc(db, 'referrals', r.id, 'statusHistory', uuidv4()), {
+        statusHistory: [...r.statusHistory, {
           status: r.status,
           timestamp: now,
           userId: 'system',
           notes: describeCapacityEscalation(reason) + ' Escalated for administrative placement.',
-        });
-      escalated = r;
+        }],
+      });
+      return { ...r, id };
     });
 
-    if (escalated) notifyCapacityEscalation({ ...(escalated as Referral), id }, reason);
+    if (escalated) notifyCapacityEscalation(escalated, reason);
   }, [notifyCapacityEscalation]);
 
   /**
@@ -1103,11 +1191,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Nowhere to go, which can become true after creation as beds fill up.
       // Checked every tick rather than only at creation for that reason.
+      //
+      // Both flags matter: without real facilities the verdict is computed from
+      // mock bed counts, and without real users the resulting alert is addressed
+      // to mock ids and reaches nobody.
+      if (!facilitiesLoadedRef.current || !usersLoadedRef.current) return;
       mine
-        .filter(r => r.status === 'pending' && !r.isEscalated)
+        .filter(r => r.status === 'pending' && !r.isEscalated && !r.autoEscalationSuppressed)
         .forEach(r => {
           const reason = capacityEscalationReason(r, facilitiesById, {
-            facilitiesLoaded: facilities.length > 0,
+            facilitiesLoaded: facilitiesLoadedRef.current,
           });
           if (!reason) return;
           escalateForCapacity(r.id, reason).catch(err => {
@@ -1141,6 +1234,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const referralsById = useMemo(() => new Map(referrals.map(r => [r.id, r])), [referrals]);
 
   const contextValue = useMemo(() => ({
+    loading: dataLoading,
     users,
     usersById,
     referrals,
@@ -1181,6 +1275,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     pendingSyncCount,
     loadOlderReferrals
   }), [
+    dataLoading,
     users,
     usersById,
     referrals,

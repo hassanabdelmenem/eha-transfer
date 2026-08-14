@@ -12,9 +12,12 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
   const getOccupancyColor = (total: number, occupied: number) => {
     if (total === 0) return 'bg-slate-100 dark:bg-slate-800 text-slate-400';
     const pct = occupied / total;
-    if (pct >= 0.9) return 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)] border-red-600';
-    if (pct >= 0.7) return 'bg-amber-400 text-amber-950 border-amber-500';
-    return 'bg-emerald-400 text-emerald-950 border-emerald-500';
+    // Three occupancy tiers need three distinct colors — red and amber used
+    // to render as the same brand orange, so a 95%-full facility and a
+    // 75%-full one looked identical on this heatmap.
+    if (pct >= 0.9) return 'bg-critical-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)] border-critical-600';
+    if (pct >= 0.7) return 'bg-warning-400 text-warning-950 border-warning-500';
+    return 'bg-success-400 text-success-950 border-success-500';
   };
 
   // Filter facilities that actually have some capacity defined
@@ -50,7 +53,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
               <tr key={facility.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
                 <td className="p-3 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
                   {facility.name}
-                  <div className="text-[9px] text-slate-400 font-normal capitalize">{facility.type.replace('_', ' ')}</div>
+                  <div className="text-xs text-slate-400 font-normal capitalize">{facility.type.replace('_', ' ')}</div>
                 </td>
                 {BED_TYPES.map(bed => {
                   const cap = facility.capacity[bed];
@@ -71,7 +74,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
                     <td key={bed} className="p-2 text-center">
                       <div className={`w-full h-full min-h-[36px] rounded border flex flex-col items-center justify-center p-1 transition-all ${colorClass}`}>
                         <span className="font-bold">{pct}%</span>
-                        <span className="text-[9px] opacity-80">{cap.occupied}/{cap.total}</span>
+                        <span className="text-xs opacity-80">{cap.occupied}/{cap.total}</span>
                       </div>
                     </td>
                   );

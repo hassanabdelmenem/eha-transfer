@@ -11,10 +11,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Badge } from '../components/ui/Badge';
 import { subDays, subWeeks, subMonths, subQuarters, format } from 'date-fns';
 import { useAudioAlert } from '../hooks/useAudioAlert';
+import { SkeletonStatCard, Skeleton } from '../components/ui/Skeleton';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, facilities, facilitiesById, directAdmissions, shiftLogs } = useData();
+  const { referrals, facilities, facilitiesById, directAdmissions, shiftLogs, loading } = useData();
   const [chartPeriod, setChartPeriod] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('weekly');
   const [prioritySort, setPrioritySort] = useState(false);
   const { theme } = useTheme();
@@ -148,9 +149,12 @@ export const Dashboard: React.FC = () => {
   const completed = facilityReferrals.filter(r => ['admitted', 'discharged', 'rejected'].includes(r.status)).length;
 
   const stats = [
-    { label: 'Pending Referrals', value: pending, valueColor: 'text-amber-600 dark:text-amber-400', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-slate-500 dark:text-slate-400', badgeBg: 'bg-amber-100 dark:bg-amber-900/40', badgeText: 'text-amber-700 dark:text-amber-300', badgeLabel: 'Needs Action' },
-    { label: 'In Transit', value: inTransit, valueColor: 'text-slate-900 dark:text-slate-100', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-slate-500 dark:text-slate-400', badgeBg: 'bg-blue-100 dark:bg-blue-900/40', badgeText: 'text-blue-500 dark:text-blue-300', badgeLabel: 'Real-time' },
-    { label: 'Emergencies', value: emergencies, valueColor: 'text-red-700 dark:text-red-400', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-red-600 dark:text-red-400', badgeBg: 'bg-red-100 dark:bg-red-900/40', badgeText: 'text-red-700 dark:text-red-300', badgeLabel: 'Priority' },
+    // Pending vs. Emergencies used to both resolve to the same brand orange
+    // (warning and critical alike), so the two KPI tiles clinicians scan
+    // fastest were the same color. warning-*/critical-* keep them apart.
+    { label: 'Pending Referrals', value: pending, valueColor: 'text-warning-600 dark:text-warning-400', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-slate-500 dark:text-slate-400', badgeBg: 'bg-warning-100 dark:bg-warning-900/40', badgeText: 'text-warning-700 dark:text-warning-300', badgeLabel: 'Needs Action' },
+    { label: 'In Transit', value: inTransit, valueColor: 'text-slate-900 dark:text-slate-100', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-slate-500 dark:text-slate-400', badgeBg: 'bg-info-100 dark:bg-info-900/40', badgeText: 'text-info-500 dark:text-info-300', badgeLabel: 'Real-time' },
+    { label: 'Emergencies', value: emergencies, valueColor: 'text-critical-700 dark:text-critical-400', bg: 'bg-white dark:bg-slate-900', labelColor: 'text-critical-600 dark:text-critical-400', badgeBg: 'bg-critical-100 dark:bg-critical-900/40', badgeText: 'text-critical-700 dark:text-critical-300', badgeLabel: 'Priority' },
     { label: 'Completed', value: completed, valueColor: 'text-white', bg: 'bg-blue-900', labelColor: 'text-blue-200', badgeBg: 'bg-blue-800', badgeText: 'text-blue-300', badgeLabel: 'Optimal' },
   ];
 
@@ -180,11 +184,11 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {pendingEmergencies.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 p-4 rounded-lg flex items-start sm:items-center gap-3 animate-in fade-in slide-in-from-top-4">
-          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500 shrink-0 mt-0.5 sm:mt-0 animate-pulse" />
+        <div className="bg-critical-50 dark:bg-critical-950/30 border border-critical-200 dark:border-critical-900/50 p-4 rounded-lg flex items-start sm:items-center gap-3 animate-in fade-in slide-in-from-top-4">
+          <AlertTriangle className="h-5 w-5 text-critical-600 dark:text-critical-500 shrink-0 mt-0.5 sm:mt-0 animate-pulse" />
           <div className="flex-1">
-            <h3 className="text-sm font-bold text-red-800 dark:text-red-400">Critical Alerts Active</h3>
-            <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">There are {pendingEmergencies.length} high-priority emergency referrals requiring immediate attention.</p>
+            <h3 className="text-sm font-bold text-critical-800 dark:text-critical-400">Critical Alerts Active</h3>
+            <p className="text-xs text-critical-600 dark:text-critical-500 mt-0.5">There are {pendingEmergencies.length} high-priority emergency referrals requiring immediate attention.</p>
           </div>
         </div>
       )}
@@ -193,7 +197,9 @@ export const Dashboard: React.FC = () => {
         <div className="space-y-2">
           <h2 className="text-sm font-bold uppercase text-slate-700 dark:text-slate-300">Available Beds ({userFacility.name})</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => {
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => <SkeletonStatCard key={i} />)
+            ) : (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => {
               const cap = userFacility.capacity[bed];
               if (!cap) return null;
               const available = cap.total - cap.occupied;
@@ -204,14 +210,16 @@ export const Dashboard: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-end gap-2 mb-2">
-                      <span className={`text-3xl font-bold ${available > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className={`text-3xl font-bold ${available > 0 ? 'text-success-600' : 'text-critical-600'}`}>
                         {available}
                       </span>
                       <span className="text-sm text-slate-500 dark:text-slate-400 mb-1">/ {cap.total}</span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${available > 0 ? (available / cap.total < 0.2 ? 'bg-amber-500' : 'bg-green-500') : 'bg-red-500'}`}
+                      <div
+                        // Three real states (ok / low / full) need three distinct
+                        // colors — amber and red used to render identically here.
+                        className={`h-full rounded-full transition-all duration-500 ${available > 0 ? (available / cap.total < 0.2 ? 'bg-warning-500' : 'bg-success-500') : 'bg-critical-500'}`}
                         style={{ width: `${(cap.occupied / cap.total) * 100}%` }}
                       ></div>
                     </div>
@@ -224,7 +232,9 @@ export const Dashboard: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <SkeletonStatCard key={i} />)
+        ) : stats.map((stat, i) => (
           <div key={i} className={`p-4 border border-slate-200 dark:border-slate-800 rounded shadow-sm flex flex-col justify-between ${stat.bg}`}>
             <span className={`text-xs font-bold uppercase ${stat.labelColor}`}>{stat.label}</span>
             <div className="flex items-baseline gap-2 mt-2">
@@ -236,7 +246,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {(isManager || user.role === 'system_admin' || user.role === 'owner') && (
-        <BedOccupancyHeatmap facilities={facilities} />
+        loading ? <Skeleton className="h-40 w-full rounded-lg" /> : <BedOccupancyHeatmap facilities={facilities} />
       )}
 
       {isManager && (
@@ -416,8 +426,8 @@ export const Dashboard: React.FC = () => {
                     <div className="text-right">
                       <span className="text-xs text-slate-400 font-mono">{format(new Date(log.timestamp), "MMM d, h:mm a")}</span>
                       <div className="flex items-center gap-2 mt-1 justify-end text-xs font-bold">
-                        <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">Pending: {log.pendingTransfersCount}</span>
-                        <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Admitted: {log.admittedPatientsCount}</span>
+                        <span className="bg-warning-100 text-warning-800 px-1.5 py-0.5 rounded">Pending: {log.pendingTransfersCount}</span>
+                        <span className="bg-success-100 text-success-800 px-1.5 py-0.5 rounded">Admitted: {log.admittedPatientsCount}</span>
                       </div>
                     </div>
                   </div>

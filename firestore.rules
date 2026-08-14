@@ -46,6 +46,25 @@ service cloud.firestore {
     function isFacilityConfigRole() {
       return callerDoc().role in ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department'];
     }
+    // The four bed types are fixed by the BedType union in src/types/index.ts, so
+    // they can be enumerated here -- rules cannot iterate a map's keys.
+    function bedTotalsUnchanged() {
+      return request.resource.data.capacity.ICU.total == resource.data.capacity.ICU.total
+          && request.resource.data.capacity.CCU.total == resource.data.capacity.CCU.total
+          && request.resource.data.capacity.PICU.total == resource.data.capacity.PICU.total
+          && request.resource.data.capacity.Ward.total == resource.data.capacity.Ward.total;
+    }
+    // Occupancy that exceeds its total, or goes negative, is what the routing code
+    // reads as "no beds" or "beds available". Bound it at the boundary.
+    function bedCountSane(bed) {
+      return bed.occupied >= 0 && bed.total >= 0 && bed.occupied <= bed.total;
+    }
+    function occupancyWithinTotals() {
+      return bedCountSane(request.resource.data.capacity.ICU)
+          && bedCountSane(request.resource.data.capacity.CCU)
+          && bedCountSane(request.resource.data.capacity.PICU)
+          && bedCountSane(request.resource.data.capacity.Ward);
+    }
 
     // ---------------------------------------------------------------- users
     // role/verified/facilityId are the basis of every decision in this file, so a
@@ -102,18 +121,44 @@ service cloud.firestore {
       // Previously only owner/system_admin could write either, so both screens
       // failed silently; widening it to atFacility() alone would have handed
       // configuration to every resident.
+      // Occupancy and bed *totals* are now separated. Anyone verified at the
+      // facility may move `occupied` (every admission and discharge does, via the
+      // increment inside updateReferralStatus), but changing `total` is
+      // configuration and needs a senior role.
+      //
+      // That distinction matters more than it used to: capacity is now an input to
+      // routing and to automatic escalation, so a single write of
+      // `total: 0` across the board removed a hospital from every candidate list
+      // network-wide, and `total: 9999` suppressed genuine no-beds escalations
+      // while making the facility the top pick for patients it could not take.
       allow update: if isPrivileged()
-                    || (atFacility(facilityId) && changedKeys().hasOnly(['capacity']))
+                    || (atFacility(facilityId)
+                        && changedKeys().hasOnly(['capacity'])
+                        && bedTotalsUnchanged()
+                        && occupancyWithinTotals())
                     || (atFacility(facilityId)
                         && isFacilityConfigRole()
-                        && changedKeys().hasOnly(['capacity', 'departments']));
+                        && changedKeys().hasOnly(['capacity', 'departments'])
+                        && occupancyWithinTotals());
     }
 
     // ------------------------------------------------------------ referrals
-    function isReferralParty(data) {
-      return data.referringFacilityId == callerFacility()
-          || data.receivingFacilityId == callerFacility()
+    // The two sides of a referral. `isReferralParty` below is their union and
+    // governs reads; these two govern *which* side may make which decision.
+    function isReferringParty(data) {
+      return callerFacility() == data.referringFacilityId;
+    }
+    function isReceivingParty(data) {
+      return callerFacility() == data.receivingFacilityId
           || (data.receivingFacilityId == 'auto'
+              && data.candidateFacilityIds is list
+              && callerFacility() in data.candidateFacilityIds);
+    }
+    function isReferralParty(data) {
+      return callerFacility() == data.referringFacilityId
+          || callerFacility() == data.receivingFacilityId
+          || (data.receivingFacilityId == 'auto'
+              && data.candidateFacilityIds is list
               && callerFacility() in data.candidateFacilityIds);
     }
     // Mirrors SENIOR_CANCEL_ROLES / CANCEL_LOCKED_STATUSES in
@@ -143,10 +188,109 @@ service cloud.firestore {
       return request.resource.data.referringFacilityId == resource.data.referringFacilityId
           && request.resource.data.referringUserId == resource.data.referringUserId
           && request.resource.data.patientId == resource.data.patientId
-          && request.resource.data.createdAt == resource.data.createdAt;
+          && request.resource.data.createdAt == resource.data.createdAt
+          // createdAtMs is the SLA clock (see slaWindowElapsed). If it were
+          // editable, a party could push it forward and switch the 30-minute
+          // escalation off for that referral permanently.
+          && (!('createdAtMs' in resource.data)
+              || request.resource.data.createdAtMs == resource.data.createdAtMs);
+    }
+
+    // The clinical record itself. Pinned for everyone except the clinician who
+    // raised the referral, because authorization here is computed from the
+    // pre-write document and nothing else stopped a verified account at any
+    // candidate facility from rewriting a diagnosis or deleting an allergy on the
+    // record the receiving hospital acts on -- silently, with no audit entry.
+    function referralClinicalDataPinned() {
+      return request.resource.data.patientData == resource.data.patientData
+          && request.resource.data.requiredBedType == resource.data.requiredBedType;
+    }
+    function mayEditClinicalData() {
+      return isPrivileged() || resource.data.referringUserId == request.auth.uid;
+    }
+
+    // Candidate facilities may be removed (recordPatientDecline prunes the list)
+    // but never added. Widening it is a read grant: isReferralParty admits every
+    // verified user at every listed facility, so appending ids hands the full
+    // patient record to hospitals that were never involved.
+    function candidateListNotWidened() {
+      return !('candidateFacilityIds' in request.resource.data)
+          || !(request.resource.data.candidateFacilityIds is list)
+          || !('candidateFacilityIds' in resource.data)
+          || !(resource.data.candidateFacilityIds is list)
+          || request.resource.data.candidateFacilityIds.hasOnly(resource.data.candidateFacilityIds);
+    }
+
+    // Has the 30-minute SLA actually elapsed, by server clock?
+    //
+    // This is what makes an automatic escalation checkable rather than merely
+    // claimed. On the Spark plan the escalation is written by the browser, so the
+    // rules cannot tell the real sweep from a hostile client -- both are the same
+    // signed-in user. What they *can* verify is that the condition being asserted
+    // is true: an 'sla_breach' escalation is only accepted once the referral has
+    // genuinely been waiting 30 minutes, at which point the escalation is correct
+    // no matter who wrote it.
+    //
+    // Referrals created before createdAtMs existed cannot be checked; they are
+    // allowed through rather than becoming permanently un-escalatable.
+    function slaWindowElapsed() {
+      return !('createdAtMs' in resource.data)
+          || request.time.toMillis() >= resource.data.createdAtMs + 1800000;
+    }
+
+    // Escalation is a claim about why a patient is stuck, and the banner tells
+    // staff what to do about it -- including, for the capacity reasons, to stop
+    // chasing the receiving facilities. So the claim has to be internally
+    // consistent and attributable.
+    //
+    // Residual gap, unavoidable client-side: the rules cannot confirm that the
+    // network really is out of beds, because that needs a read of every candidate
+    // facility and rules allow at most ten get() calls. 'no_beds_available' is
+    // therefore assertable by any party. Moving escalation into the scheduled
+    // Cloud Function is what closes it.
+    function escalationClaimValid() {
+      // Only checked when the write actually touches escalation. Validating it on
+      // every update would mean that after user A escalates manually, the
+      // "signed by the caller" clause below fails for everyone except A -- so
+      // nobody else could advance the referral at all.
+      return !changedKeys().hasAny(['isEscalated', 'escalatedAt', 'escalatedBy', 'escalationReason', 'escalationLevel'])
+          || !request.resource.data.isEscalated
+          || (request.resource.data.escalationReason in ['sla_breach', 'no_matching_facility', 'no_beds_available', 'manual']
+              && request.resource.data.escalationLevel in ['system', 'facility']
+              // A human escalation must be signed by the human.
+              && (request.resource.data.escalationReason != 'manual'
+                  || request.resource.data.escalatedBy == request.auth.uid)
+              // An automatic one must not be signed by a human, so 'system' in the
+              // audit trail keeps meaning "nobody acted".
+              && (request.resource.data.escalationReason == 'manual'
+                  || request.resource.data.escalatedBy == 'system')
+              && (request.resource.data.escalationReason != 'sla_breach' || slaWindowElapsed())
+              // The capacity reasons are the top tier by definition.
+              && (!(request.resource.data.escalationReason in ['no_matching_facility', 'no_beds_available'])
+                  || request.resource.data.escalationLevel == 'system'));
     }
     // Rules cannot iterate a list, so a true element-wise prefix comparison is not
     // expressible here. What is enforced: the trail grows by exactly one entry when
+    // the status moves and by none when it doesn't (so a caller cannot smuggle in a
+    // rewritten history under cover of padding), and the opening entry is immutable.
+    //
+    // Residual gap: the middle of the trail can still be rewritten by a party. The
+    // durable fix is to move history into an immutable subcollection
+    // (referrals/{id}/statusHistory/{entryId}, create-only, no update or delete) so
+    // append-only becomes a property of the data model rather than a predicate.
+    // "At most one new entry per write", not "exactly one when the status moves".
+    // Escalation, de-escalation and destination overrides all append an audit entry
+    // while leaving `status` untouched, so keying the allowed growth off a status
+    // change would reject every one of them -- including the automatic SLA
+    // escalation, whose whole purpose is to leave a record.
+    function auditTrailAppendOnly() {
+      return request.resource.data.statusHistory is list
+          && (request.resource.data.statusHistory.size() == resource.data.statusHistory.size()
+              || request.resource.data.statusHistory.size() == resource.data.statusHistory.size() + 1)
+          && (resource.data.statusHistory.size() == 0
+              || request.resource.data.statusHistory[0] == resource.data.statusHistory[0]);
+    }
+
     // The status graph, enforced server-side. Without it the only thing standing
     // between a referral and an arbitrary status was updateReferralStatus() in the
     // client, which a caller talking to the SDK directly simply skips -- letting a
@@ -183,16 +327,63 @@ service cloud.firestore {
           || (resource.data.status == 'admitted' && request.resource.data.status == 'discharged');
     }
 
+    // The graph above says which moves exist. This says who may make them.
+    //
+    // Without it the graph was enforced but the actor was not, so any party could
+    // drive any legal edge. Two consequences mattered: a verified account at any
+    // candidate facility could record a patient's consent to transfer -- a
+    // clinical and legal assertion about a person it has never met -- and could
+    // then push the referral to in_transit, which cancel-locks it for everyone
+    // including owners, with no transition back.
+    //
+    // Sides are taken from the UI gating in ReferralDetailPage: approvals and
+    // admission belong to the destination, consent belongs to the facility
+    // physically holding the patient. The permissive bucket is deliberate --
+    // parking, re-opening, arrival and dispatch are all done from either end in
+    // practice (a receiving hospital may send its own ambulance), and none of them
+    // grants anything that patient_consented has not already gated.
+    function transitionActorAllowed() {
+      return isPrivileged()
+          || request.resource.data.status == resource.data.status
+          // Cancellation has its own, stricter rule (canCancelReferral).
+          || request.resource.data.status == 'cancelled'
+          || (request.resource.data.status == 'patient_consented'
+              && isReferringParty(resource.data))
+          || (request.resource.data.status in ['dept_approved', 'manager_approved', 'accepted', 'rejected', 'admitted', 'discharged']
+              && isReceivingParty(resource.data))
+          || (request.resource.data.status in ['pending', 'postponed', 'arrived', 'in_transit']
+              && (isReferringParty(resource.data) || isReceivingParty(resource.data)));
+    }
+
     match /referrals/{referralId} {
       allow read: if isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data));
 
-      allow create: if isPrivileged()
-                    || (isVerifiedCaller()
-                        && callerFacility() == request.resource.data.referringFacilityId
-                        && request.resource.data.referringUserId == request.auth.uid);
+      // Create was previously ownership-only, which let a referral be born in any
+      // state. Two things that bought an attacker: `status: 'in_transit'` skipped
+      // the entire transition graph (including the consent requirement) and
+      // arrived already cancel-locked; and a future `createdAt` -- immutable
+      // afterwards -- switched the SLA off for that referral forever.
+      //
+      // createdAtMs is bounded on the future side only. Backdating merely makes
+      // the referral escalate sooner, which is the safe direction to fail in.
+      allow create: if (isPrivileged()
+                        || (isVerifiedCaller()
+                            && callerFacility() == request.resource.data.referringFacilityId
+                            && request.resource.data.referringUserId == request.auth.uid))
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.isEscalated == false
+                    && request.resource.data.statusHistory is list
+                    && request.resource.data.statusHistory.size() == 1
+                    && request.resource.data.createdAtMs is number
+                    && request.resource.data.createdAtMs <= request.time.toMillis() + 300000;
 
       allow update: if referralIdentityPinned()
+                    && auditTrailAppendOnly()
                     && validStatusTransition()
+                    && transitionActorAllowed()
+                    && candidateListNotWidened()
+                    && escalationClaimValid()
+                    && (referralClinicalDataPinned() || mayEditClinicalData())
                     && (
                       isCancelAttempt(request.resource.data)
                         ? canCancelReferral(resource.data)
@@ -200,12 +391,6 @@ service cloud.firestore {
                     );
 
       allow delete: if isPrivileged();
-
-      match /statusHistory/{entryId} {
-        allow read: if isPrivileged() || (isVerifiedCaller() && isReferralParty(get(/databases/$(database)/documents/referrals/$(referralId)).data));
-        allow create: if isPrivileged() || (isVerifiedCaller() && isReferralParty(get(/databases/$(database)/documents/referrals/$(referralId)).data));
-        allow update, delete: if false;
-      }
     }
 
     // -------------------------------------------------------- notifications
@@ -217,7 +402,11 @@ service cloud.firestore {
       // Still open to any verified caller, because fan-out runs in the browser. The
       // shape constraints below are what keep that from being a free-form message
       // channel into every clinician's notification tray: a fabricated alert cannot
-      // arrive pre-read, cannot backdate itself, and cannot carry an unbounded body.
+      // arrive pre-read, cannot carry an unbounded body, and -- via createdAtMs --
+      // cannot be dated into the future to pin itself to the top of the tray
+      // forever. An earlier version of this comment claimed backdating was blocked
+      // when nothing checked the timestamp at all.
+      //
       // Moving fan-out into a Cloud Function would let this become a deny rule and
       // would also let the /users list rule narrow to a single facility.
       allow create: if isVerifiedCaller()
@@ -227,10 +416,16 @@ service cloud.firestore {
                     && request.resource.data.title.size() <= 200
                     && request.resource.data.message.size() <= 2000
                     && request.resource.data.type in ['urgent', 'info', 'success', 'warning']
-                    && request.resource.data.read == false;
+                    && request.resource.data.read == false
+                    && request.resource.data.createdAtMs is number
+                    && request.resource.data.createdAtMs <= request.time.toMillis() + 300000;
       allow update: if signedIn() && resource.data.userId == request.auth.uid
                     && changedKeys().hasOnly(['read']);
-      allow delete: if isPrivileged();
+      // The recipient can clear their own tray. Previously only an admin could
+      // delete, so an unwanted or forged alert was permanent for the person
+      // receiving it.
+      allow delete: if isPrivileged()
+                    || (signedIn() && resource.data.userId == request.auth.uid);
     }
 
     // ----------------------------------------------------- directAdmissions

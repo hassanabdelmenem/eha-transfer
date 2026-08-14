@@ -6,10 +6,11 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { CheckCircle, Clock, ArrowRightLeft, UserCircle, X } from 'lucide-react';
 import { formatDateTime } from '../lib/utils';
+import { Skeleton } from '../components/ui/Skeleton';
 
 export const DepartmentPage: React.FC = () => {
   const { user } = useAuth();
-  const { shiftAssignments, shiftAssignmentsByFacility, assignShift, users, usersById, directAdmissions, referrals, facilities, facilitiesById, quickTransfer } = useData();
+  const { shiftAssignments, shiftAssignmentsByFacility, assignShift, users, usersById, directAdmissions, referrals, facilities, facilitiesById, quickTransfer, loading } = useData();
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   type PatientListItem = { id: string; name: string; hospitalId: string; type: 'admission' | 'referral'; admittedAt: string };
   const [selectedPatient, setSelectedPatient] = useState<PatientListItem | null>(null);
@@ -53,7 +54,7 @@ export const DepartmentPage: React.FC = () => {
       name: r.patientData.name,
       hospitalId: r.patientData.hospitalId,
       type: 'referral',
-      admittedAt: r.updatedAt
+      admittedAt: r.statusHistory.find(h => h.status === 'admitted')?.timestamp || r.updatedAt
     }))
   ].sort((a, b) => b.admittedAt.localeCompare(a.admittedAt));
 
@@ -129,8 +130,13 @@ export const DepartmentPage: React.FC = () => {
           <CardTitle>Admitted Patients & Internal Transfers</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {patientsInDept.length === 0 ? (
+          <div className="space-y-3" role="status" aria-busy={loading} aria-live="polite">
+            {loading ? (
+              <>
+                <span className="sr-only">Loading department patients…</span>
+                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded" />)}
+              </>
+            ) : patientsInDept.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-slate-400">No patients currently admitted in this department.</p>
             ) : (
               patientsInDept.map(patient => (
@@ -184,7 +190,7 @@ export const DepartmentPage: React.FC = () => {
             {currentAssignment?.assignedUserId && (
               <Button 
                 variant="outline" 
-                className="text-red-600 border-red-200 hover:bg-red-50"
+                className="text-critical-600 border-critical-200 hover:bg-critical-50"
                 onClick={() => assignShift(facilityId, department, null)}
               >
                 Revoke Assignment
@@ -211,7 +217,10 @@ export const DepartmentPage: React.FC = () => {
                   </div>
                   
                   {currentAssignment?.assignedUserId === doctor.id ? (
-                    <Badge variant="success" className="bg-emerald-100 text-emerald-800 border-emerald-200 flex items-center gap-1">
+                    /* variant="success" already supplies the color — the old
+                       explicit emerald-* classes were a redundant override
+                       of the exact styling the variant already provides. */
+                    <Badge variant="success" className="flex items-center gap-1">
                       <CheckCircle className="w-3 h-3" />
                       Assigned
                     </Badge>

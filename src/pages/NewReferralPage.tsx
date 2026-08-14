@@ -107,8 +107,19 @@ export const NewReferralPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (receivingDepartments.length === 0 || !patientData.name || !patientData.hospitalId) return;
-    
+
+    // Name and hospitalId are `required` inputs, so the browser reports those.
+    // The department picker is a group of chip buttons with no native
+    // validation, so submitting with none selected used to hit a bare `return`:
+    // no message, no focus change, nothing. Under pressure that reads as a
+    // frozen app, and the clinician taps again or reloads and re-enters
+    // everything.
+    if (receivingDepartments.length === 0) {
+      showToast('Select at least one target department before submitting.', 'error');
+      return;
+    }
+    if (!patientData.name || !patientData.hospitalId) return;
+
     // Candidates now also require the facility to be configured for the bed type,
     // not just to run the departments -- a hospital with Cardiology but no ICU
     // beds was previously offered an ICU transfer it could never accept.
@@ -127,10 +138,26 @@ export const NewReferralPage: React.FC = () => {
     // created and escalated to system administrators instead (addReferral detects
     // the condition and flags it), so there is something to act on and an audit
     // trail of when it started.
+    //
+    // Copy leads with the patient consequence and the instruction, because this
+    // navigates away immediately and the message is the only thing the clinician
+    // takes with them. Error-toned toasts no longer auto-dismiss, so it survives
+    // the navigation rather than expiring in eight seconds on a screen they were
+    // just moved to.
     if (isAutoRouting && matching.length === 0) {
-      showToast('No facility matches this request. Referral created and escalated to system administrators.', 'error');
+      showToast(
+        'No hospital in the network can take this patient. The referral was created and sent to a system administrator for placement — do not wait for a facility to respond.',
+        'error'
+      );
     } else if (isAutoRouting && withBeds.length === 0) {
-      showToast('All matching facilities are full. Referral created and escalated to system administrators.', 'error');
+      showToast(
+        'Every matching hospital is full. The referral was created and sent to a system administrator for placement — do not wait for a facility to respond.',
+        'error'
+      );
+    } else {
+      // The happy path previously gave no confirmation at all: submit, navigate,
+      // silence. That is the standard precondition for duplicate referrals.
+      showToast('Referral created.', 'success');
     }
 
     addReferral({
@@ -251,7 +278,7 @@ export const NewReferralPage: React.FC = () => {
                     </button>
                   ))}
                 </div>
-                <p className="text-[9px] text-slate-400 mt-2">Selecting departments filters available facilities to those that have ALL selected departments.</p>
+                <p className="text-xs text-slate-400 mt-2">Selecting departments filters available facilities to those that have ALL selected departments.</p>
               </div>
               
               <div>
@@ -409,17 +436,17 @@ export const NewReferralPage: React.FC = () => {
             </div>
 
             {/* Critical Alert Toggle */}
-            <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-lg">
-              <input 
-                type="checkbox" 
+            <div className="flex items-center gap-3 p-4 bg-critical-50 dark:bg-critical-900/10 border border-critical-200 dark:border-critical-900/30 rounded-lg">
+              <input
+                type="checkbox"
                 id="critical-alert"
                 checked={sendCriticalAlert}
                 onChange={(e) => setSendCriticalAlert(e.target.checked)}
-                className="w-4 h-4 text-red-600 bg-white border-red-300 rounded focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                className="w-4 h-4 text-critical-600 bg-white border-critical-300 rounded focus:ring-critical-500 dark:focus:ring-critical-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
               />
-              <label htmlFor="critical-alert" className="text-sm font-medium text-red-900 dark:text-red-200">
+              <label htmlFor="critical-alert" className="text-sm font-medium text-critical-900 dark:text-critical-200">
                 Send Critical Alert to Department Heads
-                <p className="text-xs font-normal text-red-700 dark:text-red-300">
+                <p className="text-xs font-normal text-critical-700 dark:text-critical-300">
                   Enable this to send an automated priority notification for urgent ICU/CCU transfers.
                 </p>
               </label>
@@ -573,7 +600,7 @@ export const NewReferralPage: React.FC = () => {
                     ) : (
                       <div className="w-full h-full bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center text-slate-400">
                         <FileText className="w-8 h-8 mb-1" />
-                        <span className="text-[8px] px-1 truncate w-full text-center">{att.name}</span>
+                        <span className="text-xs px-1 truncate w-full text-center">{att.name}</span>
                       </div>
                     )}
                     <button 
@@ -592,7 +619,7 @@ export const NewReferralPage: React.FC = () => {
                   ) : (
                     <>
                       <Upload className="w-6 h-6 mb-1" />
-                      <span className="text-[9px] uppercase font-bold">Upload</span>
+                      <span className="text-xs uppercase font-bold">Upload</span>
                     </>
                   )}
                   <input type="file" className="hidden" accept="image/*,.pdf" onChange={handleFileUpload} />

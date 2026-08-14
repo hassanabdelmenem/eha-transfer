@@ -44,8 +44,10 @@ provides the required departments *and* bed type, or every matching facility is
 full. Escalates to `escalationLevel: 'system'` and notifies **owners and
 system_admins only** — deliberately not the facilities, because the whole point
 is that no facility can take the patient. Logic lives in `src/lib/routing.ts`.
-Evaluated both when a referral is created and on every sweep tick, since beds
-fill up after creation.
+Evaluated on every sweep tick rather than at creation: referrals are always
+created in a single known state (`pending`, unescalated, one audit entry) so the
+rules can pin that shape exactly, and the sweep escalates on the very next
+snapshot — which is the write the form itself triggers.
 
 Two behaviour changes worth knowing before you test:
 
@@ -139,19 +141,100 @@ all five commands. Deploy nothing yet.
    proves little. Confirm:
    - referrals appear on the dashboard for an ordinary clinician
    - **SLA escalation:** create a pending emergency ICU referral, leave the app
-     open, and confirm that at 30 minutes the badge flips from `SLA Breach` to
-     `Escalated` and an urgent notification arrives. To test faster, temporarily
-     lower `SLA_MINUTES` in **both** `src/lib/sla.ts` and `functions/src/sla.ts`
-     (see Phase 2) — and put it back to 30 before deploying.
+     open, and confirm that at 30 minutes the badge flips from `No response` to
+     `Escalated` and an urgent notification arrives. To test faster, lower
+     `SLA_MINUTES` in **both** `src/lib/sla.ts` and `functions/src/sla.ts` — and
+     note the rules enforce the real window independently via `createdAtMs`, so
+     a shortened client threshold will be *rejected* by `slaWindowElapsed()`
+     until 30 real minutes have passed. To exercise the fast path you must lower
+     the `1800000` in `firestore.rules` too. Put all three back before deploying.
    - **No-match escalation:** create a referral requiring a department or bed
-     type no facility offers. It should be created (not rejected), immediately
-     flagged `Top-Level Escalation — No Matching Facility`, and notify the
-     system admin only.
+     type no facility offers. It should be created (not rejected) and, within a
+     moment, flagged `No hospital can take this patient`, notifying system
+     admins only.
    - **No-beds escalation:** set every matching facility's bed type to
      `occupied == total` on the Bed Management screen, then create a referral for
-     that bed type. Expect `Top-Level Escalation — No Beds Available`.
+     that bed type. Expect `Every matching hospital is full`.
+   - **De-escalation sticks:** press De-escalate on an escalated referral and
+     confirm it stays de-escalated rather than re-raising itself seconds later.
 
 **STOP GATE 2 — report** deploy results and each smoke-test outcome.
+
+---
+
+## Phase 1.4 — Migration required before the new rules go live
+
+The hardening below introduced `createdAtMs` (epoch milliseconds) on referrals and
+notifications. Firestore rules cannot parse an ISO string, so this field is what
+lets them verify a claimed 30-minute SLA breach against server time, and what
+stops a notification being dated into the future to pin itself to the top of a
+clinician's tray.
+
+New documents get it automatically. **Existing ones do not**, and the rules are
+written to let legacy documents through unverified rather than freeze them —
+`slaWindowElapsed()` returns true when `createdAtMs` is absent. That is
+deliberate, but it means every referral created before this deploy keeps the old,
+unverifiable behaviour forever.
+
+Backfill it once, from the Firebase console or a one-off admin script:
+
+```js
+// for each referrals/{id} lacking createdAtMs:
+{ createdAtMs: Date.parse(doc.createdAt) }
+// same for notifications/{id}
+```
+
+Then, if you want the guarantee to be universal, change `slaWindowElapsed()` and
+the notification rule to require the field rather than tolerate its absence.
+
+---
+
+## Phase 1.5 — Findings still open after the hardening pass
+
+Most of the review findings are now fixed in the rules and the client. What is
+listed here is what genuinely could not be closed on the Spark plan, plus the one
+residual that needs a data-model change. Do not treat these as done.
+
+**S6 (medium, NOT FIXABLE ON SPARK). The whole `/users` collection is readable by
+every verified account**, including `email` and `phoneNumber` — a complete staff
+directory for the network, useful as a phishing target list.
+
+This is structural, not an oversight. Notification fan-out runs in the browser and
+has to resolve recipients at *other* facilities, so the client genuinely needs
+cross-facility user reads. Firestore rules cannot express "you may read users at a
+facility that is a party to a referral you can see". Splitting contact details into
+a separate collection does not help either: the on-call hotline, the network
+directory and the "call the referring doctor" action on a referral all legitimately
+read phone numbers across facilities.
+
+The fix is the same one that closes several other items: move fan-out into the
+Cloud Function on Blaze, then narrow `/users` to the caller's own facility. Until
+then this is an accepted risk, and it is the strongest argument for upgrading.
+
+**Residual on the audit trail.** `auditTrailAppendOnly()` now allows at most one
+new entry per write and pins entry `[0]`, but rules cannot iterate a list, so the
+middle of the trail is still rewritable by a party in a single write. The
+create-only subcollection in Phase 2c is the real fix.
+
+**Residual on capacity escalations.** `escalationClaimValid()` verifies an
+`sla_breach` claim against server time, so that one cannot be faked. It cannot
+verify `no_beds_available` or `no_matching_facility`, because confirming those
+needs a read of every candidate facility and rules allow at most ten `get()` calls
+per request. A party can therefore still assert a capacity escalation falsely. The
+scheduled function closes this too.
+
+**D1 residual (design).** The SLA badges, priority chips and escalation banner now
+use a `--color-critical-*` / `--color-warning-*` scale that sits outside the brand
+ramp. Every *other* red/amber usage in the app still resolves to the same orange,
+so any remaining status colour carries no information. Worth an audit pass with the
+app actually running.
+
+**D3 residual (accessibility).** `--color-slate-400` and `--color-slate-500` were
+given distinct, darker values so muted text passes contrast in light mode. They are
+a compromise: one token has to serve `text-slate-500` on white and
+`dark:text-slate-400` on near-black, so both land around 4.3–4.6:1 rather than
+comfortably above. Verify against real screens and split into explicit
+light/dark pairs if any of it still reads thin.
 
 ---
 

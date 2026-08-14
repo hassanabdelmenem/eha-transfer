@@ -97,6 +97,7 @@ export const InteractiveFloorPlan: React.FC<InteractiveFloorPlanProps> = ({ capa
                         : 'bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-400 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'}
                     `}
                     title={`Bed ${idx + 1} - ${isOccupied ? 'Occupied (Tap to free)' : 'Free (Tap to occupy)'}`}
+                    aria-label={`Bed ${idx + 1}, ${isOccupied ? 'occupied. Tap to free.' : 'free. Tap to occupy.'}`}
                   >
                     <Bed className="w-6 h-6 mb-1" />
                     <span className="text-xs font-bold">{idx + 1}</span>
@@ -113,7 +114,7 @@ export const InteractiveFloorPlan: React.FC<InteractiveFloorPlanProps> = ({ capa
                   title="Add another bed to this unit"
                 >
                   <span className="text-xl font-bold">+</span>
-                  <span className="text-[9px] uppercase tracking-wider mt-1">Add</span>
+                  <span className="text-xs uppercase tracking-wider mt-1">Add</span>
                 </button>
               </div>
             )}

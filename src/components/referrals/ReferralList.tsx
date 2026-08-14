@@ -8,6 +8,7 @@ import { formatDateTime } from '../../lib/utils';
 import { isSlaTracked, secondsUntilSlaBreach } from '../../lib/sla';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Timer, AlertTriangle } from 'lucide-react';
+import { SkeletonGroup, SkeletonReferralCard, SkeletonReferralRow } from '../ui/Skeleton';
 
 interface ReferralListProps {
   limit?: number;
@@ -39,16 +40,24 @@ const UrgencyTimer: React.FC<{ referral: Referral; now: Date }> = ({ referral, n
     // used to claim a breach while nothing had actually happened; if escalation
     // has not landed yet (offline, or the sweep has not run), say so plainly
     // rather than implying the system has taken over.
+    // Solid fill, not a tint: the countdown state below is a tint, so severity is
+    // carried by shape and weight as well as colour. `motion-safe:` gates the
+    // pulse — an infinite opacity animation drops this text to roughly 2:1
+    // contrast at the trough, and there is no way to pause it.
     return (
-      <div
-        className="inline-flex items-center gap-1 mt-1 text-red-700 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded animate-pulse border border-red-200 dark:border-red-800"
-        title={referral.isEscalated
-          ? 'Escalated for administrative intervention'
-          : 'SLA breached — escalation pending'}
-      >
+      <div className="inline-flex items-center gap-1 mt-1 text-white bg-critical-700 px-2 py-0.5 rounded motion-safe:animate-pulse border border-critical-800">
         <AlertTriangle className="w-3 h-3" aria-hidden="true" />
-        <span className="text-[9px] font-bold uppercase">
-          {referral.isEscalated ? 'Escalated' : 'SLA Breach'} +{m}:{s.toString().padStart(2, '0')}
+        <span className="text-xs font-sans font-bold uppercase tabular-nums">
+          {referral.isEscalated ? 'Escalated' : 'No response'} +{m}:{s.toString().padStart(2, '0')}
+        </span>
+        {/* The escalated/pending distinction used to live only in a title
+            tooltip, which touch users never see and screen readers generally do
+            not announce — and it is the difference between "the system has taken
+            over" and "nobody has done anything yet". */}
+        <span className="sr-only">
+          {referral.isEscalated
+            ? 'Overdue, escalated to administrator'
+            : 'Overdue, escalation pending'}
         </span>
       </div>
     );
@@ -57,15 +66,23 @@ const UrgencyTimer: React.FC<{ referral: Referral; now: Date }> = ({ referral, n
   const m = Math.floor(secondsToLimit / 60);
   const s = secondsToLimit % 60;
   return (
-    <div className="inline-flex items-center gap-1 mt-1 text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-      <Timer className="w-3 h-3" />
-      <span className="text-[9px] font-bold uppercase">{m}:{s.toString().padStart(2, '0')} to SLA</span>
+    <div className="inline-flex items-center gap-1 mt-1 text-warning-800 bg-warning-100 dark:text-warning-300 dark:bg-warning-900/40 px-2 py-0.5 rounded border border-warning-300 dark:border-warning-700">
+      <Timer className="w-3 h-3" aria-hidden="true" />
+      {/* tabular-nums stops the digits shifting horizontally on every tick, which
+          is its own legibility problem on a 1Hz counter. */}
+      <span className="text-xs font-sans font-bold uppercase tabular-nums" aria-hidden="true">
+        {m}:{s.toString().padStart(2, '0')} left
+      </span>
+      {/* Coarse, so it does not change every second under a screen reader. */}
+      <span className="sr-only">
+        {m >= 5 ? 'Response due within 30 minutes' : 'Response overdue in under 5 minutes'}
+      </span>
     </div>
   );
 };
 
 export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, searchQuery = '', priorityFilter = 'all', statusFilter = 'all', deptFilter = 'all', bedFilter = 'all', prioritySort = false }) => {
-  const { referrals, facilities } = useData();
+  const { referrals, facilities, loading } = useData();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -80,8 +97,44 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
     return () => clearInterval(id);
   }, [referrals]);
 
+  // Referrals hasn't loaded yet -- show placeholders, not "No referrals found."
+  // Firestore's onSnapshot starts every subscriber from an empty array, so
+  // without this a clinician opening the app mid-shift briefly sees the same
+  // screen as a facility with a genuinely empty referral queue.
+  if (loading) {
+    return (
+      <div className="w-full">
+        <div className="block md:hidden space-y-4">
+          <SkeletonGroup label="Loading referrals…">
+            {Array.from({ length: limit ?? 4 }).map((_, i) => <SkeletonReferralCard key={i} />)}
+          </SkeletonGroup>
+        </div>
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">
+              <tr>
+                <th className="px-6 py-3">Patient Identity</th>
+                <th className="px-6 py-3">Origin Facility</th>
+                <th className="px-6 py-3">Target Specialty</th>
+                <th className="px-6 py-3">Clinical Priority</th>
+                <th className="px-6 py-3">Current Status</th>
+                <th className="px-6 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            {/* aria-label/aria-busy directly on <tbody>, not a wrapping <div>:
+                a <div> is not a valid child of <table> and browsers will hoist
+                it out, which can silently break the table's own structure. */}
+            <tbody className="text-xs" aria-busy="true" aria-live="polite" aria-label="Loading referrals">
+              {Array.from({ length: limit ?? 6 }).map((_, i) => <SkeletonReferralRow key={i} />)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
   let filtered = referrals;
-  
+
   // If user is admin/owner and no facilityId passed (or explicitly showing all), show all
   const isAdmin = user?.role === 'system_admin' || user?.role === 'owner';
   
@@ -229,28 +282,28 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                   <div className="text-xs text-slate-400 font-mono mt-0.5 truncate">HID: {referral.patientData.hospitalId}</div>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded text-[9px] font-bold uppercase whitespace-nowrap">EMERGENCY</span>}
-                  {referral.priority === 'urgent' && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 rounded text-[9px] font-bold uppercase whitespace-nowrap">URGENT</span>}
-                  {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded text-[9px] font-bold uppercase whitespace-nowrap">ROUTINE</span>}
+                  {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-critical-700 text-white dark:bg-critical-600 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">EMERGENCY</span>}
+                  {referral.priority === 'urgent' && <span className="px-2 py-0.5 bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-300 border border-warning-300 dark:border-warning-700 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">URGENT</span>}
+                  {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">ROUTINE</span>}
                   <div className="mt-1">
                     <UrgencyTimer referral={referral} now={now} />
                   </div>
                   <div className="flex items-center gap-1 font-medium text-xs uppercase text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                    {['in_transit', 'accepted', 'patient_consented', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>}
-                    {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full shrink-0"></div>}
-                    {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0"></div>}
-                    {['rejected', 'cancelled'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-red-500 rounded-full shrink-0"></div>}
+                    {['in_transit', 'accepted', 'patient_consented', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-info-500 rounded-full shrink-0"></div>}
+                    {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-warning-500 rounded-full shrink-0"></div>}
+                    {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-success-500 rounded-full shrink-0"></div>}
+                    {['rejected', 'cancelled'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-critical-500 rounded-full shrink-0"></div>}
                     <span className="capitalize">{referral.status.replace(/_/g, ' ')}</span>
                   </div>
                 </div>
               </div>
               <div className="flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-400 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <div className="min-w-0">
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase">From</span>
+                  <span className="block text-xs font-bold text-slate-400 uppercase">From</span>
                   <span className="block truncate">{fromFacility?.name || '—'}</span>
                 </div>
                 <div className="min-w-0">
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase">Target</span>
+                  <span className="block text-xs font-bold text-slate-400 uppercase">Target</span>
                   <span className="block uppercase truncate">{referral.receivingDepartments?.join(', ') || 'N/A'}</span>
                 </div>
               </div>
@@ -295,22 +348,22 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                   <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium max-w-[200px] truncate">{fromFacility?.name || '—'}</td>
                   <td className="px-6 py-4 uppercase text-slate-700 dark:text-slate-300 max-w-[180px] truncate">{referral.receivingDepartments?.join(', ') || 'N/A'}</td>
                   <td className="px-6 py-4">
-                    {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded text-[9px] font-bold uppercase whitespace-nowrap">EMERGENCY</span>}
-                    {referral.priority === 'urgent' && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 rounded text-[9px] font-bold uppercase whitespace-nowrap">URGENT</span>}
-                    {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded text-[9px] font-bold uppercase whitespace-nowrap">ROUTINE</span>}
+                    {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-critical-700 text-white dark:bg-critical-600 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">EMERGENCY</span>}
+                    {referral.priority === 'urgent' && <span className="px-2 py-0.5 bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-300 border border-warning-300 dark:border-warning-700 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">URGENT</span>}
+                    {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">ROUTINE</span>}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <div className="flex items-center gap-1 font-medium text-xs uppercase text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                        {['in_transit', 'accepted', 'patient_consented', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0"></div>}
-                        {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full shrink-0"></div>}
-                        {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0"></div>}
-                        {['rejected', 'cancelled'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-red-500 rounded-full shrink-0"></div>}
+                        {['in_transit', 'accepted', 'patient_consented', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-info-500 rounded-full shrink-0"></div>}
+                        {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-warning-500 rounded-full shrink-0"></div>}
+                        {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-success-500 rounded-full shrink-0"></div>}
+                        {['rejected', 'cancelled'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-critical-500 rounded-full shrink-0"></div>}
                         {['postponed'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-purple-500 rounded-full shrink-0"></div>}
                         <span className="capitalize">{referral.status.replace(/_/g, ' ')}</span>
                       </div>
                       {referral.isEscalated && (
-                        <span className="px-1.5 py-0.5 bg-red-600 text-white rounded text-[8px] font-bold uppercase tracking-wider animate-pulse whitespace-nowrap">
+                        <span className="px-2 py-0.5 bg-critical-700 text-white rounded text-xs font-sans font-bold uppercase tracking-wider motion-safe:animate-pulse whitespace-nowrap">
                           ESCALATED
                         </span>
                       )}

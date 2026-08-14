@@ -6,10 +6,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 import { Bed, Save, CheckCircle, Map, Table } from 'lucide-react';
 import { InteractiveFloorPlan } from '../components/bed-management/InteractiveFloorPlan';
+import { Skeleton } from '../components/ui/Skeleton';
 
 export const BedManagementPage: React.FC = () => {
   const { user } = useAuth();
-  const { facilities, facilitiesById, updateFacilityCapacity } = useData();
+  const { facilities, facilitiesById, updateFacilityCapacity, loading } = useData();
 
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
   const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
@@ -89,7 +90,13 @@ export const BedManagementPage: React.FC = () => {
         </Card>
       )}
 
-      {facility ? (
+      {loading ? (
+        <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading facility data…</span>
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-96 w-full rounded-lg" />
+        </div>
+      ) : facility ? (
         <>
           <div className="flex items-center gap-2 mb-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-max">
         <button
@@ -132,16 +139,18 @@ export const BedManagementPage: React.FC = () => {
                   const available = cap.total - cap.occupied;
                   const ratio = cap.total > 0 ? cap.occupied / cap.total : 0;
                   
-                  let statusColor = 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20';
+                  // Full and near-full ("Critical") are different operational states and
+                  // need different colors — amber and red used to be the same brand orange.
+                  let statusColor = 'text-success-600 dark:text-success-400 bg-success-50 dark:bg-success-900/20';
                   let statusText = 'Available';
                   if (cap.total <= 0) {
                     statusColor = 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800';
                     statusText = 'Not Configured';
                   } else if (available <= 0) {
-                    statusColor = 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20';
+                    statusColor = 'text-critical-600 dark:text-critical-400 bg-critical-50 dark:bg-critical-900/20';
                     statusText = 'Full';
                   } else if (ratio > 0.8) {
-                    statusColor = 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20';
+                    statusColor = 'text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/20';
                     statusText = 'Critical';
                   }
 

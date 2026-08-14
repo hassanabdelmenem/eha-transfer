@@ -22,13 +22,13 @@ const show = (value: number | undefined, suffix = '') =>
 // Abnormal vitals are flagged with color AND an icon + "Abnormal" label, not color alone --
 // color-only signaling is invisible to colorblind users and screen readers.
 const VitalStat: React.FC<{ label: string; value: React.ReactNode; unit?: string; abnormal: boolean }> = ({ label, value, unit, abnormal }) => (
-  <div className={`p-2 rounded border ${abnormal ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
-    <p className={`text-[9px] flex items-center gap-0.5 ${abnormal ? 'text-red-500' : 'text-slate-400'}`}>
+  <div className={`p-2 rounded border ${abnormal ? 'bg-critical-50 dark:bg-critical-950/30 border-critical-200 dark:border-critical-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
+    <p className={`text-xs flex items-center gap-0.5 ${abnormal ? 'text-critical-500' : 'text-slate-400'}`}>
       {label}
       {abnormal && <AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" />}
     </p>
-    <p className={`text-sm font-bold ${abnormal ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>
-      {value} {unit && <span className={`text-xs font-normal ${abnormal ? 'text-red-600 dark:text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>{unit}</span>}
+    <p className={`text-sm font-bold ${abnormal ? 'text-critical-700 dark:text-critical-400' : 'text-slate-800 dark:text-slate-200'}`}>
+      {value} {unit && <span className={`text-xs font-normal ${abnormal ? 'text-critical-600 dark:text-critical-500' : 'text-slate-500 dark:text-slate-400'}`}>{unit}</span>}
       {abnormal && <span className="sr-only"> (abnormal)</span>}
     </p>
   </div>

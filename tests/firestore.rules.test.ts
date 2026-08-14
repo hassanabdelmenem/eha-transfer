@@ -44,11 +44,15 @@ const referral = (over: Record<string, unknown> = {}) => ({
   requiredBedType: 'ICU',
   priority: 'emergency',
   status: 'pending',
+  isEscalated: false,
   reasonForReferral: 'needs ICU',
   createdAt: '2026-01-01T00:00:00.000Z',
+  // Long past, so slaWindowElapsed() is satisfied for the escalation tests. The
+  // "too early" case is covered explicitly further down.
+  createdAtMs: Date.parse('2026-01-01T00:00:00.000Z'),
   updatedAt: '2026-01-01T00:00:00.000Z',
   deptComments: [],
-  
+  statusHistory: [{ status: 'pending', timestamp: '2026-01-01T00:00:00.000Z', userId: F1_DOCTOR }],
   ...over,
 });
 
@@ -141,7 +145,8 @@ describe('PHI collections (security review #2)', () => {
 
   it('allows verified staff to fan out a notification to another user', async () => {
     await assertSucceeds(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n2'), {
-      id: 'n2', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false, createdAt: '2026-01-02T00:00:00.000Z',
+      id: 'n2', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false,
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(),
     }));
   });
 
@@ -175,16 +180,18 @@ describe('referral integrity (security review #4 and #5)', () => {
   });
 
   it('allows a senior at the referring facility to cancel', async () => {
-    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), { status: 'cancelled' }));
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
+      status: 'cancelled',
+      statusHistory: [...referral().statusHistory, { status: 'cancelled', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER }],
+    }));
   });
 
   it('blocks a candidate facility from reassigning the referring facility', async () => {
     await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { referringFacilityId: 'f3' }));
   });
 
-  it('blocks tampering with the audit trail subcollection', async () => {
-    await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry1'), { status: 'tampered' }));
-    await assertFails(deleteDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry1')));
+  it('blocks truncating the audit trail', async () => {
+    await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { statusHistory: [] }));
   });
 
   it('blocks laundering referringUserId to steal the cancel right', async () => {
@@ -192,8 +199,11 @@ describe('referral integrity (security review #4 and #5)', () => {
   });
 
   it('allows a candidate facility to accept and append to the trail', async () => {
-    await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { status: 'dept_approved', receivingFacilityId: 'f3' }));
-    await assertSucceeds(setDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry2'), { status: 'dept_approved', timestamp: '2026-01-02T00:00:00.000Z', userId: F3_CANDIDATE }));
+    await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), {
+      status: 'dept_approved',
+      receivingFacilityId: 'f3',
+      statusHistory: [...referral().statusHistory, { status: 'dept_approved', timestamp: '2026-01-02T00:00:00.000Z', userId: F3_CANDIDATE }],
+    }));
   });
 
   it('blocks an uninvolved facility from reading a referral', async () => {
@@ -297,7 +307,14 @@ describe('referral list queries (the shapes DataContext issues)', () => {
 });
 
 describe('referral status transitions', () => {
-  const advanceTo = (status: string, extra: Record<string, unknown> = {}) => ({ status, ...extra });
+  const advanceTo = (status: string, extra: Record<string, unknown> = {}) => ({
+    status,
+    statusHistory: [
+      ...referral().statusHistory,
+      { status, timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER },
+    ],
+    ...extra,
+  });
 
   const setStatus = async (status: string) => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
@@ -331,11 +348,29 @@ describe('referral status transitions', () => {
     await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advanceTo('pending')));
   });
 
-  it('blocks writing to someone else\'s audit trail', async () => {
-    await assertFails(setDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref2', 'statusHistory', 'entry3'), { status: 'pending', timestamp: '2020-01-01T00:00:00.000Z', userId: F1_MANAGER }));
+  it('blocks smuggling a rewritten history in alongside a status change', async () => {
+    await setStatus('accepted');
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
+      status: 'patient_consented',
+      // Correct length for a single append, but the opening entry is forged.
+      statusHistory: [
+        { status: 'pending', timestamp: '2020-01-01T00:00:00.000Z', userId: F1_MANAGER },
+        { status: 'patient_consented', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER },
+      ],
+    }));
   });
 
-  // Removed padding test since arbitrary subcollection writes are blocked for non-parties, and it's append-only
+  it('blocks padding the trail with more than one entry per status change', async () => {
+    await setStatus('accepted');
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
+      status: 'patient_consented',
+      statusHistory: [
+        ...referral().statusHistory,
+        { status: 'invented', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER },
+        { status: 'patient_consented', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER },
+      ],
+    }));
+  });
 });
 
 describe('direct admission integrity', () => {
@@ -366,14 +401,14 @@ describe('notification shape constraints', () => {
   it('blocks a notification that arrives pre-read', async () => {
     await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n3'), {
       id: 'n3', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: true,
-      createdAt: '2026-01-02T00:00:00.000Z',
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(),
     }));
   });
 
   it('blocks an unrecognised notification type', async () => {
     await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n4'), {
       id: 'n4', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'system', read: false,
-      createdAt: '2026-01-02T00:00:00.000Z',
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(),
     }));
   });
 });
@@ -393,13 +428,36 @@ describe('user self-signup', () => {
 });
 
 describe('escalation writes', () => {
-  const escalate = (over: Record<string, unknown> = {}) => ({ isEscalated: true, escalatedAt: '2026-01-02T00:00:00.000Z', escalationReason: 'sla_breach', ...over });
+  const escalate = (over: Record<string, unknown> = {}) => ({
+    isEscalated: true,
+    escalatedAt: '2026-01-02T00:00:00.000Z',
+    escalatedBy: 'system',
+    escalationLevel: 'facility',
+    escalationReason: 'sla_breach',
+    // Status is deliberately unchanged: escalation records that nobody responded,
+    // it does not move the referral along. An earlier version of
+    // auditTrailAppendOnly() tied the allowed trail growth to a status change and
+    // so rejected every escalation -- these tests exist to keep that from
+    // regressing.
+    statusHistory: [
+      ...referral().statusHistory,
+      { status: 'pending', timestamp: '2026-01-02T00:00:00.000Z', userId: 'system' },
+    ],
+    ...over,
+  });
 
   it('allows a party to escalate while appending one audit entry', async () => {
     await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), escalate()));
   });
 
-  
+  it('allows an appended entry with no status change at all', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
+      statusHistory: [
+        ...referral().statusHistory,
+        { status: 'pending', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_DOCTOR, notes: 'Chased receiving facility' },
+      ],
+    }));
+  });
 
   it('allows de-escalation', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
@@ -417,7 +475,267 @@ describe('escalation writes', () => {
     await assertFails(updateDoc(doc(authed('f9-uid2'), 'referrals', 'ref1'), escalate()));
   });
 
-  
+  it('still blocks appending two entries at once', async () => {
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
+      isEscalated: true,
+      statusHistory: [
+        ...referral().statusHistory,
+        { status: 'pending', timestamp: '2026-01-02T00:00:00.000Z', userId: 'system' },
+        { status: 'pending', timestamp: '2026-01-02T00:00:01.000Z', userId: 'system' },
+      ],
+    }));
+  });
 
-  
+  it('still blocks rewriting the opening entry while escalating', async () => {
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
+      isEscalated: true,
+      statusHistory: [
+        { status: 'pending', timestamp: '2020-01-01T00:00:00.000Z', userId: F1_MANAGER },
+        { status: 'pending', timestamp: '2026-01-02T00:00:00.000Z', userId: 'system' },
+      ],
+    }));
+  });
+});
+
+/**
+ * The hardening pass. Each block below corresponds to a finding: the referral
+ * document was previously pinned on four identity fields only, the transition
+ * graph checked the move but not the mover, create was ownership-only, and
+ * notifications could be dated into the future.
+ */
+describe('clinical record integrity', () => {
+  const rewritePatientData = {
+    patientData: { name: 'Patient A', hospitalId: 'H-1', diagnosis: 'Not MI', allergies: [] },
+  };
+
+  it('blocks a candidate facility from rewriting the diagnosis or allergies', async () => {
+    await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), rewritePatientData));
+  });
+
+  it('blocks the receiving facility from rewriting patient data', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { receivingFacilityId: 'f2' });
+    });
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), rewritePatientData));
+  });
+
+  it('allows the referring clinician who raised it to correct patient data', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), rewritePatientData));
+  });
+
+  it('blocks changing the required bed type, which drives routing and escalation', async () => {
+    await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { requiredBedType: 'Ward' }));
+  });
+
+  it('blocks widening the candidate list, which would grant PHI reads to uninvolved facilities', async () => {
+    await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), {
+      candidateFacilityIds: ['f2', 'f3', 'f9'],
+    }));
+  });
+
+  it('allows pruning the candidate list, which is what a patient decline does', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
+      candidateFacilityIds: ['f2'],
+    }));
+  });
+});
+
+describe('transition actor binding', () => {
+  const advance = (status: string) => ({
+    status,
+    statusHistory: [
+      ...referral().statusHistory,
+      { status, timestamp: '2026-01-02T00:00:00.000Z', userId: 'x' },
+    ],
+  });
+
+  const forceStatus = async (status: string, extra: Record<string, unknown> = {}) => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { status, ...extra });
+    });
+  };
+
+  it('blocks a candidate facility from recording the patient consent', async () => {
+    // The patient is at the referring hospital. A facility that has never met
+    // them must not be able to assert they agreed to the transfer -- and doing so
+    // is the gateway to in_transit, which cancel-locks the referral for everyone.
+    await forceStatus('accepted', { receivingFacilityId: 'f3' });
+    await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), advance('patient_consented')));
+  });
+
+  it('allows the referring facility to record the patient consent', async () => {
+    await forceStatus('accepted', { receivingFacilityId: 'f3' });
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advance('patient_consented')));
+  });
+
+  it('blocks the referring facility from accepting its own referral', async () => {
+    await forceStatus('manager_approved', { receivingFacilityId: 'f3' });
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advance('accepted')));
+  });
+
+  it('allows the receiving facility to accept', async () => {
+    await forceStatus('manager_approved', { receivingFacilityId: 'f3' });
+    await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), advance('accepted')));
+  });
+
+  it('blocks the referring facility from marking the patient admitted', async () => {
+    await forceStatus('arrived', { receivingFacilityId: 'f3' });
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advance('admitted')));
+  });
+});
+
+describe('escalation claims', () => {
+  const base = (over: Record<string, unknown>) => ({
+    isEscalated: true,
+    escalatedAt: '2026-01-02T00:00:00.000Z',
+    statusHistory: [
+      ...referral().statusHistory,
+      { status: 'pending', timestamp: '2026-01-02T00:00:00.000Z', userId: 'system' },
+    ],
+    ...over,
+  });
+
+  it('blocks an SLA escalation before the 30-minute window has actually elapsed', async () => {
+    // The referral is recreated as if raised seconds ago, so request.time cannot
+    // be past createdAtMs + 30 minutes. This is the one part of an automatic
+    // escalation the rules can genuinely verify while the writer is a browser.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'referrals', 'ref1'), referral({ createdAtMs: Date.now() }));
+    });
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), base({
+      escalatedBy: 'system', escalationLevel: 'facility', escalationReason: 'sla_breach',
+    })));
+  });
+
+  it('allows an SLA escalation once the window has elapsed', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), base({
+      escalatedBy: 'system', escalationLevel: 'facility', escalationReason: 'sla_breach',
+    })));
+  });
+
+  it('blocks a manual escalation attributed to the system', async () => {
+    // Otherwise a human action is indistinguishable from "nobody responded" in
+    // the audit trail.
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), base({
+      escalatedBy: 'system', escalationLevel: 'facility', escalationReason: 'manual',
+    })));
+  });
+
+  it('blocks a manual escalation signed as another user', async () => {
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), base({
+      escalatedBy: F1_DOCTOR, escalationLevel: 'facility', escalationReason: 'manual',
+    })));
+  });
+
+  it('allows a manual escalation signed by the caller', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), base({
+      escalatedBy: F1_MANAGER, escalationLevel: 'facility', escalationReason: 'manual',
+    })));
+  });
+
+  it('blocks an unrecognised escalation reason', async () => {
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), base({
+      escalatedBy: 'system', escalationLevel: 'system', escalationReason: 'because_i_said_so',
+    })));
+  });
+
+  it('blocks a capacity escalation claiming to be only facility-level', async () => {
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), base({
+      escalatedBy: 'system', escalationLevel: 'facility', escalationReason: 'no_beds_available',
+    })));
+  });
+});
+
+describe('referral creation shape', () => {
+  const newReferral = (over: Record<string, unknown> = {}) =>
+    referral({ id: 'ref-new', referringUserId: F1_DOCTOR, createdAtMs: Date.now(), ...over });
+
+  it('allows a well-formed pending referral', async () => {
+    await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref-new'), newReferral()));
+  });
+
+  it('blocks creating a referral already in transit, which would skip the whole graph', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref-new'), newReferral({ status: 'in_transit' })));
+  });
+
+  it('blocks creating a referral that is already escalated', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref-new'), newReferral({
+      isEscalated: true, escalatedBy: 'system', escalationReason: 'sla_breach', escalationLevel: 'facility',
+    })));
+  });
+
+  it('blocks creating a referral with a pre-loaded audit trail', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref-new'), newReferral({
+      statusHistory: [
+        { status: 'pending', timestamp: '2026-01-01T00:00:00.000Z', userId: F1_DOCTOR },
+        { status: 'pending', timestamp: '2026-01-01T00:00:01.000Z', userId: 'system' },
+      ],
+    })));
+  });
+
+  it('blocks a future createdAtMs, which would switch the SLA off for that referral', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref-new'), newReferral({
+      createdAtMs: Date.now() + 86400000,
+    })));
+  });
+
+  it('blocks editing createdAtMs afterwards', async () => {
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), { createdAtMs: Date.now() }));
+  });
+});
+
+describe('notification timestamps and deletion', () => {
+  it('blocks a notification dated into the future, which would pin it to the top of the tray', async () => {
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n5'), {
+      id: 'n5', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'urgent', read: false,
+      createdAt: '9999-12-31T00:00:00.000Z', createdAtMs: Date.now() + 31536000000,
+    }));
+  });
+
+  it('lets the recipient delete their own notification', async () => {
+    await assertSucceeds(deleteDoc(doc(authed(F1_DOCTOR), 'notifications', 'n1')));
+  });
+
+  it('still blocks deleting someone else notification', async () => {
+    await assertFails(deleteDoc(doc(authed(F2_DOCTOR), 'notifications', 'n1')));
+  });
+});
+
+describe('bed capacity integrity', () => {
+  const capacity = (over: Record<string, unknown> = {}) => ({
+    ICU: { total: 10, occupied: 2 }, CCU: { total: 0, occupied: 0 },
+    PICU: { total: 0, occupied: 0 }, Ward: { total: 10, occupied: 1 },
+    ...over,
+  });
+
+  it('lets ordinary staff move occupancy', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'facilities', 'f1'), {
+      capacity: capacity({ ICU: { total: 10, occupied: 5 } }),
+    }));
+  });
+
+  it('blocks ordinary staff from changing bed totals, which silently re-routes the network', async () => {
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'facilities', 'f1'), {
+      capacity: capacity({ ICU: { total: 0, occupied: 0 } }),
+    }));
+  });
+
+  it('allows a senior role to change bed totals', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'facilities', 'f1'), {
+      capacity: capacity({ ICU: { total: 12, occupied: 2 } }),
+      departments: ['ICU'],
+    }));
+  });
+
+  it('blocks occupancy above the total, which routing would read as a full hospital', async () => {
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'facilities', 'f1'), {
+      capacity: capacity({ ICU: { total: 10, occupied: 99 } }),
+    }));
+  });
+
+  it('blocks negative occupancy', async () => {
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'facilities', 'f1'), {
+      capacity: capacity({ ICU: { total: 10, occupied: -5 } }),
+    }));
+  });
 });

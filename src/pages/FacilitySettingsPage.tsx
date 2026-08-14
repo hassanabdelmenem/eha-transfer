@@ -316,7 +316,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{f.name}</h4>
                       {f.isExternal && (
-                        <span className="text-[9px] bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold uppercase">Contracted</span>
+                        <span className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold uppercase">Contracted</span>
                       )}
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">📍 {f.location} • <span className="uppercase">{f.type.replace('_', ' ')}</span></p>
@@ -343,7 +343,7 @@ export const FacilitySettingsPage: React.FC = () => {
                       </Button>
                       <Button 
                         variant="ghost" 
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 min-h-[40px] min-w-[40px] p-0 shrink-0" 
+                        className="text-critical-500 hover:text-critical-700 hover:bg-critical-50 min-h-[40px] min-w-[40px] p-0 shrink-0" 
                         title="Remove Facility"
                         onClick={() => handleRemoveFacility(f.id, f.name)}
                       >
@@ -384,7 +384,7 @@ export const FacilitySettingsPage: React.FC = () => {
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dept}</span>
                   <Button 
                     variant="ghost" 
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 min-h-[40px] min-w-[40px] p-0"
+                    className="text-critical-500 hover:text-critical-700 hover:bg-critical-50 min-h-[40px] min-w-[40px] p-0"
                     onClick={() => removeFacilityDepartment(facility.id, dept)}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -418,14 +418,14 @@ export const FacilitySettingsPage: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 {unverifiedUsers.map(u => (
-                  <div key={u.id} className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded border border-amber-100 dark:border-amber-900 flex items-center justify-between gap-3">
+                  <div key={u.id} className="p-3 bg-warning-50 dark:bg-warning-950/40 rounded border border-warning-100 dark:border-warning-900 flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{u.email}</p>
                       <div className="mt-1 flex gap-2 flex-wrap">
                          <span className="text-xs bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{u.role?.replace(/_/g, ' ')}</span>
                          {u.requestedRole && u.requestedRole !== u.role && (
-                           <span className="text-xs bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 rounded uppercase font-bold text-amber-700 dark:text-amber-300 whitespace-nowrap" title="Role requested during onboarding — granted when you verify">
+                           <span className="text-xs bg-warning-100 dark:bg-warning-900/40 px-1.5 py-0.5 rounded uppercase font-bold text-warning-800 dark:text-warning-300 whitespace-nowrap" title="Role requested during onboarding — granted when you verify">
                              requests: {u.requestedRole.replace(/_/g, ' ')}
                            </span>
                          )}
@@ -433,10 +433,10 @@ export const FacilitySettingsPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button onClick={() => handleVerifyUser(u)} className="bg-green-600 hover:bg-green-700 text-xs py-1 min-h-[40px]">
+                      <Button onClick={() => handleVerifyUser(u)} className="bg-success-600 hover:bg-success-700 text-xs py-1 min-h-[40px]">
                          Verify
                       </Button>
-                      <Button onClick={() => handleRemoveUser(u)} variant="ghost" aria-label={`Remove ${u.name}`} className="text-red-500 hover:text-red-700 min-h-[40px] min-w-[40px] p-0">
+                      <Button onClick={() => handleRemoveUser(u)} variant="ghost" aria-label={`Remove ${u.name}`} className="text-critical-500 hover:text-critical-700 min-h-[40px] min-w-[40px] p-0">
                          <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -537,7 +537,7 @@ export const FacilitySettingsPage: React.FC = () => {
                       <td className="px-4 py-3 text-right">
                          <Button 
                            variant="ghost" 
-                           className="text-red-500 hover:text-red-700 hover:bg-red-50 min-h-[40px] min-w-[40px] p-0"
+                           className="text-critical-500 hover:text-critical-700 hover:bg-critical-50 min-h-[40px] min-w-[40px] p-0"
                            title="Remove User Completely"
                            onClick={() => handleRemoveUser(u)}
                          >

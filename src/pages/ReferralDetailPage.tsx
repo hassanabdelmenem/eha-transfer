@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { useData } from '../contexts/DataContext';
@@ -17,18 +17,20 @@ import { ReferralStatus, DeptApprovalStatus, Referral } from '../types';
 import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataContext';
 import { toastError } from '../lib/toast';
 import { SLA_MINUTES } from '../lib/sla';
-import { db } from '../lib/firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { Skeleton, SkeletonDetailBlock } from '../components/ui/Skeleton';
 
 // Escalation copy, keyed by reason. Kept beside the component rather than inline
 // so the four cases stay visibly distinct and exhaustive.
 type EscalationKey = NonNullable<Referral['escalationReason']>;
 
+// Headlines name the patient consequence, not the system state. "Top-Level
+// Escalation" and "SLA" are internal tier and contract vocabulary; a nurse
+// reading this at 3am needs to know what is true about the patient.
 const ESCALATION_HEADLINE: Record<EscalationKey, string> = {
-  sla_breach: `Auto-Escalated \u2014 No Response in ${SLA_MINUTES} Minutes`,
-  no_matching_facility: 'Top-Level Escalation \u2014 No Matching Facility',
-  no_beds_available: 'Top-Level Escalation \u2014 No Beds Available',
-  manual: 'Escalated Referral (Priority Override)',
+  sla_breach: `No response in ${SLA_MINUTES} minutes \u2014 escalated`,
+  no_matching_facility: 'No hospital can take this patient',
+  no_beds_available: 'Every matching hospital is full',
+  manual: 'Escalated by staff',
 };
 
 const ESCALATION_DETAIL: Record<EscalationKey, string> = {
@@ -41,7 +43,7 @@ const ESCALATION_DETAIL: Record<EscalationKey, string> = {
 export const ReferralDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { referrals, updateReferralStatus, overrideReferralDestination, toggleReferralEscalation, addDeptComment, recordPatientConsent, recordPatientDecline, cancelReferral, facilities, users, facilitiesById, usersById, shiftAssignmentsByFacility } = useData();
+  const { referrals, updateReferralStatus, overrideReferralDestination, toggleReferralEscalation, addDeptComment, recordPatientConsent, recordPatientDecline, cancelReferral, facilities, users, facilitiesById, usersById, shiftAssignmentsByFacility, loading } = useData();
   const { user } = useAuth();
 
   const [notes, setNotes] = useState('');
@@ -58,24 +60,8 @@ export const ReferralDetailPage: React.FC = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState('');
-  const [statusHistory, setStatusHistory] = useState<any[]>([]);
 
   const referral = referrals.find(r => r.id === id);
-
-  useEffect(() => {
-    if (!id) return;
-    const q = query(
-      collection(db, 'referrals', id, 'statusHistory'),
-      orderBy('timestamp', 'asc')
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const history = snapshot.docs.map(doc => doc.data());
-      setStatusHistory(history);
-    }, (error) => {
-      console.error('Error fetching status history:', error);
-    });
-    return () => unsubscribe();
-  }, [id]);
 
   // Hooks must run unconditionally on every render -- keep these above the
   // "not found" early return below, or navigating to a missing/loading referral
@@ -85,6 +71,28 @@ export const ReferralDetailPage: React.FC = () => {
     contentRef: printRef,
     documentTitle: `Clinical_Summary_${referral?.patientData?.name.replace(/\s+/g, '_') || 'Referral'}`
   });
+
+  // A referral that hasn't arrived yet and a referral that genuinely does not
+  // exist look identical from `referrals.find` — both are undefined. Without
+  // this branch, following a valid link (a notification, a bookmark) while
+  // referrals are still loading showed "Referral not found", which is simply
+  // false and sends people back to the list for no reason.
+  if (!referral && loading) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-64" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <SkeletonDetailBlock lines={3} />
+            <Skeleton className="h-64 w-full rounded-lg" />
+          </div>
+          <SkeletonDetailBlock lines={6} />
+        </div>
+      </div>
+    );
+  }
 
   if (!referral || !user) {
     return (
@@ -219,13 +227,19 @@ export const ReferralDetailPage: React.FC = () => {
             
             <div className="flex items-center gap-2">
               <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">ID: {referral.id}</p>
-              <button 
+              {/* The button box used to be the 12px icon itself — half the 24px
+                  WCAG 2.5.8 minimum, with no accessible name and a copy
+                  confirmation that changed only a glyph. The negative margin keeps
+                  the enlarged target from shifting the surrounding layout. */}
+              <button
+                type="button"
                 onClick={handleCopyId}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors print:hidden"
-                title="Copy ID"
+                aria-label="Copy referral ID"
+                className="inline-flex items-center justify-center h-11 w-11 -m-3 rounded text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
               >
-                {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                {copied ? <Check className="w-4 h-4 text-success-600" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
               </button>
+              <span className="sr-only" role="status">{copied ? 'Referral ID copied to clipboard' : ''}</span>
             </div>
 
           </div>
@@ -233,7 +247,7 @@ export const ReferralDetailPage: React.FC = () => {
         <div className="flex items-center gap-2 print:hidden">
           <Button
             variant={referral.isEscalated ? "destructive" : "outline"}
-            className={referral.isEscalated ? "bg-red-600 text-white hover:bg-red-700" : "bg-white dark:bg-slate-900"}
+            className={referral.isEscalated ? "bg-critical-600 text-white hover:bg-critical-700" : "bg-white dark:bg-slate-900"}
             onClick={handleToggleEscalation}
           >
             <ShieldAlert className="h-4 w-4 mr-2" />
@@ -254,9 +268,13 @@ export const ReferralDetailPage: React.FC = () => {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {referral.isEscalated && (
-            <div className="p-4 bg-red-600 text-white rounded-lg shadow-md flex items-center justify-between border-2 border-red-700">
+            /* bg-critical-700 rather than bg-red-600: the brand theme maps red
+               onto an orange ramp, which put white body text at 3.6:1 on this
+               banner. No pulse here — it is a static, full-width page banner, so
+               the animation added nothing and cost legibility at the trough. */
+            <div className="p-4 bg-critical-700 text-white rounded-lg shadow-md flex items-center justify-between border-2 border-critical-800">
               <div className="flex items-center gap-3">
-                <ShieldAlert className="w-6 h-6 animate-pulse shrink-0" />
+                <ShieldAlert className="w-6 h-6 shrink-0" aria-hidden="true" />
                 {/* The four escalation reasons mean genuinely different things and
                     call for different responses: nobody answered, nobody can take
                     the patient at all, everyone is full, or a human judged it
@@ -266,13 +284,16 @@ export const ReferralDetailPage: React.FC = () => {
                   <h3 className="font-bold text-sm uppercase tracking-wide">
                     {ESCALATION_HEADLINE[referral.escalationReason || 'manual']}
                   </h3>
-                  <p className="text-xs text-red-100">
+                  {/* text-white, not text-red-100: this sentence carries the
+                      instruction ("only a system administrator can place this
+                      patient") and was the least legible thing in the banner. */}
+                  <p className="text-sm text-white">
                     {ESCALATION_DETAIL[referral.escalationReason || 'manual']}
                     {referral.escalatedAt ? ` Escalated ${formatDateTime(referral.escalatedAt)}.` : ''}
                   </p>
                 </div>
               </div>
-              <span className="text-xs bg-red-900 text-white font-bold px-2 py-1 rounded uppercase">Direct Action Enabled</span>
+              <span className="text-xs bg-critical-900 text-white font-bold px-2 py-1 rounded uppercase whitespace-nowrap">Admin can act now</span>
             </div>
           )}
 
@@ -342,7 +363,7 @@ export const ReferralDetailPage: React.FC = () => {
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
                             <FileText className="w-8 h-8 mb-1" />
-                            <span className="text-[8px] px-1 truncate w-full text-center">{att.name}</span>
+                            <span className="text-xs px-1 truncate w-full text-center">{att.name}</span>
                           </div>
                         )}
                         {att.type === 'image' ? (
@@ -351,7 +372,7 @@ export const ReferralDetailPage: React.FC = () => {
                             className="absolute inset-0 bg-slate-900/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Activity className="w-5 h-5 mb-1" />
-                            <span className="text-[9px] font-bold uppercase tracking-wider">Quick View</span>
+                            <span className="text-xs font-bold uppercase tracking-wider">Quick View</span>
                           </button>
                         ) : (
                           <a 
@@ -361,7 +382,7 @@ export const ReferralDetailPage: React.FC = () => {
                             className="absolute inset-0 bg-slate-900/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Download className="w-5 h-5 mb-1" />
-                            <span className="text-[9px] font-bold uppercase tracking-wider">Download</span>
+                            <span className="text-xs font-bold uppercase tracking-wider">Download</span>
                           </a>
                         )}
                       </div>
@@ -388,7 +409,7 @@ export const ReferralDetailPage: React.FC = () => {
                       <div key={c.id} className="p-3 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800">
                         <div className="flex justify-between items-start mb-1">
                           <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{commentUser?.name} ({commentUser?.role.replace(/_/g, ' ')})</span>
-                          <span className="text-[9px] text-slate-400 font-mono">{formatDateTime(c.timestamp)}</span>
+                          <span className="text-xs text-slate-400 font-mono">{formatDateTime(c.timestamp)}</span>
                         </div>
                         <div className="mb-2">
                            <Badge variant={c.status === 'direct_approval' || c.status === 'urgent_approval' ? 'success' : c.status === 'requirements_needed' ? 'warning' : 'default'}>
@@ -465,7 +486,7 @@ export const ReferralDetailPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <p className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase">{toFacility?.name}</p>
                       {toFacility && ('isExternal' in toFacility) && toFacility.isExternal && (
-                        <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200 uppercase font-bold">External</span>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200 uppercase font-bold">External</span>
                       )}
                     </div>
 
@@ -500,7 +521,7 @@ export const ReferralDetailPage: React.FC = () => {
 
               <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-0 relative">
                 <h4 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-4">Timeline</h4>
-                <StatusTimeline referral={referral} history={statusHistory} usersById={usersById} />
+                <StatusTimeline referral={referral} usersById={usersById} />
               </div>
             </CardContent>
           </Card>
@@ -514,7 +535,7 @@ export const ReferralDetailPage: React.FC = () => {
               <CardContent className="space-y-4 pt-6">
                 
                 {referral.status === 'pending' && (
-                   <div className="bg-amber-50 border border-amber-200 p-3 rounded text-amber-800 text-xs flex items-start gap-2 mb-4">
+                   <div className="bg-warning-50 border border-warning-200 p-3 rounded text-warning-800 text-xs flex items-start gap-2 mb-4">
                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                      <span>Waiting for Department Head review before final Manager approval.</span>
                    </div>
@@ -534,13 +555,13 @@ export const ReferralDetailPage: React.FC = () => {
                 <div className="flex flex-col gap-2">
                   {/* System Admin Escalated Direct Actions Section */}
                   {isAdmin && ['pending', 'dept_approved', 'manager_approved', 'accepted', 'in_transit', 'arrived', 'postponed'].includes(referral.status) && (
-                    <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg space-y-3 mb-2">
+                    <div className="p-3 bg-critical-50 dark:bg-critical-950/30 border border-critical-200 dark:border-critical-900 rounded-lg space-y-3 mb-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-red-700 dark:text-red-400 uppercase flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-critical-700 dark:text-critical-400 uppercase flex items-center gap-1.5">
                           <ShieldAlert className="w-4 h-4" /> System Admin Direct Actions
                         </span>
                         {referral.isEscalated && (
-                          <span className="text-[9px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded uppercase">Escalated</span>
+                          <span className="text-xs bg-critical-700 text-white font-bold px-2 py-0.5 rounded uppercase">Escalated</span>
                         )}
                       </div>
 
@@ -582,7 +603,7 @@ export const ReferralDetailPage: React.FC = () => {
                             }
                             handleStatusUpdate('manager_approved');
                           }}
-                          className="bg-green-600 hover:bg-green-700 text-xs py-1.5 min-h-[40px] h-auto"
+                          className="bg-success-600 hover:bg-success-700 text-xs py-1.5 min-h-[40px] h-auto"
                           title="Direct Approve Referral"
                         >
                           <CheckCircle className="h-3.5 w-3.5 mr-1 shrink-0" /> Approve
@@ -597,7 +618,7 @@ export const ReferralDetailPage: React.FC = () => {
                         </Button>
                         <Button
                           onClick={() => handleStatusUpdate('postponed')}
-                          className="bg-amber-600 hover:bg-amber-700 text-white text-xs py-1.5 min-h-[40px] h-auto"
+                          className="bg-warning-600 hover:bg-warning-700 text-white text-xs py-1.5 min-h-[40px] h-auto"
                           title="Direct Postpone Referral"
                         >
                           <Clock className="h-3.5 w-3.5 mr-1 shrink-0" /> Postpone
@@ -620,7 +641,7 @@ export const ReferralDetailPage: React.FC = () => {
                   
                   {/* Receiving Facility Actions post-approval */}
                   {isReceiving && !['nurse', 'nursing_supervisor'].includes(user.role) && referral.status === 'manager_approved' && (
-                    <Button onClick={() => handleStatusUpdate('accepted')} className="w-full bg-green-600 hover:bg-green-700">
+                    <Button onClick={() => handleStatusUpdate('accepted')} className="w-full bg-success-600 hover:bg-success-700">
                       <Check className="h-4 w-4 mr-2" /> Ready for Receive (Accepted)
                     </Button>
                   )}
@@ -631,7 +652,7 @@ export const ReferralDetailPage: React.FC = () => {
                     </Button>
                   )}
                   {isReceiving && referral.status === 'arrived' && (
-                    <Button onClick={() => handleStatusUpdate('admitted')} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                    <Button onClick={() => handleStatusUpdate('admitted')} className="w-full bg-success-600 hover:bg-success-700">
                       Admit Patient
                     </Button>
                   )}
@@ -653,7 +674,7 @@ export const ReferralDetailPage: React.FC = () => {
                       </p>
                       {!showDeclineForm ? (
                         <div className="grid grid-cols-2 gap-2">
-                          <Button onClick={handlePatientConsent} disabled={consentBusy} className="bg-green-600 hover:bg-green-700 text-xs py-1.5 min-h-[40px]">
+                          <Button onClick={handlePatientConsent} disabled={consentBusy} className="bg-success-600 hover:bg-success-700 text-xs py-1.5 min-h-[40px]">
                             <UserCheck className="h-3.5 w-3.5 mr-1 shrink-0" /> Accepted Transfer
                           </Button>
                           <Button onClick={() => setShowDeclineForm(true)} disabled={consentBusy} variant="destructive" className="text-xs py-1.5 min-h-[40px]">
@@ -697,7 +718,7 @@ export const ReferralDetailPage: React.FC = () => {
                     <Badge variant="danger" className="w-full justify-center py-2 text-xs">Referral Rejected</Badge>
                   )}
                   {referral.status === 'postponed' && (
-                    <Badge variant="warning" className="w-full justify-center py-2 text-xs bg-amber-500 text-white">Referral Postponed</Badge>
+                    <Badge variant="warning" className="w-full justify-center py-2 text-xs bg-warning-500 text-white">Referral Postponed</Badge>
                   )}
                   {referral.status === 'cancelled' && (
                     <Badge variant="danger" className="w-full justify-center py-2 text-xs">
@@ -738,22 +759,22 @@ export const ReferralDetailPage: React.FC = () => {
                       {!showCancelConfirm ? (
                         <button
                           onClick={() => { setShowCancelConfirm(true); setCancelError(''); }}
-                          className="w-full flex items-center justify-center gap-2 min-h-[40px] rounded border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                          className="w-full flex items-center justify-center gap-2 min-h-[40px] rounded border border-critical-200 dark:border-critical-900 text-critical-600 dark:text-critical-400 text-xs font-bold uppercase tracking-wider hover:bg-critical-50 dark:hover:bg-critical-950/30 transition-colors"
                         >
                           <Ban className="w-3.5 h-3.5" /> Cancel Referral
                         </button>
                       ) : (
-                        <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg space-y-3">
-                          <p className="text-xs font-bold text-red-700 dark:text-red-400">
+                        <div className="p-3 bg-critical-50 dark:bg-critical-950/30 border border-critical-200 dark:border-critical-900 rounded-lg space-y-3">
+                          <p className="text-xs font-bold text-critical-700 dark:text-critical-400">
                             This withdraws the referral and archives it with its full history. This cannot be undone once confirmed.
                           </p>
                           <VoiceTextarea
-                            className="w-full rounded border border-red-200 dark:border-red-900 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm min-h-[50px]"
+                            className="w-full rounded border border-critical-200 dark:border-critical-900 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm min-h-[50px]"
                             placeholder="Reason for cancellation (optional)... (Click mic to dictate)"
                             value={cancelReason}
                             onValueChange={setCancelReason}
                           />
-                          {cancelError && <p className="text-xs text-red-600 dark:text-red-400">{cancelError}</p>}
+                          {cancelError && <p className="text-xs text-critical-600 dark:text-critical-400">{cancelError}</p>}
                           <div className="grid grid-cols-2 gap-2">
                             <Button onClick={() => { setShowCancelConfirm(false); setCancelReason(''); setCancelError(''); }} variant="ghost" className="text-xs min-h-[40px]">
                               Keep Referral
@@ -775,7 +796,7 @@ export const ReferralDetailPage: React.FC = () => {
 
       {/* Hidden Printable Summary for react-to-print */}
       <div style={{ display: 'none' }}>
-        <PrintableSummary ref={printRef} referral={referral} history={statusHistory} users={users} facilities={facilities} />
+        <PrintableSummary ref={printRef} referral={referral} users={users} facilities={facilities} />
       </div>
     </div>
   );

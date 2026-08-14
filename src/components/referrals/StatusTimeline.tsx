@@ -1,11 +1,10 @@
 import React from 'react';
-import { Referral, User, StatusHistoryEntry } from '../../types';
+import { Referral, User } from '../../types';
 import { formatDateTime } from '../../lib/utils';
 import { CheckCircle, XCircle, AlertCircle, Clock, Truck, MessageSquare } from 'lucide-react';
 
 interface StatusTimelineProps {
   referral: Referral;
-  history: StatusHistoryEntry[];
   users?: User[];
   usersById?: Map<string, User>;
 }
@@ -21,24 +20,26 @@ interface TimelineEvent {
   dotColor?: string;
 }
 
-export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, history, users, usersById }) => {
+export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users, usersById }) => {
   const events: TimelineEvent[] = [];
 
-  history.forEach((sh, idx) => {
+  referral.statusHistory.forEach((sh, idx) => {
     let dotColor = 'bg-slate-300 dark:bg-slate-600';
     let icon = <Clock className="w-3 h-3 text-white" />;
     
+    // Status scale, not raw colors: rejected (red) and pending (amber) used to
+    // render as the same brand orange dot on this timeline.
     if (['accepted', 'arrived', 'admitted', 'manager_approved', 'dept_approved'].includes(sh.status)) {
-      dotColor = 'bg-emerald-500';
+      dotColor = 'bg-success-500';
       icon = <CheckCircle className="w-3 h-3 text-white" />;
     } else if (['rejected'].includes(sh.status)) {
-      dotColor = 'bg-red-500';
+      dotColor = 'bg-critical-500';
       icon = <XCircle className="w-3 h-3 text-white" />;
     } else if (['pending'].includes(sh.status)) {
-      dotColor = 'bg-amber-500';
+      dotColor = 'bg-warning-500';
       icon = <AlertCircle className="w-3 h-3 text-white" />;
     } else if (['in_transit'].includes(sh.status)) {
-      dotColor = 'bg-blue-500';
+      dotColor = 'bg-info-500';
       icon = <Truck className="w-3 h-3 text-white" />;
     }
 

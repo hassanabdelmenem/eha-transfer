@@ -5,9 +5,10 @@ import { Card } from '../components/ui/Card';
 import { formatDateTime } from '../lib/utils';
 import { Bell, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Skeleton, SkeletonGroup } from '../components/ui/Skeleton';
 
 export const NotificationsPage: React.FC = () => {
-  const { notifications, markNotificationRead, markAllNotificationsRead } = useData();
+  const { notifications, markNotificationRead, markAllNotificationsRead, loading } = useData();
   const { user } = useAuth();
 
   if (!user) return null;
@@ -33,7 +34,11 @@ export const NotificationsPage: React.FC = () => {
         )}
       </div>
 
-      {userNotifs.length === 0 ? (
+      {loading ? (
+        <SkeletonGroup label="Loading notifications…" className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded" />)}
+        </SkeletonGroup>
+      ) : userNotifs.length === 0 ? (
         <Card className="p-8 text-center text-gray-500 dark:text-slate-400">
           No notifications.
         </Card>
@@ -44,15 +49,15 @@ export const NotificationsPage: React.FC = () => {
             return (
               <div
                 key={notif.id}
-                className={`p-4 rounded border ${notif.read ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800' : 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900'} shadow-sm cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800`}
+                className={`p-4 rounded border ${notif.read ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800' : 'bg-info-50 dark:bg-info-950/30 border-info-200 dark:border-info-900'} shadow-sm cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800`}
                 onClick={() => !notif.read && markNotificationRead(notif.id)}
               >
                 <div className="flex gap-3 sm:gap-4">
-                  <div className={`mt-1 shrink-0 ${notif.type === 'urgent' ? 'text-red-500' : notif.type === 'success' ? 'text-green-500' : 'text-blue-500'}`}>
+                  <div className={`mt-1 shrink-0 ${notif.type === 'urgent' ? 'text-critical-500' : notif.type === 'success' ? 'text-success-500' : 'text-info-500'}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className={`text-sm font-bold uppercase ${notif.read ? 'text-slate-700 dark:text-slate-300' : 'text-blue-900 dark:text-blue-300'}`}>
+                    <h4 className={`text-sm font-bold uppercase ${notif.read ? 'text-slate-700 dark:text-slate-300' : 'text-info-900 dark:text-info-300'}`}>
                       {notif.title}
                     </h4>
                     <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 font-medium">{notif.message}</p>

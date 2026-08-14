@@ -21,6 +21,9 @@ export interface Toast {
 
 type Listener = (toasts: Toast[]) => void;
 
+/** Most toasts on screen at once; oldest is dropped beyond this. */
+const MAX_VISIBLE = 3;
+
 let toasts: Toast[] = [];
 const listeners = new Set<Listener>();
 // Timers are tracked so dismiss() can cancel a pending auto-dismiss and tests can
@@ -47,11 +50,32 @@ export const dismissToast = (id: string) => {
   emit();
 };
 
-export const showToast = (message: string, tone: ToastTone = 'error', ttlMs = 8000) => {
+/**
+ * Per-tone lifetimes. Errors persist until dismissed (ttl 0).
+ *
+ * A fixed 8s auto-dismiss on every tone meant a failed write could announce
+ * itself and vanish while the clinician was looking at the patient rather than
+ * the screen -- which is the same silent failure this module exists to end. It
+ * also fails WCAG 2.2.1, which requires a time limit on content to be
+ * adjustable, extendable or removable. Each toast carries its own close button,
+ * so a persistent error is dismissable.
+ */
+const DEFAULT_TTL_MS: Record<ToastTone, number> = {
+  error: 0,
+  success: 6000,
+  info: 10000,
+};
+
+export const showToast = (message: string, tone: ToastTone = 'error', ttlMs = DEFAULT_TTL_MS[tone]) => {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   // Identical messages stack up fast when a listener retries; collapse them so a
   // repeated permission error doesn't bury the screen.
-  toasts = [...toasts.filter((t) => t.message !== message), { id, tone, message }];
+  //
+  // Capped at MAX_VISIBLE as well: now that errors persist until dismissed, a
+  // burst of distinct failures (an offline flush retrying several writes) would
+  // otherwise grow a full-width column upward on a phone and cover the content
+  // the clinician is trying to read. Oldest is dropped first.
+  toasts = [...toasts.filter((t) => t.message !== message), { id, tone, message }].slice(-MAX_VISIBLE);
   emit();
   if (ttlMs > 0 && typeof setTimeout !== 'undefined') {
     timers.set(id, setTimeout(() => dismissToast(id), ttlMs));

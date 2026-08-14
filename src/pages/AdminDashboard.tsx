@@ -4,13 +4,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { BedType } from '../types';
+import { SkeletonStatCard, Skeleton } from '../components/ui/Skeleton';
 
 const PRIORITY_LABEL: Record<string, string> = { emergency: 'E', urgent: 'U', routine: 'R' };
-const PRIORITY_DOT: Record<string, string> = { emergency: 'bg-red-500', urgent: 'bg-amber-500', routine: 'bg-blue-500' };
+// Status scale, not raw red-/amber-/blue-: emergency and urgent used to both
+// resolve to the same brand orange, so the "E" and "U" waitlist dots were the
+// same color and only the letter told them apart.
+const PRIORITY_DOT: Record<string, string> = { emergency: 'bg-critical-600', urgent: 'bg-warning-500', routine: 'bg-info-500' };
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, facilities } = useData();
+  const { referrals, facilities, loading } = useData();
 
   if (!user || (user.role !== 'system_admin' && user.role !== 'owner')) {
     return <div className="p-8">Access Denied. Admin privileges required.</div>;
@@ -62,14 +66,16 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => (
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <SkeletonStatCard key={i} />)
+        ) : (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => (
           <Card key={bed} className="border border-slate-200 dark:border-slate-800 shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wider">{bed} Total Available</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-end gap-2">
-                <span className={`text-3xl font-bold ${globalTotals[bed].available > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-3xl font-bold ${globalTotals[bed].available > 0 ? 'text-success-600' : 'text-critical-600'}`}>
                   {globalTotals[bed].available}
                 </span>
                 <span className="text-sm text-slate-500 dark:text-slate-400 mb-1">/ {globalTotals[bed].total}</span>
@@ -80,7 +86,9 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {facilities.filter(f => f.type !== 'primary_care').map(facility => (
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-lg" />)
+          ) : facilities.filter(f => f.type !== 'primary_care').map(facility => (
             <Card key={facility.id} className="overflow-hidden">
               <CardHeader className="bg-slate-900 text-white pb-4">
                 <div className="flex justify-between items-center gap-2">
@@ -115,12 +123,12 @@ export const AdminDashboard: React.FC = () => {
                             <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{cap.total}</td>
                             <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{cap.occupied}</td>
                             <td className="px-4 py-3 text-center">
-                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${isFull ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'}`}>
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${isFull ? 'bg-critical-100 text-critical-700 dark:bg-critical-900/40 dark:text-critical-300' : 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300'}`}>
                                 {available}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${isCritical ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${isCritical ? 'bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
                                 {waitlist.length} Waiting
                               </span>
                             </td>
@@ -153,7 +161,7 @@ export const AdminDashboard: React.FC = () => {
                                 aria-label={`${r.priority} priority ${r.requiredBedType} referral — open referral`}
                                 className="w-10 h-10 flex items-center justify-center hover:opacity-80 transition-opacity"
                               >
-                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white ${PRIORITY_DOT[r.priority] || 'bg-blue-500'}`}>
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white ${PRIORITY_DOT[r.priority] || 'bg-info-500'}`}>
                                   {PRIORITY_LABEL[r.priority] || '?'}
                                 </span>
                               </Link>

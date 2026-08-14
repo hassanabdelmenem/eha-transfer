@@ -43,11 +43,25 @@ export const AppLayout: React.FC = () => {
   };
 
   const [showHotline, setShowHotline] = React.useState(false);
-  const hotlineContacts = users.filter(u => 
-    u.facilityId === user?.facilityId && 
+  const hotlineContacts = users.filter(u =>
+    u.facilityId === user?.facilityId &&
     ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department', 'nursing_supervisor'].includes(u.role)
   );
 
+  // Neither modal below closed on Escape, which WCAG 2.1.2 (No Keyboard Trap)
+  // expects for anything opened this way -- a keyboard user had no way out
+  // short of tabbing to the close button.
+  React.useEffect(() => {
+    if (!showHotline && !showProfile) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowHotline(false);
+        setShowProfile(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showHotline, showProfile]);
 
   if (!user) return null;
 
@@ -119,11 +133,21 @@ export const AppLayout: React.FC = () => {
 
   return (
     <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans overflow-hidden w-full">
+      {/* Visually hidden until focused: a keyboard user landing on this page
+          otherwise has to tab through the full header and sidebar nav (which
+          on a small facility list is a lot of links) before reaching the
+          referral list every other interaction on this page is about. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-white focus:text-slate-900 focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+      >
+        Skip to main content
+      </a>
       <header className="min-h-[4rem] h-auto py-3 md:py-2 bg-blue-900 text-white flex flex-col md:flex-row md:items-center justify-between px-3 sm:px-6 border-b-4 border-blue-700 w-full relative gap-y-3">
         {/* Logo Section */}
         <div className="flex items-center gap-3 shrink-0 mx-auto md:mx-0">
           <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-md flex items-center justify-center shrink-0">
-            <Activity className="h-9 w-9 text-blue-900" />
+            <Activity className="h-7 w-7 text-blue-900" />
           </div>
           <div>
             {/* Not an h1: every routed page below already declares its own, and two
@@ -131,7 +155,7 @@ export const AppLayout: React.FC = () => {
                 unambiguous page title. The app name is a banner label, not the
                 heading of the content. */}
             <p className="text-lg md:text-xl font-bold tracking-tight uppercase text-center md:text-left">Ismailia Health Connect</p>
-            <p className="text-[9px] md:text-xs opacity-80 uppercase tracking-widest text-center md:text-left">Referral Coordination System</p>
+            <p className="text-xs opacity-80 uppercase tracking-widest text-center md:text-left">Referral Coordination System</p>
           </div>
         </div>
 
@@ -185,12 +209,12 @@ export const AppLayout: React.FC = () => {
             className="lg:hidden flex items-center gap-2 min-h-[40px] px-2 rounded hover:bg-blue-800/60 transition-colors shrink-0 min-w-0 max-w-[45vw]"
             aria-label={`Profile settings for ${user.name}, ${user.role.replace(/_/g, ' ')}`}
           >
-            <span className="w-9 h-9 rounded-full bg-blue-700 flex items-center justify-center shrink-0" aria-hidden="true">
+            <span className="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center shrink-0" aria-hidden="true">
               <User className="w-4 h-4" />
             </span>
             <span className="flex flex-col items-start min-w-0 text-left">
-              <span className="text-[11px] font-semibold leading-tight truncate max-w-full">{user.name}</span>
-              <span className="text-[9px] uppercase tracking-wide opacity-80 leading-tight truncate max-w-full">{user.role.replace(/_/g, ' ')}</span>
+              <span className="text-xs font-semibold leading-tight truncate max-w-full">{user.name}</span>
+              <span className="text-xs uppercase tracking-wide opacity-80 leading-tight truncate max-w-full">{user.role.replace(/_/g, ' ')}</span>
             </span>
           </button>
 
@@ -222,7 +246,7 @@ export const AppLayout: React.FC = () => {
             >
               <Bell className="h-5 w-5" />
               {unreadNotifs > 0 && (
-                <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-xs font-bold leading-none">
                   {unreadNotifs > 9 ? '9+' : unreadNotifs}
                 </span>
               )}
@@ -292,19 +316,19 @@ export const AppLayout: React.FC = () => {
             <div className="text-xs text-blue-300 font-bold uppercase mb-2">Security Status</div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-[9px] text-white">AES-256</span>
-                <span className="text-[9px] text-green-400">ACTIVE</span>
+                <span className="text-xs text-white">AES-256</span>
+                <span className="text-xs text-green-400">ACTIVE</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[9px] text-white">RBAC Filter</span>
-                <span className="text-[9px] text-green-400">ENABLED</span>
+                <span className="text-xs text-white">RBAC Filter</span>
+                <span className="text-xs text-green-400">ENABLED</span>
               </div>
             </div>
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 overflow-auto p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 overflow-auto p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
@@ -359,15 +383,21 @@ export const AppLayout: React.FC = () => {
       </div>
 
       {showHotline && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md border border-red-500 overflow-hidden">
-            <div className="bg-red-500 text-white p-4 flex items-center justify-between">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowHotline(false)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hotline-dialog-title"
+            className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md border border-critical-500 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-critical-500 text-white p-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Phone className="w-5 h-5" />
-                <h2 className="text-sm font-bold uppercase tracking-wider">Emergency Hotline</h2>
+                <Phone className="w-5 h-5" aria-hidden="true" />
+                <h2 id="hotline-dialog-title" className="text-sm font-bold uppercase tracking-wider">Emergency Hotline</h2>
               </div>
-              <button onClick={() => setShowHotline(false)} className="text-red-100 hover:text-white transition-colors">
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowHotline(false)} className="text-critical-100 hover:text-white transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" aria-label="Close emergency hotline">
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
             <div className="p-4 max-h-[60vh] overflow-y-auto">
@@ -408,14 +438,19 @@ export const AppLayout: React.FC = () => {
       )}
       {showProfile && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[90vh] flex flex-col">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-dialog-title"
+            className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[90vh] flex flex-col"
+          >
             <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <Settings className="w-5 h-5 text-slate-500" />
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">My Profile Settings</h2>
+                <Settings className="w-5 h-5 text-slate-500" aria-hidden="true" />
+                <h2 id="profile-dialog-title" className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">My Profile Settings</h2>
               </div>
-              <button onClick={() => setShowProfile(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowProfile(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" aria-label="Close profile settings">
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
             <div className="p-4 space-y-4 overflow-y-auto">

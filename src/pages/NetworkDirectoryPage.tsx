@@ -4,10 +4,11 @@ import { useData } from '../contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Search } from 'lucide-react';
 import { Input } from '../components/ui/Input';
+import { Skeleton } from '../components/ui/Skeleton';
 
 export const NetworkDirectoryPage: React.FC = () => {
   const { user } = useAuth();
-  const { facilities, shiftAssignments, referrals, users } = useData();
+  const { facilities, shiftAssignments, referrals, users, loading } = useData();
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!user) return null;
@@ -106,7 +107,12 @@ export const NetworkDirectoryPage: React.FC = () => {
         </div>
       </div>
 
-      {filteredFacilities.length === 0 ? (
+      {loading ? (
+        <div className="space-y-6" role="status" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading directory…</span>
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
+        </div>
+      ) : filteredFacilities.length === 0 ? (
         <Card className="p-8 text-center text-slate-500 dark:text-slate-400 border-dashed shadow-none">
           {q ? `No facilities or staff match "${searchQuery}".` : 'No facilities to display.'}
         </Card>
@@ -181,7 +187,7 @@ export const NetworkDirectoryPage: React.FC = () => {
                           {u.monthlySchedule && (
                             <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
                               <td colSpan={4} className="px-4 py-2 text-xs text-slate-600 dark:text-slate-400">
-                                <span className="font-bold text-[9px] uppercase mr-2 text-slate-500">Monthly Schedule:</span>
+                                <span className="font-bold text-xs uppercase mr-2 text-slate-500">Monthly Schedule:</span>
                                 {u.monthlySchedule}
                               </td>
                             </tr>

@@ -79,16 +79,24 @@ export function hasBreachedSla(
 }
 
 /**
- * The escalation trigger: breached, and not already escalated.
+ * The escalation trigger: breached, not already escalated, and not deliberately
+ * de-escalated by a human.
  *
  * The `isEscalated` check is what makes escalation idempotent. Both writers (the
  * client sweep and the scheduled function) re-check it inside a transaction, so
  * whichever loses the race writes nothing rather than appending a second
  * escalation entry to the audit trail.
+ *
+ * `autoEscalationSuppressed` is what makes De-escalate stick. The SLA breach does
+ * not stop being true when somebody dismisses it, so without this the next sweep
+ * -- up to 30 seconds later, or immediately on the next snapshot -- re-escalated
+ * the referral, re-notified every administrator, and appended another audit
+ * entry. From the user's side the button simply did not work.
  */
 export function needsAutoEscalation(
-  referral: Pick<Referral, 'status' | 'priority' | 'requiredBedType' | 'createdAt' | 'isEscalated'>,
+  referral: Pick<Referral, 'status' | 'priority' | 'requiredBedType' | 'createdAt' | 'isEscalated' | 'autoEscalationSuppressed'>,
   now: Clock
 ): boolean {
-  return !referral.isEscalated && hasBreachedSla(referral, now);
+  if (referral.isEscalated || referral.autoEscalationSuppressed) return false;
+  return hasBreachedSla(referral, now);
 }

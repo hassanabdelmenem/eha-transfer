@@ -7,10 +7,11 @@ import { Badge } from '../components/ui/Badge';
 import { Clock, Truck, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { toastError } from '../lib/toast';
+import { Skeleton, SkeletonGroup } from '../components/ui/Skeleton';
 
 export const ERDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, facilities, facilitiesById, updateReferralStatus } = useData();
+  const { referrals, facilities, facilitiesById, updateReferralStatus, loading } = useData();
 
   if (!user) return null;
 
@@ -65,7 +66,12 @@ export const ERDashboard: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
-            {awaitingTransport.map(referral => {
+            {loading && (
+              <SkeletonGroup label="Loading transfers…" className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
+              </SkeletonGroup>
+            )}
+            {!loading && awaitingTransport.map(referral => {
               const consentRecorded = referral.status === 'patient_consented';
               return (
                 <div key={referral.id} className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm">
@@ -86,14 +92,14 @@ export const ERDashboard: React.FC = () => {
                     <Truck className="w-4 h-4 mr-2" /> Request Ambulance
                   </Button>
                   {!consentRecorded && (
-                    <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-2 text-center">
+                    <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 text-center">
                       Awaiting patient consent before dispatch.
                     </p>
                   )}
                 </div>
               );
             })}
-            {awaitingTransport.length === 0 && (
+            {!loading && awaitingTransport.length === 0 && (
               <p className="text-sm text-slate-500 text-center py-4">No patients awaiting transport.</p>
             )}
           </CardContent>
@@ -108,7 +114,12 @@ export const ERDashboard: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
-            {activeReferrals
+            {loading && (
+              <SkeletonGroup label="Loading transfers…" className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
+              </SkeletonGroup>
+            )}
+            {!loading && activeReferrals
               .filter(r => r.receivingFacilityId === user.facilityId && r.status === 'in_transit')
               .map(referral => (
                 <div key={referral.id} className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm">
@@ -127,7 +138,7 @@ export const ERDashboard: React.FC = () => {
                   </Button>
                 </div>
               ))}
-             {activeReferrals.filter(r => r.receivingFacilityId === user.facilityId && r.status === 'in_transit').length === 0 && (
+             {!loading && activeReferrals.filter(r => r.receivingFacilityId === user.facilityId && r.status === 'in_transit').length === 0 && (
               <p className="text-sm text-slate-500 text-center py-4">No incoming patients currently in transit.</p>
             )}
           </CardContent>
@@ -150,8 +161,15 @@ export const ERDashboard: React.FC = () => {
                     <th className="px-4 py-3">Last Updated</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {activeReferrals.map(referral => {
+                <tbody aria-busy={loading} aria-live="polite" aria-label={loading ? 'Loading active referrals' : undefined}>
+                  {loading && Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i} className="border-b border-slate-100 dark:border-slate-800">
+                      {Array.from({ length: 5 }).map((__, j) => (
+                        <td key={j} className="px-4 py-3"><Skeleton className="h-3.5 w-3/4" /></td>
+                      ))}
+                    </tr>
+                  ))}
+                  {!loading && activeReferrals.map(referral => {
                     const isIncoming = referral.receivingFacilityId === user.facilityId;
                     const statusVariant: 'default' | 'success' | 'warning' | 'danger' | 'info' =
                       referral.status === 'rejected' || referral.status === 'cancelled' ? 'danger' :
@@ -176,7 +194,7 @@ export const ERDashboard: React.FC = () => {
                       </tr>
                     )
                   })}
-                  {activeReferrals.length === 0 && (
+                  {!loading && activeReferrals.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
                         No active referrals at the moment.

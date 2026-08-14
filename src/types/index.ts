@@ -112,13 +112,6 @@ export interface DeptComment {
 
 export type ReferralTransferType = 'one_way' | 'service_and_return' | 'assessment_with_return';
 
-export interface StatusHistoryEntry {
-  status: ReferralStatus;
-  timestamp: string;
-  userId: string;
-  notes?: string;
-}
-
 export interface Referral {
   id: string;
   transferType?: ReferralTransferType;
@@ -150,11 +143,29 @@ export interface Referral {
   // because the capacity does not exist, so only a system administrator can
   // resolve it. 'facility' escalations are still actionable locally.
   escalationLevel?: 'system' | 'facility' | null;
+  // Set when a human de-escalates. Without it the automatic escalators re-fire on
+  // the very next sweep -- the breach and the capacity shortage are both still
+  // true -- so De-escalate appeared not to work, and every attempt wrote a fresh
+  // audit entry and a fresh urgent alert to every administrator.
+  autoEscalationSuppressed?: boolean;
   reasonForReferral: string;
   createdAt: string;
+  // Epoch milliseconds, written at creation and immutable thereafter.
+  //
+  // Duplicates createdAt because Firestore security rules cannot parse an ISO
+  // string. Comparing this against `request.time` is what lets the rules verify
+  // that a claimed 30-minute SLA breach has genuinely elapsed, rather than taking
+  // the client's word for it. Optional only for referrals created before the
+  // field existed.
+  createdAtMs?: number;
   updatedAt: string;
   deptComments: DeptComment[];
-
+  statusHistory: {
+    status: ReferralStatus;
+    timestamp: string;
+    userId: string;
+    notes?: string;
+  }[];
   // Facilities the patient has declined transfer to; excluded from future auto-routing candidates.
   patientDeclinedFacilityIds?: string[];
   cancelledAt?: string;
@@ -190,5 +201,10 @@ export interface Notification {
   type: 'urgent' | 'info' | 'success' | 'warning';
   read: boolean;
   createdAt: string;
+  // Epoch milliseconds. The rules bound this against server time, and the tray
+  // sorts on it — ordering by the ISO string let a forged notification dated far
+  // in the future pin itself to the top of a clinician's list permanently.
+  // Optional only for notifications created before the field existed.
+  createdAtMs?: number;
   referralId?: string;
 }

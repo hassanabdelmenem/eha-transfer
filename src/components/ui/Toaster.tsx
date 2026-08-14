@@ -4,9 +4,9 @@ import { Toast, dismissToast, subscribeToToasts } from '../../lib/toast';
 import { cn } from '../../lib/utils';
 
 const TONE_STYLES: Record<Toast['tone'], string> = {
-  error: 'border-l-4 border-l-red-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100',
-  success: 'border-l-4 border-l-green-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100',
-  info: 'border-l-4 border-l-blue-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100',
+  error: 'border-l-4 border-l-critical-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100',
+  success: 'border-l-4 border-l-success-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100',
+  info: 'border-l-4 border-l-info-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100',
 };
 
 const TONE_ICONS: Record<Toast['tone'], React.ComponentType<{ className?: string }>> = {
@@ -16,9 +16,9 @@ const TONE_ICONS: Record<Toast['tone'], React.ComponentType<{ className?: string
 };
 
 const TONE_ICON_COLORS: Record<Toast['tone'], string> = {
-  error: 'text-red-600',
-  success: 'text-green-600',
-  info: 'text-blue-700',
+  error: 'text-critical-600',
+  success: 'text-success-600',
+  info: 'text-info-700',
 };
 
 /**
@@ -36,14 +36,20 @@ export const Toaster: React.FC = () => {
 
   useEffect(() => subscribeToToasts(setToasts), []);
 
-  if (toasts.length === 0) return null;
-
+  // The live region is always mounted, even with nothing in it.
+  //
+  // Returning null while empty meant the region and its first message were
+  // inserted in the same commit, and screen readers only announce changes to a
+  // region that was already in the accessibility tree — so the first toast of a
+  // session, typically the one reporting that a write was refused, was silently
+  // dropped for exactly the users who cannot see it. `empty:hidden` keeps it out
+  // of the layout while it has no children.
   return (
     <div
       role="status"
       aria-live="polite"
       aria-relevant="additions text"
-      className="fixed z-50 bottom-4 right-4 left-4 sm:left-auto sm:w-96 flex flex-col gap-2 print:hidden"
+      className="fixed z-50 bottom-4 right-4 left-4 sm:left-auto sm:w-96 flex flex-col gap-2 print:hidden empty:hidden"
     >
       {toasts.map((toast) => {
         const Icon = TONE_ICONS[toast.tone];

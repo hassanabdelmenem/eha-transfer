@@ -128,9 +128,12 @@ const ESCALATION_TARGET_ROLES = [
 /**
  * Escalates referrals whose 30-minute response window has elapsed.
  *
- * NOT CURRENTLY DEPLOYED. Scheduled functions require the Blaze plan, and this
- * project is on Spark, so `firebase.json` intentionally has no `functions`
- * block and a plain `firebase deploy` will not attempt to publish this. The code
+ * NOT CURRENTLY DEPLOYED. Scheduled functions require the Blaze plan and this
+ * project is on Spark.
+ *
+ * Note that `firebase.json` DOES contain a `functions` block, so a bare
+ * `firebase deploy` will try to publish this codebase and fail on Spark. Deploy
+ * with an explicit `--only hosting` / `--only firestore:rules` instead. The code
  * is kept ready rather than deleted, because until it runs there is a real gap:
  *
  *   The client sweep in DataContext performs the identical check, but only for
@@ -138,17 +141,9 @@ const ESCALATION_TARGET_ROLES = [
  *   with nobody logged in does not escalate until someone next opens the app.
  *   That is precisely the scenario escalation exists for.
  *
- * To close it, upgrade to Blaze and add to firebase.json:
- *
- *   "functions": [{
- *     "source": "functions",
- *     "codebase": "default",
- *     "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"],
- *     "ignore": ["node_modules", ".git", "firebase-debug.log", "*.local"]
- *   }]
- *
- * then deploy the composite index on (status, createdAt) that the query below
- * needs, and `firebase deploy --only functions`.
+ * To close it: upgrade to Blaze, deploy the composite index on
+ * (status, createdAt) that the query below needs, then
+ * `firebase deploy --only functions`. Nothing else has to change.
  *
  * Both writers re-check `isEscalated` inside a transaction, so once this is live
  * alongside the client sweep, whichever gets there first wins and the other is a
@@ -219,6 +214,10 @@ async function escalateOne(
       escalatedAt: nowIso,
       escalatedBy: 'system',
       escalationReason: 'sla_breach',
+      // Must match the client sweep in DataContext.autoEscalateReferral, or the
+      // same event produces two different documents depending on which writer
+      // won the race.
+      escalationLevel: 'facility',
       updatedAt: nowIso,
       statusHistory: [
         ...(r.statusHistory || []),

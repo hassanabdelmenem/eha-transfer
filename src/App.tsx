@@ -10,7 +10,6 @@ import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { Toaster } from './components/ui/Toaster';
-import { useIdleTimeout } from './hooks/useIdleTimeout';
 
 // Each page is imported by its named export.
 //
@@ -79,7 +78,6 @@ const RoleBasedDashboard = () => {
 
 const AppRoutes = () => {
   const { user, authReady } = useAuth();
-  useIdleTimeout();
 
   // Same reason as ProtectedRoute: /login and /onboarding branch on `user`, so
   // rendering them before auth resolves flashes the login form at a signed-in
