@@ -121,11 +121,11 @@ export const ReferralDetailPage: React.FC = () => {
   const isReferring = user.facilityId === referral.referringFacilityId || isAdmin;
   
   const isAssignedClinician = ((shiftAssignmentsByFacility.get(user.facilityId || '') || []) as any[]).some(s => 
-    referral.receivingDepartments.includes(s.department) &&
+    (referral.receivingDepartments || []).includes(s.department) &&
     s.assignedUserId === user.id
   );
   
-  const isTargetDeptHead = isReceiving && (user.role === 'head_of_department' || user.role === 'owner' || (['consultant', 'specialist'].includes(user.role) && isAssignedClinician)) && (referral.receivingDepartments.includes(user.department || '') || isAdmin);
+  const isTargetDeptHead = isReceiving && (user.role === 'head_of_department' || user.role === 'owner' || (['consultant', 'specialist'].includes(user.role) && isAssignedClinician)) && ((referral.receivingDepartments || []).includes(user.department || '') || isAdmin);
   const isFacilityManager = isReceiving && ['medical_director', 'hospital_manager', 'deputy_manager', 'owner'].includes(user.role);
   const isNurse = ['nurse', 'nursing_supervisor', 'owner'].includes(user.role);
   const isErRoom = (user.role === 'er_room' || user.role === 'owner') && (user.facilityId === referral.referringFacilityId || user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && referral.candidateFacilityIds?.includes(user.facilityId || '')));
@@ -326,7 +326,7 @@ export const ReferralDetailPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Target Department(s) / Bed</p>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 uppercase">{referral.receivingDepartments.join(', ')} / {referral.requiredBedType}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 uppercase">{(referral.receivingDepartments || []).join(', ')} / {referral.requiredBedType}</p>
                 </div>
               </div>
               
@@ -399,7 +399,7 @@ export const ReferralDetailPage: React.FC = () => {
               <CardTitle>Department Reviews & Comments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {referral.deptComments.length === 0 ? (
+              {!(referral.deptComments && referral.deptComments.length > 0) ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400 italic">No department comments yet.</p>
               ) : (
                 <div className="space-y-3">

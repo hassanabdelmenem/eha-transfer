@@ -23,7 +23,8 @@ interface TimelineEvent {
 export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users, usersById }) => {
   const events: TimelineEvent[] = [];
 
-  referral.statusHistory.forEach((sh, idx) => {
+  const safeStatusHistory = referral.statusHistory || [];
+  safeStatusHistory.forEach((sh, idx) => {
     let dotColor = 'bg-slate-300 dark:bg-slate-600';
     let icon = <Clock className="w-3 h-3 text-white" />;
     
@@ -55,7 +56,8 @@ export const StatusTimeline: React.FC<StatusTimelineProps> = ({ referral, users,
     });
   });
 
-  referral.deptComments.forEach((dc) => {
+  const safeDeptComments = referral.deptComments || [];
+  safeDeptComments.forEach((dc) => {
     events.push({
       id: `dc-${dc.id}`,
       type: 'dept_comment',
