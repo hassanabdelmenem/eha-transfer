@@ -1,10 +1,10 @@
 import React, { forwardRef } from 'react';
-import { Referral, User, Facility, StatusHistoryEntry } from '../../types';
+import { Referral, User, Facility } from '../../types';
 import { format } from 'date-fns';
 
 interface PrintableSummaryProps {
   referral: Referral;
-  history: StatusHistoryEntry[];
+  history: Referral['statusHistory'];
   users: User[];
   facilities: Facility[];
 }
@@ -126,7 +126,7 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
               </tr>
             </thead>
             <tbody>
-              {history.map((sh, idx) => {
+              {(history || []).map((sh, idx) => {
                 const u = usersById.get(sh.userId);
                 return (
                   <tr key={idx} className="border-b border-gray-100">

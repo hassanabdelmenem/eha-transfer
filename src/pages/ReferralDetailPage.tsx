@@ -796,7 +796,7 @@ export const ReferralDetailPage: React.FC = () => {
 
       {/* Hidden Printable Summary for react-to-print */}
       <div style={{ display: 'none' }}>
-        <PrintableSummary ref={printRef} referral={referral} users={users} facilities={facilities} />
+        <PrintableSummary ref={printRef} referral={referral} history={referral.statusHistory} users={users} facilities={facilities} />
       </div>
     </div>
   );

@@ -130,7 +130,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // alerts addressed to user ids that do not exist, which fail silently.
   const facilitiesLoadedRef = useRef(false);
   const usersLoadedRef = useRef(false);
-  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const markOnline = useCallback(() => setIsOnline(true), []);
+  const logAndCheckOffline = useCallback((err: unknown) => {
+    console.error(err);
+    const code = (err as { code?: string } | null)?.code;
+    if (code === 'unavailable' || code === 'deadline-exceeded') setIsOnline(false);
+  }, []);
+  // Not seeded from navigator.onLine -- that API is unreliable in embedded/dev
+  // preview webviews (some report `offline` at load despite a live connection),
+  // and a wrong initial read is never corrected because the browser 'online'
+  // event only fires on an actual state transition. Start optimistic and let
+  // real signals -- a successful Firestore snapshot, a genuine 'unavailable'
+  // error, or the browser's own offline event -- move it from there.
+  const [isOnline, setIsOnline] = useState<boolean>(true);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
 
   // True until the facility list and this user's referrals have both come back
@@ -260,6 +272,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Facilities: readable by any signed-in user — the onboarding hospital picker
     // needs them before the account is verified.
     unsubs.push(onSnapshot(collection(db, 'facilities'), (snapshot) => {
+      markOnline();
       const data = snapshot.docs.map(doc => doc.data() as Facility);
       if (data.length === 0) {
         // Seed initial facilities (only a privileged caller may write these).
@@ -273,7 +286,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         facilitiesLoadedRef.current = true;
         markDataReadyIfSettled();
       }
-    }, console.error));
+    }, logAndCheckOffline));
 
     // Everything below is patient data or staff PII and is gated on verification.
     if (!user.verified) {
@@ -288,6 +301,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Users: the full roster, needed because notification fan-out runs client-side
     // and has to resolve recipients at other facilities.
     unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
+      markOnline();
       const data = snapshot.docs.map(doc => doc.data() as User);
       if (data.length === 0) {
         const batch = writeBatch(db);
@@ -299,7 +313,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // list and would otherwise address real alerts to mock user ids.
         usersLoadedRef.current = true;
       }
-    }, console.error));
+    }, logAndCheckOffline));
 
     // Referrals: one bounded realtime listener per party-shape (see
     // referralQueryShapes). An unfiltered query here is rejected outright for
@@ -332,6 +346,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const constraints = referralShapes[key];
       const q = query(collection(db, 'referrals'), ...constraints, firestoreLimit(200));
       unsubs.push(onSnapshot(q, (snapshot) => {
+        markOnline();
         if (snapshot.docs.length > 0) {
           referralCursorsRef.current[key] = snapshot.docs[snapshot.docs.length - 1];
         }
@@ -344,6 +359,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // the unfiltered-query bug stayed invisible.
         console.error(`Referrals listener (${key}) failed:`, err);
         toastError(err, 'Could not load referrals. Try reloading the page.');
+        logAndCheckOffline(err);
         settleReferralShape(key);
       }));
     });
@@ -352,6 +368,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     unsubs.push(onSnapshot(
       isAdmin ? collection(db, 'notifications') : query(collection(db, 'notifications'), where('userId', '==', user.id)),
       (snapshot) => {
+        markOnline();
         // Sorted on createdAtMs, which the rules bound against server time.
         // Sorting on the createdAt string left the ordering forgeable: any
         // verified user could write a notification dated to the year 9999 and pin
@@ -362,26 +379,29 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .map(doc => doc.data() as Notification)
             .sort((a, b) => (b.createdAtMs ?? Date.parse(b.createdAt) ?? 0) - (a.createdAtMs ?? Date.parse(a.createdAt) ?? 0))
         );
-      }, console.error));
+      }, logAndCheckOffline));
 
     // Direct Admissions: facility-scoped patient records.
     unsubs.push(onSnapshot(
       isAdmin ? collection(db, 'directAdmissions') : query(collection(db, 'directAdmissions'), where('facilityId', '==', user.facilityId || '')),
       (snapshot) => {
+        markOnline();
         setDirectAdmissions(snapshot.docs.map(doc => doc.data() as DirectAdmission).sort((a, b) => b.admittedAt.localeCompare(a.admittedAt)));
-      }, console.error));
+      }, logAndCheckOffline));
 
     // Shift Assignments: no patient data, readable network-wide by verified staff.
     unsubs.push(onSnapshot(collection(db, 'shiftAssignments'), (snapshot) => {
+      markOnline();
       setShiftAssignments(snapshot.docs.map(doc => doc.data() as ShiftAssignment));
-    }, console.error));
+    }, logAndCheckOffline));
 
     // Shift Logs: handover summaries quote patient names — facility-scoped.
     unsubs.push(onSnapshot(
       isAdmin ? collection(db, 'shiftLogs') : query(collection(db, 'shiftLogs'), where('facilityId', '==', user.facilityId || '')),
       (snapshot) => {
+        markOnline();
         setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => b.timestamp.localeCompare(a.timestamp)));
-      }, console.error));
+      }, logAndCheckOffline));
 
     return () => unsubs.forEach(u => u());
   }, [user?.id, user?.verified, user?.facilityId, user?.role]);
