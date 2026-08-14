@@ -5,8 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDateTime(isoString: string) {
+export function formatDateTime(isoString?: string | null) {
+  if (!isoString) return 'Unknown Time';
   const date = new Date(isoString);
+  if (isNaN(date.getTime())) return 'Invalid Date';
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'short',

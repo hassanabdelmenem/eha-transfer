@@ -47,7 +47,7 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
           <div className="p-3 bg-gray-50 border border-gray-200 rounded">
             <p className="text-xs font-bold uppercase text-gray-500">To</p>
             <p className="font-bold">{toFacility?.name || 'Pending/Auto'}</p>
-            <p className="text-xs text-gray-600 mt-1">Requested Bed: {referral.requiredBedType.replace(/_/g, ' ')}</p>
+            <p className="text-xs text-gray-600 mt-1">Requested Bed: {referral.requiredBedType?.replace(/_/g, ' ') || 'Unknown'}</p>
           </div>
         </div>
 
@@ -88,11 +88,11 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
         <div className="mb-6">
           <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase">Vital Signs</h2>
           <div className="flex gap-6">
-            <p><span className="font-bold">HR:</span> {vital(patientData.vitalSigns.hr, ' bpm')}</p>
-            <p><span className="font-bold">BP:</span> {patientData.vitalSigns.bp || NOT_RECORDED}</p>
-            <p><span className="font-bold">SpO2:</span> {vital(patientData.vitalSigns.spo2, '%')}</p>
-            <p><span className="font-bold">Temp:</span> {vital(patientData.vitalSigns.temp, '°C')}</p>
-            <p><span className="font-bold">RR:</span> {vital(patientData.vitalSigns.rr, ' /min')}</p>
+            <p><span className="font-bold">HR:</span> {vital(patientData.vitalSigns?.hr, ' bpm')}</p>
+            <p><span className="font-bold">BP:</span> {patientData.vitalSigns?.bp || NOT_RECORDED}</p>
+            <p><span className="font-bold">SpO2:</span> {vital(patientData.vitalSigns?.spo2, '%')}</p>
+            <p><span className="font-bold">Temp:</span> {vital(patientData.vitalSigns?.temp, '°C')}</p>
+            <p><span className="font-bold">RR:</span> {vital(patientData.vitalSigns?.rr, ' /min')}</p>
           </div>
         </div>
 
@@ -128,9 +128,11 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
             <tbody>
               {(history || []).map((sh, idx) => {
                 const u = usersById.get(sh.userId);
+                const safeDate = sh.timestamp ? new Date(sh.timestamp) : null;
+                const dateStr = safeDate && !isNaN(safeDate.getTime()) ? format(safeDate, 'MMM d, yyyy HH:mm') : 'Unknown Time';
                 return (
                   <tr key={idx} className="border-b border-gray-100">
-                    <td className="py-2 text-xs font-mono">{format(new Date(sh.timestamp), 'MMM d, yyyy HH:mm')}</td>
+                    <td className="py-2 text-xs font-mono">{dateStr}</td>
                     <td className="py-2 font-medium capitalize">{sh.status.replace(/_/g, ' ')}</td>
                     <td className="py-2 text-sm">{u ? u.name : 'System'}</td>
                   </tr>

@@ -65,11 +65,11 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
         <div className="col-span-1 md:col-span-2">
           <span className="text-xs text-slate-400 font-bold uppercase">Clinical Vitals</span>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2">
-            <VitalStat label="HR" value={show(patient.vitalSigns.hr)} unit="bpm" abnormal={isAbnormal(patient.vitalSigns.hr, n => n > 100 || n < 60)} />
-            <VitalStat label="BP" value={patient.vitalSigns.bp || NOT_RECORDED} unit="mmHg" abnormal={isAbnormal(parseInt(patient.vitalSigns.bp?.split('/')[0]), n => !Number.isNaN(n) && (n > 140 || n < 90))} />
-            <VitalStat label="SpO2" value={show(patient.vitalSigns.spo2, '%')} abnormal={isAbnormal(patient.vitalSigns.spo2, n => n < 95)} />
-            <VitalStat label="Temp" value={show(patient.vitalSigns.temp, '°C')} abnormal={isAbnormal(patient.vitalSigns.temp, n => n > 38 || n < 36)} />
-            <VitalStat label="RR" value={show(patient.vitalSigns.rr)} unit="/min" abnormal={isAbnormal(patient.vitalSigns.rr, n => n > 20 || n < 12)} />
+            <VitalStat label="HR" value={show(patient.vitalSigns?.hr)} unit="bpm" abnormal={isAbnormal(patient.vitalSigns?.hr, n => n > 100 || n < 60)} />
+            <VitalStat label="BP" value={patient.vitalSigns?.bp || NOT_RECORDED} unit="mmHg" abnormal={isAbnormal(parseInt(patient.vitalSigns?.bp?.split('/')[0] || ''), n => !Number.isNaN(n) && (n > 140 || n < 90))} />
+            <VitalStat label="SpO2" value={show(patient.vitalSigns?.spo2, '%')} abnormal={isAbnormal(patient.vitalSigns?.spo2, n => n < 95)} />
+            <VitalStat label="Temp" value={show(patient.vitalSigns?.temp, '°C')} abnormal={isAbnormal(patient.vitalSigns?.temp, n => n > 38 || n < 36)} />
+            <VitalStat label="RR" value={show(patient.vitalSigns?.rr)} unit="/min" abnormal={isAbnormal(patient.vitalSigns?.rr, n => n > 20 || n < 12)} />
           </div>
         </div>
         <div className="col-span-1 md:col-span-2">
