@@ -23,7 +23,7 @@ export const PendingVerification: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-6 text-center space-y-6">
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Your profile has been submitted successfully. You requested the role of <strong>{user.role.replace('_', ' ')}</strong> at <strong>{user.facilityId || 'Global Network'}</strong>.
+              Your profile has been submitted successfully. You requested the role of <strong>{(user.role || "").replace('_', ' ')}</strong> at <strong>{user.facilityId || 'Global Network'}</strong>.
             </p>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               An administrator will review and verify your account shortly. Please check back later.

@@ -413,7 +413,7 @@ export const ReferralDetailPage: React.FC = () => {
                         </div>
                         <div className="mb-2">
                            <Badge variant={c.status === 'direct_approval' || c.status === 'urgent_approval' ? 'success' : c.status === 'requirements_needed' ? 'warning' : 'default'}>
-                             {c.status.replace(/_/g, ' ')}
+                             {c.status?.replace(/_/g, ' ') || 'UNKNOWN'}
                            </Badge>
                         </div>
                         <p className="text-sm text-slate-700 dark:text-slate-300">{c.comment}</p>

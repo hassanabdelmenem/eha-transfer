@@ -93,7 +93,7 @@ export const AdminDashboard: React.FC = () => {
               <CardHeader className="bg-slate-900 text-white pb-4">
                 <div className="flex justify-between items-center gap-2">
                   <CardTitle className="text-white text-sm min-w-0 truncate">{facility.name}</CardTitle>
-                  <span className="text-xs bg-blue-800 px-2 py-0.5 rounded uppercase shrink-0 whitespace-nowrap">{facility.type.replace('_', ' ')}</span>
+                  <span className="text-xs bg-blue-800 px-2 py-0.5 rounded uppercase shrink-0 whitespace-nowrap">{(facility.type || "").replace('_', ' ')}</span>
                 </div>
               </CardHeader>
               <CardContent className="p-0">

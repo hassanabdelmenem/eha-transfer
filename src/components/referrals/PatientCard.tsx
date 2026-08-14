@@ -35,6 +35,8 @@ const VitalStat: React.FC<{ label: string; value: React.ReactNode; unit?: string
 );
 
 export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
+  if (!patient) return <div className="p-4 text-center text-slate-500">Patient Data Missing</div>;
+  
   return (
     <div className="h-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col md:flex-row shadow-sm">
       <div className="w-full md:w-1/3 bg-slate-900 text-white p-6 flex flex-col shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none">

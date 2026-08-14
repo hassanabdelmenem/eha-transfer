@@ -778,7 +778,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (['manager_approved', 'accepted', 'arrived'].includes(status) && finalReceivingFacilityId !== 'auto') {
       createNotification({
         title: `Referral ${status.toUpperCase()}`,
-        message: `Patient ${patientName} referral is now ${status.replace('_', ' ')}.`,
+        message: `Patient ${patientName} referral is now ${(status || "").replace('_', ' ')}.`,
         type: 'info',
         referralId: id,
         facilityId: finalReceivingFacilityId
@@ -996,7 +996,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const r = snap.data() as Referral;
 
       if (CANCEL_LOCKED_STATUSES.includes(r.status)) {
-        throw new Error(`Cannot cancel a referral once it is ${r.status.replace(/_/g, ' ')}.`);
+        throw new Error(`Cannot cancel a referral once it is ${r.(status || "").replace(/_/g, ' ')}.`);
       }
 
       const isCreator = r.referringUserId === user.id;

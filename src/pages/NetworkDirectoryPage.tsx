@@ -82,7 +82,7 @@ export const NetworkDirectoryPage: React.FC = () => {
     const matchUsers = facilityUsers.some(u => 
       u.name.toLowerCase().includes(q) || 
       (u.department || '').toLowerCase().includes(q) || 
-      u.role.toLowerCase().replace(/_/g, ' ').includes(q)
+      (u.role || "").toLowerCase().replace(/_/g, ' ').includes(q)
     );
     return matchFacility || matchUsers;
   });
@@ -128,7 +128,7 @@ export const NetworkDirectoryPage: React.FC = () => {
                 </div>
 
                 <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold shrink-0 whitespace-nowrap ${facility.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>
-                  {facility.type.replace('_', ' ')}
+                  {(facility.type || "").replace('_', ' ')}
                 </span>
 
               </div>
@@ -151,10 +151,10 @@ export const NetworkDirectoryPage: React.FC = () => {
                       return (
                         u.name.toLowerCase().includes(q) || 
                         (u.department || '').toLowerCase().includes(q) || 
-                        u.role.toLowerCase().replace(/_/g, ' ').includes(q)
+                        (u.role || "").toLowerCase().replace(/_/g, ' ').includes(q)
                       );
                     }).map(u => {
-                      let roleDisplay = u.role.replace(/_/g, ' ');
+                      let roleDisplay = (u.role || "").replace(/_/g, ' ');
                       if (u.role === 'head_of_department' || ['consultant', 'specialist', 'resident'].includes(u.role)) {
                          roleDisplay += ` (${u.department})`;
                       }

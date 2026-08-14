@@ -53,7 +53,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
               <tr key={facility.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
                 <td className="p-3 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
                   {facility.name}
-                  <div className="text-xs text-slate-400 font-normal capitalize">{facility.type.replace('_', ' ')}</div>
+                  <div className="text-xs text-slate-400 font-normal capitalize">{(facility.type || "").replace('_', ' ')}</div>
                 </td>
                 {BED_TYPES.map(bed => {
                   const cap = facility.capacity[bed];

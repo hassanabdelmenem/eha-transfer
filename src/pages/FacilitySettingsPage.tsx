@@ -319,7 +319,7 @@ export const FacilitySettingsPage: React.FC = () => {
                         <span className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold uppercase">Contracted</span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">📍 {f.location} • <span className="uppercase">{f.type.replace('_', ' ')}</span></p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">📍 {f.location} • <span className="uppercase">{(f.type || "").replace('_', ' ')}</span></p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {f.departments.map(d => (
                         <span key={d} className="text-xs bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">{d}</span>
@@ -426,7 +426,7 @@ export const FacilitySettingsPage: React.FC = () => {
                          <span className="text-xs bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{u.role?.replace(/_/g, ' ')}</span>
                          {u.requestedRole && u.requestedRole !== u.role && (
                            <span className="text-xs bg-warning-100 dark:bg-warning-900/40 px-1.5 py-0.5 rounded uppercase font-bold text-warning-800 dark:text-warning-300 whitespace-nowrap" title="Role requested during onboarding — granted when you verify">
-                             requests: {u.requestedRole.replace(/_/g, ' ')}
+                             requests: {(u.requestedRole || "").replace(/_/g, ' ')}
                            </span>
                          )}
                          {u.department && <span className="text-xs bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded text-blue-700 dark:text-blue-300 whitespace-nowrap">{u.department}</span>}
