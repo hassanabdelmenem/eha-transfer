@@ -103,12 +103,12 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
         </div>
         
         {/* Attachments List */}
-        {patientData.attachments && patientData.attachments.length > 0 && (
+        {Array.isArray(patientData.attachments) && patientData.attachments.length > 0 && (
           <div className="mb-6">
             <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase">Attachments</h2>
             <ul className="list-disc pl-5">
               {patientData.attachments.map(att => (
-                <li key={att.id} className="text-sm">{att.name} ({att.type.toUpperCase()})</li>
+                <li key={att.id} className="text-sm">{att.name} ({att.type?.toUpperCase() || 'FILE'})</li>
               ))}
             </ul>
           </div>
@@ -126,7 +126,7 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
               </tr>
             </thead>
             <tbody>
-              {(history || []).map((sh, idx) => {
+              {(Array.isArray(history) ? history : []).map((sh, idx) => {
                 const u = usersById.get(sh.userId);
                 const safeDate = sh.timestamp ? new Date(sh.timestamp) : null;
                 const dateStr = safeDate && !isNaN(safeDate.getTime()) ? format(safeDate, 'MMM d, yyyy HH:mm') : 'Unknown Time';
