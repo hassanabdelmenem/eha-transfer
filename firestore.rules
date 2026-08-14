@@ -155,10 +155,10 @@ service cloud.firestore {
               && callerFacility() in data.candidateFacilityIds);
     }
     function isReferralParty(data) {
-      return callerFacility() == data.referringFacilityId
-          || callerFacility() == data.receivingFacilityId
-          || (data.receivingFacilityId == 'auto'
-              && data.candidateFacilityIds is list
+      return ('referringFacilityId' in data && callerFacility() == data.referringFacilityId)
+          || ('receivingFacilityId' in data && callerFacility() == data.receivingFacilityId)
+          || ('receivingFacilityId' in data && data.receivingFacilityId == 'auto'
+              && 'candidateFacilityIds' in data
               && callerFacility() in data.candidateFacilityIds);
     }
     // Mirrors SENIOR_CANCEL_ROLES / CANCEL_LOCKED_STATUSES in
