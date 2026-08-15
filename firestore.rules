@@ -28,8 +28,15 @@ service cloud.firestore {
     }
     // Verification is an explicit act by facility leadership (FacilitySettingsPage).
     // Everything that touches patient data requires it.
+    //
+    // email_verified is set automatically for Google sign-in and requires the user
+    // to click a link for email/password registration. Without it an attacker can
+    // sign up with someone else's address and — once admin-verified by mistake —
+    // act under that identity. Google Provider accounts are always email_verified.
     function isVerifiedCaller() {
-      return callerExists() && callerDoc().verified == true;
+      return callerExists()
+          && request.auth.token.email_verified == true
+          && callerDoc().verified == true;
     }
     function callerFacility() {
       return callerDoc().facilityId;
