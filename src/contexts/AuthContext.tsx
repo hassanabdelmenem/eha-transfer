@@ -3,6 +3,7 @@ import { User } from '../types';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { clearOfflineReferrals } from '../lib/db';
 
 // Mobile browsers (especially iOS Safari) routinely block or break signInWithPopup —
 // third-party storage restrictions and popup blockers make the popup either never
@@ -165,6 +166,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     try {
       localStorage.removeItem('auth_user');
+    } catch (e) {}
+    // Patient records queued for offline sync are cached in IndexedDB
+    // (src/lib/db.ts) so a flaky connection doesn't lose a referral. On a
+    // shared workstation that cache must not outlive the session it was
+    // written in -- clear it on every logout, synced or not, rather than
+    // only after a successful sync in offlineSync.ts.
+    try {
+      await clearOfflineReferrals();
     } catch (e) {}
   }, []);
 

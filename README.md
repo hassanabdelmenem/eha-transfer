@@ -22,8 +22,11 @@ anything in this repo reaches them. This project shares no backend, database,
 collection, build tooling, or credentials with either of them, and nothing in
 this repository references them.
 
-**`sevensn` is the production branch**, not `main`. See
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the release model, the deploy
+**`main` is the production branch.** (This corrects a stale reference to a
+`sevensn` branch that a prior version of this doc named as canonical but that
+does not exist in this repository — every CI/CD workflow has always gated on
+`main`; see the security assessment's F10 for how the mismatch was found.)
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the release model, the deploy
 identity and its IAM roles, and why the console is never the source of truth.
 
 ## Running locally

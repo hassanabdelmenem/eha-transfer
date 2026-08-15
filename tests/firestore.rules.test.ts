@@ -29,6 +29,7 @@ const F1_MANAGER = 'f1-manager-uid';
 const F2_DOCTOR = 'f2-doctor-uid';
 const F3_CANDIDATE = 'f3-candidate-uid';
 const NEWCOMER = 'newcomer-uid';
+const F2_ER_OFFICIAL = 'f2-er-official-uid';
 
 const authed = (uid: string) => testEnv.authenticatedContext(uid).firestore();
 
@@ -81,6 +82,7 @@ beforeEach(async () => {
     await setDoc(doc(db, 'users', F2_DOCTOR), { id: F2_DOCTOR, name: 'F2 Doc', email: 'd2@x.gov', role: 'consultant', verified: true, facilityId: 'f2' });
     await setDoc(doc(db, 'users', F3_CANDIDATE), { id: F3_CANDIDATE, name: 'F3 Doc', email: 'd3@x.gov', role: 'consultant', verified: true, facilityId: 'f3' });
     await setDoc(doc(db, 'users', NEWCOMER), { id: NEWCOMER, name: 'New', email: 'n@x.gov', role: 'resident', verified: false });
+    await setDoc(doc(db, 'users', F2_ER_OFFICIAL), { id: F2_ER_OFFICIAL, name: 'F2 ER Official', email: 'er2@x.gov', role: 'er_official', verified: true, facilityId: 'f2' });
     await setDoc(doc(db, 'referrals', 'ref1'), referral());
     await setDoc(doc(db, 'directAdmissions', 'adm1'), { id: 'adm1', facilityId: 'f1', patientName: 'Patient B', hospitalId: 'H-2', department: 'ICU', bedType: 'ICU', admittedAt: '2026-01-01T00:00:00.000Z', admittedBy: F1_DOCTOR, status: 'admitted' });
     await setDoc(doc(db, 'notifications', 'n1'), { id: 'n1', userId: F1_DOCTOR, title: 'T', message: 'Referral for Patient A', type: 'info', read: false, createdAt: '2026-01-01T00:00:00.000Z' });
@@ -736,6 +738,63 @@ describe('bed capacity integrity', () => {
   it('blocks negative occupancy', async () => {
     await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'facilities', 'f1'), {
       capacity: capacity({ ICU: { total: 10, occupied: -5 } }),
+    }));
+  });
+});
+
+/**
+ * Security assessment F2/F3: requiresAccompanyingDoctor was writable by any
+ * referral party at any time (silently defeating accompanyingDoctorSatisfied()
+ * before dispatch), and accompanyingDoctor itself carried no role or identity
+ * check, so any party -- not just the ER Room Official -- could fabricate or
+ * reassign the escort. referralIdentityPinned() and the new
+ * accompanyingDoctorWriteAuthorized() close both.
+ */
+describe('accompanying doctor authorization (security assessment F2/F3)', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), {
+        requiresAccompanyingDoctor: true,
+        receivingFacilityId: 'f2',
+      });
+    });
+  });
+
+  it('blocks a referral party from disabling the escort requirement after creation', async () => {
+    // An ordinary update that never touches `status` -- exactly the write that
+    // used to slip past accompanyingDoctorSatisfied() on the later in_transit
+    // transition.
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
+      requiresAccompanyingDoctor: false,
+    }));
+  });
+
+  it('blocks a non-ER-role referral party from recording the accompanying doctor', async () => {
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
+      accompanyingDoctor: { name: 'Dr. X', phoneNumber: '+201000000', addedBy: F1_MANAGER, addedAt: '2026-01-02T00:00:00.000Z' },
+    }));
+  });
+
+  it('blocks recording an accompanying doctor attributed to a different user', async () => {
+    await assertFails(updateDoc(doc(authed(F2_ER_OFFICIAL), 'referrals', 'ref1'), {
+      accompanyingDoctor: { name: 'Dr. X', phoneNumber: '+201000000', addedBy: F1_DOCTOR, addedAt: '2026-01-02T00:00:00.000Z' },
+    }));
+  });
+
+  it('allows the ER official at a party facility to record the accompanying doctor, attributed to themselves', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F2_ER_OFFICIAL), 'referrals', 'ref1'), {
+      accompanyingDoctor: { name: 'Dr. X', phoneNumber: '+201000000', addedBy: F2_ER_OFFICIAL, addedAt: '2026-01-02T00:00:00.000Z' },
+    }));
+  });
+
+  it('allows the ER official to clear a previously recorded accompanying doctor', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), {
+        accompanyingDoctor: { name: 'Dr. X', phoneNumber: '+201000000', addedBy: F2_ER_OFFICIAL, addedAt: '2026-01-02T00:00:00.000Z' },
+      });
+    });
+    await assertSucceeds(updateDoc(doc(authed(F2_ER_OFFICIAL), 'referrals', 'ref1'), {
+      accompanyingDoctor: null,
     }));
   });
 });

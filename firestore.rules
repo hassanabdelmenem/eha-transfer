@@ -193,7 +193,15 @@ service cloud.firestore {
           // editable, a party could push it forward and switch the 30-minute
           // escalation off for that referral permanently.
           && (!('createdAtMs' in resource.data)
-              || request.resource.data.createdAtMs == resource.data.createdAtMs);
+              || request.resource.data.createdAtMs == resource.data.createdAtMs)
+          // Set once at creation by the referring clinician. Without pinning
+          // this, any party could flip it to false in an ordinary intermediate
+          // update -- one that never touches `status` at all -- and silently
+          // defeat accompanyingDoctorSatisfied() on the later in_transit write.
+          // Missing on referrals created before this field existed; those are
+          // let through rather than becoming permanently un-editable.
+          && (!('requiresAccompanyingDoctor' in resource.data)
+              || request.resource.data.requiresAccompanyingDoctor == resource.data.requiresAccompanyingDoctor);
     }
 
     // The clinical record itself. Pinned for everyone except the clinician who
@@ -363,14 +371,31 @@ service cloud.firestore {
     function accompanyingDoctorSatisfied() {
       return request.resource.data.status != 'in_transit'
           || resource.data.status == 'in_transit'
-          || !('requiresAccompanyingDoctor' in resource.data)
-          || resource.data.requiresAccompanyingDoctor != true
-          || ('accompanyingDoctor' in request.resource.data
-              && request.resource.data.accompanyingDoctor is map
+          || !(resource.data.requiresAccompanyingDoctor == true)
+          || (request.resource.data.accompanyingDoctor is map
               && request.resource.data.accompanyingDoctor.name is string
               && request.resource.data.accompanyingDoctor.name.size() > 0
               && request.resource.data.accompanyingDoctor.phoneNumber is string
               && request.resource.data.accompanyingDoctor.phoneNumber.size() > 0);
+    }
+
+    // The escort assignment is a clinical/legal attestation about who is
+    // physically riding with the patient, so who may write it matters as much
+    // as its shape (which accompanyingDoctorSatisfied() already checks). It's
+    // recorded by ER staff at whichever facility is actually dispatching the
+    // ambulance -- either side, mirroring the existing 'in_transit' permissive
+    // bucket in transitionActorAllowed() and the client's isErRoom check in
+    // ReferralDetailPage.tsx -- but only by the er_official/er_room roles, and
+    // only attributed to the caller's own uid. Without this, any verified
+    // referral party of any role could fabricate or reassign the escort.
+    function accompanyingDoctorWriteAuthorized() {
+      return !changedKeys().hasAny(['accompanyingDoctor'])
+          || isPrivileged()
+          || (isReferralParty(resource.data)
+              && callerDoc().role in ['er_official', 'er_room']
+              && (request.resource.data.accompanyingDoctor == null
+                  || (request.resource.data.accompanyingDoctor is map
+                      && request.resource.data.accompanyingDoctor.addedBy == request.auth.uid)));
     }
 
     match /referrals/{referralId} {
@@ -402,6 +427,7 @@ service cloud.firestore {
                     && candidateListNotWidened()
                     && escalationClaimValid()
                     && accompanyingDoctorSatisfied()
+                    && accompanyingDoctorWriteAuthorized()
                     && (referralClinicalDataPinned() || mayEditClinicalData())
                     && (
                       isCancelAttempt(request.resource.data)

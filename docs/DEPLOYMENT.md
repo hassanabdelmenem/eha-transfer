@@ -4,26 +4,37 @@ How code gets from a laptop to <https://eha-transfer.web.app>.
 
 ## Source of truth
 
-**GitHub is authoritative, and `sevensn` is the branch that matters.** What is on
-`origin/sevensn` is what production runs. Nothing else is canonical — not a
+**GitHub is authoritative, and `main` is the branch that matters.** What is on
+`origin/main` is what production runs. Nothing else is canonical — not a
 local branch, not the Firebase console, not a manual deploy.
+
+> This section previously named a `sevensn` branch as canonical. That branch
+> does not exist in this repository, and every workflow below has always
+> actually gated on `main` (`ci.yml`'s guard step checks
+> `refs/heads/main`; `firebase-deploy.yml` triggers on CI completing for
+> `branches: ["main"]`). The security assessment that runs alongside this
+> repo's other reviews flagged the mismatch as F10 — docs and automation
+> disagreeing about the source of truth is itself a risk, independent of
+> which name was "meant" to be right. If a rename to `sevensn` was actually
+> the intent, do that as a deliberate branch-rename-plus-workflow-update
+> change, not by editing docs alone.
 
 Practical consequences:
 
 - Never edit rules, indexes, or hosting config in the Firebase console. The next
   deploy overwrites console changes without warning, because the pipeline treats
   the repo as the desired state.
-- Always `git pull` before starting work. If your local `sevensn` has diverged
-  from `origin/sevensn`, origin wins.
+- Always `git pull` before starting work. If your local `main` has diverged
+  from `origin/main`, origin wins.
 - Work on a branch, open a PR, let CI and the preview channel run, then merge.
-  Direct pushes to `sevensn` work but skip the preview.
+  Direct pushes to `main` work but skip the preview.
 
 ## The pipeline
 
 ```
 local commit  →  push branch  →  CI (every branch)  →  PR  →  preview channel
                                                        ↓
-                                              merge to sevensn
+                                                merge to main
                                                        ↓
                                        CI passes → Deploy to Firebase
                                        (rules + indexes, then hosting)
@@ -33,11 +44,11 @@ local commit  →  push branch  →  CI (every branch)  →  PR  →  preview ch
 |---|---|---|---|
 | CI | `.github/workflows/ci.yml` | every branch push, every PR | typecheck, unit tests, **security-rules tests**, Playwright E2E, coverage |
 | PR Preview | `.github/workflows/firebase-preview.yml` | PR opened/updated | builds and publishes a 7-day preview channel, comments the URL on the PR |
-| Deploy | `.github/workflows/firebase-deploy.yml` | CI succeeding on `sevensn` | deploys Firestore rules + indexes, then Hosting |
+| Deploy | `.github/workflows/firebase-deploy.yml` | CI succeeding on `main` | deploys Firestore rules + indexes, then Hosting |
 
 Deploy is chained to CI via `workflow_run`, so a red test suite cannot reach
 production. It checks out `workflow_run.head_sha` — the exact commit CI
-validated, not whatever `sevensn` points at by the time it runs.
+validated, not whatever `main` points at by the time it runs.
 
 ## Setup status — already done
 
@@ -161,7 +172,7 @@ Order matters, and which order depends on the change:
 | Hosting site | `eha-transfer` → <https://eha-transfer.web.app> |
 | Web app | `eha-transfer-web`, `1:467744756760:web:6fd2817e76a941e6e49f6d` — the only one |
 | Firestore database | `(default)` — the only one; there is no `default` |
-| Default git branch | `sevensn` — the source of truth |
+| Default git branch | `main` — the source of truth |
 | Node version | 24 (pinned in CI) |
 
 The project used to contain a second, unused web app (`eha-transfer`,
