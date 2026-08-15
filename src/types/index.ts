@@ -87,6 +87,11 @@ export interface PatientData {
     spo2?: number;
     temp?: number;
     rr?: number;
+    // Glasgow Coma Scale, 3-15. Optional for the same reason as the other
+    // vitals: a value that was not recorded is absent, not a default of 15
+    // ("fully alert"), which would silently mask a genuinely unrecorded
+    // neuro exam on the receiving facility's clinical summary.
+    gcs?: number;
     timestamp: string;
   };
   complaint: string;
@@ -138,7 +143,11 @@ export interface Referral {
   // 'no_matching_facility'  nothing in the network provides the departments + bed type
   // 'no_beds_available'     every matching facility is full
   // 'manual'                a human pressed Mark Escalated
-  escalationReason?: 'sla_breach' | 'no_matching_facility' | 'no_beds_available' | 'manual' | null;
+  // 'requirements_needed'   a department sent the referral back with requirements
+  //                         (see addDeptComment) -- postponed and escalated so
+  //                         leadership at both facilities see it immediately
+  //                         rather than waiting for someone to notice.
+  escalationReason?: 'sla_breach' | 'no_matching_facility' | 'no_beds_available' | 'manual' | 'requirements_needed' | null;
   // 'system' is the top level: chasing the receiving facilities cannot help
   // because the capacity does not exist, so only a system administrator can
   // resolve it. 'facility' escalations are still actionable locally.
@@ -171,6 +180,20 @@ export interface Referral {
   cancelledAt?: string;
   cancelledBy?: string;
   cancelReason?: string;
+  // Set at referral creation by the referring clinician when the patient's
+  // condition means a doctor must physically ride with the ambulance. The
+  // concrete escort is not known yet at that point -- only that one is needed.
+  requiresAccompanyingDoctor?: boolean;
+  // Filled in by the ER Room Official after the patient has consented to
+  // transfer and before the ambulance is dispatched (see setAccompanyingDoctor
+  // in DataContext and the gate in updateReferralStatus). Null rather than
+  // absent once cleared, mirroring the escalation fields' convention.
+  accompanyingDoctor?: {
+    name: string;
+    phoneNumber: string;
+    addedBy: string;
+    addedAt: string;
+  } | null;
 }
 
 export interface ShiftLog {

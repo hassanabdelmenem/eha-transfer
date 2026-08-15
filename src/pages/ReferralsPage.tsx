@@ -137,6 +137,7 @@ export const ReferralsPage: React.FC = () => {
           <option value="accepted">Accepted / In Transit</option>
           <option value="completed">Completed / Discharged</option>
           <option value="cancelled">Cancelled (Archive)</option>
+          <option value="archived">Admitted & Cancelled (Archive)</option>
         </select>
         <select 
           className="h-10 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"

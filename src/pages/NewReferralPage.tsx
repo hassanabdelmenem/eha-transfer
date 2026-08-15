@@ -36,6 +36,7 @@ export const NewReferralPage: React.FC = () => {
   const [transferType, setTransferType] = useState<ReferralTransferType>('one_way');
   const [reasonForReferral, setReasonForReferral] = useState('');
   const [sendCriticalAlert, setSendCriticalAlert] = useState(false);
+  const [requiresAccompanyingDoctor, setRequiresAccompanyingDoctor] = useState(false);
   const [aiTriageRunning, setAiTriageRunning] = useState(false);
   const [aiRankedFacilities, setAiRankedFacilities] = useState<any[] | null>(null);
 
@@ -173,6 +174,7 @@ export const NewReferralPage: React.FC = () => {
       reasonForReferral,
       transferType,
       status: 'pending',
+      requiresAccompanyingDoctor,
     }, sendCriticalAlert);
 
     navigate('/referrals');
@@ -451,6 +453,23 @@ export const NewReferralPage: React.FC = () => {
                 </p>
               </label>
             </div>
+
+            {/* Accompanying Doctor Toggle */}
+            <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-lg">
+              <input
+                type="checkbox"
+                id="requires-accompanying-doctor"
+                checked={requiresAccompanyingDoctor}
+                onChange={(e) => setRequiresAccompanyingDoctor(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-white border-blue-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              />
+              <label htmlFor="requires-accompanying-doctor" className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                Patient Requires a Doctor to Accompany the Transfer
+                <p className="text-xs font-normal text-blue-700 dark:text-blue-300">
+                  Once the patient consents, the ER Room Official will record the escorting doctor's name and phone number before the ambulance is dispatched.
+                </p>
+              </label>
+            </div>
           </CardContent>
         </Card>
 
@@ -497,7 +516,7 @@ export const NewReferralPage: React.FC = () => {
 
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
               <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-3">Current Vitals</h4>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                 <div>
                   <label htmlFor="vitalHr" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">HR (bpm)</label>
                   <Input id="vitalHr" type="number" value={patientData.vitalSigns?.hr || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, hr: parseVital(e.target.value, v => parseInt(v, 10))}})} />
@@ -517,6 +536,29 @@ export const NewReferralPage: React.FC = () => {
                 <div>
                   <label htmlFor="vitalRr" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">RR (/min)</label>
                   <Input id="vitalRr" type="number" value={patientData.vitalSigns?.rr || ''} onChange={e => setPatientData({...patientData, vitalSigns: {...patientData.vitalSigns!, rr: parseVital(e.target.value, v => parseInt(v, 10))}})} />
+                </div>
+                <div>
+                  <label htmlFor="vitalGcs" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">GCS (3-15)</label>
+                  <Input
+                    id="vitalGcs"
+                    type="number"
+                    min={3}
+                    max={15}
+                    value={patientData.vitalSigns?.gcs || ''}
+                    onChange={e => setPatientData({
+                      ...patientData,
+                      vitalSigns: {
+                        ...patientData.vitalSigns!,
+                        gcs: parseVital(e.target.value, v => {
+                          const n = parseInt(v, 10);
+                          // Clamp rather than reject: a clinician typing quickly can pass
+                          // through an out-of-range digit mid-edit, and a hard reject there
+                          // would drop the keystroke and make the field feel broken.
+                          return Number.isNaN(n) ? n : Math.min(15, Math.max(3, n));
+                        })
+                      }
+                    })}
+                  />
                 </div>
               </div>
             </div>

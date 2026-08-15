@@ -57,6 +57,11 @@ interface DataContextType {
   recordPatientConsent: (id: string) => Promise<void>;
   recordPatientDecline: (id: string, reason: string) => Promise<void>;
   cancelReferral: (id: string, reason: string) => Promise<void>;
+  // Records the name and phone number of the doctor escorting the transfer.
+  // Only meaningful once the patient has consented (see the gate inside the
+  // function) and required before dispatch when requiresAccompanyingDoctor is
+  // set -- enforced both here and in firestore.rules.
+  setAccompanyingDoctor: (id: string, name: string, phoneNumber: string) => Promise<void>;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   addDirectAdmission: (admission: Omit<DirectAdmission, 'id' | 'admittedAt'>) => void;
@@ -411,9 +416,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // call to every owner/system_admin, since they match unconditionally on the line
   // below. Escalation needs to reach the referring facility and every candidate at
   // once, so the recipient set is built in a single pass instead.
-  const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, facilityIds?: string[], targetRoles?: Role[], departments?: string[] }) => {
+  const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, facilityIds?: string[], targetRoles?: Role[], departments?: string[], targetUserIds?: string[] }) => {
     const targetFacilityIds = params.facilityIds ?? [params.facilityId];
     const relevantUsers = users.filter(u => {
+       // Named individuals (e.g. the doctor who raised the referral) always get
+       // it, regardless of role or department -- those filters exist to scope a
+       // role-based broadcast, not to gate someone addressed by name.
+       if (params.targetUserIds?.includes(u.id)) return true;
        if (u.role === 'owner' || u.role === 'system_admin') return true;
        if (!u.facilityId || !targetFacilityIds.includes(u.facilityId)) return false;
 
@@ -709,6 +718,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error('Cannot mark in transit before the patient has consented to this destination.');
         }
 
+        // A transfer flagged as needing a doctor escort cannot be dispatched until
+        // the ER Room Official has recorded who that doctor is (setAccompanyingDoctor).
+        // Mirrored in firestore.rules' accompanyingDoctorSatisfied() as the
+        // server-side backstop -- keep both in sync.
+        if (status === 'in_transit' && r.requiresAccompanyingDoctor && !r.accompanyingDoctor) {
+          throw new Error('Add the accompanying doctor’s name and phone number before dispatching the ambulance.');
+        }
+
         const isApproving = ['dept_approved', 'manager_approved', 'accepted'].includes(status);
         finalReceivingFacilityId = (r.receivingFacilityId === 'auto' && isApproving)
           ? (user.facilityId || r.receivingFacilityId)
@@ -815,8 +832,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refDocRef = doc(db, 'referrals', referralId);
     const newComment = { id: uuidv4(), userId: user.id, timestamp: now, status, comment };
     const isApprovalStatus = ['direct_approval', 'urgent_approval', 'scheduled_approval'].includes(status);
+    const isRequirementsNeeded = status === 'requirements_needed';
 
     let claimedReceivingFacilityId: string | undefined;
+    // Populated only by the requirements-needed branch below. Read out of the
+    // transaction (rather than closed over from `r`) because runTransaction can
+    // retry its body, and only the attempt that actually wins should drive the
+    // notification fan-out after it.
+    let requirementsSentBack: { referringFacilityId: string; receivingFacilityId: string; referringUserId: string; patientName: string } | undefined;
 
     try {
       await runTransaction(db, async (transaction) => {
@@ -836,6 +859,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           updates.status = 'dept_approved';
           updates.statusHistory = [...r.statusHistory, { status: 'dept_approved', timestamp: now, userId: user.id, notes: 'Department Head Approved' }];
           updates.receivingFacilityId = claimedReceivingFacilityId;
+        } else if (isRequirementsNeeded && r.status === 'pending') {
+          // Skips administration entirely: the requirements go straight back to
+          // the referring facility as a postponed referral, with no manager
+          // approval step in between (unlike the direct/urgent/scheduled
+          // approval branch above, which still needs one).
+          //
+          // Escalated automatically rather than left for someone to notice --
+          // escalatedBy: 'system' because nobody chose to escalate, it is a
+          // deterministic consequence of this review, the same reasoning the
+          // SLA and capacity sweeps use.
+          const claimedFacilityId = r.receivingFacilityId === 'auto' ? (user.facilityId || 'auto') : r.receivingFacilityId;
+          updates.status = 'postponed';
+          updates.receivingFacilityId = claimedFacilityId;
+          updates.statusHistory = [...r.statusHistory, {
+            status: 'postponed',
+            timestamp: now,
+            userId: user.id,
+            notes: comment ? `Requirements needed: ${comment}` : 'Requirements needed before this referral can proceed.'
+          }];
+          updates.isEscalated = true;
+          updates.escalatedAt = now;
+          updates.escalatedBy = 'system';
+          updates.escalationReason = 'requirements_needed';
+          updates.escalationLevel = 'facility';
+          // A fresh, more specific escalation supersedes any stale suppression
+          // from an earlier de-escalated SLA breach on this same referral.
+          updates.autoEscalationSuppressed = false;
+
+          requirementsSentBack = {
+            referringFacilityId: r.referringFacilityId,
+            receivingFacilityId: claimedFacilityId,
+            referringUserId: r.referringUserId,
+            patientName: r.patientData.name,
+          };
         }
 
         transaction.update(refDocRef, updates);
@@ -855,7 +912,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         targetRoles: ['medical_director', 'hospital_manager', 'deputy_manager']
       });
     }
-  }, [user, createNotification]);
+
+    if (requirementsSentBack) {
+      const { referringFacilityId, receivingFacilityId, referringUserId, patientName } = requirementsSentBack;
+      const fromName = facilitiesById.get(referringFacilityId)?.name || 'the referring facility';
+      // One fan-out covers everyone the feature calls for: the initiating
+      // doctor by name (targetUserIds, regardless of their role) plus medical
+      // director / deputy managers / managers at BOTH facilities (facilityIds +
+      // targetRoles). Owners and system_admins are always included as well.
+      createNotification({
+        title: 'Referral Postponed — Requirements Needed',
+        message: `${patientName}'s referral (from ${fromName}) was sent back with requirements${comment ? `: "${comment}"` : ''}. Returned directly, without administrative approval, and escalated automatically.`,
+        type: 'urgent',
+        referralId,
+        facilityId: referringFacilityId,
+        facilityIds: [referringFacilityId, receivingFacilityId],
+        targetRoles: ['medical_director', 'deputy_manager', 'hospital_manager'],
+        targetUserIds: [referringUserId],
+      });
+    }
+  }, [user, createNotification, facilitiesById]);
 
 
   const updateUserFacility = useCallback((id: string, facilityId: string, department?: string) => {
@@ -921,6 +997,45 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
   }, [user, createNotification]);
+
+  // Records who is escorting the patient for a transfer flagged at creation as
+  // needing a doctor. Restricted to the window between patient consent and
+  // dispatch -- filling it in before consent would name an escort for a
+  // destination the patient might still decline, and updateReferralStatus
+  // already refuses to dispatch a flagged transfer without it, so there is
+  // nothing left to record once the ambulance has actually left.
+  const setAccompanyingDoctor = useCallback(async (id: string, name: string, phoneNumber: string) => {
+    if (!user) return;
+    if (!name.trim() || !phoneNumber.trim()) {
+      throw new Error('Both the doctor’s name and phone number are required.');
+    }
+    const now = new Date().toISOString();
+    const refDocRef = doc(db, 'referrals', id);
+
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(refDocRef);
+      if (!snap.exists()) throw new Error('Referral not found.');
+      const r = snap.data() as Referral;
+      if (r.status !== 'patient_consented') {
+        throw new Error('The accompanying doctor can only be recorded after the patient has consented to transfer, before dispatch.');
+      }
+      const accompanyingDoctor = { name: name.trim(), phoneNumber: phoneNumber.trim(), addedBy: user.id, addedAt: now };
+      transaction.update(refDocRef, {
+        accompanyingDoctor,
+        updatedAt: now,
+        // Leaves `status` untouched -- auditTrailAppendOnly() permits appending
+        // an entry independently of a status change (the same pattern
+        // overrideReferralDestination uses), so this stays in the trail without
+        // pretending the referral moved.
+        statusHistory: [...r.statusHistory, {
+          status: r.status,
+          timestamp: now,
+          userId: user.id,
+          notes: `Accompanying doctor assigned: ${accompanyingDoctor.name} (${accompanyingDoctor.phoneNumber})`
+        }]
+      });
+    });
+  }, [user]);
 
   // Records that the patient declined the currently proposed facility. Re-routes the
   // referral back to auto-pending and permanently excludes the declined facility from
@@ -1275,6 +1390,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     recordPatientConsent,
     recordPatientDecline,
     cancelReferral,
+    setAccompanyingDoctor,
     markNotificationRead,
     markAllNotificationsRead,
     addDirectAdmission,
@@ -1318,6 +1434,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     recordPatientConsent,
     recordPatientDecline,
     cancelReferral,
+    setAccompanyingDoctor,
     markNotificationRead,
     markAllNotificationsRead,
     addDirectAdmission,

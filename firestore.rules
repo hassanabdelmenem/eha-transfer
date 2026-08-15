@@ -255,7 +255,7 @@ service cloud.firestore {
       // nobody else could advance the referral at all.
       return !changedKeys().hasAny(['isEscalated', 'escalatedAt', 'escalatedBy', 'escalationReason', 'escalationLevel'])
           || !request.resource.data.isEscalated
-          || (request.resource.data.escalationReason in ['sla_breach', 'no_matching_facility', 'no_beds_available', 'manual']
+          || (request.resource.data.escalationReason in ['sla_breach', 'no_matching_facility', 'no_beds_available', 'manual', 'requirements_needed']
               && request.resource.data.escalationLevel in ['system', 'facility']
               // A human escalation must be signed by the human.
               && (request.resource.data.escalationReason != 'manual'
@@ -355,6 +355,24 @@ service cloud.firestore {
               && (isReferringParty(resource.data) || isReceivingParty(resource.data)));
     }
 
+    // A transfer flagged at creation as needing a doctor escort cannot be
+    // dispatched (moved to in_transit) until the ER Room Official has recorded
+    // who that doctor is. Mirrors the client-side guard in updateReferralStatus
+    // -- keep both in sync. Only checked on the transition itself, so it never
+    // blocks unrelated field edits on a referral that happens to need an escort.
+    function accompanyingDoctorSatisfied() {
+      return request.resource.data.status != 'in_transit'
+          || resource.data.status == 'in_transit'
+          || !('requiresAccompanyingDoctor' in resource.data)
+          || resource.data.requiresAccompanyingDoctor != true
+          || ('accompanyingDoctor' in request.resource.data
+              && request.resource.data.accompanyingDoctor is map
+              && request.resource.data.accompanyingDoctor.name is string
+              && request.resource.data.accompanyingDoctor.name.size() > 0
+              && request.resource.data.accompanyingDoctor.phoneNumber is string
+              && request.resource.data.accompanyingDoctor.phoneNumber.size() > 0);
+    }
+
     match /referrals/{referralId} {
       allow read: if isPrivileged() || (isVerifiedCaller() && isReferralParty(resource.data));
 
@@ -383,6 +401,7 @@ service cloud.firestore {
                     && transitionActorAllowed()
                     && candidateListNotWidened()
                     && escalationClaimValid()
+                    && accompanyingDoctorSatisfied()
                     && (referralClinicalDataPinned() || mayEditClinicalData())
                     && (
                       isCancelAttempt(request.resource.data)

@@ -31,6 +31,7 @@ const ESCALATION_HEADLINE: Record<EscalationKey, string> = {
   no_matching_facility: 'No hospital can take this patient',
   no_beds_available: 'Every matching hospital is full',
   manual: 'Escalated by staff',
+  requirements_needed: 'Requirements needed \u2014 sent back to referring facility',
 };
 
 const ESCALATION_DETAIL: Record<EscalationKey, string> = {
@@ -38,12 +39,13 @@ const ESCALATION_DETAIL: Record<EscalationKey, string> = {
   no_matching_facility: 'No facility in the network provides the required departments and bed type. Only a system administrator can place this patient \u2014 chasing the receiving facilities will not help.',
   no_beds_available: 'Every matching facility is at full capacity for the required bed type. Only a system administrator can place this patient \u2014 chasing the receiving facilities will not help.',
   manual: 'System Admins can take direct actions (Approve, Decline, Postpone) regardless of department review.',
+  requirements_needed: 'The receiving department requested requirements before it can proceed. The referral was postponed and returned directly to the referring facility, without administrative approval \u2014 see the department review below for what is needed.',
 };
 
 export const ReferralDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { referrals, updateReferralStatus, overrideReferralDestination, toggleReferralEscalation, addDeptComment, recordPatientConsent, recordPatientDecline, cancelReferral, facilities, users, facilitiesById, usersById, shiftAssignmentsByFacility, loading } = useData();
+  const { referrals, updateReferralStatus, overrideReferralDestination, toggleReferralEscalation, addDeptComment, recordPatientConsent, recordPatientDecline, cancelReferral, setAccompanyingDoctor, facilities, users, facilitiesById, usersById, shiftAssignmentsByFacility, loading } = useData();
   const { user } = useAuth();
 
   const [notes, setNotes] = useState('');
@@ -60,6 +62,9 @@ export const ReferralDetailPage: React.FC = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  const [escortName, setEscortName] = useState('');
+  const [escortPhone, setEscortPhone] = useState('');
+  const [escortBusy, setEscortBusy] = useState(false);
 
   const referral = referrals.find(r => r.id === id);
 
@@ -128,7 +133,11 @@ export const ReferralDetailPage: React.FC = () => {
   const isTargetDeptHead = isReceiving && (user.role === 'head_of_department' || user.role === 'owner' || (['consultant', 'specialist'].includes(user.role) && isAssignedClinician)) && ((Array.isArray(referral.receivingDepartments) ? referral.receivingDepartments : []).includes(user.department || '') || isAdmin);
   const isFacilityManager = isReceiving && ['medical_director', 'hospital_manager', 'deputy_manager', 'owner'].includes(user.role);
   const isNurse = ['nurse', 'nursing_supervisor', 'owner'].includes(user.role);
-  const isErRoom = (user.role === 'er_room' || user.role === 'owner') && (user.facilityId === referral.referringFacilityId || user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && referral.candidateFacilityIds?.includes(user.facilityId || '')));
+  // 'er_official' is the role actually offered during onboarding/verification,
+  // labeled "ER Room Official" there; 'er_room' is a legacy/seed-only value.
+  // Both land on the ER Room Dashboard (see RoleBasedDashboard in App.tsx), so
+  // both are treated as ER Room staff here.
+  const isErRoom = (user.role === 'er_room' || user.role === 'er_official' || user.role === 'owner') && (user.facilityId === referral.referringFacilityId || user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && referral.candidateFacilityIds?.includes(user.facilityId || '')));
 
   // Cancellation: system admins/owner, senior staff at the initiating (referring) facility,
   // or the clinician who personally created the referral. Server-enforced identically in
@@ -185,6 +194,19 @@ export const ReferralDetailPage: React.FC = () => {
       toastError(e, 'Could not record patient consent.');
     } finally {
       setConsentBusy(false);
+    }
+  };
+
+  const handleSetAccompanyingDoctor = async () => {
+    setEscortBusy(true);
+    try {
+      await setAccompanyingDoctor(referral.id, escortName, escortPhone);
+      setEscortName('');
+      setEscortPhone('');
+    } catch (e: any) {
+      toastError(e, 'Could not save the accompanying doctor\'s details.');
+    } finally {
+      setEscortBusy(false);
     }
   };
 
@@ -434,6 +456,11 @@ export const ReferralDetailPage: React.FC = () => {
                      <option value="scheduled_approval">Scheduled Approval</option>
                      <option value="no_role">No Role / Not Indicated</option>
                   </select>
+                  {deptAction === 'requirements_needed' && (
+                    <p className="text-xs text-warning-700 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-900/50 rounded p-2">
+                      This sends the referral straight back to the referring facility as <strong>Postponed</strong>, with no manager approval step — and escalates it automatically so the medical director, deputy managers and managers at both facilities are notified along with the referring doctor.
+                    </p>
+                  )}
                   <VoiceTextarea
                     className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[60px]"
                     placeholder="Clinical reasoning or requirements... (Click mic to dictate)"
@@ -700,9 +727,66 @@ export const ReferralDetailPage: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Accompanying Doctor -- only for transfers flagged at creation as needing
+                      a physician escort. Recorded by the ER Room Official (er_official /
+                      legacy er_room) between consent and dispatch; updateReferralStatus
+                      refuses to mark this in_transit until it is filled in. */}
+                  {referral.requiresAccompanyingDoctor && referral.status === 'patient_consented' && (
+                    referral.accompanyingDoctor ? (
+                      <div className="p-3 bg-success-50 dark:bg-success-950/30 border border-success-200 dark:border-success-900 rounded-lg space-y-1">
+                        <span className="text-xs font-bold text-success-700 dark:text-success-300 uppercase flex items-center gap-1.5">
+                          <UserCheck className="w-4 h-4" /> Accompanying Doctor
+                        </span>
+                        <p className="text-sm text-slate-700 dark:text-slate-300">
+                          {referral.accompanyingDoctor.name} — {referral.accompanyingDoctor.phoneNumber}
+                        </p>
+                      </div>
+                    ) : isErRoom ? (
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg space-y-2">
+                        <span className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase flex items-center gap-1.5">
+                          <UserCheck className="w-4 h-4" /> Accompanying Doctor Required
+                        </span>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
+                          Record who is escorting this patient before the ambulance can be dispatched.
+                        </p>
+                        <input
+                          type="text"
+                          placeholder="Doctor's name"
+                          value={escortName}
+                          onChange={e => setEscortName(e.target.value)}
+                          className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm"
+                        />
+                        <input
+                          type="tel"
+                          placeholder="Doctor's phone number"
+                          value={escortPhone}
+                          onChange={e => setEscortPhone(e.target.value)}
+                          className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm"
+                        />
+                        <Button
+                          onClick={handleSetAccompanyingDoctor}
+                          disabled={escortBusy || !escortName.trim() || !escortPhone.trim()}
+                          className="w-full text-xs py-1.5 min-h-[40px]"
+                        >
+                          Save Accompanying Doctor
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-900 rounded-lg">
+                        <p className="text-xs text-warning-700 dark:text-warning-400">
+                          Waiting on the ER Room Official to record the accompanying doctor before dispatch.
+                        </p>
+                      </div>
+                    )
+                  )}
+
                   {/* Referring Facility Actions */}
                   {(isReferring || isErRoom) && referral.status === 'patient_consented' && (
-                    <Button onClick={() => handleStatusUpdate('in_transit')} className="w-full bg-blue-600 hover:bg-blue-700">
+                    <Button
+                      onClick={() => handleStatusUpdate('in_transit')}
+                      disabled={!!referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor}
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                    >
                       <Truck className="h-4 w-4 mr-2" /> Dispatch Ambulance
                     </Button>
                   )}

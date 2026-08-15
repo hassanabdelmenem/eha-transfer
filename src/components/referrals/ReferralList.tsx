@@ -181,6 +181,12 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
   // explicit "cancelled" filter, so they don't clutter day-to-day lists/KPIs.
   if (statusFilter === 'cancelled') {
     filtered = filtered.filter(r => r.status === 'cancelled');
+  } else if (statusFilter === 'archived') {
+    // The Archive: referrals that have ended, one way or the other -- the
+    // patient was admitted, or the referral was cancelled. Discharged and
+    // rejected referrals stay out of this bucket deliberately; only admitted
+    // and cancelled were asked for.
+    filtered = filtered.filter(r => ['admitted', 'cancelled'].includes(r.status));
   } else if (statusFilter !== 'all') {
     if (statusFilter === 'active') {
       filtered = filtered.filter(r => !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status));
@@ -192,7 +198,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
       filtered = filtered.filter(r => r.status === statusFilter);
     }
   } else {
-    filtered = filtered.filter(r => r.status !== 'cancelled');
+    filtered = filtered.filter(r => r.status !== 'cancelled' && r.status !== 'admitted');
   }
 
   // Pre-parse timestamps once per referral to avoid repeated Date parsing during sort

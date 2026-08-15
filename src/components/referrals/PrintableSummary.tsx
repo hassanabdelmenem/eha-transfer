@@ -87,12 +87,13 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
         {/* Vitals */}
         <div className="mb-6">
           <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase">Vital Signs</h2>
-          <div className="flex gap-6">
+          <div className="flex gap-6 flex-wrap">
             <p><span className="font-bold">HR:</span> {vital(patientData.vitalSigns?.hr, ' bpm')}</p>
             <p><span className="font-bold">BP:</span> {patientData.vitalSigns?.bp || NOT_RECORDED}</p>
             <p><span className="font-bold">SpO2:</span> {vital(patientData.vitalSigns?.spo2, '%')}</p>
             <p><span className="font-bold">Temp:</span> {vital(patientData.vitalSigns?.temp, '°C')}</p>
             <p><span className="font-bold">RR:</span> {vital(patientData.vitalSigns?.rr, ' /min')}</p>
+            <p><span className="font-bold">GCS:</span> {vital(patientData.vitalSigns?.gcs, '/15')}</p>
           </div>
         </div>
 

@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { WifiOff, RefreshCw } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Bell, LogOut, Activity, Users, PlusCircle, LayoutDashboard, BookOpen, Settings, Moon, Sun, Bed, Cloud, Database, Eye, Phone, X, User } from 'lucide-react';
+import { Bell, LogOut, Activity, Users, PlusCircle, LayoutDashboard, BookOpen, Settings, Moon, Sun, Bed, Cloud, Database, Eye, Phone, X, User, Archive } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { MOCK_USERS } from '../../lib/mock-data';
 import { toastError } from '../../lib/toast';
@@ -117,6 +117,7 @@ export const AppLayout: React.FC = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Referrals', path: '/referrals', icon: Users },
+    { name: 'Archive', path: '/archive', icon: Archive },
     { name: 'Directory', path: '/directory', icon: BookOpen },
   ];
 

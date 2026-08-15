@@ -1,13 +1,77 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
+import { Referral } from '../types';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { Clock, Truck, Check } from 'lucide-react';
+import { Clock, Truck, Check, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { toastError } from '../lib/toast';
 import { Skeleton, SkeletonGroup } from '../components/ui/Skeleton';
+
+// Ambulance dispatch for a transfer flagged as needing a doctor escort is
+// gated on this form: the ER Room Official records who is riding along before
+// "Request Ambulance" can be pressed. Kept as its own component so each card
+// in the list owns its own name/phone draft instead of one shared input.
+const AccompanyingDoctorGate: React.FC<{ referral: Referral }> = ({ referral }) => {
+  const { setAccompanyingDoctor } = useData();
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  if (referral.accompanyingDoctor) {
+    return (
+      <p className="text-xs text-success-700 dark:text-success-400 mt-2 flex items-center gap-1">
+        <UserCheck className="w-3.5 h-3.5 shrink-0" />
+        Escort: {referral.accompanyingDoctor.name} ({referral.accompanyingDoctor.phoneNumber})
+      </p>
+    );
+  }
+
+  const handleSave = async () => {
+    setBusy(true);
+    try {
+      await setAccompanyingDoctor(referral.id, name, phone);
+      setName('');
+      setPhone('');
+    } catch (e: any) {
+      toastError(e, "Could not save the accompanying doctor's details.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+      <p className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase flex items-center gap-1">
+        <UserCheck className="w-3.5 h-3.5 shrink-0" /> Accompanying Doctor Required
+      </p>
+      <input
+        type="text"
+        placeholder="Doctor's name"
+        value={name}
+        onChange={e => setName(e.target.value)}
+        className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-1.5 text-xs"
+      />
+      <input
+        type="tel"
+        placeholder="Doctor's phone number"
+        value={phone}
+        onChange={e => setPhone(e.target.value)}
+        className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-1.5 text-xs"
+      />
+      <Button
+        onClick={handleSave}
+        disabled={busy || !name.trim() || !phone.trim()}
+        size="sm"
+        className="w-full text-xs"
+      >
+        Save Escort Details
+      </Button>
+    </div>
+  );
+};
 
 export const ERDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -73,6 +137,7 @@ export const ERDashboard: React.FC = () => {
             )}
             {!loading && awaitingTransport.map(referral => {
               const consentRecorded = referral.status === 'patient_consented';
+              const escortMissing = !!referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor;
               return (
                 <div key={referral.id} className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm">
                   <div className="flex justify-between items-start gap-3 mb-2">
@@ -84,9 +149,14 @@ export const ERDashboard: React.FC = () => {
                       {referral.priority}
                     </Badge>
                   </div>
+
+                  {consentRecorded && referral.requiresAccompanyingDoctor && (
+                    <AccompanyingDoctorGate referral={referral} />
+                  )}
+
                   <Button
                     onClick={() => handleRequestAmbulance(referral.id)}
-                    disabled={!consentRecorded}
+                    disabled={!consentRecorded || escortMissing}
                     className="w-full mt-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                   >
                     <Truck className="w-4 h-4 mr-2" /> Request Ambulance
@@ -94,6 +164,11 @@ export const ERDashboard: React.FC = () => {
                   {!consentRecorded && (
                     <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 text-center">
                       Awaiting patient consent before dispatch.
+                    </p>
+                  )}
+                  {consentRecorded && escortMissing && (
+                    <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 text-center">
+                      Record the accompanying doctor above before dispatch.
                     </p>
                   )}
                 </div>
