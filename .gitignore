@@ -34,3 +34,4 @@ firestore-export/
 # AI tool configuration and state
 .claude/
 .copilot/
+_to_delete/
