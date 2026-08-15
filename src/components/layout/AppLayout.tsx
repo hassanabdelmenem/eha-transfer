@@ -314,15 +314,15 @@ export const AppLayout: React.FC = () => {
           </nav>
           
           <div className="mt-auto p-4 bg-slate-900 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-lg">
-            <div className="text-xs text-blue-300 font-bold uppercase mb-2">Security Status</div>
+            <div className="text-xs text-blue-300 font-bold uppercase mb-2">Session</div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-white">AES-256</span>
-                <span className="text-xs text-green-400">ACTIVE</span>
+                <span className="text-xs text-white">Role</span>
+                <span className="text-xs text-green-400">{(user.role || 'Unknown').replace('_', ' ').toUpperCase()}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-white">RBAC Filter</span>
-                <span className="text-xs text-green-400">ENABLED</span>
+                <span className="text-xs text-white">Verified</span>
+                <span className="text-xs text-green-400">{user.verified ? 'YES' : 'NO'}</span>
               </div>
             </div>
           </div>

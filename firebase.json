@@ -22,7 +22,8 @@
           { "key": "X-Frame-Options", "value": "DENY" },
           { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
           { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-          { "key": "Permissions-Policy", "value": "geolocation=(), camera=(), microphone=()" }
+          { "key": "Permissions-Policy", "value": "geolocation=(), camera=(), microphone=()" },
+          { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com; img-src 'self' data:; frame-ancestors 'none';" }
         ]
       },
       {
