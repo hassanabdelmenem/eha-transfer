@@ -31,7 +31,13 @@ const F3_CANDIDATE = 'f3-candidate-uid';
 const NEWCOMER = 'newcomer-uid';
 const F2_ER_OFFICIAL = 'f2-er-official-uid';
 
-const authed = (uid: string) => testEnv.authenticatedContext(uid).firestore();
+// All seeded test users except NEWCOMER are treated as having a verified email
+// address (Google sign-in sets this automatically; email/password accounts must
+// click a verification link). The Firestore rules now require
+// request.auth.token.email_verified inside isVerifiedCaller(), so without this
+// every test that exercises a verified-caller path would fail.
+const authed = (uid: string) =>
+  testEnv.authenticatedContext(uid, { email_verified: uid !== NEWCOMER }).firestore();
 
 const referral = (over: Record<string, unknown> = {}) => ({
   id: 'ref1',

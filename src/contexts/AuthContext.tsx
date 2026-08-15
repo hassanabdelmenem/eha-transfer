@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
 import { auth, googleProvider, db } from '../lib/firebase';
-import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { clearOfflineReferrals } from '../lib/db';
 
@@ -18,10 +18,17 @@ interface AuthContextType {
   // for this: on a page refresh the SDK restores the session asynchronously, and
   // treating the intervening null as "signed out" bounced deep links to /login.
   authReady: boolean;
+  // Whether the Firebase Auth account's email address has been verified (clicked
+  // the link). Always true for Google sign-in; false until verified for
+  // email/password registration. Firestore rules now gate isVerifiedCaller() on
+  // this, so an unverified-email account cannot access patient data even if an
+  // admin mistakenly sets verified: true.
+  emailVerified: boolean;
   login?: (id: string) => void;
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (e: string, p: string) => Promise<void>;
   registerWithEmail: (e: string, p: string) => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (roles: User['role'][]) => boolean;
   updateUserProfile: (data: Partial<User>) => Promise<void>;
@@ -32,6 +39,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   // Global flag used to gate dev-only shortcuts such as mock local auth or owner
   // auto-promotion. Never true in production builds.
@@ -70,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (firebaseUser) {
+        setEmailVerified(firebaseUser.emailVerified);
         const userRef = doc(db, 'users', firebaseUser.uid);
         
         // Listen to real-time updates for the logged-in user
@@ -140,8 +149,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const registerWithEmail = async (e: string, p: string) => {
-    await createUserWithEmailAndPassword(auth, e, p);
+    const { user: newUser } = await createUserWithEmailAndPassword(auth, e, p);
+    // Send a verification link immediately. The Firestore rules now require
+    // email_verified before isVerifiedCaller() passes, so until the user clicks
+    // this link they cannot access any patient data — even if an admin
+    // prematurely sets verified: true on their Firestore document.
+    try {
+      await sendEmailVerification(newUser);
+    } catch (err) {
+      console.error('Failed to send verification email:', err);
+    }
   };
+
+  const resendVerificationEmail = useCallback(async () => {
+    const currentUser = auth.currentUser;
+    if (currentUser && !currentUser.emailVerified) {
+      await sendEmailVerification(currentUser);
+    }
+  }, []);
 
   const login = (id: string) => {
     // DEV/EMULATOR ONLY: create a local mock user. Disabled in production.
@@ -217,7 +242,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, authReady, login, loginWithGoogle, loginWithEmail, registerWithEmail, logout, hasRole, updateUserProfile }}>
+    <AuthContext.Provider value={{ user, authReady, emailVerified, login, loginWithGoogle, loginWithEmail, registerWithEmail, resendVerificationEmail, logout, hasRole, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,15 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Clock } from 'lucide-react';
+import { Clock, Mail, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 
 export const PendingVerification: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, emailVerified, resendVerificationEmail, logout } = useAuth();
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   if (!user) return <Navigate to="/login" replace />;
   if (user.verified) return <Navigate to="/" replace />;
+
+  const handleResend = async () => {
+    setResendStatus('sending');
+    try {
+      await resendVerificationEmail();
+      setResendStatus('sent');
+    } catch {
+      setResendStatus('error');
+    }
+  };
+
+  // Refresh the page to pick up the updated emailVerified status from Firebase
+  // Auth after the user clicks the verification link in their inbox.
+  const handleRefresh = () => {
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
@@ -22,6 +39,50 @@ export const PendingVerification: React.FC = () => {
             <CardTitle>Account Pending Verification</CardTitle>
           </CardHeader>
           <CardContent className="pt-6 text-center space-y-6">
+            {/* Email verification status */}
+            {!emailVerified && (
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 space-y-3">
+                <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-amber-400">
+                  <Mail className="h-5 w-5" />
+                  <span className="text-sm font-semibold">Email Not Verified</span>
+                </div>
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Please check your inbox for a verification link. You must verify your email address before an administrator can approve your account.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    onClick={handleResend}
+                    variant="outline"
+                    size="sm"
+                    disabled={resendStatus === 'sending' || resendStatus === 'sent'}
+                    className="w-full text-xs"
+                  >
+                    {resendStatus === 'sending' ? 'Sending…' :
+                     resendStatus === 'sent' ? '✓ Verification email sent' :
+                     resendStatus === 'error' ? 'Failed — try again' :
+                     'Resend Verification Email'}
+                  </Button>
+                  <Button
+                    onClick={handleRefresh}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs"
+                  >
+                    I've verified — refresh
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {emailVerified && (
+              <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-4">
+                <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-400">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm font-semibold">Email Verified</span>
+                </div>
+              </div>
+            )}
+
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Your profile has been submitted successfully. You requested the role of <strong>{(user.role || "").replace('_', ' ')}</strong> at <strong>{user.facilityId || 'Global Network'}</strong>.
             </p>
