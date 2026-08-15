@@ -371,7 +371,7 @@ service cloud.firestore {
     function accompanyingDoctorSatisfied() {
       return request.resource.data.status != 'in_transit'
           || resource.data.status == 'in_transit'
-          || !(resource.data.requiresAccompanyingDoctor == true)
+          || resource.data.get('requiresAccompanyingDoctor', false) != true
           || (request.resource.data.accompanyingDoctor is map
               && request.resource.data.accompanyingDoctor.name is string
               && request.resource.data.accompanyingDoctor.name.size() > 0
