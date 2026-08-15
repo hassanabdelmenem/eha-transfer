@@ -14,8 +14,13 @@ firebase-debug.log
 firestore-debug.log
 
 # Firebase Auth / Firestore exports. These contain real user PII (emails,
-# display names, uids) and must never reach the repo.
+# display names, uids) and must never reach the repo. accounts.json was
+# committed under a name this pattern didn't cover (see the security
+# assessment, F1) -- broadened to catch that shape too.
 auth.json
+accounts.json
+accounts*.json
+*-accounts.json
 *-export/
 firestore-export/
 
