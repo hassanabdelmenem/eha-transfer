@@ -7,7 +7,7 @@ import { Input } from '../components/ui/Input';
 import { Shield, Mail } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const { loginWithEmail, registerWithEmail, loginWithGoogle } = useAuth();
+  const { loginWithEmail, registerWithEmail, loginWithGoogle, redirectError } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -103,12 +103,12 @@ export const Login: React.FC = () => {
             <CardTitle>{isRegistering ? 'Create your account' : 'Sign in to your account'}</CardTitle>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
-            {error && (
+            {(error || redirectError) && (
               <div
                 role="alert"
                 className="rounded border-l-4 border-l-critical-600 bg-critical-50 dark:bg-critical-950/40 px-4 py-3 text-sm text-critical-900 dark:text-critical-200"
               >
-                {error}
+                {error || redirectError}
               </div>
             )}
             <Button
