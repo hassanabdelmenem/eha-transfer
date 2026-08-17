@@ -13,6 +13,7 @@
     "test:ui": "vitest --ui",
     "test:e2e": "firebase emulators:exec --only auth,firestore --project eha-transfer-1785622025 \"playwright test\"",
     "test:rules": "firebase emulators:exec --only firestore --project eha-transfer-rules-test \"vitest run --config vitest.rules.config.ts\"",
+    "test:csp-headers": "npm run build && firebase emulators:exec --only hosting --project eha-transfer-1785622025 \"node scripts/verify-csp-headers.mjs\"",
     "test:coverage": "vitest --coverage",
     "mutate": "stryker run"
   },
