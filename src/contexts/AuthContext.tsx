@@ -119,9 +119,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               role: 'resident',
               verified: false
             };
-            await setDoc(userRef, newUser);
-            setUser(newUser);
-            setAuthReady(true);
+            try {
+              await setDoc(userRef, newUser);
+              setUser(newUser);
+            } catch (err) {
+              // This await was previously unguarded: a rejected write (rules,
+              // network, quota) threw inside this async onSnapshot callback,
+              // and setAuthReady(true) below never ran -- first-time sign-in
+              // hung on the loading screen forever with no error surfaced.
+              console.error('Failed to create user profile document:', err);
+            } finally {
+              setAuthReady(true);
+            }
           }
         }, (err) => {
           // A denied/failed profile read must still unblock routing, or the app
