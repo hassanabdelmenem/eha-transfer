@@ -66,6 +66,14 @@ jobs:
       - name: Run E2E Tests (Playwright)
         run: npm run test:e2e
 
+      # Playwright above never sees firebase.json's CSP -- it runs against
+      # `npm run dev` (Vite), which doesn't apply hosting.headers. This step
+      # builds the real bundle and serves it through the Firebase Hosting
+      # emulator so we check the CSP actually served, not just declared. See
+      # "The CSP in firebase.json and Google sign-in" in docs/DEPLOYMENT.md.
+      - name: Verify CSP headers served by Firebase Hosting
+        run: npm run test:csp-headers
+
       - name: Coverage
         run: npm run test:coverage
 
