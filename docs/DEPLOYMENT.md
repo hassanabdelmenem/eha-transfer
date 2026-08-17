@@ -183,6 +183,39 @@ been deleted. Firebase keeps deleted apps recoverable for 30 days.
 rather than the canonical `eha-transfer-1785622025.firebaseapp.com` — matching
 the hosting domain is what fixed mobile Google sign-in. Don't "correct" it.
 
+### The CSP in `firebase.json` and Google sign-in
+
+`hosting.headers`'s `"source": "**"` rule sets a `Content-Security-Policy` on
+every response Hosting serves. Editing it broke Google sign-in in production
+twice — both times CI stayed green:
+
+1. `script-src` didn't allow `apis.google.com` / `www.gstatic.com` /
+   `www.google.com`, so the Google Identity Services script the sign-in popup
+   depends on couldn't load (`auth/internal-error`).
+2. `frame-src` was set to just `https://accounts.google.com` with no
+   `'self'`. A CSP directive that's explicitly set no longer falls back to
+   `default-src`, so the app's own same-origin `/__/auth/iframe` — which
+   `signInWithPopup` needs for popup↔window messaging — was blocked too. The
+   app just hung on its loading screen with no visible error.
+
+Neither was caught by the e2e suite because Playwright's `webServer` runs
+`npm run dev` (Vite), which never applies `hosting.headers` — CSP is
+invisible to a browser test running against the dev server. Two things now
+guard this instead:
+
+- `src/lib/csp.security.test.ts` — a plain Vitest test (`npm run test`, every
+  branch push) asserting the CSP **declared** in `firebase.json` still
+  contains the directives above. Fast, no emulator needed.
+- `npm run test:csp-headers` (`scripts/verify-csp-headers.mjs`) — builds the
+  app, serves it through the Firebase Hosting emulator, and asserts the CSP
+  **actually served** matches. This catches a different failure mode: the
+  `"**"` rule silently no longer matching (e.g. a reordered or narrowed
+  `source` glob), which a JSON-only check can't see.
+
+If you're intentionally tightening this CSP, don't just edit the test to
+match — verify Google sign-in end-to-end (desktop popup **and** mobile
+redirect) against a live preview channel first.
+
 ### Firebase Web config lives in the repo, not in CI
 
 `src/lib/firebase.ts` carries the production Web config as committed defaults.

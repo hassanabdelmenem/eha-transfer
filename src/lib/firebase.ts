@@ -130,6 +130,11 @@ export const app = isFirstInit ? initializeApp(firebaseConfig) : getApp();
 // signInWithRedirect / getRedirectResult call fails with auth/argument-error,
 // which takes out Google sign-in entirely.
 //
+// This resolver also depends on firebase.json's Content-Security-Policy allowing
+// the Google auth scripts and a same-origin frame-src — see "The CSP in
+// firebase.json and Google sign-in" in docs/DEPLOYMENT.md and
+// src/lib/csp.security.test.ts, which guard that CSP in CI.
+//
 // Both browser* dependencies are real implementations only in the browser build
 // of the SDK. Under the node-esm build — which is what vitest resolves, jsdom or
 // not — initializeAuth throws "Expected a class definition" on them. Testing
