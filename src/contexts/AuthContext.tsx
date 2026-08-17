@@ -14,6 +14,8 @@ const isMobileDevice = () =>
 
 interface AuthContextType {
   user: User | null;
+  redirectError: string | null;
+
   // False until Firebase has reported the initial auth state. Routing must wait
   // for this: on a page refresh the SDK restores the session asynchronously, and
   // treating the intervening null as "signed out" bounced deep links to /login.
@@ -41,6 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authReady, setAuthReady] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
 
+  const [redirectError, setRedirectError] = useState<string | null>(null);
+  
   // Global flag used to gate dev-only shortcuts such as mock local auth or owner
   // auto-promotion. Never true in production builds.
   const isDevAuthAllowed = import.meta.env.DEV || import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true';
@@ -67,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getRedirectResult(auth).catch((err) => {
       // Non-blocking failure handling so tests and CI aren't interrupted by alerts.
       console.error('Redirect sign-in failed:', err);
+      setRedirectError(err.message || 'Redirect sign-in failed');
     });
 
     let unsubscribeUserDoc: (() => void) | null = null;
@@ -137,10 +142,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithGoogle = async () => {
-    if (isMobileDevice()) {
-      await signInWithRedirect(auth, googleProvider);
-    } else {
-      await signInWithPopup(auth, googleProvider);
+    try {
+      if (isMobileDevice()) {
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        await signInWithPopup(auth, googleProvider);
+      }
+    } catch (err: any) {
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        // Fallback for strict mobile browsers that block popups even on desktop
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        throw err;
+      }
     }
   };
   
@@ -242,7 +256,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, authReady, emailVerified, login, loginWithGoogle, loginWithEmail, registerWithEmail, resendVerificationEmail, logout, hasRole, updateUserProfile }}>
+    <AuthContext.Provider value={{ user, redirectError, authReady, emailVerified, login, loginWithGoogle, loginWithEmail, registerWithEmail, resendVerificationEmail, logout, hasRole, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );
