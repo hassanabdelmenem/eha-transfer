@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { CheckCircle, Clock, ArrowRightLeft, UserCircle, X } from 'lucide-react';
+import { CheckCircle, Clock, ArrowRightLeft, UserCircle, X, ShieldAlert, Phone } from 'lucide-react';
 import { formatDateTime } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
+import { sortByWorkflow, priorityRailClass, priorityChipClasses } from '../lib/referralPriority';
+import { ReferralSummarySheet } from '../components/referrals/ReferralSummarySheet';
+import { Referral } from '../types';
+import { toastError } from '../lib/toast';
 
 export const DepartmentPage: React.FC = () => {
   const { user } = useAuth();
-  const { shiftAssignments, shiftAssignmentsByFacility, assignShift, users, usersById, directAdmissions, referrals, facilities, facilitiesById, quickTransfer, loading } = useData();
+  const { shiftAssignments, shiftAssignmentsByFacility, assignShift, users, usersById, directAdmissions, referrals, facilities, facilitiesById, quickTransfer, addDeptComment, loading } = useData();
+  const navigate = useNavigate();
+  const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   type PatientListItem = { id: string; name: string; hospitalId: string; type: 'admission' | 'referral'; admittedAt: string };
   const [selectedPatient, setSelectedPatient] = useState<PatientListItem | null>(null);
@@ -60,6 +68,33 @@ export const DepartmentPage: React.FC = () => {
 
   const myFacility = facilitiesById.get(facilityId || '');
   const otherDepartments = myFacility?.departments.filter(d => d !== department) || [];
+
+  // 1b: cases pending this department's review, matching the same gate
+  // ReferralDetailPage uses for isTargetDeptHead && status === 'pending'.
+  const pendingReview = sortByWorkflow(referrals.filter(r =>
+    r.status === 'pending' &&
+    r.receivingDepartments?.includes(department) &&
+    (r.receivingFacilityId === facilityId || (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(facilityId)))
+  ));
+  const escalatedReview = pendingReview.filter(r => r.isEscalated);
+  const queueReview = pendingReview.filter(r => !r.isEscalated);
+
+  const escalatedAgeLabel = (r: Referral) => {
+    const since = r.escalatedAt || r.createdAt;
+    const mins = Math.max(0, Math.round((Date.now() - Date.parse(since)) / 60000));
+    return `Escalated · no response ${mins} min`;
+  };
+
+  const handleQuickApprove = async (id: string) => {
+    setApprovingId(id);
+    try {
+      await addDeptComment(id, 'direct_approval', '');
+    } catch (e: any) {
+      toastError(e, 'Could not approve this referral.');
+    } finally {
+      setApprovingId(null);
+    }
+  };
 
   const handleOpenTransfer = (patient: any) => {
     setSelectedPatient(patient);
@@ -125,6 +160,75 @@ export const DepartmentPage: React.FC = () => {
          </Card>
       ) : (
         <>
+      {/* Mobile: 1b approval queue -- escalated case pinned on top, then the
+          rest of what's waiting on this department. */}
+      <div className="md:hidden space-y-3">
+        <div>
+          <h2 className="text-[26px] font-heading font-semibold text-slate-900 dark:text-slate-100">
+            {pendingReview.length} waiting on you
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Escalated cases stay pinned on top. Everything else ordered emergency → urgent → routine.</p>
+        </div>
+
+        {escalatedReview.map(r => (
+          <div key={r.id} className="rounded-xl border-2 border-critical-700 bg-critical-50 dark:bg-critical-950/30 overflow-hidden">
+            <div className="bg-critical-700 text-white px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5" /> {escalatedAgeLabel(r)}
+            </div>
+            <div className="p-3.5">
+              <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100">{r.patientData.name}, {r.patientData.age}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{r.requiredBedType} bed · from {facilitiesById.get(r.referringFacilityId)?.name || 'referring facility'}</p>
+              <div className="grid grid-cols-[1fr_auto] gap-2 mt-3">
+                <button
+                  onClick={() => navigate(`/referrals/${r.id}`)}
+                  className="min-h-[48px] rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-bold uppercase tracking-wide"
+                >
+                  Review now
+                </button>
+                <a
+                  href={`tel:${usersById.get(r.referringUserId)?.phoneNumber || ''}`}
+                  aria-label="Call referring clinician"
+                  className="h-[48px] w-[48px] flex items-center justify-center rounded-lg border-2 border-critical-700 text-critical-700 dark:text-critical-400"
+                >
+                  <Phone className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {queueReview.length === 0 && escalatedReview.length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">Nothing waiting on your department right now.</p>
+        ) : queueReview.map(r => (
+          <div key={r.id} className={`rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 ${priorityRailClass(r.priority)}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}, {r.patientData.age}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{r.requiredBedType} · from {facilitiesById.get(r.referringFacilityId)?.name || 'referring facility'}</p>
+              </div>
+              <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <button
+                onClick={() => setSummaryReferral(r)}
+                className="min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-bold uppercase tracking-wide"
+              >
+                Summary
+              </button>
+              <button
+                onClick={() => handleQuickApprove(r.id)}
+                disabled={approvingId === r.id}
+                className="min-h-[48px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide disabled:opacity-60"
+              >
+                {approvingId === r.id ? 'Approving…' : 'Approve'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {summaryReferral && <ReferralSummarySheet referral={summaryReferral} onClose={() => setSummaryReferral(null)} />}
+
       <Card>
         <CardHeader>
           <CardTitle>Admitted Patients & Internal Transfers</CardTitle>

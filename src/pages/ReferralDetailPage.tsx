@@ -10,14 +10,56 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { VoiceTextarea } from '../components/ui/VoiceTextarea';
 import { StatusTimeline } from '../components/referrals/StatusTimeline';
 import { PrintableSummary } from '../components/referrals/PrintableSummary';
-import { ArrowLeft, Printer, Check, X, Truck, Building, FileText, CheckCircle, AlertCircle, Copy, Download, Activity, ShieldAlert, Clock, UserCheck, UserX, Ban } from 'lucide-react';
+import { ArrowLeft, Printer, Check, X, Truck, Building, FileText, CheckCircle, AlertCircle, Copy, Download, Activity, ShieldAlert, Clock, UserCheck, UserX, Ban, Phone } from 'lucide-react';
 import { ECGViewerOverlay } from '../components/referrals/ECGViewerOverlay';
 import { Badge } from '../components/ui/Badge';
 import { ReferralStatus, DeptApprovalStatus, Referral } from '../types';
 import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataContext';
 import { toastError } from '../lib/toast';
 import { SLA_MINUTES } from '../lib/sla';
+import { STAGE_LABELS, stageIndexForStatus } from '../lib/referralStage';
 import { Skeleton, SkeletonDetailBlock } from '../components/ui/Skeleton';
+
+// Mobile stage rail: a pure display projection of `status`, driven by the
+// six workflow milestones every referral passes through. Doesn't gate
+// anything -- the per-status conditions further down remain the only source
+// of truth for what a viewer can actually do.
+const StageRail: React.FC<{ status: Referral['status'] }> = ({ status }) => {
+  const currentIndex = stageIndexForStatus(status);
+  const isException = currentIndex === null;
+  return (
+    <div className="flex items-stretch gap-1" role="img" aria-label={`Stage: ${status.replace(/_/g, ' ')}`}>
+      {STAGE_LABELS.map((label, i) => {
+        const done = !isException && i < (currentIndex as number);
+        const current = !isException && i === currentIndex;
+        return (
+          <div key={label} className="flex-1 min-w-0">
+            <div
+              className={`h-1.5 rounded-full ${
+                current ? 'bg-white' : done ? 'bg-success-400' : isException ? 'bg-critical-500/60' : 'bg-white/22'
+              }`}
+            />
+            <p
+              className={`mt-1 text-[10px] font-bold uppercase tracking-wide truncate ${
+                current ? 'text-white' : 'text-white/62'
+              }`}
+            >
+              {label}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+type BannerTint = 'info' | 'success' | 'critical' | 'warning';
+const BANNER_TINT_CLASSES: Record<BannerTint, string> = {
+  info: 'bg-info-100 text-info-800 border-info-300 dark:bg-info-900/30 dark:text-info-300 dark:border-info-800',
+  success: 'bg-success-100 text-success-800 border-success-300 dark:bg-success-900/30 dark:text-success-300 dark:border-success-800',
+  critical: 'bg-critical-100 text-critical-800 border-critical-300 dark:bg-critical-900/30 dark:text-critical-300 dark:border-critical-800',
+  warning: 'bg-warning-100 text-warning-800 border-warning-300 dark:bg-warning-900/30 dark:text-warning-300 dark:border-warning-800',
+};
 
 // Escalation copy, keyed by reason. Kept beside the component rather than inline
 // so the four cases stay visibly distinct and exhaustive.
@@ -146,6 +188,28 @@ export const ReferralDetailPage: React.FC = () => {
   const isReferralCreator = user.id === referral.referringUserId;
   const canCancel = (isAdmin || isSeniorAtReferringFacility || isReferralCreator) && !CANCEL_LOCKED_STATUSES.includes(referral.status) && referral.status !== 'cancelled';
 
+  // Mobile role banner: names the viewer's remit in one line. Purely a label --
+  // it reads the same predicates and status the action panel below already
+  // uses, and never changes who can do what.
+  const mobileBanner: { label: string; tint: BannerTint } = (() => {
+    if (referral.isEscalated) return { label: 'Escalated — needs attention now', tint: 'critical' };
+    if (isTargetDeptHead && referral.status === 'pending') return { label: 'Waiting on your department review', tint: 'warning' };
+    if (isTargetDeptHead) return { label: 'You reviewed this for your department', tint: 'success' };
+    if (isFacilityManager && referral.status === 'dept_approved') return { label: 'Needs your signature', tint: 'critical' };
+    if (isFacilityManager) return { label: 'Manager oversight', tint: 'info' };
+    if (isErRoom && referral.status === 'accepted') return { label: 'Record patient consent before dispatch', tint: 'warning' };
+    if (isErRoom && referral.requiresAccompanyingDoctor && referral.status === 'patient_consented' && !referral.accompanyingDoctor) {
+      return { label: 'Record the escort before dispatch', tint: 'warning' };
+    }
+    if (isErRoom && referral.status === 'in_transit') return { label: 'Confirm arrival when the patient lands', tint: 'info' };
+    if (isErRoom) return { label: 'ER room', tint: 'info' };
+    if (isNurse && ['arrived', 'accepted', 'manager_approved'].includes(referral.status)) return { label: 'Prepare a bed', tint: 'info' };
+    if ((isReferring || isErRoom) && referral.status === 'patient_consented') return { label: 'Ready to dispatch', tint: 'info' };
+    if (isReferring && referral.status === 'accepted') return { label: 'Waiting on you — confirm patient consent', tint: 'warning' };
+    if (isReferring) return { label: 'Waiting on you', tint: 'info' };
+    return { label: 'Following this case', tint: 'info' };
+  })();
+
   const handleCopyId = () => {
     navigator.clipboard.writeText(referral.id);
     setCopied(true);
@@ -239,14 +303,42 @@ export const ReferralDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-16 sm:pb-0 max-w-5xl mx-auto print:max-w-none print:pb-0 print:m-0 print:space-y-4">
-      <div className="flex items-center justify-between">
+      {/* Mobile header: dark identity card + stage rail, replacing the plain
+          "Referral Details" banner every role otherwise scrolled past. */}
+      <div className="md:hidden -mt-4 sm:-mt-6 -mx-4 sm:-mx-6 print:hidden">
+        <div className="bg-slate-950 text-white px-4 pt-4 pb-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              aria-label="Go back"
+              className="h-11 w-11 -ml-2 shrink-0 flex items-center justify-center rounded text-white/80 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg font-heading font-semibold truncate">
+                {referral.patientData.name || 'Unknown patient'}, {referral.patientData.age}
+              </h1>
+              <p className="text-xs text-white/60 truncate uppercase tracking-wide">
+                {referral.patientData.hospitalId} · {referral.requiredBedType} · {referral.priority}
+              </p>
+            </div>
+          </div>
+          <StageRail status={referral.status} />
+        </div>
+        <div className={`px-4 py-3 border-b text-xs font-bold uppercase tracking-wide ${BANNER_TINT_CLASSES[mobileBanner.tint]}`}>
+          {mobileBanner.label}
+        </div>
+      </div>
+
+      <div className="hidden md:flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="print:hidden" aria-label="Go back">
             <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Referral Details</h1>
-            
+
             <div className="flex items-center gap-2">
               <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">ID: {referral.id}</p>
               {/* The button box used to be the 12px icon itself — half the 24px
@@ -657,7 +749,7 @@ export const ReferralDetailPage: React.FC = () => {
                   {/* Standard Manager Final Approval (non-admin) */}
                   {!isAdmin && isFacilityManager && referral.status === 'dept_approved' && (
                     <>
-                      <Button onClick={() => handleStatusUpdate('manager_approved')} className="w-full bg-blue-700 hover:bg-blue-800">
+                      <Button onClick={() => handleStatusUpdate('manager_approved')} className="w-full bg-blue-700 hover:bg-blue-800 min-h-[48px]">
                         <CheckCircle className="h-4 w-4 mr-2" /> Manager Final Confirm
                       </Button>
                       <Button onClick={() => handleStatusUpdate('rejected')} variant="destructive" className="w-full">
@@ -668,23 +760,23 @@ export const ReferralDetailPage: React.FC = () => {
                   
                   {/* Receiving Facility Actions post-approval */}
                   {isReceiving && !['nurse', 'nursing_supervisor'].includes(user.role) && referral.status === 'manager_approved' && (
-                    <Button onClick={() => handleStatusUpdate('accepted')} className="w-full bg-success-600 hover:bg-success-700">
+                    <Button onClick={() => handleStatusUpdate('accepted')} className="w-full bg-success-600 hover:bg-success-700 min-h-[48px]">
                       <Check className="h-4 w-4 mr-2" /> Ready for Receive (Accepted)
                     </Button>
                   )}
   
                   {(isReceiving || isErRoom) && referral.status === 'in_transit' && (
-                    <Button onClick={() => handleStatusUpdate('arrived')} className="w-full bg-blue-600 hover:bg-blue-700">
+                    <Button onClick={() => handleStatusUpdate('arrived')} className="w-full bg-blue-600 hover:bg-blue-700 min-h-[48px]">
                       Mark as Arrived
                     </Button>
                   )}
                   {isReceiving && referral.status === 'arrived' && (
-                    <Button onClick={() => handleStatusUpdate('admitted')} className="w-full bg-success-600 hover:bg-success-700">
+                    <Button onClick={() => handleStatusUpdate('admitted')} className="w-full bg-success-600 hover:bg-success-700 min-h-[48px]">
                       Admit Patient
                     </Button>
                   )}
                   {isReceiving && referral.status === 'admitted' && (
-                    <Button onClick={() => handleStatusUpdate('discharged')} className="w-full bg-slate-600 hover:bg-slate-700">
+                    <Button onClick={() => handleStatusUpdate('discharged')} className="w-full bg-slate-600 hover:bg-slate-700 min-h-[48px]">
                       Discharge Patient
                     </Button>
                   )}
@@ -785,7 +877,7 @@ export const ReferralDetailPage: React.FC = () => {
                     <Button
                       onClick={() => handleStatusUpdate('in_transit')}
                       disabled={!!referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor}
-                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 min-h-[48px]"
                     >
                       <Truck className="h-4 w-4 mr-2" /> Dispatch Ambulance
                     </Button>

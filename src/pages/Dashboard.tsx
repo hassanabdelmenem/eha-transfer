@@ -1,21 +1,54 @@
 import React, { useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Activity, Clock, CheckCircle, AlertTriangle, Users, ClipboardList, ArrowDownUp } from 'lucide-react';
+import { Activity, Clock, CheckCircle, AlertTriangle, Users, ClipboardList, ArrowDownUp, WifiOff, Plus, Search, Phone, ChevronRight, ShieldAlert } from 'lucide-react';
 import { ReferralList } from '../components/referrals/ReferralList';
+import { ReferralSummarySheet } from '../components/referrals/ReferralSummarySheet';
 import { BedOccupancyHeatmap } from '../components/dashboard/BedOccupancyHeatmap';
-import { BedType } from '../types';
+import { BedType, Referral } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Badge } from '../components/ui/Badge';
 import { subDays, subWeeks, subMonths, subQuarters, format } from 'date-fns';
 import { useAudioAlert } from '../hooks/useAudioAlert';
 import { SkeletonStatCard, Skeleton } from '../components/ui/Skeleton';
+import { sortByWorkflow, priorityRailClass, priorityChipClasses } from '../lib/referralPriority';
+import { toastError } from '../lib/toast';
+
+type ClinicianSegment = 'you' | 'them' | 'moving';
+
+const ClinicianReferralCard: React.FC<{ referral: Referral; actionLabel: string; actionSentence?: string }> = ({ referral, actionLabel, actionSentence }) => {
+  const navigate = useNavigate();
+  return (
+    <div className={`shrink-0 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 ${priorityRailClass(referral.priority, referral.isEscalated)}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}, {referral.patientData.age}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{referral.requiredBedType} · {referral.receivingDepartments?.join(', ') || 'Unassigned'}</p>
+        </div>
+        <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase whitespace-nowrap ${priorityChipClasses(referral.priority)}`}>
+          {referral.priority}
+        </span>
+      </div>
+      {actionSentence && (
+        <p className="text-sm font-semibold text-critical-700 dark:text-critical-400 mt-2">{actionSentence}</p>
+      )}
+      <button
+        onClick={() => navigate(`/referrals/${referral.id}`)}
+        className="w-full mt-3 min-h-[48px] rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-bold uppercase tracking-wide"
+      >
+        {actionLabel}
+      </button>
+    </div>
+  );
+};
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, facilities, facilitiesById, directAdmissions, shiftLogs, loading } = useData();
+  const { referrals, facilities, facilitiesById, usersById, directAdmissions, shiftLogs, loading, isOnline, pendingSyncCount, updateReferralStatus } = useData();
+  const navigate = useNavigate();
   const [chartPeriod, setChartPeriod] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('weekly');
   const [prioritySort, setPrioritySort] = useState(false);
   const { theme } = useTheme();
@@ -171,10 +204,226 @@ export const Dashboard: React.FC = () => {
   // Trigger audio alert when pending emergencies exist
   useAudioAlert(pendingEmergencies.length > 0);
 
+  // ---- Mobile role homes (1a referring clinician / 1c hospital manager) ----
+  const canCreateReferral = ['consultant', 'specialist', 'resident', 'head_of_department', 'medical_director', 'owner'].includes(user.role);
+  const [segment, setSegment] = useState<ClinicianSegment>('you');
+  const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
+
+  const myReferrals = useMemo(
+    () => referrals.filter(r => r.referringUserId === user.id),
+    [referrals, user.id]
+  );
+  const youBucket = useMemo(() => sortByWorkflow(myReferrals.filter(r =>
+    r.status === 'postponed' || (r.status === 'patient_consented' && r.requiresAccompanyingDoctor && !r.accompanyingDoctor)
+  )), [myReferrals]);
+  const themBucket = useMemo(() => sortByWorkflow(myReferrals.filter(r =>
+    ['pending', 'dept_approved', 'manager_approved', 'accepted'].includes(r.status)
+  )), [myReferrals]);
+  const movingBucket = useMemo(() => sortByWorkflow(myReferrals.filter(r =>
+    ['in_transit', 'arrived'].includes(r.status)
+  )), [myReferrals]);
+  const activeSegmentReferrals = segment === 'you' ? youBucket : segment === 'them' ? themBucket : movingBucket;
+
+  const youActionSentence = (r: Referral) => {
+    if (r.status === 'postponed') {
+      const lastComment = [...(r.deptComments || [])].reverse().find(c => c.status === 'requirements_needed');
+      return lastComment?.comment
+        ? `${r.receivingDepartments?.[0] || 'The department'} needs: ${lastComment.comment}`
+        : `${r.receivingDepartments?.[0] || 'The department'} sent this back with requirements.`;
+    }
+    if (r.requiresAccompanyingDoctor && !r.accompanyingDoctor) {
+      return 'ER cannot dispatch until an escorting doctor is named.';
+    }
+    return undefined;
+  };
+  const youActionLabel = (r: Referral) => (r.status === 'postponed' ? 'Answer requirements' : 'Name the escort');
+
+  // Manager (1c): top-level/facility escalations touching this facility, free
+  // beds per type, and the dept_approved queue waiting on this manager's
+  // signature.
+  const managerEscalations = useMemo(() => sortByWorkflow(
+    facilityReferrals.filter(r => r.isEscalated && !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status))
+  ), [facilityReferrals]);
+  const managerQueue = useMemo(() => sortByWorkflow(
+    facilityReferrals.filter(r => r.status === 'dept_approved' && r.receivingFacilityId === user.facilityId)
+  ), [facilityReferrals, user.facilityId]);
+  const bedTypesWithCapacity = (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).filter(bt => (userFacility?.capacity?.[bt]?.total ?? 0) > 0);
+
+  const handleManagerAccept = async (id: string) => {
+    try {
+      await updateReferralStatus(id, 'manager_approved', 'Accepted by hospital manager.');
+    } catch (e: any) {
+      toastError(e, 'Could not accept this referral.');
+    }
+  };
 
   return (
     <div className="space-y-6 pb-16 sm:pb-0">
+      {/* ---- Mobile: role-specific home (1a / 1c) ---- */}
+      <div className={`md:hidden -mt-4 sm:-mt-6 -mx-4 sm:-mx-6 ${isManager ? 'bg-slate-950 text-white' : ''}`}>
+        <div className={`px-4 pt-4 pb-4 ${isManager ? '' : 'bg-white dark:bg-slate-950'}`}>
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className={`text-xs uppercase tracking-wide truncate ${isManager ? 'text-white/60' : 'text-slate-500 dark:text-slate-400'}`}>
+                {user.name} · {userFacility?.name || 'Facility'}
+              </p>
+            </div>
+            <Link to="/notifications" aria-label="Notifications" className={`h-10 w-10 shrink-0 flex items-center justify-center rounded-full border ${isManager ? 'border-white/20 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}>
+              <span className="text-sm">ع</span>
+            </Link>
+          </div>
 
+          {!isOnline && (
+            <div className="mt-3 flex items-center gap-2 rounded-lg bg-warning-500/20 border border-warning-500/40 px-3 py-2 text-xs font-bold uppercase tracking-wide text-warning-700 dark:text-warning-300">
+              <WifiOff className="w-3.5 h-3.5 shrink-0" />
+              Offline · {pendingSyncCount} action{pendingSyncCount === 1 ? '' : 's'} queued, will send automatically
+            </div>
+          )}
+
+          {isManager ? (
+            <>
+              <h1 className="text-[26px] font-heading font-semibold mt-3">{managerEscalations.length + managerQueue.length} need your signature</h1>
+
+              {managerEscalations.length > 0 && (
+                <div className="mt-4 rounded-xl border-2 border-critical-700 bg-critical-950/40 overflow-hidden">
+                  <div className="bg-critical-700 px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5" /> Escalated
+                  </div>
+                  <div className="p-3.5">
+                    <p className="text-[17px] font-bold">{managerEscalations[0].patientData.name}, {managerEscalations[0].patientData.age}</p>
+                    <p className="text-sm text-white/70 mt-0.5">{managerEscalations[0].requiredBedType} · {managerEscalations[0].escalationReason?.replace(/_/g, ' ') || 'escalated'}</p>
+                    <button
+                      onClick={() => navigate(`/referrals/${managerEscalations[0].id}`)}
+                      className="w-full mt-3 min-h-[48px] rounded-lg bg-white text-slate-950 text-sm font-bold uppercase tracking-wide"
+                    >
+                      {managerEscalations[0].escalationLevel === 'system' ? 'Hand to admin' : 'Source a bed'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {bedTypesWithCapacity.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-white/60">Free beds · {userFacility?.name}</p>
+                  {bedTypesWithCapacity.map(bt => {
+                    const cap = userFacility!.capacity[bt];
+                    const free = cap.total - cap.occupied;
+                    const ratio = cap.total > 0 ? free / cap.total : 0;
+                    const barColor = free <= 0 ? 'bg-critical-500' : ratio < 0.2 ? 'bg-warning-500' : 'bg-success-400';
+                    return (
+                      <div key={bt} className="flex items-center gap-3">
+                        <span className="w-10 text-xs font-bold uppercase text-white/70 shrink-0">{bt}</span>
+                        <div className="flex-1 h-2.5 rounded-full bg-white/10 overflow-hidden">
+                          <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(100, ratio * 100)}%` }} />
+                        </div>
+                        <span className="w-14 text-right text-xs font-bold tabular-nums shrink-0">{free}/{cap.total}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="mt-4 space-y-3">
+                {managerQueue.length === 0 ? (
+                  <p className="text-sm text-white/60 py-4 text-center">Nothing waiting on your signature.</p>
+                ) : managerQueue.map(r => {
+                  const approvingComment = [...(r.deptComments || [])].reverse().find(c => ['direct_approval', 'urgent_approval', 'scheduled_approval'].includes(c.status));
+                  const approver = approvingComment ? usersById.get(approvingComment.userId) : undefined;
+                  return (
+                    <div key={r.id} className={`rounded-xl bg-white/[0.06] border border-white/15 p-3.5 ${priorityRailClass(r.priority, r.isEscalated)}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[17px] font-bold truncate">{r.patientData.name}, {r.patientData.age}</p>
+                          <p className="text-sm text-white/60 truncate mt-0.5">{r.requiredBedType} · approved by {approver?.name || 'department'}</p>
+                        </div>
+                        <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <button onClick={() => setSummaryReferral(r)} className="min-h-[48px] rounded-lg border border-white/30 text-white text-sm font-bold uppercase tracking-wide">
+                          Summary
+                        </button>
+                        <button onClick={() => handleManagerAccept(r.id)} className="min-h-[48px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide">
+                          Accept
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <>
+              <h1 className="text-[26px] font-heading font-semibold text-slate-900 dark:text-slate-100 mt-3">
+                {youBucket.length} need{youBucket.length === 1 ? 's' : ''} you
+              </h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Blocked on something only you can do. Emergency first.</p>
+
+              <div className="mt-4 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {([
+                  ['you', 'You', youBucket.length],
+                  ['them', 'Them', themBucket.length],
+                  ['moving', 'Moving', movingBucket.length],
+                ] as [ClinicianSegment, string, number][]).map(([key, label, count]) => (
+                  <button
+                    key={key}
+                    onClick={() => setSegment(key)}
+                    className={`shrink-0 min-h-[48px] px-4 rounded-lg border text-sm font-bold ${
+                      segment === key
+                        ? 'bg-slate-950 dark:bg-white border-slate-950 dark:border-white text-white dark:text-slate-900'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {label} <span className="opacity-70">({count})</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {activeSegmentReferrals.length === 0 ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">Nothing here right now.</p>
+                ) : activeSegmentReferrals.map(r => (
+                  <ClinicianReferralCard
+                    key={r.id}
+                    referral={r}
+                    actionLabel={segment === 'you' ? youActionLabel(r) : 'View'}
+                    actionSentence={segment === 'you' ? youActionSentence(r) : undefined}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className={`flex items-center gap-2 px-4 py-3 border-t ${isManager ? 'border-white/10 bg-slate-950' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950'}`}>
+          {canCreateReferral && (
+            <button
+              onClick={() => navigate('/referrals/new')}
+              className={`flex-1 min-h-[52px] rounded-lg text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-2 ${isManager ? 'bg-white text-slate-950' : 'bg-slate-950 dark:bg-white text-white dark:text-slate-900'}`}
+            >
+              <Plus className="w-4 h-4" /> New referral
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/referrals')}
+            aria-label="Search referrals"
+            className={`h-[52px] w-[52px] shrink-0 rounded-lg border flex items-center justify-center ${isManager ? 'border-white/20 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+          >
+            <Search className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => navigate('/directory')}
+            aria-label="Directory and hotline"
+            className={`h-[52px] w-[52px] shrink-0 rounded-lg border flex items-center justify-center ${isManager ? 'border-white/20 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+          >
+            <Phone className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {summaryReferral && <ReferralSummarySheet referral={summaryReferral} onClose={() => setSummaryReferral(null)} />}
+
+      {/* ---- Desktop (and tablet) analytics dashboard, unchanged ---- */}
+      <div className="hidden md:block space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Overview</h1>
         <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800/50 text-xs font-bold shadow-sm">
@@ -437,6 +686,7 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 };
