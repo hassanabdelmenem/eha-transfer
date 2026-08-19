@@ -4,9 +4,65 @@ import { useData } from '../contexts/DataContext';
 import { BedType } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Bed, Save, CheckCircle, Map, Table } from 'lucide-react';
+import { Bed, Save, CheckCircle, Map, Table, Minus, Plus } from 'lucide-react';
 import { InteractiveFloorPlan } from '../components/bed-management/InteractiveFloorPlan';
 import { Skeleton } from '../components/ui/Skeleton';
+
+// 2b bed stepper: writes immediately on every tap, no Save button. Debounced
+// up to the shared capacities state; the existing "Save Changes" button above
+// still exists for the table/floor-plan editors, but the stepper commits each
+// change on its own the moment it's tapped.
+const BedStepper: React.FC<{
+  bedType: BedType;
+  total: number;
+  occupied: number;
+  onChange: (occupied: number) => void;
+}> = ({ bedType, total, occupied, onChange }) => {
+  const free = total - occupied;
+  const ratio = total > 0 ? free / total : 0;
+  const label = free <= 0 ? 'Full' : ratio < 0.2 ? 'Low' : 'Available';
+  const labelColor = free <= 0 ? 'text-critical-600 dark:text-critical-400' : ratio < 0.2 ? 'text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400';
+  const barColor = free <= 0 ? 'bg-critical-500' : ratio < 0.2 ? 'bg-warning-500' : 'bg-success-500';
+
+  return (
+    <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Bed className="w-4 h-4 text-slate-400" />
+          <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{bedType}</span>
+        </div>
+        <span className={`text-xs font-bold uppercase ${labelColor}`}>{label}</span>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 mt-3">
+        <button
+          onClick={() => onChange(Math.min(total, occupied + 1))}
+          disabled={occupied >= total}
+          aria-label={`One more ${bedType} bed occupied`}
+          className="h-[52px] w-[52px] shrink-0 rounded-lg border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 flex items-center justify-center disabled:opacity-40"
+        >
+          <Minus className="w-5 h-5" />
+        </button>
+        <div className="text-center">
+          <p className="text-xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{free}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">free of {total}</p>
+        </div>
+        <button
+          onClick={() => onChange(Math.max(0, occupied - 1))}
+          disabled={occupied <= 0}
+          aria-label={`One fewer ${bedType} bed occupied`}
+          className="h-[52px] w-[52px] shrink-0 rounded-lg border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 flex items-center justify-center disabled:opacity-40"
+        >
+          <Plus className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-3">
+        <div className={`h-full rounded-full ${barColor}`} style={{ width: `${total > 0 ? (occupied / total) * 100 : 0}%` }} />
+      </div>
+    </div>
+  );
+};
 
 export const BedManagementPage: React.FC = () => {
   const { user } = useAuth();
@@ -56,6 +112,15 @@ export const BedManagementPage: React.FC = () => {
     setTimeout(() => setSaved(false), 3000);
   };
 
+  // 2b stepper: writes immediately, no Save button -- unlike the table/floor
+  // plan editors above, which stage changes in `capacities` until Save.
+  const handleStepperChange = (bedType: BedType, occupied: number) => {
+    if (!facility) return;
+    const total = capacities[bedType]?.total ?? 0;
+    setCapacities(prev => ({ ...prev, [bedType]: { total, occupied } }));
+    updateFacilityCapacity(facility.id, { [bedType]: { total, occupied } });
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16 h-full overflow-auto">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -64,7 +129,7 @@ export const BedManagementPage: React.FC = () => {
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Quickly update bed availability across {facility?.name || 'the facility'}.</p>
         </div>
         {facility && (
-          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 shrink-0">
+          <Button onClick={handleSave} className="hidden md:inline-flex bg-emerald-600 hover:bg-emerald-700 shrink-0">
             {saved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             {saved ? 'Saved' : 'Save Changes'}
           </Button>
@@ -98,6 +163,22 @@ export const BedManagementPage: React.FC = () => {
         </div>
       ) : facility ? (
         <>
+          {/* Mobile: 2b bed steppers -- write immediately, no Save button. */}
+          <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[])
+              .filter(bt => (capacities[bt]?.total ?? 0) > 0)
+              .map(bt => (
+                <BedStepper
+                  key={bt}
+                  bedType={bt}
+                  total={capacities[bt]?.total ?? 0}
+                  occupied={capacities[bt]?.occupied ?? 0}
+                  onChange={(occupied) => handleStepperChange(bt, occupied)}
+                />
+              ))}
+          </div>
+
+          <div className="hidden md:block">
           <div className="flex items-center gap-2 mb-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-max">
         <button
           onClick={() => setViewMode('visual')}
@@ -197,6 +278,7 @@ export const BedManagementPage: React.FC = () => {
         )}
         </CardContent>
       </Card>
+          </div>
         </>
       ) : (
         <Card className="p-8 text-center text-slate-500 dark:text-slate-400">

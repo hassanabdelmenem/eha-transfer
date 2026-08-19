@@ -6,6 +6,7 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { formatDateTime } from '../../lib/utils';
 import { isSlaTracked, secondsUntilSlaBreach } from '../../lib/sla';
+import { sortByWorkflow, priorityRailClass } from '../../lib/referralPriority';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Timer, AlertTriangle } from 'lucide-react';
 import { SkeletonGroup, SkeletonReferralCard, SkeletonReferralRow } from '../ui/Skeleton';
@@ -231,13 +232,13 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
       if (aScore !== bScore) return bScore - aScore;
       return B.createdAtMs - A.createdAtMs;
     });
-  } else {
-    // Sort by latest first (pre-parsed)
-    enriched.sort((A, B) => B.createdAtMs - A.createdAtMs);
   }
 
-  // Restore filtered array to original referral objects, now sorted
-  filtered = enriched.map(e => e.r);
+  // Restore filtered array to original referral objects, now sorted.
+  // Workflow order, not newest-first, when the "Priority Sort" toggle above is
+  // off: escalated cases pinned on top, then emergency -> urgent -> routine,
+  // then longest-waiting first.
+  filtered = prioritySort ? enriched.map(e => e.r) : sortByWorkflow(enriched.map(e => e.r));
 
   if (limit) {
     filtered = filtered.slice(0, limit);
@@ -277,11 +278,15 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
   return (
     <div className="w-full">
       {/* Mobile View */}
-      <div className="block md:hidden space-y-4">
+      <div className="block md:hidden space-y-3">
         {filtered.map(referral => {
           const fromFacility = facilityMap.get(referral.referringFacilityId);
           return (
-            <Card key={referral.id} className="p-4 cursor-pointer hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-800 transition-colors" onClick={() => navigate(`/referrals/${referral.id}`)}>
+            <Card
+              key={referral.id}
+              className={`shrink-0 p-3.5 cursor-pointer hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-800 transition-colors rounded-xl ${priorityRailClass(referral.priority, referral.isEscalated)}`}
+              onClick={() => navigate(`/referrals/${referral.id}`)}
+            >
               <div className="flex justify-between items-start gap-3 mb-2">
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{referral.patientData.name || 'Unknown Patient'}</div>
