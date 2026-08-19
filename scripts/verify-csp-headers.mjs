@@ -24,7 +24,7 @@ const url = `http://127.0.0.1:${PORT}/`;
 const REQUIRED = {
   'script-src': ['https://apis.google.com', 'https://www.gstatic.com', 'https://www.google.com'],
   'connect-src': ['https://apis.google.com'],
-  'frame-src': ["'self'", 'https://accounts.google.com'],
+  'frame-src': ["'self'", 'https://accounts.google.com', 'https://eha-transfer.web.app'],
   'img-src': ['https://*.googleusercontent.com'],
 };
 

@@ -97,6 +97,18 @@ preview domain to the authorized list automatically. If Google sign-in ever
 fails on a preview, check that role first, then
 **Firebase Console → Authentication → Settings → Authorized domains**.
 
+That's the server-side gate. There's a separate client-side one: `authDomain`
+in `src/lib/firebase.ts` is hardcoded to the production hosting domain
+(`eha-transfer.web.app`), not derived from the page's own origin. Firebase
+Auth's popup/redirect flow loads a same-origin-with-`authDomain` iframe
+(`/__/auth/iframe`) to relay the sign-in result back to the app, and on a
+preview channel that iframe is genuinely cross-origin from the page itself.
+The CSP's `frame-src` therefore lists the literal `https://eha-transfer.web.app`
+host alongside `'self'` (see `src/lib/csp.security.test.ts`, incident #3) --
+without it, sign-in on every preview channel hangs on the loading screen
+forever with a CSP violation in the console, even though Authorized domains
+and everything else is configured correctly.
+
 ## Local development
 
 ```bash
