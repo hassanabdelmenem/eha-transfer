@@ -18,6 +18,17 @@ import path from 'path';
  *      (which signInWithPopup needs for popup<->window messaging) was
  *      blocked too, even though accounts.google.com itself was reachable.
  *      The app just hung on its loading screen forever, no visible error.
+ *   3. `authDomain` in src/lib/firebase.ts is hardcoded to the production
+ *      hosting domain (`eha-transfer.web.app`), not derived from the current
+ *      page's own origin -- so the same /__/auth/iframe from incident #2
+ *      loads from `eha-transfer.web.app` even when the app itself is being
+ *      served from a PR preview channel (`eha-transfer--prNN-xxx.web.app`).
+ *      `'self'` only covers the page's own origin, so on every preview
+ *      channel the iframe is a genuinely cross-origin request and 'self'
+ *      alone can never cover it -- frame-src needs the literal authDomain
+ *      host too. Same silent-hang symptom as incident #2, but only
+ *      reproducible on a preview channel, which is exactly the build nobody
+ *      was testing sign-in against.
  *
  * Neither bug was caught by the existing e2e suite because Playwright's
  * webServer runs `npm run dev` (the Vite dev server), which never applies
@@ -82,6 +93,14 @@ describe('firebase.json Content-Security-Policy (Google Sign-In regression guard
     // app's own /__/auth/iframe, even though accounts.google.com is reachable.
     expect(frameSrc.split(/\s+/)).toContain("'self'");
     expect(frameSrc).toContain('https://accounts.google.com');
+  });
+
+  it('allows the auth iframe on PR preview channels, where authDomain is cross-origin (incident #3)', () => {
+    const frameSrc = directive(csp, 'frame-src');
+    // authDomain (src/lib/firebase.ts) is hardcoded to the production hosting
+    // domain, so 'self' alone doesn't cover the /__/auth/iframe when the page
+    // itself is served from a preview channel subdomain.
+    expect(frameSrc).toContain('https://eha-transfer.web.app');
   });
 
   it('allows Google profile photos on Firebase Auth user records', () => {
