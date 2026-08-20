@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { ReferralList } from '../components/referrals/ReferralList';
 import { Search, Archive, Download } from 'lucide-react';
 import { formatDateTime } from '../lib/utils';
 
@@ -73,11 +72,6 @@ export const ArchivePage: React.FC = () => {
   };
 
   if (!user) return null;
-
-  // ReferralList only understands a single statusFilter value, so "admitted
-  // only" / "cancelled only" is expressed by handing it that exact status
-  // rather than the combined 'archived' bucket.
-  const listStatusFilter = outcomeFilter === 'all' ? 'archived' : outcomeFilter;
 
   // 3b: how a case closed, in one line -- who admitted it and when, or why
   // and by whom it was cancelled.
@@ -185,17 +179,6 @@ export const ArchivePage: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Detailed view: the richer filterable/sortable table preserved from
-          the original desktop layout, now available at every width. */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-          <h3 className="text-sm font-bold uppercase text-slate-700 dark:text-slate-300">Detailed view</h3>
-        </div>
-        <div className="overflow-auto">
-          <ReferralList facilityId={user.facilityId} searchQuery={searchQuery} statusFilter={listStatusFilter} />
         </div>
       </div>
     </div>

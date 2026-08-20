@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Referral } from '../types';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Truck, Check, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
@@ -137,7 +136,7 @@ const InboundMobileCard: React.FC<{ referral: Referral; onConfirmArrival: (id: s
 
 export const ERDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, facilities, facilitiesById, updateReferralStatus, loading } = useData();
+  const { referrals, facilitiesById, updateReferralStatus, loading } = useData();
 
   if (!user) return null;
 
@@ -229,68 +228,6 @@ export const ERDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <Card>
-        <CardHeader>
-           <CardTitle>All Active Referrals Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-           <div className="overflow-x-auto">
-             <table className="w-full text-sm text-left min-w-[720px]">
-                <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
-                  <tr>
-                    <th className="px-4 py-3">Patient</th>
-                    <th className="px-4 py-3">Direction</th>
-                    <th className="px-4 py-3">Facility</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Last Updated</th>
-                  </tr>
-                </thead>
-                <tbody aria-busy={loading} aria-live="polite" aria-label={loading ? 'Loading active referrals' : undefined}>
-                  {loading && Array.from({ length: 4 }).map((_, i) => (
-                    <tr key={i} className="border-b border-slate-100 dark:border-slate-800">
-                      {Array.from({ length: 5 }).map((__, j) => (
-                        <td key={j} className="px-4 py-3"><Skeleton className="h-3.5 w-3/4" /></td>
-                      ))}
-                    </tr>
-                  ))}
-                  {!loading && activeReferrals.map(referral => {
-                    const isIncoming = referral.receivingFacilityId === user.facilityId;
-                    const statusVariant: 'default' | 'success' | 'warning' | 'danger' | 'info' =
-                      referral.status === 'rejected' || referral.status === 'cancelled' ? 'danger' :
-                      referral.status === 'pending' ? 'warning' :
-                      referral.status === 'admitted' || referral.status === 'discharged' ? 'success' :
-                      referral.status === 'postponed' ? 'default' : 'info';
-                    return (
-                      <tr key={referral.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
-                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100 max-w-[180px] truncate">{referral.patientData.name}</td>
-                        <td className="px-4 py-3">
-                           {isIncoming ? <Badge variant="info">Incoming</Badge> : <Badge variant="default">Outgoing</Badge>}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-[180px] truncate">
-                          {isIncoming ? getFacilityName(referral.referringFacilityId) : getFacilityName(referral.receivingFacilityId)}
-                        </td>
-                        <td className="px-4 py-3">
-                           <Badge variant={statusVariant} className="capitalize whitespace-nowrap">{referral.status?.replace(/_/g, ' ') || 'UNKNOWN'}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                          {format(new Date(referral.updatedAt), 'MMM d, HH:mm')}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                  {!loading && activeReferrals.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
-                        No active referrals at the moment.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-             </table>
-           </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
