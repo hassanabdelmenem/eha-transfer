@@ -27,5 +27,9 @@
     "firebase-functions-test": "^3.1.0",
     "typescript": "^4.9.0"
   },
+  "overrides": {
+    "uuid": "^11.1.1",
+    "ts-deepmerge": "^8.0.0"
+  },
   "private": true
 }
