@@ -3,16 +3,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Referral } from '../types';
 import { Badge } from '../components/ui/Badge';
-import { Truck, Check, UserCheck } from 'lucide-react';
+import { Truck, Check, UserCheck, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { toastError } from '../lib/toast';
 import { Skeleton, SkeletonGroup } from '../components/ui/Skeleton';
-import { sortByWorkflow } from '../lib/referralPriority';
+import { sortByWorkflow, priorityRailClass, priorityChipClasses } from '../lib/referralPriority';
+import { RoleHomeHeader } from '../components/layout/RoleHomeHeader';
 
 // 2a outbound card: consent, then the saved escort line or the escort form,
 // then dispatch -- disabled until both gates pass, matching the same
 // conditions updateReferralStatus enforces server-side.
-const OutboundMobileCard: React.FC<{ referral: Referral; onDispatch: (id: string) => void; getFacilityName: (id: string) => string }> = ({ referral, onDispatch, getFacilityName }) => {
+const OutboundMobileCard: React.FC<{ referral: Referral; onDispatch: (id: string) => void; getFacilityName: (id: string) => string; getUserName: (id: string) => string | undefined }> = ({ referral, onDispatch, getFacilityName, getUserName }) => {
   const { setAccompanyingDoctor } = useData();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -21,6 +22,10 @@ const OutboundMobileCard: React.FC<{ referral: Referral; onDispatch: (id: string
   const consentRecorded = referral.status === 'patient_consented';
   const escortMissing = !!referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor;
   const canDispatch = consentRecorded && !escortMissing;
+  // "consent ... satisfied, with time and clinician" (2a spec) -- the
+  // statusHistory entry recordPatientConsent writes carries who recorded it.
+  const consentEntry = [...referral.statusHistory].reverse().find(h => h.status === 'patient_consented');
+  const consentClinician = consentEntry ? getUserName(consentEntry.userId) : undefined;
 
   const handleSaveEscort = async () => {
     setBusy(true);
@@ -36,13 +41,15 @@ const OutboundMobileCard: React.FC<{ referral: Referral; onDispatch: (id: string
   };
 
   return (
-    <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5">
+    <div className={`rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 ${priorityRailClass(referral.priority, referral.isEscalated)}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}, {referral.patientData.age}</p>
+          <p className="text-[17px] font-semibold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}, {referral.patientData.age}</p>
           <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">To {getFacilityName(referral.receivingFacilityId)}</p>
         </div>
-        <Badge variant={referral.priority === 'emergency' ? 'danger' : 'warning'} className="shrink-0">{referral.priority}</Badge>
+        <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold uppercase whitespace-nowrap ${priorityChipClasses(referral.priority)}`}>
+          {referral.priority}
+        </span>
       </div>
 
       <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
@@ -51,7 +58,9 @@ const OutboundMobileCard: React.FC<{ referral: Referral; onDispatch: (id: string
             <Check className="w-3 h-3" />
           </span>
           <span className={consentRecorded ? 'text-success-700 dark:text-success-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}>
-            {consentRecorded ? `Consent recorded · ${format(new Date(referral.updatedAt), 'HH:mm')}` : 'Awaiting patient consent'}
+            {consentRecorded
+              ? `Consent recorded · ${format(new Date(referral.updatedAt), 'HH:mm')}${consentClinician ? ` · ${consentClinician}` : ''}`
+              : 'Awaiting patient consent'}
           </span>
         </div>
 
@@ -116,46 +125,69 @@ const OutboundMobileCard: React.FC<{ referral: Referral; onDispatch: (id: string
   );
 };
 
-const InboundMobileCard: React.FC<{ referral: Referral; onConfirmArrival: (id: string) => void; getFacilityName: (id: string) => string }> = ({ referral, onConfirmArrival, getFacilityName }) => (
-  <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5">
-    <div className="flex items-start justify-between gap-2">
-      <div className="min-w-0">
-        <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}, {referral.patientData.age}</p>
-        <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">From {getFacilityName(referral.referringFacilityId)}</p>
+const InboundMobileCard: React.FC<{ referral: Referral; onConfirmArrival: (id: string) => void; getFacilityName: (id: string) => string; referrerPhone?: string }> = ({ referral, onConfirmArrival, getFacilityName, referrerPhone }) => {
+  const arrived = referral.status === 'arrived';
+  return (
+    <div className={`rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 ${priorityRailClass(referral.priority, referral.isEscalated)}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[17px] font-semibold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}, {referral.patientData.age}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">From {getFacilityName(referral.referringFacilityId)}</p>
+        </div>
+        <Badge variant={arrived ? 'success' : 'info'} className="shrink-0">{arrived ? 'Arrived' : 'In transit'}</Badge>
       </div>
-      <Badge variant="info" className="shrink-0">In transit</Badge>
+      <div className="flex items-center gap-2 mt-3">
+        {arrived ? (
+          <div className="flex-1 min-h-[54px] rounded-lg bg-success-700 text-white flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-wide">
+            <Check className="w-4 h-4" /> Arrival confirmed {format(new Date(referral.updatedAt), 'HH:mm')}
+          </div>
+        ) : (
+          <button
+            onClick={() => onConfirmArrival(referral.id)}
+            className="flex-1 min-h-[54px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-2"
+          >
+            <Check className="w-4 h-4" /> Confirm arrival
+          </button>
+        )}
+        {referrerPhone && (
+          <a
+            href={`tel:${referrerPhone}`}
+            aria-label="Call referring facility"
+            className="shrink-0 h-[52px] w-[52px] rounded-lg border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300"
+          >
+            <Phone className="w-4 h-4" aria-hidden="true" />
+          </a>
+        )}
+      </div>
     </div>
-    <button
-      onClick={() => onConfirmArrival(referral.id)}
-      className="w-full mt-3 min-h-[54px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-2"
-    >
-      <Check className="w-4 h-4" /> Confirm arrival
-    </button>
-  </div>
-);
+  );
+};
 
 export const ERDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, facilitiesById, updateReferralStatus, loading } = useData();
+  const { referrals, facilitiesById, usersById, updateReferralStatus, loading } = useData();
 
   if (!user) return null;
 
   const facilityReferrals = referrals.filter(
-    r => r.referringFacilityId === user.facilityId || 
-         r.receivingFacilityId === user.facilityId || 
+    r => r.referringFacilityId === user.facilityId ||
+         r.receivingFacilityId === user.facilityId ||
          (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user.facilityId || ''))
   );
 
   const activeReferrals = facilityReferrals.filter(r => !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status));
 
   const getFacilityName = (id: string) => facilitiesById.get(id)?.name || id;
+  const getUserName = (id: string) => usersById.get(id)?.name;
 
   // Dispatch is only legal once the patient has consented to the destination -- the
   // same gate updateReferralStatus enforces. Referrals still at 'accepted' are listed
   // here so ER can see them coming, but the dispatch button stays disabled until
-  // consent is recorded on the referral's detail page.
+  // consent is recorded on the referral's detail page. 'in_transit' stays in the
+  // list too, briefly, so the card can show its persisted "Dispatched HH:mm" state
+  // instead of vanishing the instant dispatch succeeds.
   const awaitingTransport = activeReferrals.filter(
-    r => r.referringFacilityId === user.facilityId && ['accepted', 'patient_consented'].includes(r.status)
+    r => r.referringFacilityId === user.facilityId && ['accepted', 'patient_consented', 'in_transit'].includes(r.status)
   );
 
   const handleRequestAmbulance = async (id: string) => {
@@ -174,7 +206,9 @@ export const ERDashboard: React.FC = () => {
     }
   };
 
-  const inboundArriving = activeReferrals.filter(r => r.receivingFacilityId === user.facilityId && r.status === 'in_transit');
+  // 'arrived' stays in the list too, so the card can show its persisted
+  // "Arrival confirmed HH:mm" state instead of disappearing on confirm.
+  const inboundArriving = activeReferrals.filter(r => r.receivingFacilityId === user.facilityId && ['in_transit', 'arrived'].includes(r.status));
   const outboundQueue = sortByWorkflow(awaitingTransport);
   const inboundQueue = sortByWorkflow(inboundArriving);
 
@@ -183,6 +217,7 @@ export const ERDashboard: React.FC = () => {
       {/* 2a/3d: unified outbound/inbound gated cards -- reflow into a
           two-column grid on tablet/desktop instead of being mobile-only. */}
       <div className="space-y-5">
+        <RoleHomeHeader identity={`${user.name} · ${user.facilityId ? getFacilityName(user.facilityId) : 'Facility'}`} />
         <div>
           <h1 className="text-[26px] font-heading font-semibold text-slate-900 dark:text-slate-100">ER Room</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{user.facilityId ? getFacilityName(user.facilityId) : 'Facility'} · Track active referrals and manage ambulance dispatch/arrivals.</p>
@@ -203,7 +238,7 @@ export const ERDashboard: React.FC = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No patients awaiting transport.</p>
               )}
               {!loading && outboundQueue.map(r => (
-                <OutboundMobileCard key={r.id} referral={r} onDispatch={handleRequestAmbulance} getFacilityName={getFacilityName} />
+                <OutboundMobileCard key={r.id} referral={r} onDispatch={handleRequestAmbulance} getFacilityName={getFacilityName} getUserName={getUserName} />
               ))}
             </div>
           </div>
@@ -222,7 +257,7 @@ export const ERDashboard: React.FC = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No incoming patients currently in transit.</p>
               )}
               {!loading && inboundQueue.map(r => (
-                <InboundMobileCard key={r.id} referral={r} onConfirmArrival={handleConfirmArrival} getFacilityName={getFacilityName} />
+                <InboundMobileCard key={r.id} referral={r} onConfirmArrival={handleConfirmArrival} getFacilityName={getFacilityName} referrerPhone={usersById.get(r.referringUserId)?.phoneNumber} />
               ))}
             </div>
           </div>
