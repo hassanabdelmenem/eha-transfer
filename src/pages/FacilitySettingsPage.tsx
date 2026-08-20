@@ -4,8 +4,7 @@ import { useData } from '../contexts/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { User, Role, FacilityType, BedType } from '../types';
-import { Badge } from '../components/ui/Badge';
-import { CheckCircle, XCircle, Plus, Trash2, Building, AlertCircle, Edit2 } from 'lucide-react';
+import { XCircle, Plus, Trash2, Building, Edit2 } from 'lucide-react';
 import { showToast } from '../lib/toast';
 
 export const FacilitySettingsPage: React.FC = () => {
@@ -165,16 +164,86 @@ export const FacilitySettingsPage: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-16">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-          {isGlobalAdmin ? 'Global Facility & User Management' : 'Facility Settings'}
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          {isGlobalAdmin 
-            ? 'Manage network facilities, user facility transfers, staff roles, and remove accounts.' 
-            : `Manage departments, staff roles, transfers, and verify new users for ${facility?.name}.`}
-        </p>
+      {/* 3c/3d: unified facility settings -- edge-to-edge on phones,
+          contained in a rounded header card once there's room. */}
+      <div className="-mt-4 -mx-4 sm:mt-0 sm:mx-0 sm:rounded-xl sm:overflow-hidden space-y-0">
+        <div className="bg-slate-950 text-white px-4 pt-4 pb-4 sm:px-6">
+          <h1 className="text-lg sm:text-xl font-heading font-semibold">{facility?.name || 'Global Admin'}</h1>
+          <p className="text-sm text-white/60 mt-0.5">Facility settings · {user.role.replace(/_/g, ' ')}</p>
+        </div>
+        <div className="p-4 sm:p-6 sm:bg-slate-50 sm:dark:bg-slate-950/40 space-y-5">
+          {unverifiedUsers.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{unverifiedUsers.length} account{unverifiedUsers.length === 1 ? '' : 's'} to verify</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {unverifiedUsers.map(u => (
+                  <div key={u.id} className="rounded-xl border border-warning-300 dark:border-warning-800 bg-warning-50 dark:bg-warning-950/30 p-3.5">
+                    <p className="text-[15.5px] font-bold text-slate-900 dark:text-slate-100">{u.name}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{u.email}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <span className="text-xs bg-slate-900 dark:bg-slate-700 text-white px-1.5 py-0.5 rounded uppercase font-bold">{(u.requestedRole || u.role).replace(/_/g, ' ')}</span>
+                      {u.department && <span className="text-xs bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">{u.department}</span>}
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <button onClick={() => handleVerifyUser(u)} className="flex-1 min-h-[46px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide">
+                        Verify as {(u.requestedRole || u.role).replace(/_/g, ' ')}
+                      </button>
+                      <button onClick={() => handleRemoveUser(u)} aria-label={`Decline ${u.name}`} className="min-h-[46px] min-w-[46px] rounded-lg border border-critical-300 dark:border-critical-800 text-critical-600 dark:text-critical-400 flex items-center justify-center">
+                        <XCircle className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {facility && !['head_of_department'].includes(user.role) && (
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Departments · {facility.departments.length}</p>
+                <div className="flex flex-wrap gap-2">
+                  {facility.departments.map(dept => (
+                    <span key={dept} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 pl-3 pr-1.5 py-1 text-sm text-slate-700 dark:text-slate-300">
+                      {dept}
+                      <button onClick={() => removeFacilityDepartment(facility.id, dept)} aria-label={`Remove ${dept}`} className="rounded-full p-1 text-slate-400 hover:text-critical-600">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                  <form onSubmit={handleAddDepartment} className="inline-flex items-center">
+                    <input
+                      value={newDepartment}
+                      onChange={e => setNewDepartment(e.target.value)}
+                      placeholder="+ Add"
+                      className="w-24 rounded-full border border-dashed border-slate-300 dark:border-slate-700 bg-transparent px-3 py-1 text-sm text-slate-600 dark:text-slate-300 outline-none"
+                    />
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {facility && (
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Configured capacity</p>
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
+                  {(Object.keys(facility.capacity) as BedType[]).map(bed => (
+                    <div key={bed} className="px-3.5 py-3 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{bed}</span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">{facility.capacity[bed].total} beds · {facility.capacity[bed].occupied} occupied</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+      <div className="space-y-6">
+      <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 px-1">
+        {isGlobalAdmin ? 'Network & staff management' : 'Staff roles & transfers'}
+      </h2>
 
       {/* Network Facilities Management Section */}
       {(isGlobalAdmin || ['hospital_manager', 'medical_director', 'owner'].includes(user.role)) && (
@@ -358,96 +427,6 @@ export const FacilitySettingsPage: React.FC = () => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Departments Management for current facility */}
-        {facility && !['head_of_department'].includes(user.role) && (
-        <Card className="border border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle className="text-lg">Medical Departments ({facility.name})</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleAddDepartment} className="flex gap-2">
-              <input
-                type="text"
-                placeholder="New Department Name"
-                value={newDepartment}
-                onChange={e => setNewDepartment(e.target.value)}
-                className="flex-1 rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white dark:bg-slate-900"
-              />
-              <Button type="submit" disabled={!newDepartment.trim()}>
-                <Plus className="w-4 h-4 mr-2" /> Add
-              </Button>
-            </form>
-            <div className="space-y-2">
-              {facility.departments.map(dept => (
-                <div key={dept} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{dept}</span>
-                  <Button 
-                    variant="ghost" 
-                    className="text-critical-500 hover:text-critical-700 hover:bg-critical-50 min-h-[40px] min-w-[40px] p-0"
-                    onClick={() => removeFacilityDepartment(facility.id, dept)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-              {facility.departments.length === 0 && (
-                <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">No departments configured.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        )}
-
-        {/* User Verification */}
-        <Card className="border border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center justify-between">
-              Pending Verifications
-              {unverifiedUsers.length > 0 && (
-                <Badge variant="danger">{unverifiedUsers.length}</Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {unverifiedUsers.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-sm">
-                <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                All facility users are verified.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {unverifiedUsers.map(u => (
-                  <div key={u.id} className="p-3 bg-warning-50 dark:bg-warning-950/40 rounded border border-warning-100 dark:border-warning-900 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{u.email}</p>
-                      <div className="mt-1 flex gap-2 flex-wrap">
-                         <span className="text-xs bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{u.role?.replace(/_/g, ' ')}</span>
-                         {u.requestedRole && u.requestedRole !== u.role && (
-                           <span className="text-xs bg-warning-100 dark:bg-warning-900/40 px-1.5 py-0.5 rounded uppercase font-bold text-warning-800 dark:text-warning-300 whitespace-nowrap" title="Role requested during onboarding — granted when you verify">
-                             requests: {(u.requestedRole || "").replace(/_/g, ' ')}
-                           </span>
-                         )}
-                         {u.department && <span className="text-xs bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded text-blue-700 dark:text-blue-300 whitespace-nowrap">{u.department}</span>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button onClick={() => handleVerifyUser(u)} className="bg-success-600 hover:bg-success-700 text-xs py-1 min-h-[40px]">
-                         Verify
-                      </Button>
-                      <Button onClick={() => handleRemoveUser(u)} variant="ghost" aria-label={`Remove ${u.name}`} className="text-critical-500 hover:text-critical-700 min-h-[40px] min-w-[40px] p-0">
-                         <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Staff Role & Facility Transfer Management */}
       <Card className="border border-slate-200 dark:border-slate-800">
         <CardHeader>
@@ -557,6 +536,7 @@ export const FacilitySettingsPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

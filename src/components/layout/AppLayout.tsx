@@ -48,9 +48,112 @@ export const AppLayout: React.FC = () => {
     ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department', 'nursing_supervisor'].includes(u.role)
   );
 
+
+  if (!user) return null;
+
+  const facility = facilitiesById.get(user.facilityId || '');
+  const unreadNotifs = notifications.filter(n => n.userId === user.id && !n.read).length;
+
+  const isNurse = user.role === 'nurse' || user.role === 'nursing_supervisor' || user.role === 'owner';
+  const isHeadOfDept = user.role === 'head_of_department' || user.role === 'owner';
+  const isDoctor = ['consultant', 'specialist', 'resident', 'head_of_department', 'medical_director', 'owner'].includes(user.role);
+
+  const generatesShiftLog = !!user.facilityId && (isDoctor || isNurse);
+
+  // 2f end-of-shift: the handover summary plus three categorised carry-over
+  // lists, computed without side effects so the confirmation screen can show
+  // it before anything is written. Returns null for roles that don't get a
+  // shift log at all (unchanged from the original behaviour).
+  const buildHandover = () => {
+    if (!generatesShiftLog || !user.facilityId) return null;
+    const myFacilityId = user.facilityId;
+    const myDept = user.department;
+
+    const relevantReferrals = referrals.filter(r =>
+      (r.receivingFacilityId === myFacilityId || r.referringFacilityId === myFacilityId) &&
+      (!myDept || r.receivingDepartments?.includes(myDept))
+    );
+
+    const pendingTransfers = relevantReferrals.filter(r =>
+      ['pending', 'dept_approved', 'manager_approved', 'accepted', 'in_transit', 'arrived'].includes(r.status)
+    );
+    const pendingTransfersCount = pendingTransfers.length;
+
+    const relevantAdmissions = directAdmissions.filter(a => a.facilityId === myFacilityId && (!myDept || a.department === myDept));
+    const admittedPatientsCount = relevantAdmissions.filter(a => a.status !== 'discharged').length +
+      relevantReferrals.filter(r => r.status === 'admitted').length;
+
+    let summary = `Handover: ${myDept || 'General'} Dept. `;
+    if (pendingTransfersCount > 0) {
+      summary += `${pendingTransfersCount} active transfers (` + pendingTransfers.slice(0, 3).map(r => r.patientData.name).join(', ') + (pendingTransfersCount > 3 ? '...' : '') + `). `;
+    }
+    summary += `Currently admitted: ${admittedPatientsCount} patients.`;
+
+    // "Carry over": still moving, needs someone to pick it up next shift.
+    const carryOver = pendingTransfers.slice(0, 3).map(r => r.patientData.name);
+    // "Watch": escalated -- the case most likely to need attention overnight.
+    const watch = relevantReferrals.filter(r => r.isEscalated).slice(0, 3).map(r => r.patientData.name);
+    const doneThisShift = relevantReferrals.filter(r => ['admitted', 'discharged'].includes(r.status)).length;
+
+    return { myFacilityId, pendingTransfersCount, admittedPatientsCount, summary, carryOver, watch, doneThisShift };
+  };
+
+  const performLogout = async (handover: ReturnType<typeof buildHandover>) => {
+    if (handover) {
+      // Await before signing out: firebaseSignOut revokes the token this write needs,
+      // so a fire-and-forget log was being rejected and lost.
+      await addShiftLog({
+        userId: user.id,
+        userName: user.name,
+        facilityId: handover.myFacilityId,
+        department: user.department,
+        pendingTransfersCount: handover.pendingTransfersCount,
+        admittedPatientsCount: handover.admittedPatientsCount,
+        summary: handover.summary
+      });
+    }
+    await logout();
+  };
+
+  const [showEndOfShift, setShowEndOfShift] = React.useState(false);
+  const [signingOut, setSigningOut] = React.useState(false);
+  const handleLogoutClick = () => {
+    if (generatesShiftLog) {
+      setShowEndOfShift(true);
+    } else {
+      performLogout(null);
+    }
+  };
+  const handleConfirmHandover = async () => {
+    setSigningOut(true);
+    try {
+      await performLogout(buildHandover());
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  // "Signed in since ... on this phone": a real, per-device date, set once on
+  // first render after sign-in and read back from then on -- matches the
+  // "you will not be asked to sign in again" persistent-session model, since
+  // localStorage is itself scoped to this device's browser.
+  const [signedInSince] = React.useState(() => {
+    try {
+      const existing = localStorage.getItem('authSinceDate');
+      if (existing) return existing;
+      const today = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+      localStorage.setItem('authSinceDate', today);
+      return today;
+    } catch {
+      return new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    }
+  });
+
   // Neither modal below closed on Escape, which WCAG 2.1.2 (No Keyboard Trap)
   // expects for anything opened this way -- a keyboard user had no way out
-  // short of tabbing to the close button.
+  // short of tabbing to the close button. showEndOfShift is deliberately not
+  // included: it ends in a real sign-out, not a dismiss, so Escape shouldn't
+  // silently skip the handover the way it dismisses the other two.
   React.useEffect(() => {
     if (!showHotline && !showProfile) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -63,57 +166,6 @@ export const AppLayout: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showHotline, showProfile]);
 
-  if (!user) return null;
-
-  const facility = facilitiesById.get(user.facilityId || '');
-  const unreadNotifs = notifications.filter(n => n.userId === user.id && !n.read).length;
-
-  const isNurse = user.role === 'nurse' || user.role === 'nursing_supervisor' || user.role === 'owner';
-  const isHeadOfDept = user.role === 'head_of_department' || user.role === 'owner';
-  const isDoctor = ['consultant', 'specialist', 'resident', 'head_of_department', 'medical_director', 'owner'].includes(user.role);
-
-  const handleLogout = async () => {
-    // Generate shift log for clinical staff
-    if (user.facilityId && (isDoctor || isNurse)) {
-      const myFacilityId = user.facilityId;
-      const myDept = user.department;
-      
-      const relevantReferrals = referrals.filter(r => 
-        (r.receivingFacilityId === myFacilityId || r.referringFacilityId === myFacilityId) &&
-        (!myDept || r.receivingDepartments?.includes(myDept))
-      );
-
-      const pendingTransfers = relevantReferrals.filter(r => 
-        ['pending', 'dept_approved', 'manager_approved', 'accepted', 'in_transit', 'arrived'].includes(r.status)
-      );
-      
-      const pendingTransfersCount = pendingTransfers.length;
-
-      const relevantAdmissions = directAdmissions.filter(a => a.facilityId === myFacilityId && (!myDept || a.department === myDept));
-      const admittedPatientsCount = relevantAdmissions.filter(a => a.status !== 'discharged').length +
-        relevantReferrals.filter(r => r.status === 'admitted').length;
-
-      let summary = `Handover: ${myDept || 'General'} Dept. `;
-      if (pendingTransfersCount > 0) {
-        summary += `${pendingTransfersCount} active transfers (` + pendingTransfers.slice(0, 3).map(r => r.patientData.name).join(', ') + (pendingTransfersCount > 3 ? '...' : '') + `). `;
-      }
-      summary += `Currently admitted: ${admittedPatientsCount} patients.`;
-
-      // Await before signing out: firebaseSignOut revokes the token this write needs,
-      // so a fire-and-forget log was being rejected and lost.
-      await addShiftLog({
-        userId: user.id,
-        userName: user.name,
-        facilityId: myFacilityId,
-        department: user.department,
-        pendingTransfersCount,
-        admittedPatientsCount,
-        summary
-      });
-    }
-    await logout();
-  };
-  
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Referrals', path: '/referrals', icon: Users },
@@ -253,7 +305,7 @@ export const AppLayout: React.FC = () => {
               )}
             </Link>
             <button
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               className="flex items-center justify-center min-w-[40px] min-h-[40px] text-blue-200 hover:text-white transition-colors"
               title="Logout"
               aria-label="Logout"
@@ -485,6 +537,79 @@ export const AppLayout: React.FC = () => {
           </div>
         </div>
       )}
+      {showEndOfShift && (() => {
+        const handover = buildHandover();
+        return (
+          <div className="fixed inset-0 bg-slate-950 z-[100] flex flex-col text-white overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="eos-title">
+            <div className="px-4 sm:px-6 pt-5 pb-4 flex items-start justify-between shrink-0">
+              <div>
+                <h2 id="eos-title" className="text-lg font-heading font-semibold">End of shift</h2>
+                <p className="text-xs text-white/60 mt-0.5">{user.name}{user.department ? ` · ${user.department}` : ''}</p>
+              </div>
+              <button
+                onClick={() => setShowEndOfShift(false)}
+                aria-label="Cancel, stay signed in"
+                className="h-11 w-11 -mr-2 flex items-center justify-center rounded text-white/70 hover:text-white"
+              >
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="flex-1 px-4 sm:px-6 pb-4 space-y-3 max-w-lg w-full mx-auto">
+              <div className="rounded-xl border border-white/15 bg-white/5 p-3.5 flex items-start gap-2.5">
+                <CheckCircleIcon />
+                <p className="text-sm text-white/85">Signed in since {signedInSince} on this phone. You will not be asked to sign in again.</p>
+              </div>
+
+              {handover ? (
+                <>
+                  <div className="rounded-xl border border-white/15 bg-white/5 p-3.5">
+                    <p className="text-xs font-bold uppercase tracking-wide text-white/50">Handover, written for you</p>
+                    <p className="text-[15px] leading-relaxed text-white/90 mt-1.5">{handover.summary}</p>
+                  </div>
+
+                  {handover.carryOver.length > 0 && (
+                    <div className="rounded-xl border border-white/15 bg-white/5 p-3.5">
+                      <p className="text-xs font-bold uppercase tracking-wide text-warning-400">Carry over</p>
+                      <p className="text-[15px] text-white/90 mt-1.5">{handover.carryOver.join(', ')} — still moving, needs the next shift to pick it up.</p>
+                    </div>
+                  )}
+
+                  {handover.watch.length > 0 && (
+                    <div className="rounded-xl border border-white/15 bg-white/5 p-3.5">
+                      <p className="text-xs font-bold uppercase tracking-wide text-critical-400">Watch</p>
+                      <p className="text-[15px] text-white/90 mt-1.5">{handover.watch.join(', ')} — escalated.</p>
+                    </div>
+                  )}
+
+                  <div className="rounded-xl border border-white/15 bg-white/5 p-3.5">
+                    <p className="text-xs font-bold uppercase tracking-wide text-white/50">Done this shift</p>
+                    <p className="text-[15px] text-white/90 mt-1.5">{handover.doneThisShift} admission{handover.doneThisShift === 1 ? '' : 's'}/discharge{handover.doneThisShift === 1 ? '' : 's'} completed.</p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-white/60">No handover summary for your role.</p>
+              )}
+            </div>
+
+            <div className="shrink-0 px-4 sm:px-6 pb-6 pt-2 max-w-lg w-full mx-auto">
+              <button
+                onClick={handleConfirmHandover}
+                disabled={signingOut}
+                className="w-full min-h-[54px] rounded-xl bg-white text-slate-950 text-sm font-bold uppercase tracking-wide disabled:opacity-60"
+              >
+                {signingOut ? 'Signing out…' : 'Send handover to the day shift'}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
+
+const CheckCircleIcon: React.FC = () => (
+  <svg className="w-5 h-5 shrink-0 mt-0.5 text-success-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <path d="M4 10.5l3.5 3.5L16 5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
