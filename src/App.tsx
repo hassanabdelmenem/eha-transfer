@@ -26,7 +26,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ 
 const ERDashboard = lazy(() => import('./pages/ERDashboard').then(m => ({ default: m.ERDashboard })));
 const ReferralsPage = lazy(() => import('./pages/ReferralsPage').then(m => ({ default: m.ReferralsPage })));
 const ArchivePage = lazy(() => import('./pages/ArchivePage').then(m => ({ default: m.ArchivePage })));
-const ReferralDetailPage = lazy(() => import('./pages/ReferralDetailPage').then(m => ({ default: m.ReferralDetailPage })));
+const ReferralWorkspacePane = lazy(() => import('./pages/ReferralWorkspacePane').then(m => ({ default: m.ReferralWorkspacePane })));
 const NewReferralPage = lazy(() => import('./pages/NewReferralPage').then(m => ({ default: m.NewReferralPage })));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const AdmitPatientPage = lazy(() => import('./pages/AdmitPatientPage').then(m => ({ default: m.AdmitPatientPage })));
@@ -100,7 +100,7 @@ const AppRoutes = () => {
           <Route path="referrals" element={<ReferralsPage />} />
           <Route path="archive" element={<ArchivePage />} />
           <Route path="referrals/new" element={<NewReferralPage />} />
-          <Route path="referrals/:id" element={<ReferralDetailPage />} />
+          <Route path="referrals/:id" element={<ReferralWorkspacePane />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="admissions/new" element={<AdmitPatientPage />} />
           <Route path="department" element={<DepartmentPage />} />
