@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
@@ -16,6 +16,7 @@ import { useAudioAlert } from '../hooks/useAudioAlert';
 import { SkeletonStatCard, Skeleton } from '../components/ui/Skeleton';
 import { sortByWorkflow, priorityRailClass, priorityChipClasses } from '../lib/referralPriority';
 import { toastError } from '../lib/toast';
+import { RoleHomeHeader } from '../components/layout/RoleHomeHeader';
 
 type ClinicianSegment = 'you' | 'them' | 'moving';
 
@@ -25,10 +26,10 @@ const ClinicianReferralCard: React.FC<{ referral: Referral; actionLabel: string;
     <div className={`shrink-0 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 ${priorityRailClass(referral.priority, referral.isEscalated)}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}, {referral.patientData.age}</p>
+          <p className="text-[17px] font-semibold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}, {referral.patientData.age}</p>
           <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{referral.requiredBedType} · {referral.receivingDepartments?.join(', ') || 'Unassigned'}</p>
         </div>
-        <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase whitespace-nowrap ${priorityChipClasses(referral.priority)}`}>
+        <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold uppercase whitespace-nowrap ${priorityChipClasses(referral.priority)}`}>
           {referral.priority}
         </span>
       </div>
@@ -262,16 +263,7 @@ export const Dashboard: React.FC = () => {
           contained in a rounded card once there's room. ---- */}
       <div className={`-mt-4 -mx-4 sm:mt-0 sm:mx-0 sm:rounded-xl sm:overflow-hidden ${isManager ? 'bg-slate-950 text-white' : ''}`}>
         <div className={`px-4 pt-4 pb-4 sm:px-6 ${isManager ? '' : 'bg-white dark:bg-slate-950'}`}>
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <p className={`text-xs uppercase tracking-wide truncate ${isManager ? 'text-white/60' : 'text-slate-500 dark:text-slate-400'}`}>
-                {user.name} · {userFacility?.name || 'Facility'}
-              </p>
-            </div>
-            <Link to="/notifications" aria-label="Notifications" className={`h-10 w-10 shrink-0 flex items-center justify-center rounded-full border ${isManager ? 'border-white/20 text-white' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}>
-              <span className="text-sm">ع</span>
-            </Link>
-          </div>
+          <RoleHomeHeader identity={`${user.name} · ${userFacility?.name || 'Facility'}`} dark={isManager} />
 
           {!isOnline && (
             <div className="mt-3 flex items-center gap-2 rounded-lg bg-warning-500/20 border border-warning-500/40 px-3 py-2 text-xs font-bold uppercase tracking-wide text-warning-700 dark:text-warning-300">
@@ -290,7 +282,7 @@ export const Dashboard: React.FC = () => {
                     <ShieldAlert className="w-3.5 h-3.5" /> Escalated
                   </div>
                   <div className="p-3.5">
-                    <p className="text-[17px] font-bold">{managerEscalations[0].patientData.name}, {managerEscalations[0].patientData.age}</p>
+                    <p className="text-[17px] font-semibold">{managerEscalations[0].patientData.name}, {managerEscalations[0].patientData.age}</p>
                     <p className="text-sm text-white/70 mt-0.5">{managerEscalations[0].requiredBedType} · {managerEscalations[0].escalationReason?.replace(/_/g, ' ') || 'escalated'}</p>
                     <button
                       onClick={() => navigate(`/referrals/${managerEscalations[0].id}`)}
@@ -335,10 +327,10 @@ export const Dashboard: React.FC = () => {
                         <div key={r.id} className={`rounded-xl bg-white/[0.06] border border-white/15 p-3.5 ${priorityRailClass(r.priority, r.isEscalated)}`}>
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="text-[17px] font-bold truncate">{r.patientData.name}, {r.patientData.age}</p>
+                              <p className="text-[17px] font-semibold truncate">{r.patientData.name}, {r.patientData.age}</p>
                               <p className="text-sm text-white/60 truncate mt-0.5">{r.requiredBedType} · approved by {approver?.name || 'department'}</p>
                             </div>
-                            <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
+                            <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
                           </div>
                           <div className="grid grid-cols-2 gap-2 mt-3">
                             <button onClick={() => setSummaryReferral(r)} className="min-h-[48px] rounded-lg border border-white/30 text-white text-sm font-bold uppercase tracking-wide">
