@@ -10,6 +10,9 @@ on:
   # Manual escape hatch (e.g. to re-run a failed deploy without a new commit).
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 # Never let two deploys race for the same hosting site.
 concurrency:
   group: firebase-deploy-production
