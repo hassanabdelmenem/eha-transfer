@@ -165,6 +165,78 @@ export const FacilitySettingsPage: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-16">
+      {/* Mobile: 3c facility settings */}
+      <div className="md:hidden -mt-4 -mx-4 space-y-0">
+        <div className="bg-slate-950 text-white px-4 pt-4 pb-4">
+          <h1 className="text-lg font-heading font-semibold">{facility?.name || 'Global Admin'}</h1>
+          <p className="text-sm text-white/60 mt-0.5">Facility settings · {user.role.replace(/_/g, ' ')}</p>
+        </div>
+        <div className="p-4 space-y-5">
+          {unverifiedUsers.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{unverifiedUsers.length} account{unverifiedUsers.length === 1 ? '' : 's'} to verify</p>
+              {unverifiedUsers.map(u => (
+                <div key={u.id} className="rounded-xl border border-warning-300 dark:border-warning-800 bg-warning-50 dark:bg-warning-950/30 p-3.5">
+                  <p className="text-[15.5px] font-bold text-slate-900 dark:text-slate-100">{u.name}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{u.email}</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="text-xs bg-slate-900 dark:bg-slate-700 text-white px-1.5 py-0.5 rounded uppercase font-bold">{(u.requestedRole || u.role).replace(/_/g, ' ')}</span>
+                    {u.department && <span className="text-xs bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">{u.department}</span>}
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={() => handleVerifyUser(u)} className="flex-1 min-h-[46px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide">
+                      Verify as {(u.requestedRole || u.role).replace(/_/g, ' ')}
+                    </button>
+                    <button onClick={() => handleRemoveUser(u)} aria-label={`Decline ${u.name}`} className="min-h-[46px] min-w-[46px] rounded-lg border border-critical-300 dark:border-critical-800 text-critical-600 dark:text-critical-400 flex items-center justify-center">
+                      <XCircle className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {facility && !['head_of_department'].includes(user.role) && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Departments · {facility.departments.length}</p>
+              <div className="flex flex-wrap gap-2">
+                {facility.departments.map(dept => (
+                  <span key={dept} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 pl-3 pr-1.5 py-1 text-sm text-slate-700 dark:text-slate-300">
+                    {dept}
+                    <button onClick={() => removeFacilityDepartment(facility.id, dept)} aria-label={`Remove ${dept}`} className="rounded-full p-1 text-slate-400 hover:text-critical-600">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))}
+                <form onSubmit={handleAddDepartment} className="inline-flex items-center">
+                  <input
+                    value={newDepartment}
+                    onChange={e => setNewDepartment(e.target.value)}
+                    placeholder="+ Add"
+                    className="w-24 rounded-full border border-dashed border-slate-300 dark:border-slate-700 bg-transparent px-3 py-1 text-sm text-slate-600 dark:text-slate-300 outline-none"
+                  />
+                </form>
+              </div>
+            </div>
+          )}
+
+          {facility && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Configured capacity</p>
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
+                {(Object.keys(facility.capacity) as BedType[]).map(bed => (
+                  <div key={bed} className="px-3.5 py-3 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{bed}</span>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">{facility.capacity[bed].total} beds · {facility.capacity[bed].occupied} occupied</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="hidden md:block space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
           {isGlobalAdmin ? 'Global Facility & User Management' : 'Facility Settings'}
@@ -557,6 +629,7 @@ export const FacilitySettingsPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
