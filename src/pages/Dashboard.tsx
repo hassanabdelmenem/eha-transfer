@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,6 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Activity, Clock, CheckCircle, AlertTriangle, Users, ClipboardList, ArrowDownUp, WifiOff, Plus, Search, Phone, ChevronRight, ShieldAlert } from 'lucide-react';
 import { ReferralList } from '../components/referrals/ReferralList';
 import { ReferralSummarySheet } from '../components/referrals/ReferralSummarySheet';
+import { ReferralDetail } from '../components/referrals/ReferralDetail';
+import { ReferralQueueRow } from '../components/referrals/ReferralQueueRow';
+import { QueueDetailSplit, EmptyDetailPane } from '../components/layout/QueueDetailSplit';
 import { BedOccupancyHeatmap } from '../components/dashboard/BedOccupancyHeatmap';
 import { BedType, Referral } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -207,6 +210,9 @@ export const Dashboard: React.FC = () => {
   const canCreateReferral = ['consultant', 'specialist', 'resident', 'head_of_department', 'medical_director', 'owner'].includes(user.role);
   const [segment, setSegment] = useState<ClinicianSegment>('you');
   const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
+  // Desktop master-detail selection (lg+ only -- see the QueueDetailSplit blocks
+  // below). Kept null below lg, where the role-home grid still navigates instead.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const myReferrals = useMemo(
     () => referrals.filter(r => r.referringUserId === user.id),
@@ -256,6 +262,18 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  // Desktop master-detail: keep a valid selection as the underlying queue
+  // changes, defaulting to the first (highest-priority/escalated) case.
+  const deskQueue = isManager ? [...managerEscalations, ...managerQueue] : activeSegmentReferrals;
+  useEffect(() => {
+    if (deskQueue.length === 0) {
+      if (selectedId !== null) setSelectedId(null);
+    } else if (!deskQueue.some(r => r.id === selectedId)) {
+      setSelectedId(deskQueue[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deskQueue.map(r => r.id).join(',')]);
+
   return (
     <div className="space-y-6 pb-16 sm:pb-0">
       {/* ---- 1a/1c/3d: role-specific home -- edge-to-edge on phones,
@@ -284,75 +302,120 @@ export const Dashboard: React.FC = () => {
             <>
               <h1 className="text-[26px] font-heading font-semibold mt-3">{managerEscalations.length + managerQueue.length} need your signature</h1>
 
-              {managerEscalations.length > 0 && (
-                <div className="mt-4 rounded-xl border-2 border-critical-700 bg-critical-950/40 overflow-hidden">
-                  <div className="bg-critical-700 px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
-                    <ShieldAlert className="w-3.5 h-3.5" /> Escalated
+              <div className="lg:hidden">
+                {managerEscalations.length > 0 && (
+                  <div className="mt-4 rounded-xl border-2 border-critical-700 bg-critical-950/40 overflow-hidden">
+                    <div className="bg-critical-700 px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
+                      <ShieldAlert className="w-3.5 h-3.5" /> Escalated
+                    </div>
+                    <div className="p-3.5">
+                      <p className="text-[17px] font-bold">{managerEscalations[0].patientData.name}, {managerEscalations[0].patientData.age}</p>
+                      <p className="text-sm text-white/70 mt-0.5">{managerEscalations[0].requiredBedType} · {managerEscalations[0].escalationReason?.replace(/_/g, ' ') || 'escalated'}</p>
+                      <button
+                        onClick={() => navigate(`/referrals/${managerEscalations[0].id}`)}
+                        className="w-full mt-3 min-h-[48px] rounded-lg bg-white text-slate-950 text-sm font-bold uppercase tracking-wide"
+                      >
+                        {managerEscalations[0].escalationLevel === 'system' ? 'Hand to admin' : 'Source a bed'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="p-3.5">
-                    <p className="text-[17px] font-bold">{managerEscalations[0].patientData.name}, {managerEscalations[0].patientData.age}</p>
-                    <p className="text-sm text-white/70 mt-0.5">{managerEscalations[0].requiredBedType} · {managerEscalations[0].escalationReason?.replace(/_/g, ' ') || 'escalated'}</p>
-                    <button
-                      onClick={() => navigate(`/referrals/${managerEscalations[0].id}`)}
-                      className="w-full mt-3 min-h-[48px] rounded-lg bg-white text-slate-950 text-sm font-bold uppercase tracking-wide"
-                    >
-                      {managerEscalations[0].escalationLevel === 'system' ? 'Hand to admin' : 'Source a bed'}
-                    </button>
-                  </div>
-                </div>
-              )}
+                )}
 
-              {bedTypesWithCapacity.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-xs font-bold uppercase tracking-wide text-white/60">Free beds · {userFacility?.name}</p>
-                  {bedTypesWithCapacity.map(bt => {
-                    const cap = userFacility!.capacity[bt];
-                    const free = cap.total - cap.occupied;
-                    const ratio = cap.total > 0 ? free / cap.total : 0;
-                    const barColor = free <= 0 ? 'bg-critical-500' : ratio < 0.2 ? 'bg-warning-500' : 'bg-success-400';
-                    return (
-                      <div key={bt} className="flex items-center gap-3">
-                        <span className="w-10 text-xs font-bold uppercase text-white/70 shrink-0">{bt}</span>
-                        <div className="flex-1 h-2.5 rounded-full bg-white/10 overflow-hidden">
-                          <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(100, ratio * 100)}%` }} />
-                        </div>
-                        <span className="w-14 text-right text-xs font-bold tabular-nums shrink-0">{free}/{cap.total}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="mt-4">
-                {managerQueue.length === 0 ? (
-                  <p className="text-sm text-white/60 py-4 text-center">Nothing waiting on your signature.</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                    {managerQueue.map(r => {
-                      const approvingComment = [...(r.deptComments || [])].reverse().find(c => ['direct_approval', 'urgent_approval', 'scheduled_approval'].includes(c.status));
-                      const approver = approvingComment ? usersById.get(approvingComment.userId) : undefined;
+                {bedTypesWithCapacity.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-xs font-bold uppercase tracking-wide text-white/60">Free beds · {userFacility?.name}</p>
+                    {bedTypesWithCapacity.map(bt => {
+                      const cap = userFacility!.capacity[bt];
+                      const free = cap.total - cap.occupied;
+                      const ratio = cap.total > 0 ? free / cap.total : 0;
+                      const barColor = free <= 0 ? 'bg-critical-500' : ratio < 0.2 ? 'bg-warning-500' : 'bg-success-400';
                       return (
-                        <div key={r.id} className={`rounded-xl bg-white/[0.06] border border-white/15 p-3.5 ${priorityRailClass(r.priority, r.isEscalated)}`}>
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="text-[17px] font-bold truncate">{r.patientData.name}, {r.patientData.age}</p>
-                              <p className="text-sm text-white/60 truncate mt-0.5">{r.requiredBedType} · approved by {approver?.name || 'department'}</p>
-                            </div>
-                            <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
+                        <div key={bt} className="flex items-center gap-3">
+                          <span className="w-10 text-xs font-bold uppercase text-white/70 shrink-0">{bt}</span>
+                          <div className="flex-1 h-2.5 rounded-full bg-white/10 overflow-hidden">
+                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(100, ratio * 100)}%` }} />
                           </div>
-                          <div className="grid grid-cols-2 gap-2 mt-3">
-                            <button onClick={() => setSummaryReferral(r)} className="min-h-[48px] rounded-lg border border-white/30 text-white text-sm font-bold uppercase tracking-wide">
-                              Summary
-                            </button>
-                            <button onClick={() => handleManagerAccept(r.id)} className="min-h-[48px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide">
-                              Accept
-                            </button>
-                          </div>
+                          <span className="w-14 text-right text-xs font-bold tabular-nums shrink-0">{free}/{cap.total}</span>
                         </div>
                       );
                     })}
                   </div>
                 )}
+
+                <div className="mt-4">
+                  {managerQueue.length === 0 ? (
+                    <p className="text-sm text-white/60 py-4 text-center">Nothing waiting on your signature.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                      {managerQueue.map(r => {
+                        const approvingComment = [...(r.deptComments || [])].reverse().find(c => ['direct_approval', 'urgent_approval', 'scheduled_approval'].includes(c.status));
+                        const approver = approvingComment ? usersById.get(approvingComment.userId) : undefined;
+                        return (
+                          <div key={r.id} className={`rounded-xl bg-white/[0.06] border border-white/15 p-3.5 ${priorityRailClass(r.priority, r.isEscalated)}`}>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-[17px] font-bold truncate">{r.patientData.name}, {r.patientData.age}</p>
+                                <p className="text-sm text-white/60 truncate mt-0.5">{r.requiredBedType} · approved by {approver?.name || 'department'}</p>
+                              </div>
+                              <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mt-3">
+                              <button onClick={() => setSummaryReferral(r)} className="min-h-[48px] rounded-lg border border-white/30 text-white text-sm font-bold uppercase tracking-wide">
+                                Summary
+                              </button>
+                              <button onClick={() => handleManagerAccept(r.id)} className="min-h-[48px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide">
+                                Accept
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {bedTypesWithCapacity.length > 0 && (
+                <div className="hidden lg:block mt-4 space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-white/60">Free beds · {userFacility?.name}</p>
+                  <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+                    {bedTypesWithCapacity.map(bt => {
+                      const cap = userFacility!.capacity[bt];
+                      const free = cap.total - cap.occupied;
+                      const ratio = cap.total > 0 ? free / cap.total : 0;
+                      const barColor = free <= 0 ? 'bg-critical-500' : ratio < 0.2 ? 'bg-warning-500' : 'bg-success-400';
+                      return (
+                        <div key={bt} className="flex items-center gap-3">
+                          <span className="w-10 text-xs font-bold uppercase text-white/70 shrink-0">{bt}</span>
+                          <div className="flex-1 h-2.5 rounded-full bg-white/10 overflow-hidden">
+                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(100, ratio * 100)}%` }} />
+                          </div>
+                          <span className="w-14 text-right text-xs font-bold tabular-nums shrink-0">{free}/{cap.total}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="hidden lg:block mt-4">
+                <QueueDetailSplit
+                  list={
+                    deskQueue.length === 0 ? (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center px-3">Nothing waiting on your signature.</p>
+                    ) : (
+                      <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {managerEscalations.map(r => (
+                          <ReferralQueueRow key={r.id} referral={r} escalated subtitle={`${r.requiredBedType} · ${r.escalationReason?.replace(/_/g, ' ') || 'escalated'}`} selected={selectedId === r.id} onSelect={() => setSelectedId(r.id)} />
+                        ))}
+                        {managerQueue.map(r => (
+                          <ReferralQueueRow key={r.id} referral={r} subtitle={`${r.requiredBedType} · ${r.receivingDepartments?.join(', ') || 'Unassigned'}`} selected={selectedId === r.id} onSelect={() => setSelectedId(r.id)} />
+                        ))}
+                      </div>
+                    )
+                  }
+                  detail={selectedId ? <ReferralDetail referralId={selectedId} variant="pane" /> : <EmptyDetailPane label="Select a case from the list to see its full details." />}
+                />
               </div>
             </>
           ) : (
@@ -382,7 +445,7 @@ export const Dashboard: React.FC = () => {
                 ))}
               </div>
 
-              <div className="mt-4">
+              <div className="mt-4 lg:hidden">
                 {activeSegmentReferrals.length === 0 ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">Nothing here right now.</p>
                 ) : (
@@ -397,6 +460,23 @@ export const Dashboard: React.FC = () => {
                     ))}
                   </div>
                 )}
+              </div>
+
+              <div className="hidden lg:block mt-4">
+                <QueueDetailSplit
+                  list={
+                    activeSegmentReferrals.length === 0 ? (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center px-3">Nothing here right now.</p>
+                    ) : (
+                      <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {activeSegmentReferrals.map(r => (
+                          <ReferralQueueRow key={r.id} referral={r} subtitle={`${r.requiredBedType} · ${r.receivingDepartments?.join(', ') || 'Unassigned'}`} selected={selectedId === r.id} onSelect={() => setSelectedId(r.id)} />
+                        ))}
+                      </div>
+                    )
+                  }
+                  detail={selectedId ? <ReferralDetail referralId={selectedId} variant="pane" /> : <EmptyDetailPane label="Select a case from the list to see its full details." />}
+                />
               </div>
             </>
           )}

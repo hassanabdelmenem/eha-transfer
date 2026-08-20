@@ -4,6 +4,144 @@ import { useData } from '../contexts/DataContext';
 import { User, Role, FacilityType, BedType } from '../types';
 import { XCircle, Plus, Trash2, Building, Edit2 } from 'lucide-react';
 import { showToast } from '../lib/toast';
+import { QueueDetailSplit, EmptyDetailPane } from '../components/layout/QueueDetailSplit';
+
+interface FacilityFormProps {
+  idPrefix: string;
+  editingFacilityId: string | null;
+  facName: string; setFacName: (v: string) => void;
+  facType: FacilityType; setFacType: (v: FacilityType) => void;
+  facLocation: string; setFacLocation: (v: string) => void;
+  facIsExternal: boolean; setFacIsExternal: (v: boolean) => void;
+  facContractedServices: string; setFacContractedServices: (v: string) => void;
+  facDepts: string; setFacDepts: (v: string) => void;
+  icuTotal: number; setIcuTotal: (v: number) => void;
+  ccuTotal: number; setCcuTotal: (v: number) => void;
+  picuTotal: number; setPicuTotal: (v: number) => void;
+  wardTotal: number; setWardTotal: (v: number) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onCancel: () => void;
+}
+
+// Add/edit facility form, shared between the mobile inline placement (above
+// the facility list) and the desktop master-detail pane (see
+// FacilitySettingsPage's lg+ QueueDetailSplit) so the two never drift apart.
+const FacilityForm: React.FC<FacilityFormProps> = ({
+  idPrefix, editingFacilityId,
+  facName, setFacName, facType, setFacType, facLocation, setFacLocation,
+  facIsExternal, setFacIsExternal, facContractedServices, setFacContractedServices,
+  facDepts, setFacDepts, icuTotal, setIcuTotal, ccuTotal, setCcuTotal,
+  picuTotal, setPicuTotal, wardTotal, setWardTotal, onSubmit, onCancel,
+}) => (
+  <form onSubmit={onSubmit} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
+    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">{editingFacilityId ? 'Edit Facility' : 'Add New Facility'}</h4>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label htmlFor={`${idPrefix}facName`} className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Facility Name *</label>
+        <input
+          id={`${idPrefix}facName`}
+          type="text"
+          required
+          value={facName}
+          onChange={e => setFacName(e.target.value)}
+          placeholder="e.g. Al-Amal Specialized Hospital"
+          className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+        />
+      </div>
+      <div>
+        <label htmlFor={`${idPrefix}facType`} className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Facility Type</label>
+        <select
+          id={`${idPrefix}facType`}
+          value={facType}
+          onChange={e => setFacType(e.target.value as FacilityType)}
+          className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+        >
+          <option value="tertiary_care">Tertiary Care Hospital</option>
+          <option value="district_hospital">District Hospital</option>
+          <option value="primary_care">Primary Care Unit</option>
+          <option value="external_contracted">External Contracted Facility</option>
+        </select>
+      </div>
+      <div>
+        <label htmlFor={`${idPrefix}facLocation`} className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Location / Address *</label>
+        <input
+          id={`${idPrefix}facLocation`}
+          type="text"
+          required
+          value={facLocation}
+          onChange={e => setFacLocation(e.target.value)}
+          placeholder="e.g. Ismailia City Center"
+          className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+        />
+      </div>
+      <div>
+        <label htmlFor={`${idPrefix}facDepts`} className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Departments (comma separated)</label>
+        <input
+          id={`${idPrefix}facDepts`}
+          type="text"
+          value={facDepts}
+          onChange={e => setFacDepts(e.target.value)}
+          placeholder="Emergency, ICU, CCU, Surgery"
+          className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+        />
+      </div>
+    </div>
+
+    <label htmlFor={`${idPrefix}facIsExternal`} className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        id={`${idPrefix}facIsExternal`}
+        checked={facIsExternal || facType === 'external_contracted'}
+        onChange={e => setFacIsExternal(e.target.checked)}
+        className="w-5 h-5 rounded border-slate-300"
+      />
+      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+        Is External / Contracted Facility
+      </span>
+    </label>
+
+    {(facIsExternal || facType === 'external_contracted') && (
+      <div>
+        <label htmlFor={`${idPrefix}facContractedServices`} className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Contracted Services (comma separated)</label>
+        <input
+          id={`${idPrefix}facContractedServices`}
+          type="text"
+          value={facContractedServices}
+          onChange={e => setFacContractedServices(e.target.value)}
+          placeholder="e.g. Specialized ICU, Cardiac Surgery, Oncology, Dialysis"
+          className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+        />
+      </div>
+    )}
+
+    <div className="border-t border-slate-200 dark:border-slate-800 pt-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">Bed capacity (total beds per type)</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div>
+          <label htmlFor={`${idPrefix}icuTotal`} className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">ICU Beds</label>
+          <input id={`${idPrefix}icuTotal`} type="number" min="0" value={icuTotal} onChange={e => setIcuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+        </div>
+        <div>
+          <label htmlFor={`${idPrefix}ccuTotal`} className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">CCU Beds</label>
+          <input id={`${idPrefix}ccuTotal`} type="number" min="0" value={ccuTotal} onChange={e => setCcuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+        </div>
+        <div>
+          <label htmlFor={`${idPrefix}picuTotal`} className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">PICU Beds</label>
+          <input id={`${idPrefix}picuTotal`} type="number" min="0" value={picuTotal} onChange={e => setPicuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+        </div>
+        <div>
+          <label htmlFor={`${idPrefix}wardTotal`} className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Ward Beds</label>
+          <input id={`${idPrefix}wardTotal`} type="number" min="0" value={wardTotal} onChange={e => setWardTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+        </div>
+      </div>
+    </div>
+
+    <div className="flex justify-end gap-2 pt-2">
+      <button type="button" onClick={onCancel} className="min-h-[44px] px-4 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+      <button type="submit" className="min-h-[44px] px-4 rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-bold uppercase tracking-wide">{editingFacilityId ? 'Update Facility' : 'Create Facility'}</button>
+    </div>
+  </form>
+);
 
 export const FacilitySettingsPage: React.FC = () => {
   const { user } = useAuth();
@@ -259,6 +397,7 @@ export const FacilitySettingsPage: React.FC = () => {
                   setShowAddFacility(false);
                   setEditingFacilityId(null);
                 } else {
+                  setEditingFacilityId(null);
                   setFacName(''); setFacLocation(''); setFacIsExternal(false); setFacContractedServices(''); setFacDepts('Emergency, ICU, Surgery, Internal Medicine'); setIcuTotal(10); setCcuTotal(5); setPicuTotal(5); setWardTotal(50);
                   setShowAddFacility(true);
                 }
@@ -269,116 +408,25 @@ export const FacilitySettingsPage: React.FC = () => {
               {showAddFacility ? 'Cancel' : 'Add Facility'}
             </button>
           </div>
-          <div className="p-4 sm:p-6 space-y-4">
+
+          <div className="lg:hidden p-4 sm:p-6 space-y-4">
             {showAddFacility && (
-              <form onSubmit={handleAddFacilitySubmit} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
-                <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">{editingFacilityId ? 'Edit Facility' : 'Add New Facility'}</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="facName" className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Facility Name *</label>
-                    <input
-                      id="facName"
-                      type="text"
-                      required
-                      value={facName}
-                      onChange={e => setFacName(e.target.value)}
-                      placeholder="e.g. Al-Amal Specialized Hospital"
-                      className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="facType" className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Facility Type</label>
-                    <select
-                      id="facType"
-                      value={facType}
-                      onChange={e => setFacType(e.target.value as FacilityType)}
-                      className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                    >
-                      <option value="tertiary_care">Tertiary Care Hospital</option>
-                      <option value="district_hospital">District Hospital</option>
-                      <option value="primary_care">Primary Care Unit</option>
-                      <option value="external_contracted">External Contracted Facility</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="facLocation" className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Location / Address *</label>
-                    <input
-                      id="facLocation"
-                      type="text"
-                      required
-                      value={facLocation}
-                      onChange={e => setFacLocation(e.target.value)}
-                      placeholder="e.g. Ismailia City Center"
-                      className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="facDepts" className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Departments (comma separated)</label>
-                    <input
-                      id="facDepts"
-                      type="text"
-                      value={facDepts}
-                      onChange={e => setFacDepts(e.target.value)}
-                      placeholder="Emergency, ICU, CCU, Surgery"
-                      className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                    />
-                  </div>
-                </div>
-
-                <label htmlFor="facIsExternal" className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    id="facIsExternal"
-                    checked={facIsExternal || facType === 'external_contracted'}
-                    onChange={e => setFacIsExternal(e.target.checked)}
-                    className="w-5 h-5 rounded border-slate-300"
-                  />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Is External / Contracted Facility
-                  </span>
-                </label>
-
-                {(facIsExternal || facType === 'external_contracted') && (
-                  <div>
-                    <label htmlFor="facContractedServices" className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Contracted Services (comma separated)</label>
-                    <input
-                      id="facContractedServices"
-                      type="text"
-                      value={facContractedServices}
-                      onChange={e => setFacContractedServices(e.target.value)}
-                      placeholder="e.g. Specialized ICU, Cardiac Surgery, Oncology, Dialysis"
-                      className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
-                    />
-                  </div>
-                )}
-
-                <div className="border-t border-slate-200 dark:border-slate-800 pt-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">Bed capacity (total beds per type)</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div>
-                      <label htmlFor="icuTotal" className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">ICU Beds</label>
-                      <input id="icuTotal" type="number" min="0" value={icuTotal} onChange={e => setIcuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
-                    </div>
-                    <div>
-                      <label htmlFor="ccuTotal" className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">CCU Beds</label>
-                      <input id="ccuTotal" type="number" min="0" value={ccuTotal} onChange={e => setCcuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
-                    </div>
-                    <div>
-                      <label htmlFor="picuTotal" className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">PICU Beds</label>
-                      <input id="picuTotal" type="number" min="0" value={picuTotal} onChange={e => setPicuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
-                    </div>
-                    <div>
-                      <label htmlFor="wardTotal" className="block text-xs uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Ward Beds</label>
-                      <input id="wardTotal" type="number" min="0" value={wardTotal} onChange={e => setWardTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <button type="button" onClick={() => { setShowAddFacility(false); setEditingFacilityId(null); }} className="min-h-[44px] px-4 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
-                  <button type="submit" className="min-h-[44px] px-4 rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-bold uppercase tracking-wide">{editingFacilityId ? 'Update Facility' : 'Create Facility'}</button>
-                </div>
-              </form>
+              <FacilityForm
+                idPrefix="m-"
+                editingFacilityId={editingFacilityId}
+                facName={facName} setFacName={setFacName}
+                facType={facType} setFacType={setFacType}
+                facLocation={facLocation} setFacLocation={setFacLocation}
+                facIsExternal={facIsExternal} setFacIsExternal={setFacIsExternal}
+                facContractedServices={facContractedServices} setFacContractedServices={setFacContractedServices}
+                facDepts={facDepts} setFacDepts={setFacDepts}
+                icuTotal={icuTotal} setIcuTotal={setIcuTotal}
+                ccuTotal={ccuTotal} setCcuTotal={setCcuTotal}
+                picuTotal={picuTotal} setPicuTotal={setPicuTotal}
+                wardTotal={wardTotal} setWardTotal={setWardTotal}
+                onSubmit={handleAddFacilitySubmit}
+                onCancel={() => { setShowAddFacility(false); setEditingFacilityId(null); }}
+              />
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -424,6 +472,62 @@ export const FacilitySettingsPage: React.FC = () => {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Desktop master-detail: facility list beside the add/edit form
+              (or a facility's details, once selected), instead of the form
+              floating above the list. */}
+          <div className="hidden lg:block p-4 sm:p-6">
+            <QueueDetailSplit
+              list={
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {facilities.map(f => (
+                    <div key={f.id} className={`p-3.5 flex justify-between items-start gap-2 ${editingFacilityId === f.id ? 'bg-slate-100 dark:bg-slate-800' : ''}`}>
+                      <button onClick={() => handleEditFacilityClick(f)} className="min-w-0 text-left flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">{f.name}</h4>
+                          {f.isExternal && (
+                            <span className="shrink-0 text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold uppercase">Contracted</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{f.location} · <span className="uppercase">{(f.type || "").replace('_', ' ')}</span></p>
+                      </button>
+                      {isGlobalAdmin && (
+                        <button
+                          aria-label={`Remove ${f.name}`}
+                          className="h-9 w-9 shrink-0 rounded-lg flex items-center justify-center text-critical-500 hover:bg-critical-50 dark:hover:bg-critical-900/30"
+                          onClick={() => handleRemoveFacility(f.id, f.name)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              }
+              detail={
+                showAddFacility ? (
+                  <FacilityForm
+                    idPrefix="d-"
+                    editingFacilityId={editingFacilityId}
+                    facName={facName} setFacName={setFacName}
+                    facType={facType} setFacType={setFacType}
+                    facLocation={facLocation} setFacLocation={setFacLocation}
+                    facIsExternal={facIsExternal} setFacIsExternal={setFacIsExternal}
+                    facContractedServices={facContractedServices} setFacContractedServices={setFacContractedServices}
+                    facDepts={facDepts} setFacDepts={setFacDepts}
+                    icuTotal={icuTotal} setIcuTotal={setIcuTotal}
+                    ccuTotal={ccuTotal} setCcuTotal={setCcuTotal}
+                    picuTotal={picuTotal} setPicuTotal={setPicuTotal}
+                    wardTotal={wardTotal} setWardTotal={setWardTotal}
+                    onSubmit={handleAddFacilitySubmit}
+                    onCancel={() => { setShowAddFacility(false); setEditingFacilityId(null); }}
+                  />
+                ) : (
+                  <EmptyDetailPane label="Select a facility to edit, or add a new one." />
+                )
+              }
+            />
           </div>
         </div>
       )}

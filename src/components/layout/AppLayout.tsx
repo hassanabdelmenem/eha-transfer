@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { WifiOff, RefreshCw } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Bell, LogOut, Activity, Users, PlusCircle, LayoutDashboard, BookOpen, Settings, Moon, Sun, Bed, Cloud, Database, Eye, Phone, X, User, Archive } from 'lucide-react';
+import { Bell, LogOut, Activity, Users, PlusCircle, LayoutDashboard, BookOpen, Settings, Moon, Sun, Bed, Cloud, Database, Phone, X, User, Archive } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { MOCK_USERS } from '../../lib/mock-data';
 import { toastError } from '../../lib/toast';
@@ -181,7 +181,7 @@ export const AppLayout: React.FC = () => {
     navItems.push({ name: 'Facility Settings', path: '/facility-settings', icon: Settings });
   }
   if (isNurse) {
-    navItems.push({ name: 'Bed Management', path: '/bed-management', icon: Bed });
+    navItems.push({ name: 'Beds', path: '/bed-management', icon: Bed });
   }
 
   return (
@@ -196,7 +196,11 @@ export const AppLayout: React.FC = () => {
       >
         Skip to main content
       </a>
-      <header className="min-h-[4rem] h-auto py-3 md:py-2 bg-blue-900 text-white flex flex-col md:flex-row md:items-center justify-between px-3 sm:px-6 border-b-4 border-blue-700 w-full relative gap-y-3">
+      {/* 3d: mobile/tablet header. The dark sidebar below takes over as the
+          app shell from sm and up (the same breakpoint the old light sidebar
+          and the bottom tab bar already split on), so this never shows
+          alongside it. */}
+      <header className="sm:hidden min-h-[4rem] h-auto py-3 bg-blue-900 text-white flex flex-col items-center justify-between px-3 border-b-4 border-blue-700 w-full relative gap-y-3">
         {/* Logo Section */}
         <div className="flex items-center gap-3 shrink-0 mx-auto md:mx-0">
           <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-md flex items-center justify-center shrink-0">
@@ -317,66 +321,136 @@ export const AppLayout: React.FC = () => {
       </header>
 
       <div className="flex-1 flex overflow-hidden min-w-0 w-full">
-        {/* Sidebar Navigation */}
-        <aside className="w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col p-4 shrink-0 hidden sm:flex">
-          <nav className="space-y-1">
+        {/* 3d: unified desktop app shell -- persistent dark sidebar replacing
+            the old light sidebar + blue header from sm and up. Same nav
+            destinations as before, restyled to match the redesign. */}
+        <aside className="w-64 bg-slate-950 text-white flex-col shrink-0 hidden sm:flex">
+          <div className="px-4 pt-5 pb-4 flex items-center gap-3 border-b border-white/10">
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shrink-0">
+              <Activity className="h-6 w-6 text-slate-950" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-heading font-semibold truncate">Health Connect</p>
+              <p className="text-xs text-white/50 truncate">{facility?.name || 'Ismailia network'}</p>
+            </div>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
               return (
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`px-2 py-3 flex items-center gap-3 transition-colors ${
-                    isActive 
-                      ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400' 
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-r-4 border-transparent'
+                  className={`min-h-[44px] px-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    isActive
+                      ? 'bg-white text-slate-950 font-bold'
+                      : 'text-white/70 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  <item.icon className="w-5 h-5" />
-                  <span className="text-sm font-bold uppercase">{item.name}</span>
+                  <item.icon className="w-4.5 h-4.5 shrink-0" />
+                  <span className="text-sm">{item.name}</span>
                 </Link>
               );
             })}
             {isDoctor && (
               <Link
                 to="/referrals/new"
-                className={`px-2 py-3 flex items-center gap-3 transition-colors ${
+                className={`min-h-[44px] px-3 rounded-lg flex items-center gap-3 transition-colors ${
                   location.pathname.startsWith('/referrals/new')
-                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-r-4 border-transparent'
+                    ? 'bg-white text-slate-950 font-bold'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <PlusCircle className="w-5 h-5" />
-                <span className="text-sm font-bold uppercase">New Referral</span>
+                <PlusCircle className="w-4.5 h-4.5 shrink-0" />
+                <span className="text-sm">New referral</span>
               </Link>
             )}
             {isNurse && (
               <Link
                 to="/admissions/new"
-                className={`px-2 py-3 flex items-center gap-3 transition-colors ${
+                className={`min-h-[44px] px-3 rounded-lg flex items-center gap-3 transition-colors ${
                   location.pathname.startsWith('/admissions/new')
-                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-r-4 border-transparent'
+                    ? 'bg-white text-slate-950 font-bold'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <PlusCircle className="w-5 h-5" />
-                <span className="text-sm font-bold uppercase">Direct Admit</span>
+                <PlusCircle className="w-4.5 h-4.5 shrink-0" />
+                <span className="text-sm">Direct admit</span>
               </Link>
             )}
           </nav>
-          
-          <div className="mt-auto p-4 bg-slate-900 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-lg">
-            <div className="text-xs text-blue-300 font-bold uppercase mb-2">Session</div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-white">Role</span>
-                <span className="text-xs text-green-400">{(user.role || 'Unknown').replace('_', ' ').toUpperCase()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-white">Verified</span>
-                <span className="text-xs text-green-400">{user.verified ? 'YES' : 'NO'}</span>
-              </div>
+
+          <div className="px-3 pb-3 pt-2 border-t border-white/10 space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              {!isOnline ? (
+                <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-warning-400" title="Offline">
+                  <WifiOff className="w-3.5 h-3.5" />
+                  Offline{pendingSyncCount > 0 ? ` · ${pendingSyncCount}` : ''}
+                </span>
+              ) : pendingSyncCount > 0 ? (
+                <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-warning-400" title="Syncing">
+                  <Database className="w-3.5 h-3.5 animate-pulse" />
+                  Syncing · {pendingSyncCount}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-white/40" title="Synced">
+                  <Cloud className="w-3.5 h-3.5" />
+                  Synced
+                </span>
+              )}
             </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowHotline(true)}
+                className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-critical-400 hover:bg-white/10"
+                title="Emergency Hotline"
+                aria-label="Emergency Hotline"
+              >
+                <Phone className="w-4.5 h-4.5" />
+              </button>
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"
+                title="Toggle Theme"
+                aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              >
+                {theme === 'dark' ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
+              </button>
+              <Link
+                to="/notifications"
+                className="relative min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"
+                aria-label={unreadNotifs > 0 ? `Notifications, ${unreadNotifs} unread` : 'Notifications'}
+              >
+                <Bell className="h-4.5 w-4.5" />
+                {unreadNotifs > 0 && (
+                  <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-critical-500 text-white text-[10px] font-bold leading-none">
+                    {unreadNotifs > 9 ? '9+' : unreadNotifs}
+                  </span>
+                )}
+              </Link>
+              <button
+                onClick={handleLogoutClick}
+                className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <LogOut className="h-4.5 w-4.5" />
+              </button>
+            </div>
+            <button
+              onClick={openProfile}
+              className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/10 transition-colors text-left"
+              title={`${user.name} — ${user.role?.replace(/_/g, ' ')}`}
+            >
+              <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0" aria-hidden="true">
+                <User className="w-4 h-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-bold truncate">{user.name}</span>
+                <span className="block text-xs text-white/50 truncate capitalize">{user.role?.replace(/_/g, ' ')}</span>
+              </span>
+            </button>
           </div>
         </aside>
 

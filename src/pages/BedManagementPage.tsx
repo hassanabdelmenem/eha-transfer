@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { BedType } from '../types';
+import { BedType, Facility } from '../types';
 import { Card, CardContent } from '../components/ui/Card';
 import { Bed, Minus, Plus, Settings } from 'lucide-react';
 import { Skeleton } from '../components/ui/Skeleton';
+import { QueueDetailSplit, EmptyDetailPane } from '../components/layout/QueueDetailSplit';
 
 // 2b bed stepper: writes immediately on every tap, no Save button.
 const BedStepper: React.FC<{
@@ -60,6 +61,41 @@ const BedStepper: React.FC<{
   );
 };
 
+// The stepper grid for one facility, shared between the mobile/tablet layout
+// (below the admin facility picker) and the desktop master-detail pane.
+const BedStepperGrid: React.FC<{
+  facility: Facility;
+  capacities: Record<BedType, { total: number; occupied: number }>;
+  onChange: (bedType: BedType, occupied: number) => void;
+  canEditCapacity: boolean;
+}> = ({ facility, capacities, onChange, canEditCapacity }) => (
+  (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).some(bt => (capacities[bt]?.total ?? 0) > 0) ? (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+      {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[])
+        .filter(bt => (capacities[bt]?.total ?? 0) > 0)
+        .map(bt => (
+          <BedStepper
+            key={bt}
+            bedType={bt}
+            total={capacities[bt]?.total ?? 0}
+            occupied={capacities[bt]?.occupied ?? 0}
+            onChange={(occupied) => onChange(bt, occupied)}
+          />
+        ))}
+    </div>
+  ) : (
+    <Card className="p-8 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center gap-3">
+      <Bed className="w-8 h-8 text-slate-300 dark:text-slate-700" />
+      <p>No bed capacity configured for {facility.name} yet.</p>
+      {canEditCapacity && (
+        <Link to="/facility-settings" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">
+          Set up bed capacity in Facility Settings &rarr;
+        </Link>
+      )}
+    </Card>
+  )
+);
+
 export const BedManagementPage: React.FC = () => {
   const { user } = useAuth();
   const { facilities, facilitiesById, updateFacilityCapacity, loading } = useData();
@@ -95,14 +131,16 @@ export const BedManagementPage: React.FC = () => {
     updateFacilityCapacity(facility.id, { [bedType]: { total, occupied } });
   };
 
+  const canEditCapacity = isAdmin || user.role === 'hospital_manager' || user.role === 'medical_director';
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-16 h-full overflow-auto">
+    <div className={`mx-auto space-y-6 pb-16 h-full overflow-auto ${isAdmin ? 'max-w-4xl lg:max-w-none' : 'max-w-4xl'}`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Bulk Bed Management</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Quickly update bed occupancy across {facility?.name || 'the facility'}. Total bed counts are configured under Facility Settings.</p>
         </div>
-        {facility && (isAdmin || user.role === 'hospital_manager' || user.role === 'medical_director') && (
+        {facility && canEditCapacity && (
           <Link
             to="/facility-settings"
             className="inline-flex items-center gap-1.5 min-h-[44px] px-4 rounded-lg border border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shrink-0"
@@ -113,61 +151,67 @@ export const BedManagementPage: React.FC = () => {
         )}
       </div>
 
-      {isAdmin && (
-        <Card className="mb-6 border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
-          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <label htmlFor="bedMgmtFacility" className="text-sm font-bold text-slate-700 dark:text-slate-300 shrink-0">Admin View:</label>
-            <select
-              id="bedMgmtFacility"
-              value={selectedFacilityId}
-              onChange={(e) => setSelectedFacilityId(e.target.value)}
-              className="flex-1 rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[40px]"
-            >
-              <option value="">Select Facility to Manage...</option>
-              {facilities.map(f => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
-          </CardContent>
-        </Card>
-      )}
-
-      {loading ? (
-        <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
-          <span className="sr-only">Loading facility data…</span>
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-96 w-full rounded-lg" />
-        </div>
-      ) : facility ? (
-        (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).some(bt => (capacities[bt]?.total ?? 0) > 0) ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-            {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[])
-              .filter(bt => (capacities[bt]?.total ?? 0) > 0)
-              .map(bt => (
-                <BedStepper
-                  key={bt}
-                  bedType={bt}
-                  total={capacities[bt]?.total ?? 0}
-                  occupied={capacities[bt]?.occupied ?? 0}
-                  onChange={(occupied) => handleStepperChange(bt, occupied)}
-                />
-              ))}
-          </div>
-        ) : (
-          <Card className="p-8 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center gap-3">
-            <Bed className="w-8 h-8 text-slate-300 dark:text-slate-700" />
-            <p>No bed capacity configured for {facility.name} yet.</p>
-            {(isAdmin || user.role === 'hospital_manager' || user.role === 'medical_director') && (
-              <Link to="/facility-settings" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">
-                Set up bed capacity in Facility Settings &rarr;
-              </Link>
-            )}
+      <div className={isAdmin ? 'lg:hidden space-y-6' : 'space-y-6'}>
+        {isAdmin && (
+          <Card className="mb-6 border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
+            <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <label htmlFor="bedMgmtFacility" className="text-sm font-bold text-slate-700 dark:text-slate-300 shrink-0">Admin View:</label>
+              <select
+                id="bedMgmtFacility"
+                value={selectedFacilityId}
+                onChange={(e) => setSelectedFacilityId(e.target.value)}
+                className="flex-1 rounded border border-slate-300 dark:border-slate-700 p-2 text-sm focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[40px]"
+              >
+                <option value="">Select Facility to Manage...</option>
+                {facilities.map(f => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
+            </CardContent>
           </Card>
-        )
-      ) : (
-        <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
-          Please select a facility above to manage beds.
-        </Card>
+        )}
+
+        {loading ? (
+          <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
+            <span className="sr-only">Loading facility data…</span>
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-96 w-full rounded-lg" />
+          </div>
+        ) : facility ? (
+          <BedStepperGrid facility={facility} capacities={capacities} onChange={handleStepperChange} canEditCapacity={canEditCapacity} />
+        ) : (
+          <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
+            Please select a facility above to manage beds.
+          </Card>
+        )}
+      </div>
+
+      {/* Desktop master-detail (admins only -- a single-facility nurse has
+          nothing to pick between, so keeps the direct stepper view above). */}
+      {isAdmin && (
+        <div className="hidden lg:block">
+          {loading ? (
+            <Skeleton className="h-96 w-full rounded-xl" />
+          ) : (
+            <QueueDetailSplit
+              list={
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {facilities.map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => setSelectedFacilityId(f.id)}
+                      className={`w-full text-left p-3.5 ${selectedFacilityId === f.id ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                    >
+                      <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{f.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{f.location}</p>
+                    </button>
+                  ))}
+                </div>
+              }
+              detail={facility ? <BedStepperGrid facility={facility} capacities={capacities} onChange={handleStepperChange} canEditCapacity={canEditCapacity} /> : <EmptyDetailPane label="Select a facility from the list to manage its beds." />}
+            />
+          )}
+        </div>
       )}
     </div>
   );

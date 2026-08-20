@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
@@ -10,6 +10,9 @@ import { formatDateTime } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
 import { sortByWorkflow, priorityRailClass, priorityChipClasses } from '../lib/referralPriority';
 import { ReferralSummarySheet } from '../components/referrals/ReferralSummarySheet';
+import { ReferralDetail } from '../components/referrals/ReferralDetail';
+import { ReferralQueueRow } from '../components/referrals/ReferralQueueRow';
+import { QueueDetailSplit, EmptyDetailPane } from '../components/layout/QueueDetailSplit';
 import { Referral } from '../types';
 import { toastError } from '../lib/toast';
 
@@ -28,6 +31,8 @@ export const DepartmentPage: React.FC = () => {
   const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
   const [selectedDepartment, setSelectedDepartment] = useState<string>(user?.department || '');
+  // Desktop master-detail selection (lg+ only), mirrors Dashboard.tsx's pattern.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (!user || (user.role !== 'head_of_department' && !isAdmin)) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Access Denied. Head of Department privileges required.</div>;
@@ -85,6 +90,16 @@ export const DepartmentPage: React.FC = () => {
     return `Escalated · no response ${mins} min`;
   };
 
+  // Desktop master-detail: keep a valid selection as pendingReview changes.
+  useEffect(() => {
+    if (pendingReview.length === 0) {
+      if (selectedId !== null) setSelectedId(null);
+    } else if (!pendingReview.some(r => r.id === selectedId)) {
+      setSelectedId(pendingReview[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingReview.map(r => r.id).join(',')]);
+
   const handleQuickApprove = async (id: string) => {
     setApprovingId(id);
     try {
@@ -118,7 +133,7 @@ export const DepartmentPage: React.FC = () => {
   );
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto lg:max-w-none space-y-6">
       <div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight uppercase">{department || 'Department'} </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Manage shift assignments and delegation.</p>
@@ -171,73 +186,96 @@ export const DepartmentPage: React.FC = () => {
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Escalated cases stay pinned on top. Everything else ordered emergency → urgent → routine.</p>
         </div>
 
-        {escalatedReview.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {escalatedReview.map(r => (
-              <div key={r.id} className="rounded-xl border-2 border-critical-700 bg-critical-50 dark:bg-critical-950/30 overflow-hidden">
-                <div className="bg-critical-700 text-white px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5" /> {escalatedAgeLabel(r)}
-                </div>
-                <div className="p-3.5">
-                  <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100">{r.patientData.name}, {r.patientData.age}</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{r.requiredBedType} bed · from {facilitiesById.get(r.referringFacilityId)?.name || 'referring facility'}</p>
-                  <div className="grid grid-cols-[1fr_auto] gap-2 mt-3">
-                    <button
-                      onClick={() => navigate(`/referrals/${r.id}`)}
-                      className="min-h-[48px] rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-bold uppercase tracking-wide"
-                    >
-                      Review now
-                    </button>
-                    <a
-                      href={`tel:${usersById.get(r.referringUserId)?.phoneNumber || ''}`}
-                      aria-label="Call referring clinician"
-                      className="h-[48px] w-[48px] flex items-center justify-center rounded-lg border-2 border-critical-700 text-critical-700 dark:text-critical-400"
-                    >
-                      <Phone className="w-4 h-4" />
-                    </a>
+        <div className="lg:hidden space-y-3">
+          {escalatedReview.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {escalatedReview.map(r => (
+                <div key={r.id} className="rounded-xl border-2 border-critical-700 bg-critical-50 dark:bg-critical-950/30 overflow-hidden">
+                  <div className="bg-critical-700 text-white px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5" /> {escalatedAgeLabel(r)}
+                  </div>
+                  <div className="p-3.5">
+                    <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100">{r.patientData.name}, {r.patientData.age}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{r.requiredBedType} bed · from {facilitiesById.get(r.referringFacilityId)?.name || 'referring facility'}</p>
+                    <div className="grid grid-cols-[1fr_auto] gap-2 mt-3">
+                      <button
+                        onClick={() => navigate(`/referrals/${r.id}`)}
+                        className="min-h-[48px] rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-bold uppercase tracking-wide"
+                      >
+                        Review now
+                      </button>
+                      <a
+                        href={`tel:${usersById.get(r.referringUserId)?.phoneNumber || ''}`}
+                        aria-label="Call referring clinician"
+                        className="h-[48px] w-[48px] flex items-center justify-center rounded-lg border-2 border-critical-700 text-critical-700 dark:text-critical-400"
+                      >
+                        <Phone className="w-4 h-4" />
+                      </a>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        {queueReview.length === 0 && escalatedReview.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">Nothing waiting on your department right now.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {queueReview.map(r => (
-              <div key={r.id} className={`rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 ${priorityRailClass(r.priority)}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}, {r.patientData.age}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{r.requiredBedType} · from {facilitiesById.get(r.referringFacilityId)?.name || 'referring facility'}</p>
+          {queueReview.length === 0 && escalatedReview.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">Nothing waiting on your department right now.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {queueReview.map(r => (
+                <div key={r.id} className={`rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 ${priorityRailClass(r.priority)}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}, {r.patientData.age}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{r.requiredBedType} · from {facilitiesById.get(r.referringFacilityId)?.name || 'referring facility'}</p>
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
                   </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    <button
+                      onClick={() => setSummaryReferral(r)}
+                      className="min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-bold uppercase tracking-wide"
+                    >
+                      Summary
+                    </button>
+                    <button
+                      onClick={() => handleQuickApprove(r.id)}
+                      disabled={approvingId === r.id}
+                      className="min-h-[48px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide disabled:opacity-60"
+                    >
+                      {approvingId === r.id ? 'Approving…' : 'Approve'}
+                    </button>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mt-3">
-                  <button
-                    onClick={() => setSummaryReferral(r)}
-                    className="min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-bold uppercase tracking-wide"
-                  >
-                    Summary
-                  </button>
-                  <button
-                    onClick={() => handleQuickApprove(r.id)}
-                    disabled={approvingId === r.id}
-                    className="min-h-[48px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide disabled:opacity-60"
-                  >
-                    {approvingId === r.id ? 'Approving…' : 'Approve'}
-                  </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="hidden lg:block">
+          <QueueDetailSplit
+            list={
+              pendingReview.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center px-3">Nothing waiting on your department right now.</p>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {escalatedReview.map(r => (
+                    <ReferralQueueRow key={r.id} referral={r} escalated subtitle={escalatedAgeLabel(r)} selected={selectedId === r.id} onSelect={() => setSelectedId(r.id)} />
+                  ))}
+                  {queueReview.map(r => (
+                    <ReferralQueueRow key={r.id} referral={r} subtitle={`${r.requiredBedType} · from ${facilitiesById.get(r.referringFacilityId)?.name || 'referring facility'}`} selected={selectedId === r.id} onSelect={() => setSelectedId(r.id)} />
+                  ))}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              )
+            }
+            detail={selectedId ? <ReferralDetail referralId={selectedId} variant="pane" /> : <EmptyDetailPane label="Select a case from the list to see its full details." />}
+          />
+        </div>
       </div>
 
       {summaryReferral && <ReferralSummarySheet referral={summaryReferral} onClose={() => setSummaryReferral(null)} />}
 
+      <div className="lg:max-w-3xl space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Admitted Patients & Internal Transfers</CardTitle>
@@ -351,6 +389,7 @@ export const DepartmentPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
       {transferModalOpen && selectedPatient && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">

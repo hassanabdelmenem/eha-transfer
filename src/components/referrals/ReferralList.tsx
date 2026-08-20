@@ -20,6 +20,13 @@ interface ReferralListProps {
   deptFilter?: string;
   bedFilter?: string;
   prioritySort?: boolean;
+  /** Desktop master-detail mode: row clicks call this instead of navigating
+   *  away, so the list can stay visible beside a detail pane. */
+  onRowClick?: (referral: Referral) => void;
+  selectedId?: string | null;
+  /** Force the compact card layout at every width -- used inside a narrow
+   *  QueueDetailSplit list column, where the desktop table wouldn't fit. */
+  compactList?: boolean;
 }
 
 
@@ -82,10 +89,14 @@ const UrgencyTimer: React.FC<{ referral: Referral; now: Date }> = ({ referral, n
   );
 };
 
-export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, searchQuery = '', priorityFilter = 'all', statusFilter = 'all', deptFilter = 'all', bedFilter = 'all', prioritySort = false }) => {
+export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, searchQuery = '', priorityFilter = 'all', statusFilter = 'all', deptFilter = 'all', bedFilter = 'all', prioritySort = false, onRowClick, selectedId = null, compactList = false }) => {
   const { referrals, facilities, loading } = useData();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const handleRowClick = (referral: Referral) => {
+    if (onRowClick) onRowClick(referral);
+    else navigate(`/referrals/${referral.id}`);
+  };
 
   // Create a quick lookup map for facilities to avoid O(n) finds during render
   const facilityMap = useMemo(() => new Map(facilities.map(f => [f.id, f])), [facilities]);
@@ -105,12 +116,12 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
   if (loading) {
     return (
       <div className="w-full">
-        <div className="block md:hidden space-y-4">
+        <div className={compactList ? 'block space-y-4' : 'block md:hidden space-y-4'}>
           <SkeletonGroup label="Loading referrals…">
             {Array.from({ length: limit ?? 4 }).map((_, i) => <SkeletonReferralCard key={i} />)}
           </SkeletonGroup>
         </div>
-        <div className="hidden md:block overflow-x-auto">
+        <div className={compactList ? 'hidden' : 'hidden md:block overflow-x-auto'}>
           <table className="w-full text-left">
             <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">
               <tr>
@@ -278,14 +289,14 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
   return (
     <div className="w-full">
       {/* Mobile View */}
-      <div className="block md:hidden space-y-3">
+      <div className={compactList ? 'block space-y-3' : 'block md:hidden space-y-3'}>
         {filtered.map(referral => {
           const fromFacility = facilityMap.get(referral.referringFacilityId);
           return (
             <Card
               key={referral.id}
-              className={`shrink-0 p-3.5 cursor-pointer hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-800 transition-colors rounded-xl ${priorityRailClass(referral.priority, referral.isEscalated)}`}
-              onClick={() => navigate(`/referrals/${referral.id}`)}
+              className={`shrink-0 p-3.5 cursor-pointer hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-800 transition-colors rounded-xl ${priorityRailClass(referral.priority, referral.isEscalated)} ${selectedId === referral.id ? 'ring-2 ring-blue-500' : ''}`}
+              onClick={() => handleRowClick(referral)}
             >
               <div className="flex justify-between items-start gap-3 mb-2">
                 <div className="min-w-0 flex-1">
@@ -333,7 +344,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
       </div>
 
       {/* Desktop View */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className={compactList ? 'hidden' : 'hidden md:block overflow-x-auto'}>
         <table className="w-full text-left">
           <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">
             <tr>
@@ -351,7 +362,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               const toFacility = facilityMap.get(referral.receivingFacilityId);
               
               return (
-                <tr key={referral.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-blue-50/50 dark:hover:bg-slate-800 cursor-pointer transition-colors" onClick={() => navigate(`/referrals/${referral.id}`)}>
+                <tr key={referral.id} className={`border-b border-slate-100 dark:border-slate-800 hover:bg-blue-50/50 dark:hover:bg-slate-800 cursor-pointer transition-colors ${selectedId === referral.id ? 'bg-blue-50 dark:bg-slate-800' : ''}`} onClick={() => handleRowClick(referral)}>
                   <td className="px-6 py-4 max-w-[220px]">
                     <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{referral.patientData.name || 'Unknown Patient'}</div>
                     <div className="text-xs text-slate-400 font-mono mt-1 truncate">HID: {referral.patientData.hospitalId}</div>
