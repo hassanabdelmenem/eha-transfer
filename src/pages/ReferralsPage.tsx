@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { ReferralList } from '../components/referrals/ReferralList';
+import { ReferralDetail } from '../components/referrals/ReferralDetail';
+import { QueueDetailSplit, EmptyDetailPane } from '../components/layout/QueueDetailSplit';
 import { Input } from '../components/ui/Input';
 import { Search, Filter, Activity, Clock, CheckCircle, Download, ArrowDownUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -15,6 +17,8 @@ export const ReferralsPage: React.FC = () => {
   const [deptFilter, setDeptFilter] = useState("all");
   const [bedFilter, setBedFilter] = useState("all");
   const [prioritySort, setPrioritySort] = useState(false);
+  // Desktop master-detail selection (lg+ only), mirrors Dashboard.tsx's pattern.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     if (!user) return { active: 0, pending: 0, completed: 0 };
@@ -175,10 +179,10 @@ export const ReferralsPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col overflow-hidden shadow-sm">
+      <div className="lg:hidden flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
           <h3 className="text-sm font-bold uppercase text-slate-700 dark:text-slate-300">All Referrals Grid</h3>
-          <button 
+          <button
             onClick={() => setPrioritySort(!prioritySort)}
             className={`flex items-center gap-2 px-3 min-h-[40px] text-xs font-bold uppercase rounded transition-colors ${prioritySort ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
           >
@@ -190,6 +194,40 @@ export const ReferralsPage: React.FC = () => {
           <ReferralList facilityId={user.facilityId} searchQuery={searchQuery} priorityFilter={priorityFilter} statusFilter={statusFilter} deptFilter={deptFilter} bedFilter={bedFilter} prioritySort={prioritySort} />
         </div>
       </div>
+
+      <div className="flex-1 min-h-0">
+        <QueueDetailSplit
+          className="h-full"
+          listHeader={
+            <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">All Referrals</p>
+              <button
+                onClick={() => setPrioritySort(!prioritySort)}
+                className={`flex items-center gap-1.5 px-2.5 min-h-[32px] text-xs font-bold uppercase rounded transition-colors ${prioritySort ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+              >
+                <ArrowDownUp className="w-3 h-3" />
+                Sort
+              </button>
+            </div>
+          }
+          list={
+            <ReferralList
+              facilityId={user.facilityId}
+              searchQuery={searchQuery}
+              priorityFilter={priorityFilter}
+              statusFilter={statusFilter}
+              deptFilter={deptFilter}
+              bedFilter={bedFilter}
+              prioritySort={prioritySort}
+              compactList
+              selectedId={selectedId}
+              onRowClick={(r) => setSelectedId(r.id)}
+            />
+          }
+          detail={selectedId ? <ReferralDetail referralId={selectedId} variant="pane" /> : <EmptyDetailPane label="Select a referral from the list to see its full details." />}
+        />
+      </div>
     </div>
   );
 };
+
