@@ -221,7 +221,7 @@ export interface Notification {
   userId: string;
   title: string;
   message: string;
-  type: 'urgent' | 'info' | 'success' | 'warning';
+  type: 'urgent' | 'info' | 'success' | 'warning' | 'purple';
   read: boolean;
   createdAt: string;
   // Epoch milliseconds. The rules bound this against server time, and the tray

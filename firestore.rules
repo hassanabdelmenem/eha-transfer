@@ -467,7 +467,7 @@ service cloud.firestore {
                     && request.resource.data.message is string
                     && request.resource.data.title.size() <= 200
                     && request.resource.data.message.size() <= 2000
-                    && request.resource.data.type in ['urgent', 'info', 'success', 'warning']
+                    && request.resource.data.type in ['urgent', 'info', 'success', 'warning', 'purple']
                     && request.resource.data.read == false
                     && request.resource.data.createdAtMs is number
                     && request.resource.data.createdAtMs <= request.time.toMillis() + 300000;
