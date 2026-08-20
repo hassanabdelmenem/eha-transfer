@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
@@ -6,6 +6,9 @@ import { BedType, Referral } from '../types';
 import { SkeletonStatCard, Skeleton } from '../components/ui/Skeleton';
 import { sortByWorkflow } from '../lib/referralPriority';
 import { toastError } from '../lib/toast';
+import { ReferralDetail } from '../components/referrals/ReferralDetail';
+import { ReferralQueueRow } from '../components/referrals/ReferralQueueRow';
+import { QueueDetailSplit, EmptyDetailPane } from '../components/layout/QueueDetailSplit';
 
 const PRIORITY_LABEL: Record<string, string> = { emergency: 'E', urgent: 'U', routine: 'R' };
 // Status scale, not raw red-/amber-/blue-: emergency and urgent used to both
@@ -37,6 +40,8 @@ export const AdminDashboard: React.FC = () => {
   const { referrals, facilities, loading, updateReferralStatus, toggleReferralEscalation, facilitiesById } = useData();
   const navigate = useNavigate();
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Desktop master-detail selection (lg+ only), mirrors Dashboard.tsx's pattern.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (!user || (user.role !== 'system_admin' && user.role !== 'owner')) {
     return <div className="p-8">Access Denied. Admin privileges required.</div>;
@@ -110,6 +115,16 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Desktop master-detail: keep a valid selection as systemEscalations changes.
+  useEffect(() => {
+    if (systemEscalations.length === 0) {
+      if (selectedId !== null) setSelectedId(null);
+    } else if (!systemEscalations.some(r => r.id === selectedId)) {
+      setSelectedId(systemEscalations[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [systemEscalations.map(r => r.id).join(',')]);
+
   return (
     <div className="space-y-6 pb-16 h-full overflow-auto">
       {/* 3a/3d: unified escalation console -- edge-to-edge on phones,
@@ -139,53 +154,79 @@ export const AdminDashboard: React.FC = () => {
             ))}
           </div>
 
-          {systemEscalations.length === 0 ? (
-            <p className="text-sm text-white/60 py-6 text-center">Nothing needs administrative placement right now.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {systemEscalations.map(r => {
-                const reason = r.escalationReason || 'manual';
-                const fromFacility = facilitiesById.get(r.referringFacilityId)?.name || 'referring facility';
-                return (
-                  <div key={r.id} className="rounded-xl border-2 border-critical-700 bg-critical-950/40 overflow-hidden">
-                    <div className="bg-critical-700 px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center justify-between">
-                      <span>System level · {ESCALATION_LABEL[reason]}</span>
-                      <span className="font-mono normal-case">{escalationAge(r)}</span>
-                    </div>
-                    <div className="p-3.5 space-y-3">
-                      <div>
-                        <p className="text-[17px] font-bold">{r.patientData.name}, {r.patientData.age}</p>
-                        <p className="text-sm text-white/60 mt-0.5">{r.requiredBedType} · {r.priority} · from {fromFacility}</p>
+          <div className="lg:hidden">
+            {systemEscalations.length === 0 ? (
+              <p className="text-sm text-white/60 py-6 text-center">Nothing needs administrative placement right now.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {systemEscalations.map(r => {
+                  const reason = r.escalationReason || 'manual';
+                  const fromFacility = facilitiesById.get(r.referringFacilityId)?.name || 'referring facility';
+                  return (
+                    <div key={r.id} className="rounded-xl border-2 border-critical-700 bg-critical-950/40 overflow-hidden">
+                      <div className="bg-critical-700 px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center justify-between">
+                        <span>System level · {ESCALATION_LABEL[reason]}</span>
+                        <span className="font-mono normal-case">{escalationAge(r)}</span>
                       </div>
-                      <p className="text-sm text-white/80 bg-white/5 rounded-lg p-2.5">{ESCALATION_DESC[reason]}</p>
-                      <button
-                        onClick={() => navigate(`/referrals/${r.id}`)}
-                        className="w-full min-h-[52px] rounded-lg bg-white text-slate-950 text-sm font-bold uppercase tracking-wide"
-                      >
-                        {ESCALATION_PRIMARY[reason] || 'Review now'}
-                      </button>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="p-3.5 space-y-3">
+                        <div>
+                          <p className="text-[17px] font-bold">{r.patientData.name}, {r.patientData.age}</p>
+                          <p className="text-sm text-white/60 mt-0.5">{r.requiredBedType} · {r.priority} · from {fromFacility}</p>
+                        </div>
+                        <p className="text-sm text-white/80 bg-white/5 rounded-lg p-2.5">{ESCALATION_DESC[reason]}</p>
                         <button
-                          onClick={() => handlePostpone(r.id)}
-                          disabled={busyId === r.id}
-                          className="min-h-[48px] rounded-lg border border-warning-500 text-warning-400 text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                          onClick={() => navigate(`/referrals/${r.id}`)}
+                          className="w-full min-h-[52px] rounded-lg bg-white text-slate-950 text-sm font-bold uppercase tracking-wide"
                         >
-                          Postpone
+                          {ESCALATION_PRIMARY[reason] || 'Review now'}
                         </button>
-                        <button
-                          onClick={() => handleDeEscalate(r.id)}
-                          disabled={busyId === r.id}
-                          className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-bold uppercase tracking-wide disabled:opacity-50"
-                        >
-                          De-escalate
-                        </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => handlePostpone(r.id)}
+                            disabled={busyId === r.id}
+                            className="min-h-[48px] rounded-lg border border-warning-500 text-warning-400 text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                          >
+                            Postpone
+                          </button>
+                          <button
+                            onClick={() => handleDeEscalate(r.id)}
+                            disabled={busyId === r.id}
+                            className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                          >
+                            De-escalate
+                          </button>
+                        </div>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="hidden lg:block">
+            <QueueDetailSplit
+              list={
+                systemEscalations.length === 0 ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center px-3">Nothing needs administrative placement right now.</p>
+                ) : (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {systemEscalations.map(r => (
+                      <ReferralQueueRow
+                        key={r.id}
+                        referral={r}
+                        escalated
+                        subtitle={`${r.requiredBedType} · ${ESCALATION_LABEL[r.escalationReason || 'manual']} · ${escalationAge(r)}`}
+                        selected={selectedId === r.id}
+                        onSelect={() => setSelectedId(r.id)}
+                      />
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                )
+              }
+              detail={selectedId ? <ReferralDetail referralId={selectedId} variant="pane" /> : <EmptyDetailPane label="Select a case from the list to see its full details." />}
+            />
+          </div>
         </div>
       </div>
 

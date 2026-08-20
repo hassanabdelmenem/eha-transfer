@@ -1,9 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Search, Archive, Download } from 'lucide-react';
 import { formatDateTime } from '../lib/utils';
+import { ReferralDetail } from '../components/referrals/ReferralDetail';
+import { ReferralQueueRow } from '../components/referrals/ReferralQueueRow';
+import { QueueDetailSplit, EmptyDetailPane } from '../components/layout/QueueDetailSplit';
 
 /**
  * Referrals that have ended: the patient was admitted, or the referral was
@@ -18,6 +21,8 @@ export const ArchivePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState<'all' | 'admitted' | 'cancelled'>('all');
+  // Desktop master-detail selection (lg+ only), mirrors Dashboard.tsx's pattern.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const myReferrals = useMemo(() => {
     if (!user) return [];
@@ -106,6 +111,16 @@ export const ArchivePage: React.FC = () => {
     .sort((a, b) => endedAt(b) - endedAt(a)),
   [myReferrals, outcomeFilter, q]);
 
+  // Desktop master-detail: keep a valid selection as the filtered list changes.
+  useEffect(() => {
+    if (mobileRows.length === 0) {
+      if (selectedId !== null) setSelectedId(null);
+    } else if (!mobileRows.some(r => r.id === selectedId)) {
+      setSelectedId(mobileRows[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobileRows.map(r => r.id).join(',')]);
+
   return (
     <div className="flex flex-col space-y-6 pb-16">
       {/* 3b/3d: unified archive header + stat toggles + search + case list,
@@ -153,32 +168,52 @@ export const ArchivePage: React.FC = () => {
           </div>
 
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">All ended cases · {mobileRows.length}</p>
-          {mobileRows.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">No ended cases match.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {mobileRows.map(r => (
-                <button
-                  key={r.id}
-                  onClick={() => navigate(`/referrals/${r.id}`)}
-                  className="w-full text-left rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}, {r.patientData.age}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                        {r.patientData.hospitalId} · {facilitiesById.get(r.referringFacilityId)?.name || '—'} → {r.receivingFacilityId === 'auto' ? 'auto-routed' : (facilitiesById.get(r.receivingFacilityId)?.name || '—')}
-                      </p>
+
+          <div className="lg:hidden">
+            {mobileRows.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">No ended cases match.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {mobileRows.map(r => (
+                  <button
+                    key={r.id}
+                    onClick={() => navigate(`/referrals/${r.id}`)}
+                    className="w-full text-left rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}, {r.patientData.age}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                          {r.patientData.hospitalId} · {facilitiesById.get(r.referringFacilityId)?.name || '—'} → {r.receivingFacilityId === 'auto' ? 'auto-routed' : (facilitiesById.get(r.receivingFacilityId)?.name || '—')}
+                        </p>
+                      </div>
+                      <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${r.status === 'admitted' ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400' : 'bg-critical-100 text-critical-700 dark:bg-critical-900/30 dark:text-critical-400'}`}>
+                        {r.status}
+                      </span>
                     </div>
-                    <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${r.status === 'admitted' ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400' : 'bg-critical-100 text-critical-700 dark:bg-critical-900/30 dark:text-critical-400'}`}>
-                      {r.status}
-                    </span>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">{closedLine(r)}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="hidden lg:block">
+            <QueueDetailSplit
+              list={
+                mobileRows.length === 0 ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center px-3">No ended cases match.</p>
+                ) : (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {mobileRows.map(r => (
+                      <ReferralQueueRow key={r.id} referral={r} subtitle={closedLine(r)} selected={selectedId === r.id} onSelect={() => setSelectedId(r.id)} />
+                    ))}
                   </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">{closedLine(r)}</p>
-                </button>
-              ))}
-            </div>
-          )}
+                )
+              }
+              detail={selectedId ? <ReferralDetail referralId={selectedId} variant="pane" /> : <EmptyDetailPane label="Select a case from the list to see its full details." />}
+            />
+          </div>
         </div>
       </div>
     </div>
