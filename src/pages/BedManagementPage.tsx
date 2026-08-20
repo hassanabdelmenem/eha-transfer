@@ -129,7 +129,7 @@ export const BedManagementPage: React.FC = () => {
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Quickly update bed availability across {facility?.name || 'the facility'}.</p>
         </div>
         {facility && (
-          <Button onClick={handleSave} className="hidden md:inline-flex bg-emerald-600 hover:bg-emerald-700 shrink-0">
+          <Button onClick={handleSave} className="inline-flex bg-emerald-600 hover:bg-emerald-700 shrink-0">
             {saved ? <CheckCircle className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             {saved ? 'Saved' : 'Save Changes'}
           </Button>
@@ -163,8 +163,9 @@ export const BedManagementPage: React.FC = () => {
         </div>
       ) : facility ? (
         <>
-          {/* Mobile: 2b bed steppers -- write immediately, no Save button. */}
-          <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* 2b/3d: bed steppers -- write immediately, no Save button --
+              reflow into a wider grid instead of being mobile-only. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[])
               .filter(bt => (capacities[bt]?.total ?? 0) > 0)
               .map(bt => (
@@ -178,7 +179,7 @@ export const BedManagementPage: React.FC = () => {
               ))}
           </div>
 
-          <div className="hidden md:block">
+          <div>
           <div className="flex items-center gap-2 mb-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-max">
         <button
           onClick={() => setViewMode('visual')}
