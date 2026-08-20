@@ -162,7 +162,7 @@ export const NewReferralPage: React.FC = () => {
     }
 
     addReferral({
-      patientId: `p-${Math.random().toString(36).substring(7)}`,
+      patientId: `p-${Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('')}`,
       patientData: patientData as PatientData,
       referringFacilityId: user.facilityId || '',
       referringUserId: user.id,
