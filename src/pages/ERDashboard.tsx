@@ -3,9 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Referral } from '../types';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { Clock, Truck, Check, UserCheck, Phone, ChevronRight } from 'lucide-react';
+import { Truck, Check, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { toastError } from '../lib/toast';
 import { Skeleton, SkeletonGroup } from '../components/ui/Skeleton';
@@ -118,69 +117,6 @@ const OutboundMobileCard: React.FC<{ referral: Referral; onDispatch: (id: string
   );
 };
 
-// Ambulance dispatch for a transfer flagged as needing a doctor escort is
-// gated on this form: the ER Room Official records who is riding along before
-// "Request Ambulance" can be pressed. Kept as its own component so each card
-// in the list owns its own name/phone draft instead of one shared input.
-const AccompanyingDoctorGate: React.FC<{ referral: Referral }> = ({ referral }) => {
-  const { setAccompanyingDoctor } = useData();
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  if (referral.accompanyingDoctor) {
-    return (
-      <p className="text-xs text-success-700 dark:text-success-400 mt-2 flex items-center gap-1">
-        <UserCheck className="w-3.5 h-3.5 shrink-0" />
-        Escort: {referral.accompanyingDoctor.name} ({referral.accompanyingDoctor.phoneNumber})
-      </p>
-    );
-  }
-
-  const handleSave = async () => {
-    setBusy(true);
-    try {
-      await setAccompanyingDoctor(referral.id, name, phone);
-      setName('');
-      setPhone('');
-    } catch (e: any) {
-      toastError(e, "Could not save the accompanying doctor's details.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-      <p className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase flex items-center gap-1">
-        <UserCheck className="w-3.5 h-3.5 shrink-0" /> Accompanying Doctor Required
-      </p>
-      <input
-        type="text"
-        placeholder="Doctor's name"
-        value={name}
-        onChange={e => setName(e.target.value)}
-        className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-1.5 text-xs"
-      />
-      <input
-        type="tel"
-        placeholder="Doctor's phone number"
-        value={phone}
-        onChange={e => setPhone(e.target.value)}
-        className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-1.5 text-xs"
-      />
-      <Button
-        onClick={handleSave}
-        disabled={busy || !name.trim() || !phone.trim()}
-        size="sm"
-        className="w-full text-xs"
-      >
-        Save Escort Details
-      </Button>
-    </div>
-  );
-};
-
 const InboundMobileCard: React.FC<{ referral: Referral; onConfirmArrival: (id: string) => void; getFacilityName: (id: string) => string }> = ({ referral, onConfirmArrival, getFacilityName }) => (
   <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5">
     <div className="flex items-start justify-between gap-2">
@@ -245,158 +181,55 @@ export const ERDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Mobile: 2a outbound/inbound gated cards */}
-      <div className="md:hidden space-y-5">
+      {/* 2a/3d: unified outbound/inbound gated cards -- reflow into a
+          two-column grid on tablet/desktop instead of being mobile-only. */}
+      <div className="space-y-5">
         <div>
           <h1 className="text-[26px] font-heading font-semibold text-slate-900 dark:text-slate-100">ER Room</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{user.facilityId ? getFacilityName(user.facilityId) : 'Facility'}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{user.facilityId ? getFacilityName(user.facilityId) : 'Facility'} · Track active referrals and manage ambulance dispatch/arrivals.</p>
         </div>
 
-        <div>
-          <div className="px-3 py-1.5 rounded-t-lg bg-warning-100 dark:bg-warning-900/30 text-warning-800 dark:text-warning-300 text-xs font-bold uppercase tracking-wide">
-            Outbound · awaiting ambulance
-          </div>
-          <div className="space-y-3 pt-3">
-            {loading && (
-              <SkeletonGroup label="Loading transfers…" className="space-y-3">
-                {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
-              </SkeletonGroup>
-            )}
-            {!loading && outboundQueue.length === 0 && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No patients awaiting transport.</p>
-            )}
-            {!loading && outboundQueue.map(r => (
-              <OutboundMobileCard key={r.id} referral={r} onDispatch={handleRequestAmbulance} getFacilityName={getFacilityName} />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="px-3 py-1.5 rounded-t-lg bg-info-100 dark:bg-info-900/30 text-info-800 dark:text-info-300 text-xs font-bold uppercase tracking-wide">
-            Inbound · in transit
-          </div>
-          <div className="space-y-3 pt-3">
-            {loading && (
-              <SkeletonGroup label="Loading transfers…" className="space-y-3">
-                {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
-              </SkeletonGroup>
-            )}
-            {!loading && inboundQueue.length === 0 && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No incoming patients currently in transit.</p>
-            )}
-            {!loading && inboundQueue.map(r => (
-              <InboundMobileCard key={r.id} referral={r} onConfirmArrival={handleConfirmArrival} getFacilityName={getFacilityName} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="hidden md:block">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">ER Room Dashboard</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">Track active referrals and manage ambulance dispatch/arrivals.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {/* Outgoing - Needs Ambulance */}
-        <Card className="border-amber-200 dark:border-amber-900/50">
-          <CardHeader className="bg-amber-50/50 dark:bg-amber-900/10">
-            <CardTitle className="text-amber-700 dark:text-amber-500 flex items-center gap-2">
-              <Truck className="w-5 h-5" />
-              Outgoing Transfers (Awaiting Ambulance)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            {loading && (
-              <SkeletonGroup label="Loading transfers…" className="space-y-4">
-                {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
-              </SkeletonGroup>
-            )}
-            {!loading && awaitingTransport.map(referral => {
-              const consentRecorded = referral.status === 'patient_consented';
-              const escortMissing = !!referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor;
-              return (
-                <div key={referral.id} className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm">
-                  <div className="flex justify-between items-start gap-3 mb-2">
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">To: {getFacilityName(referral.receivingFacilityId)}</p>
-                    </div>
-                    <Badge variant={referral.priority === 'emergency' ? 'danger' : 'warning'} className="shrink-0">
-                      {referral.priority}
-                    </Badge>
-                  </div>
-
-                  {consentRecorded && referral.requiresAccompanyingDoctor && (
-                    <AccompanyingDoctorGate referral={referral} />
-                  )}
-
-                  <Button
-                    onClick={() => handleRequestAmbulance(referral.id)}
-                    disabled={!consentRecorded || escortMissing}
-                    className="w-full mt-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    <Truck className="w-4 h-4 mr-2" /> Request Ambulance
-                  </Button>
-                  {!consentRecorded && (
-                    <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 text-center">
-                      Awaiting patient consent before dispatch.
-                    </p>
-                  )}
-                  {consentRecorded && escortMissing && (
-                    <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 text-center">
-                      Record the accompanying doctor above before dispatch.
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-            {!loading && awaitingTransport.length === 0 && (
-              <p className="text-sm text-slate-500 text-center py-4">No patients awaiting transport.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Incoming - Expected Arrivals */}
-        <Card className="border-blue-200 dark:border-blue-900/50">
-          <CardHeader className="bg-blue-50/50 dark:bg-blue-900/10">
-            <CardTitle className="text-blue-700 dark:text-blue-500 flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              Incoming Transfers (In Transit)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            {loading && (
-              <SkeletonGroup label="Loading transfers…" className="space-y-4">
-                {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
-              </SkeletonGroup>
-            )}
-            {!loading && activeReferrals
-              .filter(r => r.receivingFacilityId === user.facilityId && r.status === 'in_transit')
-              .map(referral => (
-                <div key={referral.id} className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm">
-                  <div className="flex justify-between items-start gap-3 mb-2">
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">From: {getFacilityName(referral.referringFacilityId)}</p>
-                    </div>
-                    <Badge variant="info" className="shrink-0">In Transit</Badge>
-                  </div>
-                  <Button 
-                    onClick={() => handleConfirmArrival(referral.id)}
-                    className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    <Check className="w-4 h-4 mr-2" /> Confirm Arrival
-                  </Button>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div className="px-3 py-1.5 rounded-t-lg bg-warning-100 dark:bg-warning-900/30 text-warning-800 dark:text-warning-300 text-xs font-bold uppercase tracking-wide">
+              Outbound · awaiting ambulance
+            </div>
+            <div className="space-y-3 pt-3">
+              {loading && (
+                <SkeletonGroup label="Loading transfers…" className="space-y-3">
+                  {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
+                </SkeletonGroup>
+              )}
+              {!loading && outboundQueue.length === 0 && (
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No patients awaiting transport.</p>
+              )}
+              {!loading && outboundQueue.map(r => (
+                <OutboundMobileCard key={r.id} referral={r} onDispatch={handleRequestAmbulance} getFacilityName={getFacilityName} />
               ))}
-             {!loading && activeReferrals.filter(r => r.receivingFacilityId === user.facilityId && r.status === 'in_transit').length === 0 && (
-              <p className="text-sm text-slate-500 text-center py-4">No incoming patients currently in transit.</p>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+
+          <div>
+            <div className="px-3 py-1.5 rounded-t-lg bg-info-100 dark:bg-info-900/30 text-info-800 dark:text-info-300 text-xs font-bold uppercase tracking-wide">
+              Inbound · in transit
+            </div>
+            <div className="space-y-3 pt-3">
+              {loading && (
+                <SkeletonGroup label="Loading transfers…" className="space-y-3">
+                  {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
+                </SkeletonGroup>
+              )}
+              {!loading && inboundQueue.length === 0 && (
+                <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No incoming patients currently in transit.</p>
+              )}
+              {!loading && inboundQueue.map(r => (
+                <InboundMobileCard key={r.id} referral={r} onConfirmArrival={handleConfirmArrival} getFacilityName={getFacilityName} />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
-      
+
       <Card>
         <CardHeader>
            <CardTitle>All Active Referrals Overview</CardTitle>
@@ -458,7 +291,6 @@ export const ERDashboard: React.FC = () => {
            </div>
         </CardContent>
       </Card>
-      </div>
     </div>
   );
 };

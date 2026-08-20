@@ -303,78 +303,90 @@ export const ReferralDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-16 sm:pb-0 max-w-5xl mx-auto print:max-w-none print:pb-0 print:m-0 print:space-y-4">
-      {/* Mobile header: dark identity card + stage rail, replacing the plain
-          "Referral Details" banner every role otherwise scrolled past. */}
-      <div className="md:hidden -mt-4 sm:-mt-6 -mx-4 sm:-mx-6 print:hidden">
-        <div className="bg-slate-950 text-white px-4 pt-4 pb-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              aria-label="Go back"
-              className="h-11 w-11 -ml-2 shrink-0 flex items-center justify-center rounded text-white/80 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
-            </button>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-lg font-heading font-semibold truncate">
-                {referral.patientData.name || 'Unknown patient'}, {referral.patientData.age}
-              </h1>
-              <p className="text-xs text-white/60 truncate uppercase tracking-wide">
-                {referral.patientData.hospitalId} · {referral.requiredBedType} · {referral.priority}
-              </p>
+      {/* Print-only header: kept minimal and separate from the interactive
+          header below, which is print:hidden entirely (PrintableSummary
+          covers the printed page). */}
+      <div className="hidden print:block">
+        <h1 className="text-2xl font-bold text-gray-900">Referral Details</h1>
+        <p className="text-sm text-gray-500 font-mono">ID: {referral.id}</p>
+      </div>
+
+      {/* 2c/3d: unified identity card + stage rail + banner + actions --
+          edge-to-edge on phones, contained in a rounded card once there's
+          room, replacing the plain "Referral Details" banner every role
+          otherwise scrolled past. */}
+      <div className="-mt-4 sm:mt-0 -mx-4 sm:mx-0 sm:rounded-xl sm:overflow-hidden print:hidden">
+        <div className="bg-slate-950 text-white px-4 pt-4 pb-4 sm:px-6 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                onClick={() => navigate(-1)}
+                aria-label="Go back"
+                className="h-11 w-11 -ml-2 shrink-0 flex items-center justify-center rounded text-white/80 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+              </button>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl font-heading font-semibold truncate">
+                  {referral.patientData.name || 'Unknown patient'}, {referral.patientData.age}
+                </h1>
+                <div className="flex items-center gap-1 min-w-0">
+                  <p className="text-xs text-white/60 truncate uppercase tracking-wide">
+                    {referral.patientData.hospitalId} · {referral.requiredBedType} · {referral.priority} · ID: {referral.id}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCopyId}
+                    aria-label="Copy referral ID"
+                    className="inline-flex items-center justify-center h-8 w-8 shrink-0 rounded text-white/60 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-success-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
+                  </button>
+                  <span className="sr-only" role="status">{copied ? 'Referral ID copied to clipboard' : ''}</span>
+                </div>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant={referral.isEscalated ? "destructive" : "outline"}
+                className={referral.isEscalated ? "bg-critical-600 text-white hover:bg-critical-700" : "bg-white/10 border-white/25 text-white hover:bg-white/20"}
+                onClick={handleToggleEscalation}
+              >
+                <ShieldAlert className="h-4 w-4 mr-2" />
+                {referral.isEscalated ? 'De-escalate' : 'Mark Escalated'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="bg-white/10 border-white/25 text-white hover:bg-white/20"
+                onClick={() => handlePrint()}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Generate PDF Summary
+              </Button>
             </div>
           </div>
           <StageRail status={referral.status} />
-        </div>
-        <div className={`px-4 py-3 border-b text-xs font-bold uppercase tracking-wide ${BANNER_TINT_CLASSES[mobileBanner.tint]}`}>
-          {mobileBanner.label}
-        </div>
-      </div>
-
-      <div className="hidden md:flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="print:hidden" aria-label="Go back">
-            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Referral Details</h1>
-
-            <div className="flex items-center gap-2">
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">ID: {referral.id}</p>
-              {/* The button box used to be the 12px icon itself — half the 24px
-                  WCAG 2.5.8 minimum, with no accessible name and a copy
-                  confirmation that changed only a glyph. The negative margin keeps
-                  the enlarged target from shifting the surrounding layout. */}
-              <button
-                type="button"
-                onClick={handleCopyId}
-                aria-label="Copy referral ID"
-                className="inline-flex items-center justify-center h-11 w-11 -m-3 rounded text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-              >
-                {copied ? <Check className="w-4 h-4 text-success-600" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
-              </button>
-              <span className="sr-only" role="status">{copied ? 'Referral ID copied to clipboard' : ''}</span>
-            </div>
-
+          <div className="flex sm:hidden items-center gap-2">
+            <button
+              onClick={handleToggleEscalation}
+              className={`flex-1 min-h-[44px] rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 ${referral.isEscalated ? 'bg-critical-600 text-white' : 'border border-white/25 text-white'}`}
+            >
+              <ShieldAlert className="h-3.5 w-3.5" />
+              {referral.isEscalated ? 'De-escalate' : 'Mark Escalated'}
+            </button>
+            <button
+              onClick={() => handlePrint()}
+              className="flex-1 min-h-[44px] rounded-lg border border-white/25 text-white text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-1.5"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              PDF Summary
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-2 print:hidden">
-          <Button
-            variant={referral.isEscalated ? "destructive" : "outline"}
-            className={referral.isEscalated ? "bg-critical-600 text-white hover:bg-critical-700" : "bg-white dark:bg-slate-900"}
-            onClick={handleToggleEscalation}
-          >
-            <ShieldAlert className="h-4 w-4 mr-2" />
-            {referral.isEscalated ? 'De-escalate' : 'Mark Escalated'}
-          </Button>
-          <Button 
-            variant="outline" 
-            className="bg-white dark:bg-slate-900"
-            onClick={() => handlePrint()}
-          >
-            <Printer className="h-4 w-4 mr-2" />
-            Generate PDF Summary
-          </Button>
+        <div className={`px-4 sm:px-6 py-3 border-b text-xs font-bold uppercase tracking-wide ${BANNER_TINT_CLASSES[mobileBanner.tint]}`}>
+          {mobileBanner.label}
         </div>
       </div>
 

@@ -259,9 +259,10 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-16 sm:pb-0">
-      {/* ---- Mobile: role-specific home (1a / 1c) ---- */}
-      <div className={`md:hidden -mt-4 sm:-mt-6 -mx-4 sm:-mx-6 ${isManager ? 'bg-slate-950 text-white' : ''}`}>
-        <div className={`px-4 pt-4 pb-4 ${isManager ? '' : 'bg-white dark:bg-slate-950'}`}>
+      {/* ---- 1a/1c/3d: role-specific home -- edge-to-edge on phones,
+          contained in a rounded card once there's room. ---- */}
+      <div className={`-mt-4 -mx-4 sm:mt-0 sm:mx-0 sm:rounded-xl sm:overflow-hidden ${isManager ? 'bg-slate-950 text-white' : ''}`}>
+        <div className={`px-4 pt-4 pb-4 sm:px-6 ${isManager ? '' : 'bg-white dark:bg-slate-950'}`}>
           <div className="flex items-center justify-between">
             <div className="min-w-0">
               <p className={`text-xs uppercase tracking-wide truncate ${isManager ? 'text-white/60' : 'text-slate-500 dark:text-slate-400'}`}>
@@ -323,32 +324,36 @@ export const Dashboard: React.FC = () => {
                 </div>
               )}
 
-              <div className="mt-4 space-y-3">
+              <div className="mt-4">
                 {managerQueue.length === 0 ? (
                   <p className="text-sm text-white/60 py-4 text-center">Nothing waiting on your signature.</p>
-                ) : managerQueue.map(r => {
-                  const approvingComment = [...(r.deptComments || [])].reverse().find(c => ['direct_approval', 'urgent_approval', 'scheduled_approval'].includes(c.status));
-                  const approver = approvingComment ? usersById.get(approvingComment.userId) : undefined;
-                  return (
-                    <div key={r.id} className={`rounded-xl bg-white/[0.06] border border-white/15 p-3.5 ${priorityRailClass(r.priority, r.isEscalated)}`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-[17px] font-bold truncate">{r.patientData.name}, {r.patientData.age}</p>
-                          <p className="text-sm text-white/60 truncate mt-0.5">{r.requiredBedType} · approved by {approver?.name || 'department'}</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {managerQueue.map(r => {
+                      const approvingComment = [...(r.deptComments || [])].reverse().find(c => ['direct_approval', 'urgent_approval', 'scheduled_approval'].includes(c.status));
+                      const approver = approvingComment ? usersById.get(approvingComment.userId) : undefined;
+                      return (
+                        <div key={r.id} className={`rounded-xl bg-white/[0.06] border border-white/15 p-3.5 ${priorityRailClass(r.priority, r.isEscalated)}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-[17px] font-bold truncate">{r.patientData.name}, {r.patientData.age}</p>
+                              <p className="text-sm text-white/60 truncate mt-0.5">{r.requiredBedType} · approved by {approver?.name || 'department'}</p>
+                            </div>
+                            <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mt-3">
+                            <button onClick={() => setSummaryReferral(r)} className="min-h-[48px] rounded-lg border border-white/30 text-white text-sm font-bold uppercase tracking-wide">
+                              Summary
+                            </button>
+                            <button onClick={() => handleManagerAccept(r.id)} className="min-h-[48px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide">
+                              Accept
+                            </button>
+                          </div>
                         </div>
-                        <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 mt-3">
-                        <button onClick={() => setSummaryReferral(r)} className="min-h-[48px] rounded-lg border border-white/30 text-white text-sm font-bold uppercase tracking-wide">
-                          Summary
-                        </button>
-                        <button onClick={() => handleManagerAccept(r.id)} className="min-h-[48px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide">
-                          Accept
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </>
           ) : (
@@ -378,17 +383,21 @@ export const Dashboard: React.FC = () => {
                 ))}
               </div>
 
-              <div className="mt-4 space-y-3">
+              <div className="mt-4">
                 {activeSegmentReferrals.length === 0 ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">Nothing here right now.</p>
-                ) : activeSegmentReferrals.map(r => (
-                  <ClinicianReferralCard
-                    key={r.id}
-                    referral={r}
-                    actionLabel={segment === 'you' ? youActionLabel(r) : 'View'}
-                    actionSentence={segment === 'you' ? youActionSentence(r) : undefined}
-                  />
-                ))}
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {activeSegmentReferrals.map(r => (
+                      <ClinicianReferralCard
+                        key={r.id}
+                        referral={r}
+                        actionLabel={segment === 'you' ? youActionLabel(r) : 'View'}
+                        actionSentence={segment === 'you' ? youActionSentence(r) : undefined}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -422,8 +431,9 @@ export const Dashboard: React.FC = () => {
 
       {summaryReferral && <ReferralSummarySheet referral={summaryReferral} onClose={() => setSummaryReferral(null)} />}
 
-      {/* ---- Desktop (and tablet) analytics dashboard, unchanged ---- */}
-      <div className="hidden md:block space-y-6">
+      {/* ---- 3d: analytics dashboard, now available at every width instead
+          of desktop/tablet-only, stacked below the role home above. ---- */}
+      <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Overview</h1>
         <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800/50 text-xs font-bold shadow-sm">
