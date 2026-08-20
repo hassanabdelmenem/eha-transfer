@@ -193,8 +193,7 @@ export const Dashboard: React.FC = () => {
 
   const userFacility = facilitiesById.get(user.facilityId || '');
   const isManager = user.role === 'hospital_manager' || user.role === 'deputy_manager' || user.role === 'medical_director' || user.role === 'owner';
-  const showBeds = userFacility && userFacility.type !== 'primary_care' && (isManager || ['nursing_supervisor', 'nurse', 'owner'].includes(user.role));
-  
+
   const activeReferralsAdmitted = referrals.filter(r => r.status === 'admitted' && r.receivingFacilityId === user.facilityId);
   const activeDirectAdmissions = directAdmissions.filter(a => a.facilityId === user.facilityId && a.status !== 'discharged');
 
@@ -448,44 +447,6 @@ export const Dashboard: React.FC = () => {
           <div className="flex-1">
             <h3 className="text-sm font-bold text-critical-800 dark:text-critical-400">Critical Alerts Active</h3>
             <p className="text-xs text-critical-600 dark:text-critical-500 mt-0.5">There are {pendingEmergencies.length} high-priority emergency referrals requiring immediate attention.</p>
-          </div>
-        </div>
-      )}
-
-      {showBeds && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-bold uppercase text-slate-700 dark:text-slate-300">Available Beds ({userFacility.name})</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            {loading ? (
-              Array.from({ length: 4 }).map((_, i) => <SkeletonStatCard key={i} />)
-            ) : (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => {
-              const cap = userFacility.capacity[bed];
-              if (!cap) return null;
-              const available = cap.total - cap.occupied;
-              return (
-                <Card key={bed} className="border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wider">{bed} Total Available</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-end gap-2 mb-2">
-                      <span className={`text-3xl font-bold ${available > 0 ? 'text-success-600' : 'text-critical-600'}`}>
-                        {available}
-                      </span>
-                      <span className="text-sm text-slate-500 dark:text-slate-400 mb-1">/ {cap.total}</span>
-                    </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        // Three real states (ok / low / full) need three distinct
-                        // colors — amber and red used to render identically here.
-                        className={`h-full rounded-full transition-all duration-500 ${available > 0 ? (available / cap.total < 0.2 ? 'bg-warning-500' : 'bg-success-500') : 'bg-critical-500'}`}
-                        style={{ width: `${(cap.occupied / cap.total) * 100}%` }}
-                      ></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
           </div>
         </div>
       )}

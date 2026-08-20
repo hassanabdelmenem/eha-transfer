@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Search, Phone } from 'lucide-react';
 import { Skeleton } from '../components/ui/Skeleton';
 import { BedType, Facility } from '../types';
@@ -191,114 +190,6 @@ export const NetworkDirectoryPage: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Staff & schedules: per-facility detail preserved from the original
-          desktop layout, now available at every width (scrolls horizontally
-          on narrow screens rather than being hidden). */}
-      <div className="space-y-6">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 px-1">Staff &amp; schedules</h2>
-      {loading ? (
-        <div className="space-y-6" role="status" aria-busy="true" aria-live="polite">
-          <span className="sr-only">Loading directory…</span>
-          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
-        </div>
-      ) : filteredFacilities.length === 0 ? (
-        <Card className="p-8 text-center text-slate-500 dark:text-slate-400 border-dashed shadow-none">
-          {q ? `No facilities or staff match "${searchQuery}".` : 'No facilities to display.'}
-        </Card>
-      ) : (
-      <div className="space-y-6">
-        {filteredFacilities.map(facility => (
-          <Card key={facility.id} className="overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
-            <CardHeader className="bg-slate-50 dark:bg-slate-950 pb-4 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex justify-between items-center gap-2">
-                <div className="min-w-0">
-                  <CardTitle className="text-slate-900 dark:text-slate-100 text-base truncate">{facility.name}</CardTitle>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">{facility.location}</p>
-                </div>
-
-                <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold shrink-0 whitespace-nowrap ${facility.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>
-                  {(facility.type || "").replace('_', ' ')}
-                </span>
-
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm whitespace-nowrap">
-                  <thead className="bg-white dark:bg-slate-900 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-100 dark:border-slate-800">
-                    <tr>
-                      <th className="px-4 py-3">Role / Department</th>
-                      <th className="px-4 py-3">Name</th>
-                      <th className="px-4 py-3">Contact</th>
-                      <th className="px-4 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {users.filter(u => {
-                      if (!isUserAllowed(u, facility.id)) return false;
-                      if (!q) return true;
-                      return (
-                        u.name.toLowerCase().includes(q) || 
-                        (u.department || '').toLowerCase().includes(q) || 
-                        (u.role || "").toLowerCase().replace(/_/g, ' ').includes(q)
-                      );
-                    }).map(u => {
-                      let roleDisplay = (u.role || "").replace(/_/g, ' ');
-                      if (u.role === 'head_of_department' || ['consultant', 'specialist', 'resident'].includes(u.role)) {
-                         roleDisplay += ` (${u.department})`;
-                      }
-                      
-                      let isResponsibleNow = false;
-                      if (u.role === 'head_of_department') {
-                         const assignment = (shiftAssignments || []).find(s => s.facilityId === facility.id && s.department === u.department);
-                         isResponsibleNow = !assignment || !assignment.assignedUserId;
-                      } else if (['consultant', 'specialist', 'resident'].includes(u.role)) {
-                         const assignment = (shiftAssignments || []).find(s => s.facilityId === facility.id && s.department === u.department);
-                         isResponsibleNow = assignment?.assignedUserId === u.id;
-                      } else {
-                         isResponsibleNow = true;
-                      }
-
-                      if (['consultant', 'specialist', 'resident'].includes(u.role) && !isResponsibleNow) return null;
-
-                      return (
-                        <React.Fragment key={u.id}>
-                          <tr className="hover:bg-slate-50 dark:hover:bg-slate-800">
-                            <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 capitalize">{roleDisplay}</td>
-                            <td className="px-4 py-3 text-slate-800 dark:text-slate-200">{u.name}</td>
-                            <td className="px-4 py-3 font-mono text-slate-600">{u.phoneNumber || 'N/A'}</td>
-                            <td className="px-4 py-3">
-                              {isResponsibleNow ? (
-                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 border border-green-200">ACTIVE ON CALL</span>
-                              ) : null}
-                            </td>
-                          </tr>
-                          {u.monthlySchedule && (
-                            <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
-                              <td colSpan={4} className="px-4 py-2 text-xs text-slate-600 dark:text-slate-400">
-                                <span className="font-bold text-xs uppercase mr-2 text-slate-500">Monthly Schedule:</span>
-                                {u.monthlySchedule}
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                    {users.filter(u => isUserAllowed(u, facility.id)).length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-4 text-center text-slate-500 dark:text-slate-400 italic">No directory information available.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      )}
       </div>
     </div>
   );
