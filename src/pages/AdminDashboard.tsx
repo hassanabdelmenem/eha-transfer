@@ -113,12 +113,14 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-16 h-full overflow-auto">
-      {/* Mobile: 3a escalation console */}
-      <div className="md:hidden -mt-4 -mx-4 bg-slate-950 text-white">
-        <div className="px-4 pt-4 pb-4 space-y-4">
+      {/* 3a/3d: unified escalation console -- edge-to-edge on phones,
+          contained in a rounded card once there's room, escalation cards
+          reflow into a responsive grid at wider widths. */}
+      <div className="-mt-4 -mx-4 sm:mt-0 sm:mx-0 sm:rounded-xl sm:overflow-hidden bg-slate-950 text-white">
+        <div className="px-4 pt-4 pb-4 sm:px-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg font-heading font-semibold">Escalation console</h1>
+              <h1 className="text-lg sm:text-xl font-heading font-semibold">Escalation console</h1>
               <p className="text-xs text-white/60">System administrator · whole network</p>
             </div>
           </div>
@@ -128,7 +130,7 @@ export const AdminDashboard: React.FC = () => {
             <p className="text-sm text-white/60 mt-1">System-level means chasing the hospitals will not help — the capacity does not exist.</p>
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-8 xl:grid-cols-4 gap-2">
             {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => (
               <div key={bed} className="rounded-lg bg-white/5 border border-white/10 p-2.5 text-center">
                 <p className="text-[10px] font-bold uppercase text-white/50">{bed}</p>
@@ -138,55 +140,57 @@ export const AdminDashboard: React.FC = () => {
             ))}
           </div>
 
-          <div className="space-y-3">
-            {systemEscalations.length === 0 ? (
-              <p className="text-sm text-white/60 py-6 text-center">Nothing needs administrative placement right now.</p>
-            ) : systemEscalations.map(r => {
-              const reason = r.escalationReason || 'manual';
-              const fromFacility = facilitiesById.get(r.referringFacilityId)?.name || 'referring facility';
-              return (
-                <div key={r.id} className="rounded-xl border-2 border-critical-700 bg-critical-950/40 overflow-hidden">
-                  <div className="bg-critical-700 px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center justify-between">
-                    <span>System level · {ESCALATION_LABEL[reason]}</span>
-                    <span className="font-mono normal-case">{escalationAge(r)}</span>
-                  </div>
-                  <div className="p-3.5 space-y-3">
-                    <div>
-                      <p className="text-[17px] font-bold">{r.patientData.name}, {r.patientData.age}</p>
-                      <p className="text-sm text-white/60 mt-0.5">{r.requiredBedType} · {r.priority} · from {fromFacility}</p>
+          {systemEscalations.length === 0 ? (
+            <p className="text-sm text-white/60 py-6 text-center">Nothing needs administrative placement right now.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {systemEscalations.map(r => {
+                const reason = r.escalationReason || 'manual';
+                const fromFacility = facilitiesById.get(r.referringFacilityId)?.name || 'referring facility';
+                return (
+                  <div key={r.id} className="rounded-xl border-2 border-critical-700 bg-critical-950/40 overflow-hidden">
+                    <div className="bg-critical-700 px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center justify-between">
+                      <span>System level · {ESCALATION_LABEL[reason]}</span>
+                      <span className="font-mono normal-case">{escalationAge(r)}</span>
                     </div>
-                    <p className="text-sm text-white/80 bg-white/5 rounded-lg p-2.5">{ESCALATION_DESC[reason]}</p>
-                    <button
-                      onClick={() => navigate(`/referrals/${r.id}`)}
-                      className="w-full min-h-[52px] rounded-lg bg-white text-slate-950 text-sm font-bold uppercase tracking-wide"
-                    >
-                      {ESCALATION_PRIMARY[reason] || 'Review now'}
-                    </button>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="p-3.5 space-y-3">
+                      <div>
+                        <p className="text-[17px] font-bold">{r.patientData.name}, {r.patientData.age}</p>
+                        <p className="text-sm text-white/60 mt-0.5">{r.requiredBedType} · {r.priority} · from {fromFacility}</p>
+                      </div>
+                      <p className="text-sm text-white/80 bg-white/5 rounded-lg p-2.5">{ESCALATION_DESC[reason]}</p>
                       <button
-                        onClick={() => handlePostpone(r.id)}
-                        disabled={busyId === r.id}
-                        className="min-h-[48px] rounded-lg border border-warning-500 text-warning-400 text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                        onClick={() => navigate(`/referrals/${r.id}`)}
+                        className="w-full min-h-[52px] rounded-lg bg-white text-slate-950 text-sm font-bold uppercase tracking-wide"
                       >
-                        Postpone
+                        {ESCALATION_PRIMARY[reason] || 'Review now'}
                       </button>
-                      <button
-                        onClick={() => handleDeEscalate(r.id)}
-                        disabled={busyId === r.id}
-                        className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-bold uppercase tracking-wide disabled:opacity-50"
-                      >
-                        De-escalate
-                      </button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => handlePostpone(r.id)}
+                          disabled={busyId === r.id}
+                          className="min-h-[48px] rounded-lg border border-warning-500 text-warning-400 text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                        >
+                          Postpone
+                        </button>
+                        <button
+                          onClick={() => handleDeEscalate(r.id)}
+                          disabled={busyId === r.id}
+                          className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                        >
+                          De-escalate
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="hidden md:block space-y-6">
+      <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">System Administrator Dashboard</h1>
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Global view of all facilities, bed capacities, and active waitlists.</p>
