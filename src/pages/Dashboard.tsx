@@ -17,17 +17,29 @@ import { SkeletonStatCard, Skeleton } from '../components/ui/Skeleton';
 import { sortByWorkflow, priorityRailClass, priorityChipClasses } from '../lib/referralPriority';
 import { toastError } from '../lib/toast';
 import { RoleHomeHeader } from '../components/layout/RoleHomeHeader';
+import { WizardDraft, loadReferralDraft } from '../lib/referralDraft';
 
 type ClinicianSegment = 'you' | 'them' | 'moving';
 
-const ClinicianReferralCard: React.FC<{ referral: Referral; actionLabel: string; actionSentence?: string }> = ({ referral, actionLabel, actionSentence }) => {
+// Card context line reads "bed type · facility" per spec -- the facility the
+// clinician is sending to (or has sent to), not the receiving department(s),
+// which the priority chip and detail page already cover.
+const referralFacilityLabel = (referral: Referral, facilitiesById: Map<string, { name: string }>) => {
+  if (referral.receivingFacilityId === 'auto') {
+    const n = referral.candidateFacilityIds?.length;
+    return n ? `Auto-routing · ${n} candidate${n === 1 ? '' : 's'}` : 'Auto-routing';
+  }
+  return facilitiesById.get(referral.receivingFacilityId)?.name || 'Unassigned facility';
+};
+
+const ClinicianReferralCard: React.FC<{ referral: Referral; actionLabel: string; actionSentence?: string; facilitiesById: Map<string, { name: string }> }> = ({ referral, actionLabel, actionSentence, facilitiesById }) => {
   const navigate = useNavigate();
   return (
     <div className={`shrink-0 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 ${priorityRailClass(referral.priority, referral.isEscalated)}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[17px] font-semibold text-slate-900 dark:text-slate-100 truncate">{referral.patientData.name}, {referral.patientData.age}</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{referral.requiredBedType} · {referral.receivingDepartments?.join(', ') || 'Unassigned'}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{referral.requiredBedType} · {referralFacilityLabel(referral, facilitiesById)}</p>
         </div>
         <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold uppercase whitespace-nowrap ${priorityChipClasses(referral.priority)}`}>
           {referral.priority}
@@ -41,6 +53,34 @@ const ClinicianReferralCard: React.FC<{ referral: Referral; actionLabel: string;
         className="w-full mt-3 min-h-[48px] rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-bold uppercase tracking-wide"
       >
         {actionLabel}
+      </button>
+    </div>
+  );
+};
+
+// 1a "You" bucket: an in-progress intake wizard on this phone, not yet
+// submitted. Lives in localStorage (see lib/referralDraft.ts), so it has no
+// referral id/priority of its own -- rendered separately from the Firestore-
+// backed ClinicianReferralCard above it, but styled to match.
+const DraftResumeCard: React.FC<{ draft: WizardDraft }> = ({ draft }) => {
+  const navigate = useNavigate();
+  const name = draft.patientData?.name;
+  return (
+    <div className="shrink-0 rounded-xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 p-3.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[17px] font-semibold text-slate-900 dark:text-slate-100 truncate">{name || 'New referral'}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{draft.requiredBedType} · saved on this phone</p>
+        </div>
+        <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-bold uppercase whitespace-nowrap bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+          Draft
+        </span>
+      </div>
+      <button
+        onClick={() => navigate('/referrals/new')}
+        className="w-full mt-3 min-h-[48px] rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-bold uppercase tracking-wide"
+      >
+        Resume draft
       </button>
     </div>
   );
@@ -224,6 +264,11 @@ export const Dashboard: React.FC = () => {
   )), [myReferrals]);
   const activeSegmentReferrals = segment === 'you' ? youBucket : segment === 'them' ? themBucket : movingBucket;
 
+  // Only clinicians who can start a referral ever have a draft; read once per
+  // Dashboard mount, same as NewReferralPage reads it once per its own mount.
+  const referralDraft = useMemo(() => (canCreateReferral ? loadReferralDraft() : null), [canCreateReferral]);
+  const youCount = youBucket.length + (referralDraft ? 1 : 0);
+
   const youActionSentence = (r: Referral) => {
     if (r.status === 'postponed') {
       const lastComment = [...(r.deptComments || [])].reverse().find(c => c.status === 'requirements_needed');
@@ -266,7 +311,11 @@ export const Dashboard: React.FC = () => {
           <RoleHomeHeader identity={`${user.name} · ${userFacility?.name || 'Facility'}`} dark={isManager} />
 
           {!isOnline && (
-            <div className="mt-3 flex items-center gap-2 rounded-lg bg-warning-500/20 border border-warning-500/40 px-3 py-2 text-xs font-bold uppercase tracking-wide text-warning-700 dark:text-warning-300">
+            <div className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold uppercase tracking-wide ${
+              isManager
+                ? 'bg-warning-900/30 border-warning-700 text-warning-300'
+                : 'bg-warning-100 dark:bg-warning-900/30 border-warning-700 dark:border-warning-800 text-warning-800 dark:text-warning-300'
+            }`}>
               <WifiOff className="w-3.5 h-3.5 shrink-0" />
               Offline · {pendingSyncCount} action{pendingSyncCount === 1 ? '' : 's'} queued, will send automatically
             </div>
@@ -350,13 +399,13 @@ export const Dashboard: React.FC = () => {
           ) : (
             <>
               <h1 className="text-[26px] font-heading font-semibold text-slate-900 dark:text-slate-100 mt-3">
-                {youBucket.length} need{youBucket.length === 1 ? 's' : ''} you
+                {youCount} need{youCount === 1 ? 's' : ''} you
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Blocked on something only you can do. Emergency first.</p>
 
               <div className="mt-4 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {([
-                  ['you', 'You', youBucket.length],
+                  ['you', 'You', youCount],
                   ['them', 'Them', themBucket.length],
                   ['moving', 'Moving', movingBucket.length],
                 ] as [ClinicianSegment, string, number][]).map(([key, label, count]) => (
@@ -375,14 +424,16 @@ export const Dashboard: React.FC = () => {
               </div>
 
               <div className="mt-4">
-                {activeSegmentReferrals.length === 0 ? (
+                {activeSegmentReferrals.length === 0 && !(segment === 'you' && referralDraft) ? (
                   <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">Nothing here right now.</p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {segment === 'you' && referralDraft && <DraftResumeCard key="draft" draft={referralDraft} />}
                     {activeSegmentReferrals.map(r => (
                       <ClinicianReferralCard
                         key={r.id}
                         referral={r}
+                        facilitiesById={facilitiesById}
                         actionLabel={segment === 'you' ? youActionLabel(r) : 'View'}
                         actionSentence={segment === 'you' ? youActionSentence(r) : undefined}
                       />

@@ -9,17 +9,21 @@ import { CheckCircle, Clock, ArrowRightLeft, UserCircle, X, ShieldAlert, Phone }
 import { formatDateTime } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
 import { sortByWorkflow, priorityRailClass, priorityChipClasses } from '../lib/referralPriority';
-import { ReferralSummarySheet } from '../components/referrals/ReferralSummarySheet';
+import { ReferralSummarySheet, SummarySheetActions } from '../components/referrals/ReferralSummarySheet';
 import { Referral } from '../types';
 import { toastError } from '../lib/toast';
 import { RoleHomeHeader } from '../components/layout/RoleHomeHeader';
 
 export const DepartmentPage: React.FC = () => {
   const { user } = useAuth();
-  const { shiftAssignments, shiftAssignmentsByFacility, assignShift, users, usersById, directAdmissions, referrals, facilities, facilitiesById, quickTransfer, addDeptComment, loading } = useData();
+  const { shiftAssignments, shiftAssignmentsByFacility, assignShift, users, usersById, directAdmissions, referrals, facilities, facilitiesById, quickTransfer, addDeptComment, updateReferralStatus, loading } = useData();
   const navigate = useNavigate();
   const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  // 1b: confirmation strip after approving -- from the row button or the
+  // sheet's own Approve action -- since the card simply leaving the queue
+  // (once the listener catches up) is otherwise the only feedback given.
+  const [justApproved, setJustApproved] = useState<string | null>(null);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   type PatientListItem = { id: string; name: string; hospitalId: string; type: 'admission' | 'referral'; admittedAt: string };
   const [selectedPatient, setSelectedPatient] = useState<PatientListItem | null>(null);
@@ -29,6 +33,12 @@ export const DepartmentPage: React.FC = () => {
   const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
   const [selectedDepartment, setSelectedDepartment] = useState<string>(user?.department || '');
+
+  React.useEffect(() => {
+    if (!justApproved) return;
+    const t = setTimeout(() => setJustApproved(null), 3000);
+    return () => clearTimeout(t);
+  }, [justApproved]);
 
   if (!user || (user.role !== 'head_of_department' && !isAdmin)) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Access Denied. Head of Department privileges required.</div>;
@@ -86,15 +96,33 @@ export const DepartmentPage: React.FC = () => {
     return `Escalated · no response ${mins} min`;
   };
 
-  const handleQuickApprove = async (id: string) => {
+  const handleQuickApprove = async (id: string, patientName: string) => {
     setApprovingId(id);
     try {
       await addDeptComment(id, 'direct_approval', '');
+      setJustApproved(patientName);
     } catch (e: any) {
       toastError(e, 'Could not approve this referral.');
     } finally {
       setApprovingId(null);
     }
+  };
+
+  // Passed into the summary sheet's own Approve/Need requirements/Decline
+  // footer (1b) -- reuses the same writes the row-level actions and the
+  // detail page's dept-review form already use.
+  const summarySheetActions: SummarySheetActions = {
+    onApprove: async (id) => {
+      const referral = pendingReview.find(r => r.id === id);
+      await addDeptComment(id, 'direct_approval', '');
+      setJustApproved(referral?.patientData.name || 'Referral');
+    },
+    onRequirementsNeeded: async (id, comment) => {
+      await addDeptComment(id, 'requirements_needed', comment);
+    },
+    onDecline: async (id, reason) => {
+      await updateReferralStatus(id, 'rejected', reason);
+    },
   };
 
   const handleOpenTransfer = (patient: any) => {
@@ -204,6 +232,13 @@ export const DepartmentPage: React.FC = () => {
           </div>
         )}
 
+        {justApproved && (
+          <div className="flex items-center gap-2 min-h-[48px] rounded-lg bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300 text-sm font-bold px-4">
+            <CheckCircle className="w-4 h-4 shrink-0" />
+            Approved {justApproved}
+          </div>
+        )}
+
         {queueReview.length === 0 && escalatedReview.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">Nothing waiting on your department right now.</p>
         ) : (
@@ -225,7 +260,7 @@ export const DepartmentPage: React.FC = () => {
                     Summary
                   </button>
                   <button
-                    onClick={() => handleQuickApprove(r.id)}
+                    onClick={() => handleQuickApprove(r.id, `${r.patientData.name}, ${r.patientData.age}`)}
                     disabled={approvingId === r.id}
                     className="min-h-[48px] rounded-lg bg-success-700 text-white text-sm font-bold uppercase tracking-wide disabled:opacity-60"
                   >
@@ -238,7 +273,7 @@ export const DepartmentPage: React.FC = () => {
         )}
       </div>
 
-      {summaryReferral && <ReferralSummarySheet referral={summaryReferral} onClose={() => setSummaryReferral(null)} />}
+      {summaryReferral && <ReferralSummarySheet referral={summaryReferral} onClose={() => setSummaryReferral(null)} actions={summarySheetActions} />}
 
       <Card>
         <CardHeader>

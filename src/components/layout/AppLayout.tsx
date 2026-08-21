@@ -11,7 +11,7 @@ import { toastError } from '../../lib/toast';
 
 export const AppLayout: React.FC = () => {
   const { user, logout } = useAuth();
-  const { notifications, facilities, facilitiesById, isOnline, pendingSyncCount, referrals, directAdmissions, addShiftLog, users } = useData();
+  const { notifications, facilities, facilitiesById, isOnline, pendingSyncCount, referrals, directAdmissions, addShiftLog } = useData();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
 
@@ -41,13 +41,6 @@ export const AppLayout: React.FC = () => {
     setProfileSchedule(user?.monthlySchedule || '');
     setShowProfile(true);
   };
-
-  const [showHotline, setShowHotline] = React.useState(false);
-  const hotlineContacts = users.filter(u =>
-    u.facilityId === user?.facilityId &&
-    ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department', 'nursing_supervisor'].includes(u.role)
-  );
-
 
   if (!user) return null;
 
@@ -149,22 +142,19 @@ export const AppLayout: React.FC = () => {
     }
   });
 
-  // Neither modal below closed on Escape, which WCAG 2.1.2 (No Keyboard Trap)
-  // expects for anything opened this way -- a keyboard user had no way out
-  // short of tabbing to the close button. showEndOfShift is deliberately not
-  // included: it ends in a real sign-out, not a dismiss, so Escape shouldn't
-  // silently skip the handover the way it dismisses the other two.
+  // The profile modal below didn't close on Escape, which WCAG 2.1.2 (No
+  // Keyboard Trap) expects for anything opened this way -- a keyboard user
+  // had no way out short of tabbing to the close button. showEndOfShift is
+  // deliberately not included: it ends in a real sign-out, not a dismiss, so
+  // Escape shouldn't silently skip the handover the way it dismisses this one.
   React.useEffect(() => {
-    if (!showHotline && !showProfile) return;
+    if (!showProfile) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowHotline(false);
-        setShowProfile(false);
-      }
+      if (e.key === 'Escape') setShowProfile(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showHotline, showProfile]);
+  }, [showProfile]);
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -274,15 +264,18 @@ export const AppLayout: React.FC = () => {
           <div className="hidden lg:block h-10 w-px bg-blue-700 shrink-0 mx-2"></div>
           
           <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 flex-1 md:flex-none whitespace-nowrap px-1 w-full md:w-auto">
-            <button
-              onClick={() => setShowHotline(true)}
+            {/* 2e: the Directory page's "On call right now" section is this
+                same hotline list (see NetworkDirectoryPage), so this links
+                there instead of duplicating it in a second, out-of-sync modal. */}
+            <Link
+              to="/directory"
               className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 min-h-[40px] rounded transition-colors text-xs font-bold uppercase tracking-wider shadow-sm"
               title="Emergency Hotline"
               aria-label="Emergency Hotline"
             >
               <Phone className="w-3.5 h-3.5" />
               <span className="hidden lg:inline">Hotline</span>
-            </button>
+            </Link>
             <div className="hidden sm:block h-6 w-px bg-blue-700 mx-1"></div>
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -433,60 +426,6 @@ export const AppLayout: React.FC = () => {
         </div>
       </div>
 
-      {showHotline && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowHotline(false)}>
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="hotline-dialog-title"
-            className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md border border-critical-500 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-critical-500 text-white p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Phone className="w-5 h-5" aria-hidden="true" />
-                <h2 id="hotline-dialog-title" className="text-sm font-bold uppercase tracking-wider">Emergency Hotline</h2>
-              </div>
-              <button onClick={() => setShowHotline(false)} className="text-critical-100 hover:text-white transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" aria-label="Close emergency hotline">
-                <X className="w-5 h-5" aria-hidden="true" />
-              </button>
-            </div>
-            <div className="p-4 max-h-[60vh] overflow-y-auto">
-              <p className="text-xs uppercase font-bold tracking-wider text-slate-500 mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Clinical Leadership Directory</p>
-              {hotlineContacts.length > 0 ? (
-                <div className="space-y-3">
-                  {hotlineContacts.map(contact => (
-                    <div key={contact.id} className="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{contact.name}</p>
-                          <p className="text-xs text-slate-500 uppercase tracking-wide mt-0.5">{contact.role?.replace(/_/g, ' ')} {contact.department ? `• ${contact.department}` : ''}</p>
-                        </div>
-                        {contact.phoneNumber ? (
-                          <a href={`tel:${contact.phoneNumber}`} className="flex items-center justify-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-4 py-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold uppercase hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shrink-0">
-                            <Phone className="w-3.5 h-3.5" />
-                            Call
-                          </a>
-                        ) : (
-                          <span className="text-xs uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">No Number</span>
-                        )}
-                      </div>
-                      {contact.monthlySchedule && (
-                        <div className="bg-slate-100 dark:bg-slate-800 p-2 text-xs text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700">
-                          <span className="font-bold uppercase mr-1">Schedule:</span>
-                          {contact.monthlySchedule}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500 text-center py-6 bg-slate-50 dark:bg-slate-950 rounded border border-dashed border-slate-200 dark:border-slate-800">No clinical leadership contacts found for this facility.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
       {showProfile && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div

@@ -1,8 +1,21 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, ChevronRight, AlertTriangle } from 'lucide-react';
+import { X, ChevronRight, AlertTriangle, Check } from 'lucide-react';
 import { Referral } from '../../types';
 import { Button } from '../ui/Button';
+import { VoiceTextarea } from '../ui/VoiceTextarea';
+import { toastError } from '../../lib/toast';
+
+// 1b: the three actions a department head's queue offers -- Approve, Need
+// requirements, Decline -- made actionable from this sheet itself rather than
+// forcing a trip to the full detail page just to decide. Optional: the
+// manager home (1c) reuses this same sheet read-only, with Accept staying a
+// row-level button on its own card.
+export interface SummarySheetActions {
+  onApprove: (id: string) => Promise<void>;
+  onRequirementsNeeded: (id: string, comment: string) => Promise<void>;
+  onDecline: (id: string, reason: string) => Promise<void>;
+}
 
 const NOT_RECORDED = '—';
 const isAbnormal = (value: number | undefined, outOfRange: (n: number) => boolean) =>
@@ -24,14 +37,20 @@ const VitalCell: React.FC<{ label: string; value: React.ReactNode; abnormal: boo
 
 /**
  * "Summary" sheet used from the department-head and hospital-manager queues:
- * enough of the clinical picture to decide, without leaving the list. The
- * decision itself (Approve / Accept / Decline) stays a row-level button on the
- * calling screen -- this sheet is read-only and only ever navigates onward to
- * the full shared detail screen.
+ * enough of the clinical picture to decide, without leaving the list. When
+ * `actions` is passed (department-head queue), the decision itself --
+ * Approve / Need requirements / Decline -- is made from this sheet. Without
+ * it (hospital-manager queue), the sheet stays read-only and Accept remains
+ * a row-level button on the calling screen, as it already was.
  */
-export const ReferralSummarySheet: React.FC<{ referral: Referral; onClose: () => void }> = ({ referral, onClose }) => {
+export const ReferralSummarySheet: React.FC<{ referral: Referral; onClose: () => void; actions?: SummarySheetActions }> = ({ referral, onClose, actions }) => {
   const navigate = useNavigate();
   const vitals = referral.patientData.vitalSigns;
+
+  type Mode = 'idle' | 'requirements' | 'decline' | 'approved';
+  const [mode, setMode] = useState<Mode>('idle');
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -40,6 +59,54 @@ export const ReferralSummarySheet: React.FC<{ referral: Referral; onClose: () =>
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onClose]);
+
+  // Confirmation strip: hold the sheet open on a success state briefly
+  // instead of instantly vanishing, then close -- the row disappearing from
+  // the queue behind it is otherwise the only feedback approving gives.
+  useEffect(() => {
+    if (mode !== 'approved') return;
+    const t = setTimeout(onClose, 900);
+    return () => clearTimeout(t);
+  }, [mode, onClose]);
+
+  const handleApprove = async () => {
+    if (!actions) return;
+    setBusy(true);
+    try {
+      await actions.onApprove(referral.id);
+      setMode('approved');
+    } catch (e: any) {
+      toastError(e, 'Could not approve this referral.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRequirementsSubmit = async () => {
+    if (!actions || !text.trim()) return;
+    setBusy(true);
+    try {
+      await actions.onRequirementsNeeded(referral.id, text.trim());
+      onClose();
+    } catch (e: any) {
+      toastError(e, 'Could not send this back with requirements.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeclineSubmit = async () => {
+    if (!actions || !text.trim()) return;
+    setBusy(true);
+    try {
+      await actions.onDecline(referral.id, text.trim());
+      onClose();
+    } catch (e: any) {
+      toastError(e, 'Could not decline this referral.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/50 backdrop-blur-sm" onClick={onClose}>
@@ -102,6 +169,63 @@ export const ReferralSummarySheet: React.FC<{ referral: Referral; onClose: () =>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+
+        {actions && (
+          <div className="shrink-0 border-t border-slate-100 dark:border-slate-800 px-5 py-4">
+            {mode === 'approved' ? (
+              <div className="flex items-center gap-2 min-h-[54px] rounded-lg bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300 text-sm font-bold px-4">
+                <Check className="w-4 h-4 shrink-0" />
+                Approved
+              </div>
+            ) : mode === 'requirements' ? (
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-warning-700 dark:text-warning-400 uppercase">What does {referral.receivingDepartments?.[0] || 'the department'} need?</p>
+                <VoiceTextarea
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm min-h-[70px]"
+                  placeholder="e.g. Recent labs and a cardiology consult note..."
+                  value={text}
+                  onValueChange={setText}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => { setMode('idle'); setText(''); }} className="min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-bold uppercase tracking-wide">Cancel</button>
+                  <button onClick={handleRequirementsSubmit} disabled={busy || !text.trim()} className="min-h-[48px] rounded-lg bg-warning-700 hover:bg-warning-800 text-white text-sm font-bold uppercase tracking-wide disabled:opacity-60">
+                    {busy ? 'Sending…' : 'Send back'}
+                  </button>
+                </div>
+              </div>
+            ) : mode === 'decline' ? (
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-critical-700 dark:text-critical-400 uppercase">Reason for declining</p>
+                <VoiceTextarea
+                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm min-h-[70px]"
+                  placeholder="This department cannot take this patient because..."
+                  value={text}
+                  onValueChange={setText}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => { setMode('idle'); setText(''); }} className="min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-bold uppercase tracking-wide">Cancel</button>
+                  <button onClick={handleDeclineSubmit} disabled={busy || !text.trim()} className="min-h-[48px] rounded-lg border border-critical-700 text-critical-700 dark:text-critical-400 text-sm font-bold uppercase tracking-wide disabled:opacity-60">
+                    {busy ? 'Declining…' : 'Confirm decline'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <button onClick={handleApprove} disabled={busy} className="w-full min-h-[54px] rounded-lg bg-success-700 hover:bg-success-800 text-white text-sm font-bold uppercase tracking-wide disabled:opacity-60">
+                  {busy ? 'Approving…' : 'Approve'}
+                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => setMode('requirements')} className="min-h-[48px] rounded-lg border border-warning-700 text-warning-700 dark:text-warning-400 text-sm font-bold uppercase tracking-wide">
+                    Need requirements
+                  </button>
+                  <button onClick={() => setMode('decline')} className="min-h-[48px] rounded-lg border border-critical-700 text-critical-700 dark:text-critical-400 text-sm font-bold uppercase tracking-wide">
+                    Decline
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -62,23 +62,27 @@ export const NetworkDirectoryPage: React.FC = () => {
     return users.some(u => u.facilityId === f.id && allowedExternalUsers.has(u.id));
   });
 
+  // 2e: this directory replaces the old Emergency Hotline modal (see
+  // AppLayout), whose contact list -- own-facility clinical leadership plus
+  // nursing_supervisor -- is folded into the own-facility role lists below so
+  // that role stays reachable now that the modal is gone.
   const isUserAllowed = (u: any, facilityId: string) => {
     if (u.facilityId !== facilityId) return false;
     const isOwnFacility = u.facilityId === user.facilityId || isAdmin;
-    
+
     if (isAdmin) {
-       return ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'consultant', 'specialist', 'resident'].includes(u.role);
+       return ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'nursing_supervisor', 'consultant', 'specialist', 'resident'].includes(u.role);
     }
-    
+
     if (canViewNetwork) {
-       const allowedRoles = isOwnFacility 
-           ? ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'consultant', 'specialist', 'resident']
+       const allowedRoles = isOwnFacility
+           ? ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'nursing_supervisor', 'consultant', 'specialist', 'resident']
            : ['hospital_manager', 'deputy_manager', 'medical_director'];
        if (allowedRoles.includes(u.role)) return true;
        return allowedExternalUsers.has(u.id);
     } else {
        if (isOwnFacility) {
-          return ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'consultant', 'specialist', 'resident'].includes(u.role);
+          return ['hospital_manager', 'deputy_manager', 'medical_director', 'head_of_department', 'nursing_supervisor', 'consultant', 'specialist', 'resident'].includes(u.role);
        } else {
           return allowedExternalUsers.has(u.id);
        }
@@ -149,20 +153,28 @@ export const NetworkDirectoryPage: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                   {onCallNow.map(u => (
-                    <div key={u.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
-                          <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400">On call</span>
+                    <div key={u.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
+                            <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400">On call</span>
+                          </div>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 truncate capitalize">{(u.role || '').replace(/_/g, ' ')}{u.department ? ` · ${u.department}` : ''}</p>
                         </div>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 truncate capitalize">{(u.role || '').replace(/_/g, ' ')}{u.department ? ` · ${u.department}` : ''}</p>
+                        {u.phoneNumber ? (
+                          <a href={`tel:${u.phoneNumber}`} aria-label={`Call ${u.name}`} className="h-14 w-14 shrink-0 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center">
+                            <Phone className="w-5 h-5" />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-400 shrink-0">No number</span>
+                        )}
                       </div>
-                      {u.phoneNumber ? (
-                        <a href={`tel:${u.phoneNumber}`} aria-label={`Call ${u.name}`} className="h-14 w-14 shrink-0 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center">
-                          <Phone className="w-5 h-5" />
-                        </a>
-                      ) : (
-                        <span className="text-xs text-slate-400 shrink-0">No number</span>
+                      {u.monthlySchedule && (
+                        <div className="bg-slate-50 dark:bg-slate-950 p-2 text-xs text-slate-600 dark:text-slate-300 rounded border border-slate-100 dark:border-slate-800">
+                          <span className="font-bold uppercase mr-1">Schedule:</span>
+                          {u.monthlySchedule}
+                        </div>
                       )}
                     </div>
                   ))}
