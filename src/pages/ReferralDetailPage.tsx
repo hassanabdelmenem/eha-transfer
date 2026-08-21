@@ -321,8 +321,18 @@ export const ReferralDetailPage: React.FC = () => {
   // is a handler that panel already gates identically.
   type FooterAction = { label: string; onClick: () => void; disabled?: boolean; disabledReason?: string; className: string };
 
+  // isAdmin short-circuits isReferring, isTargetDeptHead, isFacilityManager,
+  // isErRoom and isNurse to true (see their definitions above) so a
+  // system_admin/owner would otherwise match whichever of the five checks
+  // happens to run first -- getting mislabeled as "Head of Department" or
+  // "Referring Clinician" rather than anything admin-appropriate. Admins
+  // aren't one of the spec's five role variants; they already have the full
+  // "System Admin Direct Actions" panel below (rendered at every breakpoint,
+  // not just mobile), so the pinned footer stays hidden for them rather than
+  // duplicating or misrepresenting that panel.
   const roleVariant: 'dept-head' | 'manager' | 'er-room' | 'nurse' | 'clinician' | null =
-    isTargetDeptHead ? 'dept-head'
+    isAdmin ? null
+    : isTargetDeptHead ? 'dept-head'
     : isFacilityManager ? 'manager'
     : isErRoom ? 'er-room'
     : isNurse ? 'nurse'
