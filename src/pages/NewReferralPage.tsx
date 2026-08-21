@@ -10,35 +10,7 @@ import { VoiceTextarea } from '../components/ui/VoiceTextarea';
 import { Upload, FileText, Sparkles, Activity, Bed, Zap, ArrowLeft, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import { showToast } from '../lib/toast';
 import { findCandidateFacilities } from '../lib/routing';
-
-// 1d draft persistence: "resume from any step" on this phone. Deliberately
-// localStorage, not the IndexedDB offline-referral queue in lib/db.ts -- that
-// queue is for a referral that has already been submitted while offline; this
-// is the in-progress form itself, before Submit is ever pressed.
-const DRAFT_KEY = 'newReferralDraft';
-
-interface WizardDraft {
-  step: number;
-  patientData: Partial<PatientData>;
-  receivingDepartments: string[];
-  requiredBedType: BedType;
-  priority: ReferralPriority;
-  transferType: ReferralTransferType;
-  reasonForReferral: string;
-  isAutoRouting: boolean;
-  receivingFacilityId: string;
-  sendCriticalAlert: boolean;
-  requiresAccompanyingDoctor: boolean;
-}
-
-const loadDraft = (): WizardDraft | null => {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
+import { WizardDraft, loadReferralDraft, saveReferralDraft, clearReferralDraft } from '../lib/referralDraft';
 
 // Clearing a numeric input yields '', and parseInt('') is NaN. Firestore happily
 // stores NaN as a double, which then printed as "SpO2: NaN%" on the receiving
@@ -53,12 +25,20 @@ export const NewReferralPage: React.FC = () => {
   const { addReferral, facilities, isOnline } = useData();
   const navigate = useNavigate();
 
-  const draft = loadDraft();
+  const draft = loadReferralDraft();
 
   const [patientData, setPatientData] = useState<Partial<PatientData>>(draft?.patientData ?? {
     vitalSigns: { hr: 80, bp: '120/80', spo2: 98, temp: 37, rr: 16, timestamp: new Date().toISOString() },
     attachments: []
   });
+  // Free-typed allergies list, kept separate from patientData.allergies (a
+  // string[]) so the input's displayed text is never reconstructed from the
+  // array mid-keystroke -- only patientData is what's actually saved/sent.
+  const [allergiesText, setAllergiesText] = useState((patientData.allergies || []).join(', '));
+  const handleAllergiesChange = (text: string) => {
+    setAllergiesText(text);
+    setPatientData(prev => ({ ...prev, allergies: text.split(',').map(a => a.trim()).filter(Boolean) }));
+  };
 
   const [isAutoRouting, setIsAutoRouting] = useState(draft?.isAutoRouting ?? true);
   const [receivingFacilityId, setReceivingFacilityId] = useState(draft?.receivingFacilityId ?? '');
@@ -95,11 +75,7 @@ export const NewReferralPage: React.FC = () => {
       sendCriticalAlert,
       requiresAccompanyingDoctor,
     };
-    try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(toSave));
-    } catch {
-      /* storage full or unavailable -- draft just won't persist */
-    }
+    saveReferralDraft(toSave);
   }, [wizardStep, patientData, receivingDepartments, requiredBedType, priority, transferType, reasonForReferral, isAutoRouting, receivingFacilityId, sendCriticalAlert, requiresAccompanyingDoctor, queuedOffline]);
 
   const runAiTriage = () => {
@@ -240,11 +216,7 @@ export const NewReferralPage: React.FC = () => {
       requiresAccompanyingDoctor,
     }, sendCriticalAlert);
 
-    try {
-      localStorage.removeItem(DRAFT_KEY);
-    } catch {
-      /* ignore */
-    }
+    clearReferralDraft();
 
     if (fromWizard && !isOnline) {
       const facilityName = !isAutoRouting
@@ -405,7 +377,7 @@ export const NewReferralPage: React.FC = () => {
             {WIZARD_STEPS.map((label, i) => {
               const idx = i + 1;
               return (
-                <div key={label} className={`h-1.5 flex-1 rounded-full ${idx < wizardStep ? 'bg-success-400' : idx === wizardStep ? 'bg-white' : 'bg-white/22'}`} />
+                <div key={label} className={`h-1.5 flex-1 rounded-full ${idx < wizardStep ? 'bg-success-700' : idx === wizardStep ? 'bg-white' : 'bg-white/22'}`} />
               );
             })}
           </div>
@@ -597,6 +569,23 @@ export const NewReferralPage: React.FC = () => {
                   </label>
                 </div>
               </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                <p className="text-xs font-bold uppercase text-slate-400">Optional</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={wizardLabelClass} htmlFor="wBloodType">Blood type</label>
+                    <select id="wBloodType" className={wizardInputClass} value={patientData.bloodType || ''} onChange={e => setPatientData({ ...patientData, bloodType: e.target.value || undefined })}>
+                      <option value="">Unknown</option>
+                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bt => <option key={bt} value={bt}>{bt}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={wizardLabelClass} htmlFor="wAllergies">Allergies</label>
+                    <input id="wAllergies" className={wizardInputClass} placeholder="Comma-separated, e.g. Penicillin" value={allergiesText} onChange={e => handleAllergiesChange(e.target.value)} />
+                  </div>
+                </div>
+              </div>
             </>
           )}
 
@@ -612,6 +601,8 @@ export const NewReferralPage: React.FC = () => {
                   ['Bed / priority', `${requiredBedType} · ${priority}`],
                   ['Complaint', patientData.complaint || '—'],
                   ['Diagnosis', patientData.diagnosis || '—'],
+                  ['Blood type', patientData.bloodType || 'Unknown'],
+                  ['Allergies', patientData.allergies?.join(', ') || 'None recorded'],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between gap-4 px-4 py-2.5">
                     <span className="text-slate-500 dark:text-slate-400 shrink-0">{label}</span>
