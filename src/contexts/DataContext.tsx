@@ -923,7 +923,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createNotification({
         title: 'Referral Postponed — Requirements Needed',
         message: `${patientName}'s referral (from ${fromName}) was sent back with requirements${comment ? `: "${comment}"` : ''}. Returned directly, without administrative approval, and escalated automatically.`,
-        type: 'urgent',
+        type: 'purple',
         referralId,
         facilityId: referringFacilityId,
         facilityIds: [referringFacilityId, receivingFacilityId],

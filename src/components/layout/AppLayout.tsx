@@ -317,8 +317,12 @@ export const AppLayout: React.FC = () => {
       </header>
 
       <div className="flex-1 flex overflow-hidden min-w-0 w-full">
-        {/* Sidebar Navigation */}
-        <aside className="w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col p-4 shrink-0 hidden sm:flex">
+        {/* 3d: 228px dark rail -- same dark chrome as 1c/2c/3a, replacing the
+            light sidebar. Active item uses the exact token the spec names
+            (white/12 fill) rather than the app's blue accent, so this reads
+            as one system with the dark screens instead of a different rail
+            per screen. */}
+        <aside className="w-[228px] bg-slate-950 flex-col p-4 shrink-0 hidden sm:flex">
           <nav className="space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -326,10 +330,10 @@ export const AppLayout: React.FC = () => {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`px-2 py-3 flex items-center gap-3 transition-colors ${
-                    isActive 
-                      ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400' 
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-r-4 border-transparent'
+                  className={`rounded-lg px-3 py-3 flex items-center gap-3 transition-colors ${
+                    isActive
+                      ? 'bg-white/12 text-white'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white'
                   }`}
                 >
                   <item.icon className="w-5 h-5" />
@@ -340,10 +344,10 @@ export const AppLayout: React.FC = () => {
             {isDoctor && (
               <Link
                 to="/referrals/new"
-                className={`px-2 py-3 flex items-center gap-3 transition-colors ${
+                className={`rounded-lg px-3 py-3 flex items-center gap-3 transition-colors ${
                   location.pathname.startsWith('/referrals/new')
-                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-r-4 border-transparent'
+                    ? 'bg-white/12 text-white'
+                    : 'text-white/60 hover:bg-white/5 hover:text-white'
                 }`}
               >
                 <PlusCircle className="w-5 h-5" />
@@ -353,10 +357,10 @@ export const AppLayout: React.FC = () => {
             {isNurse && (
               <Link
                 to="/admissions/new"
-                className={`px-2 py-3 flex items-center gap-3 transition-colors ${
+                className={`rounded-lg px-3 py-3 flex items-center gap-3 transition-colors ${
                   location.pathname.startsWith('/admissions/new')
-                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border-r-4 border-blue-900 dark:border-blue-400' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-r-4 border-transparent'
+                    ? 'bg-white/12 text-white'
+                    : 'text-white/60 hover:bg-white/5 hover:text-white'
                 }`}
               >
                 <PlusCircle className="w-5 h-5" />
@@ -364,19 +368,13 @@ export const AppLayout: React.FC = () => {
               </Link>
             )}
           </nav>
-          
-          <div className="mt-auto p-4 bg-slate-900 dark:bg-slate-950 border border-transparent dark:border-slate-800 rounded-lg">
-            <div className="text-xs text-blue-300 font-bold uppercase mb-2">Session</div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-white">Role</span>
-                <span className="text-xs text-green-400">{(user.role || 'Unknown').replace('_', ' ').toUpperCase()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-white">Verified</span>
-                <span className="text-xs text-green-400">{user.verified ? 'YES' : 'NO'}</span>
-              </div>
-            </div>
+
+          {/* User block, pinned bottom, per spec. */}
+          <div className="mt-auto p-3 bg-white/5 border border-white/10 rounded-lg">
+            <p className="text-sm font-semibold text-white truncate">{user.name}</p>
+            <p className="text-xs text-white/50 uppercase tracking-wide truncate mt-0.5">
+              {(user.role || 'Unknown').replace(/_/g, ' ')}{facility ? ` · ${facility.name}` : ''}
+            </p>
           </div>
         </aside>
 

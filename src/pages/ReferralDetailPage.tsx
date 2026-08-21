@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
+import { format } from 'date-fns';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PatientCard } from '../components/referrals/PatientCard';
@@ -191,10 +192,22 @@ export const ReferralDetailPage: React.FC = () => {
   // Mobile role banner: names the viewer's remit in one line. Purely a label --
   // it reads the same predicates and status the action panel below already
   // uses, and never changes who can do what.
+  // Timestamp for the head-of-department "already reviewed" banner -- the
+  // most recent dept comment left by this viewer specifically, not just the
+  // most recent comment on the referral (another reviewer may have commented since).
+  const latestOwnDeptComment = [...(referral.deptComments || [])].reverse().find(c => c.userId === user?.id);
+
   const mobileBanner: { label: string; tint: BannerTint } = (() => {
     if (referral.isEscalated) return { label: 'Escalated — needs attention now', tint: 'critical' };
     if (isTargetDeptHead && referral.status === 'pending') return { label: 'Waiting on your department review', tint: 'warning' };
-    if (isTargetDeptHead) return { label: 'You reviewed this for your department', tint: 'success' };
+    if (isTargetDeptHead) {
+      return {
+        label: latestOwnDeptComment
+          ? `You approved this · ${format(new Date(latestOwnDeptComment.timestamp), 'HH:mm')}`
+          : 'You reviewed this for your department',
+        tint: 'success',
+      };
+    }
     if (isFacilityManager && referral.status === 'dept_approved') return { label: 'Needs your signature', tint: 'critical' };
     if (isFacilityManager) return { label: 'Manager oversight', tint: 'info' };
     if (isErRoom && referral.status === 'accepted') return { label: 'Record patient consent before dispatch', tint: 'warning' };
@@ -301,8 +314,105 @@ export const ReferralDetailPage: React.FC = () => {
     }
   };
 
+  // Mobile pinned footer: one role-driven primary action, one secondary, and
+  // (where a counterpart's number is known) a call button -- reusing the same
+  // predicates and write handlers as the desktop "Facility Actions" panel
+  // below. This changes what's shown, not who is allowed: every onClick here
+  // is a handler that panel already gates identically.
+  type FooterAction = { label: string; onClick: () => void; disabled?: boolean; disabledReason?: string; className: string };
+
+  const roleVariant: 'dept-head' | 'manager' | 'er-room' | 'nurse' | 'clinician' | null =
+    isTargetDeptHead ? 'dept-head'
+    : isFacilityManager ? 'manager'
+    : isErRoom ? 'er-room'
+    : isNurse ? 'nurse'
+    : isReferring ? 'clinician'
+    : null;
+
+  const ROLE_VARIANT_LABEL: Record<NonNullable<typeof roleVariant>, string> = {
+    'dept-head': 'Head of Department',
+    manager: 'Facility Manager',
+    'er-room': 'ER Room Official',
+    nurse: 'Nurse',
+    clinician: 'Referring Clinician',
+  };
+
+  const dispatchBlocked = !!referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor;
+
+  const focusSection = (id: string, preset?: () => void) => {
+    preset?.();
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
+  const successFill = 'bg-success-700 hover:bg-success-800 text-white';
+  const warningFill = 'bg-warning-700 hover:bg-warning-800 text-white';
+  const criticalOutline = 'border border-critical-700 text-critical-700 hover:bg-critical-50 dark:hover:bg-critical-950/30';
+  const neutralOutline = 'border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300';
+  const darkFill = 'bg-slate-950 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200';
+
+  let footerPrimary: FooterAction | null = null;
+  let footerSecondary: FooterAction | null = null;
+
+  switch (roleVariant) {
+    case 'dept-head':
+      if (referral.status === 'pending') {
+        footerPrimary = { label: 'Send back with requirements', onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), className: warningFill };
+        footerSecondary = { label: 'Add a note', onClick: () => focusSection('dept-review-section', () => setDeptAction('no_role')), className: neutralOutline };
+      } else {
+        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), className: darkFill };
+      }
+      break;
+    case 'manager':
+      if (referral.status === 'dept_approved') {
+        footerPrimary = { label: 'Accept the transfer', onClick: () => handleStatusUpdate('manager_approved'), className: successFill };
+        footerSecondary = { label: 'Decline', onClick: () => handleStatusUpdate('rejected'), className: criticalOutline };
+      } else {
+        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), className: darkFill };
+      }
+      break;
+    case 'er-room':
+      if (referral.status === 'accepted' && (isReferring || isAdmin)) {
+        footerPrimary = { label: 'Record patient consent', onClick: handlePatientConsent, disabled: consentBusy, className: successFill };
+        footerSecondary = { label: 'Decline this facility', onClick: () => setShowDeclineForm(true), className: criticalOutline };
+      } else if (referral.requiresAccompanyingDoctor && referral.status === 'patient_consented' && !referral.accompanyingDoctor) {
+        footerPrimary = { label: 'Save escort', onClick: () => focusSection('escort-form-section'), className: darkFill };
+      } else if (referral.status === 'patient_consented') {
+        footerPrimary = { label: 'Dispatch ambulance', onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? 'Blocked: record the escorting doctor first' : undefined, className: darkFill };
+      } else if (referral.status === 'in_transit') {
+        footerPrimary = { label: 'Mark as arrived', onClick: () => handleStatusUpdate('arrived'), className: successFill };
+      } else {
+        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), className: darkFill };
+      }
+      break;
+    case 'nurse':
+      if (isReceiving && referral.status === 'arrived') {
+        footerPrimary = { label: `Admit to ${referral.requiredBedType} bed`, onClick: () => handleStatusUpdate('admitted'), className: successFill };
+        footerSecondary = { label: 'Update bed counts', onClick: () => navigate('/bed-management'), className: neutralOutline };
+      } else {
+        footerPrimary = { label: 'Update bed counts', onClick: () => navigate('/bed-management'), className: darkFill };
+      }
+      break;
+    case 'clinician':
+      if (referral.status === 'accepted') {
+        footerPrimary = { label: 'Record patient consent', onClick: handlePatientConsent, disabled: consentBusy, className: successFill };
+      } else if (referral.status === 'patient_consented') {
+        footerPrimary = { label: 'Dispatch ambulance', onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? 'Blocked: waiting on the ER room to record the escort' : undefined, className: darkFill };
+      } else {
+        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), className: darkFill };
+      }
+      footerSecondary = { label: 'Print summary', onClick: () => handlePrint(), className: neutralOutline };
+      break;
+  }
+
+  // Call button dials the referring doctor -- the one counterpart every
+  // receiving-side role (dept head, manager, ER, nurse) may need to reach.
+  // Omitted for the clinician variant (nothing to call) and when no number is on file.
+  const footerCallNumber = roleVariant && roleVariant !== 'clinician' ? referringUser?.phoneNumber : undefined;
+
   return (
-    <div className="space-y-6 pb-16 sm:pb-0 max-w-5xl mx-auto print:max-w-none print:pb-0 print:m-0 print:space-y-4">
+    <div className={`space-y-6 ${footerPrimary ? 'pb-40' : 'pb-16'} sm:pb-0 max-w-5xl mx-auto print:max-w-none print:pb-0 print:m-0 print:space-y-4`}>
       {/* Print-only header: kept minimal and separate from the interactive
           header below, which is print:hidden entirely (PrintableSummary
           covers the printed page). */}
@@ -388,6 +498,16 @@ export const ReferralDetailPage: React.FC = () => {
         <div className={`px-4 sm:px-6 py-3 border-b text-xs font-bold uppercase tracking-wide ${BANNER_TINT_CLASSES[mobileBanner.tint]}`}>
           {mobileBanner.label}
         </div>
+        {/* Role indicator: in production this names the viewer's actual role --
+            not a switcher. The design mock uses a scrolling chip row to demo
+            all five variants at once; a single viewer only ever has one role. */}
+        {roleVariant && (
+          <div className="sm:hidden px-4 py-2 bg-slate-900 border-t border-white/10">
+            <span className="inline-flex items-center rounded-full px-2.5 py-1 bg-white/10 text-white/80 text-[11px] font-bold uppercase tracking-wide">
+              Viewing as {ROLE_VARIANT_LABEL[roleVariant]}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:hidden">
@@ -550,7 +670,7 @@ export const ReferralDetailPage: React.FC = () => {
               )}
 
               {(isTargetDeptHead || isAdmin) && referral.status === 'pending' && (
-                <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4 space-y-3">
+                <div id="dept-review-section" className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4 space-y-3">
                   <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Add Department Review</h4>
                   <select className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm" value={deptAction} onChange={e => setDeptAction(e.target.value as DeptApprovalStatus)}>
                      <option value="pending" disabled>Select action...</option>
@@ -761,8 +881,8 @@ export const ReferralDetailPage: React.FC = () => {
                   {/* Standard Manager Final Approval (non-admin) */}
                   {!isAdmin && isFacilityManager && referral.status === 'dept_approved' && (
                     <>
-                      <Button onClick={() => handleStatusUpdate('manager_approved')} className="w-full bg-blue-700 hover:bg-blue-800 min-h-[48px]">
-                        <CheckCircle className="h-4 w-4 mr-2" /> Manager Final Confirm
+                      <Button onClick={() => handleStatusUpdate('manager_approved')} className="w-full bg-success-700 hover:bg-success-800 min-h-[48px]">
+                        <CheckCircle className="h-4 w-4 mr-2" /> Accept the Transfer
                       </Button>
                       <Button onClick={() => handleStatusUpdate('rejected')} variant="destructive" className="w-full">
                         <X className="h-4 w-4 mr-2" /> Reject Transfer
@@ -846,7 +966,7 @@ export const ReferralDetailPage: React.FC = () => {
                         </p>
                       </div>
                     ) : isErRoom ? (
-                      <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg space-y-2">
+                      <div id="escort-form-section" className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg space-y-2">
                         <span className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase flex items-center gap-1.5">
                           <UserCheck className="w-4 h-4" /> Accompanying Doctor Required
                         </span>
@@ -981,6 +1101,48 @@ export const ReferralDetailPage: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Mobile pinned footer: one role-driven primary (54px) + secondary (48px) +
+          call button, replacing the need to scroll to the desktop action panel
+          for the single most common next step. The full panel above remains the
+          place for everything else (admin overrides, cancellation, notes). */}
+      {footerPrimary && (
+        <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] space-y-2 shadow-[0_-2px_12px_rgba(20,20,19,.08)]">
+          <button
+            type="button"
+            onClick={footerPrimary.onClick}
+            disabled={footerPrimary.disabled}
+            className={`w-full h-[54px] rounded-lg text-sm font-bold uppercase tracking-wide disabled:opacity-50 disabled:pointer-events-none ${footerPrimary.className}`}
+          >
+            {footerPrimary.label}
+          </button>
+          {footerPrimary.disabled && footerPrimary.disabledReason && (
+            <p className="text-xs text-critical-600 dark:text-critical-400 text-center">{footerPrimary.disabledReason}</p>
+          )}
+          {(footerSecondary || footerCallNumber) && (
+            <div className="flex items-center gap-2">
+              {footerSecondary && (
+                <button
+                  type="button"
+                  onClick={footerSecondary.onClick}
+                  className={`flex-1 h-12 rounded-lg text-xs font-bold uppercase tracking-wide ${footerSecondary.className}`}
+                >
+                  {footerSecondary.label}
+                </button>
+              )}
+              {footerCallNumber && (
+                <a
+                  href={`tel:${footerCallNumber}`}
+                  aria-label="Call the referring doctor"
+                  className="shrink-0 h-12 w-12 rounded-lg border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300"
+                >
+                  <Phone className="h-5 w-5" aria-hidden="true" />
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Hidden Printable Summary for react-to-print */}
       <div style={{ display: 'none' }}>

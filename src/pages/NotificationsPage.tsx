@@ -13,7 +13,7 @@ import { Notification } from '../types';
 const inboxKind = (notif: Notification): { label: string; action: string } => {
   const t = notif.title.toLowerCase();
   if (t.includes('escalat')) return { label: 'Escalated', action: 'Review the case' };
-  if (t.includes('requirement')) return { label: 'Requirements requested', action: 'Answer requirements' };
+  if (notif.type === 'purple' || t.includes('requirement')) return { label: 'Requirements requested', action: 'Answer requirements' };
   if (t.includes('department approved')) return { label: 'Needs your approval', action: 'Give final approval' };
   if (t.includes('new') && t.includes('referral')) return { label: 'Needs your approval', action: 'Approve or send back' };
   if (t.includes('consent')) return { label: 'Accepted', action: 'Record consent' };
@@ -25,15 +25,17 @@ const inboxKind = (notif: Notification): { label: string; action: string } => {
 
 const TINT_CLASSES: Record<Notification['type'], string> = {
   urgent: 'bg-critical-50 dark:bg-critical-950/30 border-critical-200 dark:border-critical-900',
-  warning: 'bg-warning-100 dark:bg-warning-900/20 border-warning-300 dark:border-warning-800',
+  warning: 'bg-warning-100 dark:bg-warning-900/20 border-warning-700 dark:border-warning-800',
   success: 'bg-success-100 dark:bg-success-900/20 border-success-300 dark:border-success-800',
   info: 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
+  purple: 'bg-purple-100 dark:bg-purple-900/20 border-purple-300 dark:border-purple-800',
 };
 const LABEL_TEXT_CLASSES: Record<Notification['type'], string> = {
   urgent: 'text-critical-700 dark:text-critical-400',
   warning: 'text-warning-800 dark:text-warning-300',
   success: 'text-success-700 dark:text-success-400',
   info: 'text-slate-500 dark:text-slate-400',
+  purple: 'text-purple-700 dark:text-purple-300',
 };
 
 export const NotificationsPage: React.FC = () => {
@@ -74,7 +76,7 @@ export const NotificationsPage: React.FC = () => {
                   <div key={notif.id} className={`rounded-xl border p-3.5 ${TINT_CLASSES[notif.type]}`}>
                     <div className="flex items-center justify-between gap-2">
                       <span className={`text-xs font-bold uppercase tracking-wide ${LABEL_TEXT_CLASSES[notif.type]}`}>{kind.label}</span>
-                      <span className="text-xs font-mono text-slate-400">{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-xs font-mono font-medium text-slate-500 dark:text-slate-400">{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                     <p className="text-[15.5px] text-slate-800 dark:text-slate-200 mt-1.5 leading-snug">{notif.message}</p>
                     {notif.referralId && (

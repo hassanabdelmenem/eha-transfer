@@ -172,11 +172,18 @@ export const FacilitySettingsPage: React.FC = () => {
         <div className="p-4 sm:p-6 sm:bg-slate-50 sm:dark:bg-slate-950/40 space-y-5">
           {unverifiedUsers.length > 0 && (
             <div className="space-y-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{unverifiedUsers.length} account{unverifiedUsers.length === 1 ? '' : 's'} to verify</p>
+              <div>
+                <h2 className="text-[26px] font-heading font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
+                  {unverifiedUsers.length} account{unverifiedUsers.length === 1 ? '' : 's'} to verify
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                  A verified account gets the role it asked for. Nothing else here blocks anyone from working.
+                </p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {unverifiedUsers.map(u => (
-                  <div key={u.id} className="rounded-xl border border-warning-300 dark:border-warning-800 bg-warning-50 dark:bg-warning-950/30 p-3.5">
-                    <p className="text-[15.5px] font-bold text-slate-900 dark:text-slate-100">{u.name}</p>
+                  <div key={u.id} className="rounded-xl border border-warning-700 dark:border-warning-800 bg-warning-100 dark:bg-warning-950/30 p-3.5">
+                    <p className="text-[15.5px] font-semibold text-slate-900 dark:text-slate-100">{u.name}</p>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{u.email}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <span className="text-xs bg-slate-900 dark:bg-slate-700 text-white px-1.5 py-0.5 rounded uppercase font-bold">{(u.requestedRole || u.role).replace(/_/g, ' ')}</span>
@@ -266,7 +273,7 @@ export const FacilitySettingsPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-xs font-bold uppercase tracking-wide"
             >
               <Plus className="w-4 h-4" />
-              {showAddFacility ? 'Cancel' : 'Add Facility'}
+              {showAddFacility ? 'Cancel' : 'Add a contracted facility'}
             </button>
           </div>
           <div className="p-4 sm:p-6 space-y-4">

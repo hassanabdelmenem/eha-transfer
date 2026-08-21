@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { BedType } from '../types';
 import { Card, CardContent } from '../components/ui/Card';
-import { Bed, Minus, Plus, Settings } from 'lucide-react';
+import { Bed, Minus, Plus, Settings, UserPlus } from 'lucide-react';
 import { Skeleton } from '../components/ui/Skeleton';
+import { toastError } from '../lib/toast';
+import { RoleHomeHeader } from '../components/layout/RoleHomeHeader';
 
 // 2b bed stepper: writes immediately on every tap, no Save button.
 const BedStepper: React.FC<{
@@ -60,15 +62,45 @@ const BedStepper: React.FC<{
   );
 };
 
+// 2b: "Arrived · waiting to be admitted" -- referrals that have physically
+// reached this facility but haven't been admitted to a bed yet. One tap
+// admits and frees up the bed count via the same updateReferralStatus path
+// ReferralDetailPage's "Admit Patient" action uses.
+const ArrivedReferralRow: React.FC<{ patientName: string; age: number; bedType: BedType; onAdmit: () => void; busy: boolean }> = ({ patientName, age, bedType, onAdmit, busy }) => (
+  <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 flex items-center justify-between gap-3">
+    <div className="min-w-0">
+      <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{patientName}, {age}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">Arrived · waiting to be admitted</p>
+    </div>
+    <button
+      onClick={onAdmit}
+      disabled={busy}
+      className="shrink-0 min-h-[48px] px-4 rounded-lg bg-success-700 hover:bg-success-800 text-white text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+    >
+      Admit to {bedType} bed
+    </button>
+  </div>
+);
+
 export const BedManagementPage: React.FC = () => {
   const { user } = useAuth();
-  const { facilities, facilitiesById, updateFacilityCapacity, loading } = useData();
+  const { facilities, facilitiesById, updateFacilityCapacity, referrals, updateReferralStatus, loading } = useData();
 
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
   const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
 
   const facility = facilitiesById.get(selectedFacilityId || '');
   const [capacities, setCapacities] = useState<Record<BedType, { total: number; occupied: number }>>({} as Record<BedType, { total: number; occupied: number }>);
+  const [admittingId, setAdmittingId] = useState<string | null>(null);
+
+  // Debounce the Firestore write, not the local UI: the stepper still updates
+  // `capacities` (and therefore the free count/bar) on every tap, but rapid
+  // taps collapse into a single updateFacilityCapacity call 500ms after the
+  // last one, per the design spec's "debounced" requirement.
+  const writeTimers = useRef<Partial<Record<BedType, ReturnType<typeof setTimeout>>>>({});
+  useEffect(() => () => {
+    Object.values(writeTimers.current).forEach(t => t && clearTimeout(t));
+  }, []);
 
   // Seed the editor only when the selected facility actually changes. Use facilitiesById
   // lookup (O(1)) instead of scanning the array.
@@ -87,16 +119,40 @@ export const BedManagementPage: React.FC = () => {
     return <div className="p-8 text-center text-slate-500">Facility configuration missing.</div>;
   }
 
-  // 2b stepper: writes immediately, no Save button.
+  // 2b stepper: the free count updates instantly (no Save button), but the
+  // write itself is debounced -- see writeTimers above.
   const handleStepperChange = (bedType: BedType, occupied: number) => {
     if (!facility) return;
     const total = capacities[bedType]?.total ?? 0;
     setCapacities(prev => ({ ...prev, [bedType]: { total, occupied } }));
-    updateFacilityCapacity(facility.id, { [bedType]: { total, occupied } });
+
+    const facilityId = facility.id;
+    const existing = writeTimers.current[bedType];
+    if (existing) clearTimeout(existing);
+    writeTimers.current[bedType] = setTimeout(() => {
+      updateFacilityCapacity(facilityId, { [bedType]: { total, occupied } });
+      delete writeTimers.current[bedType];
+    }, 500);
+  };
+
+  const arrivedReferrals = facility
+    ? referrals.filter(r => r.status === 'arrived' && r.receivingFacilityId === facility.id)
+    : [];
+
+  const handleAdmit = async (referralId: string) => {
+    setAdmittingId(referralId);
+    try {
+      await updateReferralStatus(referralId, 'admitted');
+    } catch (e: any) {
+      toastError(e, 'Could not admit this patient.');
+    } finally {
+      setAdmittingId(null);
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16 h-full overflow-auto">
+      <RoleHomeHeader identity={`${user.name} · ${facility?.name || 'Facility'}`} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Bulk Bed Management</h1>
@@ -139,7 +195,34 @@ export const BedManagementPage: React.FC = () => {
           <Skeleton className="h-96 w-full rounded-lg" />
         </div>
       ) : facility ? (
-        (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).some(bt => (capacities[bt]?.total ?? 0) > 0) ? (
+        <>
+          {arrivedReferrals.length > 0 && (
+            <div className="space-y-2 mb-4">
+              <h2 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                Arrived · waiting to be admitted ({arrivedReferrals.length})
+              </h2>
+              {arrivedReferrals.map(r => (
+                <ArrivedReferralRow
+                  key={r.id}
+                  patientName={r.patientData.name || 'Unknown patient'}
+                  age={r.patientData.age}
+                  bedType={r.requiredBedType}
+                  busy={admittingId === r.id}
+                  onAdmit={() => handleAdmit(r.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          <Link
+            to="/admissions/new"
+            className="inline-flex items-center gap-1.5 min-h-[44px] px-4 mb-4 rounded-lg border border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+          >
+            <UserPlus className="w-4 h-4" />
+            Direct admit a walk-in
+          </Link>
+
+          {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).some(bt => (capacities[bt]?.total ?? 0) > 0) ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[])
               .filter(bt => (capacities[bt]?.total ?? 0) > 0)
@@ -163,7 +246,8 @@ export const BedManagementPage: React.FC = () => {
               </Link>
             )}
           </Card>
-        )
+        )}
+        </>
       ) : (
         <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
           Please select a facility above to manage beds.
