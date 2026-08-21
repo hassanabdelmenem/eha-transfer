@@ -165,7 +165,7 @@ export const ArchivePage: React.FC = () => {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}, {r.patientData.age}</p>
+                      <p className="text-[17px] font-semibold text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}, {r.patientData.age}</p>
                       <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">
                         {r.patientData.hospitalId} · {facilitiesById.get(r.referringFacilityId)?.name || '—'} → {r.receivingFacilityId === 'auto' ? 'auto-routed' : (facilitiesById.get(r.receivingFacilityId)?.name || '—')}
                       </p>

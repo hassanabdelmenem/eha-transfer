@@ -27,9 +27,11 @@ const ESCALATION_PRIMARY: Record<string, string> = {
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, facilities, updateReferralStatus, toggleReferralEscalation, facilitiesById } = useData();
+  const { referrals, facilities, updateReferralStatus, toggleReferralEscalation, overrideReferralDestination, facilitiesById } = useData();
   const navigate = useNavigate();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [placingId, setPlacingId] = useState<string | null>(null);
+  const [placementFacilityId, setPlacementFacilityId] = useState('');
 
   if (!user || (user.role !== 'system_admin' && user.role !== 'owner')) {
     return <div className="p-8">Access Denied. Admin privileges required.</div>;
@@ -88,6 +90,42 @@ export const AdminDashboard: React.FC = () => {
       setBusyId(null);
     }
   };
+  const handleConfirmPlacement = async (id: string) => {
+    if (!placementFacilityId) return;
+    setBusyId(id);
+    try {
+      await overrideReferralDestination(id, placementFacilityId);
+      setPlacingId(null);
+      setPlacementFacilityId('');
+    } catch (e: any) {
+      toastError(e, 'Could not place this referral at that facility.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // Waitlist pressure: how many emergency/urgent/routine referrals are
+  // currently stalled waiting on each facility, network-wide. Dot fills use
+  // warning-700, not warning-500 -- white text on warning-500 (#f59e0b) is
+  // 2.15:1, below AA; the letter (E/U/R) is the colourblind-safe channel
+  // either way.
+  const waitlistByFacility = (() => {
+    const active = referrals.filter(r => !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status));
+    const counts = new Map<string, { emergency: number; urgent: number; routine: number }>();
+    for (const r of active) {
+      const facilityId = r.receivingFacilityId === 'auto' ? null : r.receivingFacilityId;
+      const ids = facilityId ? [facilityId] : (r.candidateFacilityIds || []);
+      for (const fid of ids) {
+        const entry = counts.get(fid) || { emergency: 0, urgent: 0, routine: 0 };
+        entry[r.priority] += 1;
+        counts.set(fid, entry);
+      }
+    }
+    return [...counts.entries()]
+      .map(([facilityId, tally]) => ({ facilityId, name: facilitiesById.get(facilityId)?.name || facilityId, ...tally }))
+      .filter(f => f.emergency + f.urgent + f.routine > 0)
+      .sort((a, b) => (b.emergency - a.emergency) || (b.urgent - a.urgent) || (b.routine - a.routine));
+  })();
 
   return (
     <div className="space-y-6 pb-16 h-full overflow-auto">
@@ -133,16 +171,56 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="p-3.5 space-y-3">
                       <div>
-                        <p className="text-[17px] font-bold">{r.patientData.name}, {r.patientData.age}</p>
+                        <p className="text-[17px] font-semibold">{r.patientData.name}, {r.patientData.age}</p>
                         <p className="text-sm text-white/60 mt-0.5">{r.requiredBedType} · {r.priority} · from {fromFacility}</p>
                       </div>
                       <p className="text-sm text-white/80 bg-white/5 rounded-lg p-2.5">{ESCALATION_DESC[reason]}</p>
-                      <button
-                        onClick={() => navigate(`/referrals/${r.id}`)}
-                        className="w-full min-h-[52px] rounded-lg bg-white text-slate-950 text-sm font-bold uppercase tracking-wide"
-                      >
-                        {ESCALATION_PRIMARY[reason] || 'Review now'}
-                      </button>
+
+                      {placingId === r.id ? (
+                        <div className="space-y-2">
+                          <select
+                            value={placementFacilityId}
+                            onChange={e => setPlacementFacilityId(e.target.value)}
+                            className="w-full min-h-[48px] rounded-lg border border-white/25 bg-white/10 text-white text-sm px-3"
+                          >
+                            <option value="" className="text-slate-900">Select a facility…</option>
+                            {facilities.filter(f => f.id !== r.referringFacilityId).map(f => (
+                              <option key={f.id} value={f.id} className="text-slate-900">
+                                {f.name} ({f.capacity?.[r.requiredBedType]?.occupied ?? 0}/{f.capacity?.[r.requiredBedType]?.total ?? 0} {r.requiredBedType})
+                              </option>
+                            ))}
+                          </select>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => { setPlacingId(null); setPlacementFacilityId(''); }}
+                              className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-bold uppercase tracking-wide"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleConfirmPlacement(r.id)}
+                              disabled={!placementFacilityId || busyId === r.id}
+                              className="min-h-[48px] rounded-lg bg-white text-slate-950 text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                            >
+                              Confirm placement
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            if (ESCALATION_PRIMARY[reason]) {
+                              setPlacingId(r.id);
+                              setPlacementFacilityId('');
+                            } else {
+                              navigate(`/referrals/${r.id}`);
+                            }
+                          }}
+                          className="w-full min-h-[52px] rounded-lg bg-white text-slate-950 text-sm font-bold uppercase tracking-wide"
+                        >
+                          {ESCALATION_PRIMARY[reason] || 'Review now'}
+                        </button>
+                      )}
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           onClick={() => handlePostpone(r.id)}
@@ -163,6 +241,36 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {waitlistByFacility.length > 0 && (
+            <div className="pt-2">
+              <h2 className="text-xs font-bold uppercase tracking-wide text-white/50 mb-2">Waitlist pressure by facility</h2>
+              <div className="rounded-xl bg-white/5 border border-white/10 divide-y divide-white/10">
+                {waitlistByFacility.map(f => (
+                  <div key={f.facilityId} className="px-3.5 py-2.5 flex items-center justify-between gap-3">
+                    <span className="text-sm text-white/90 truncate">{f.name}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {f.emergency > 0 && (
+                        <span className="h-5 min-w-5 px-1 rounded-full bg-critical-700 text-white text-[10px] font-bold flex items-center justify-center" title={`${f.emergency} emergency`}>
+                          E {f.emergency}
+                        </span>
+                      )}
+                      {f.urgent > 0 && (
+                        <span className="h-5 min-w-5 px-1 rounded-full bg-warning-700 text-white text-[10px] font-bold flex items-center justify-center" title={`${f.urgent} urgent`}>
+                          U {f.urgent}
+                        </span>
+                      )}
+                      {f.routine > 0 && (
+                        <span className="h-5 min-w-5 px-1 rounded-full bg-info-500 text-white text-[10px] font-bold flex items-center justify-center" title={`${f.routine} routine`}>
+                          R {f.routine}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

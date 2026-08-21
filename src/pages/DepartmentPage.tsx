@@ -12,6 +12,7 @@ import { sortByWorkflow, priorityRailClass, priorityChipClasses } from '../lib/r
 import { ReferralSummarySheet } from '../components/referrals/ReferralSummarySheet';
 import { Referral } from '../types';
 import { toastError } from '../lib/toast';
+import { RoleHomeHeader } from '../components/layout/RoleHomeHeader';
 
 export const DepartmentPage: React.FC = () => {
   const { user } = useAuth();
@@ -164,6 +165,7 @@ export const DepartmentPage: React.FC = () => {
           rest of what's waiting on this department. Reflows into a wider
           grid on tablet/desktop instead of being mobile-only. */}
       <div className="space-y-3">
+        <RoleHomeHeader identity={`${user.name} · ${myFacility?.name || 'Facility'} · ${department}`} />
         <div>
           <h2 className="text-[26px] font-heading font-semibold text-slate-900 dark:text-slate-100">
             {pendingReview.length} waiting on you
@@ -179,7 +181,7 @@ export const DepartmentPage: React.FC = () => {
                   <ShieldAlert className="w-3.5 h-3.5" /> {escalatedAgeLabel(r)}
                 </div>
                 <div className="p-3.5">
-                  <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100">{r.patientData.name}, {r.patientData.age}</p>
+                  <p className="text-[17px] font-semibold text-slate-900 dark:text-slate-100">{r.patientData.name}, {r.patientData.age}</p>
                   <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{r.requiredBedType} bed · from {facilitiesById.get(r.referringFacilityId)?.name || 'referring facility'}</p>
                   <div className="grid grid-cols-[1fr_auto] gap-2 mt-3">
                     <button
@@ -210,10 +212,10 @@ export const DepartmentPage: React.FC = () => {
               <div key={r.id} className={`rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 ${priorityRailClass(r.priority)}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-[17px] font-bold text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}, {r.patientData.age}</p>
+                    <p className="text-[17px] font-semibold text-slate-900 dark:text-slate-100 truncate">{r.patientData.name}, {r.patientData.age}</p>
                     <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{r.requiredBedType} · from {facilitiesById.get(r.referringFacilityId)?.name || 'referring facility'}</p>
                   </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
+                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold uppercase ${priorityChipClasses(r.priority)}`}>{r.priority}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   <button
