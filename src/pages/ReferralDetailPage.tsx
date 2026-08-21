@@ -199,6 +199,13 @@ export const ReferralDetailPage: React.FC = () => {
 
   const mobileBanner: { label: string; tint: BannerTint } = (() => {
     if (referral.isEscalated) return { label: 'Escalated — needs attention now', tint: 'critical' };
+    // Same isAdmin short-circuit as roleVariant below: isTargetDeptHead,
+    // isFacilityManager, isErRoom, isNurse and isReferring all resolve true
+    // for a system_admin/owner regardless of their actual role, so without
+    // this check an admin viewing almost any referral saw a banner claiming
+    // a department/manager/ER/nurse duty that isn't theirs -- e.g. "Waiting
+    // on your department review" with no department review to give.
+    if (isAdmin) return { label: 'System administrator', tint: 'info' };
     if (isTargetDeptHead && referral.status === 'pending') return { label: 'Waiting on your department review', tint: 'warning' };
     if (isTargetDeptHead) {
       return {
