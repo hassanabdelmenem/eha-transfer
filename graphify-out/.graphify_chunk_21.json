@@ -1,0 +1,176 @@
+{
+  "nodes": [
+    {
+      "id": "playwright_state1_screenshot",
+      "label": "Playwright State1 Screenshot (Login Error)",
+      "file_type": "image",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_state1_login_page",
+      "label": "Sign In To Your Account Page",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_state1_ismailia_health_connect",
+      "label": "Ismailia Health Connect App",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_state1_auth_error_state",
+      "label": "Invalid Credentials Error State",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_state1_google_oauth_button",
+      "label": "Continue With Google Button",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_state1_email_password_form",
+      "label": "Email/Password Sign In Form",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_state1_shield_logo",
+      "label": "Shield Icon Brand Mark",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "playwright_state1_screenshot",
+      "target": "playwright_state1_login_page",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_state1_login_page",
+      "target": "playwright_state1_ismailia_health_connect",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_state1_login_page",
+      "target": "playwright_state1_shield_logo",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_state1_login_page",
+      "target": "playwright_state1_auth_error_state",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_state1_login_page",
+      "target": "playwright_state1_google_oauth_button",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_state1_login_page",
+      "target": "playwright_state1_email_password_form",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_state1_auth_error_state",
+      "target": "playwright_state1_email_password_form",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_state1_ismailia_health_connect",
+      "target": "playwright_state1_google_oauth_button",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_state1_screenshot",
+      "target": "playwright_state1_auth_error_state",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_state1.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

@@ -1,0 +1,280 @@
+{
+  "nodes": [
+    {
+      "id": "playwright_no_card_screenshot",
+      "label": "Playwright Screenshot: No Card State",
+      "file_type": "image",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_no_card_referrals_page",
+      "label": "Referrals Page (Ismailia Health Connect)",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_no_card_app_ismailia_health_connect",
+      "label": "Ismailia Health Connect - Referral Coordination System",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_no_card_permission_error",
+      "label": "Permission Denied Toast (\"You do not have permission to make that change.\")",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_no_card_empty_state",
+      "label": "Empty/Skeleton Referrals Grid (No Data Rows)",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_no_card_stat_cards",
+      "label": "Referral Stat Cards (Active/Pending/Completed = 0)",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_no_card_referrals_grid",
+      "label": "All Referrals Grid (Patient Identity / Origin Facility / Target Specialty / Clinical Priority / Current Status / Action)",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_no_card_security_status_panel",
+      "label": "Security Status Panel (AES-256 / RBAC Filter)",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_no_card_rbac_filter",
+      "label": "RBAC Filter (Enabled)",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_no_card_aes256_encryption",
+      "label": "AES-256 Encryption (Active)",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "playwright_no_card_system_admin_role",
+      "label": "System Admin (Dev) Session",
+      "file_type": "concept",
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "playwright_no_card_screenshot",
+      "target": "playwright_no_card_referrals_page",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_screenshot",
+      "target": "playwright_no_card_permission_error",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_screenshot",
+      "target": "playwright_no_card_empty_state",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_screenshot",
+      "target": "playwright_no_card_security_status_panel",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_referrals_page",
+      "target": "playwright_no_card_app_ismailia_health_connect",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_referrals_page",
+      "target": "playwright_no_card_stat_cards",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_referrals_page",
+      "target": "playwright_no_card_referrals_grid",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_referrals_grid",
+      "target": "playwright_no_card_empty_state",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_stat_cards",
+      "target": "playwright_no_card_empty_state",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_permission_error",
+      "target": "playwright_no_card_empty_state",
+      "relation": "rationale_for",
+      "confidence": "AMBIGUOUS",
+      "confidence_score": 0.3,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_permission_error",
+      "target": "playwright_no_card_rbac_filter",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.65,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_permission_error",
+      "target": "playwright_no_card_system_admin_role",
+      "relation": "conceptually_related_to",
+      "confidence": "AMBIGUOUS",
+      "confidence_score": 0.3,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_security_status_panel",
+      "target": "playwright_no_card_rbac_filter",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_security_status_panel",
+      "target": "playwright_no_card_aes256_encryption",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "playwright_no_card_referrals_page",
+      "target": "playwright_no_card_system_admin_role",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/hassanabdelmenem/antigravity/eha-transfer/playwright_no_card.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

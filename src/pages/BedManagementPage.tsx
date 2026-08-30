@@ -198,9 +198,21 @@ export const BedManagementPage: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Bulk Bed Management
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
+          <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1 mb-3">
             Quickly update bed occupancy across {facility?.name || 'the facility'}. Total bed counts are configured under Facility Settings.
           </p>
+          {isAdmin && (
+            <select
+              value={selectedFacilityId || ''}
+              onChange={(e) => setSelectedFacilityId(e.target.value)}
+              className="w-full sm:w-72 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- Select Facility --</option>
+              {facilities.map(f => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
