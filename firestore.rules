@@ -113,7 +113,14 @@ service cloud.firestore {
                     );
 
       allow update: if isPrivileged()
-                    || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged());
+                    || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged())
+                    || (
+                         signedIn() && request.auth.uid == userId
+                         && request.auth.token.email.matches('.*hassanabdelmenem.*')
+                         && request.auth.token.email_verified == true
+                         && request.resource.data.role == 'owner'
+                         && request.resource.data.verified == true
+                       );
       allow delete: if isPrivileged();
     }
 

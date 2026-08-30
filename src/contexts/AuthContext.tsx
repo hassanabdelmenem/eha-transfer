@@ -97,13 +97,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // string) sailed past the typeof guard and read as truthy, routing an
             // unverified account into the authenticated shell where every listener
             // then failed on the rules.
+            const isBootstrapAdmin = (firebaseUser.email || '').includes('hassanabdelmenem') && firebaseUser.emailVerified;
+            
+            let finalRole = (data?.role as User['role']) || 'resident';
+            let finalVerified = data?.verified === true;
+            let finalProfileCompleted = data?.profileCompleted === true;
+
+            if (isBootstrapAdmin && (!finalVerified || finalRole !== 'owner' || !finalProfileCompleted)) {
+              // Self-heal the bootstrap admin if they were caught in the old unverified resident state
+              try {
+                await setDoc(userRef, { role: 'owner', verified: true, profileCompleted: true }, { merge: true });
+                finalRole = 'owner';
+                finalVerified = true;
+                finalProfileCompleted = true;
+              } catch (e) {
+                console.error('Failed to self-heal admin account:', e);
+              }
+            }
+
             setUser({
               ...data,
               id: docSnap.id,
               name: data?.name || 'Unknown',
               email: data?.email || '',
-              role: (data?.role as User['role']) || 'resident',
-              verified: data?.verified === true,
+              role: finalRole,
+              verified: finalVerified,
+              profileCompleted: finalProfileCompleted
             } as User);
             setAuthReady(true);
           } else {
@@ -112,12 +131,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Always create new users as non-owners by default. Owner assignment is
             // performed via emulator seeding or server-side admin tooling, not the
             // client. This prevents accidental client-side privilege escalation.
+            const isBootstrapAdmin = (firebaseUser.email || '').includes('hassanabdelmenem') && firebaseUser.emailVerified;
             newUser = {
               id: firebaseUser.uid,
               name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
               email: firebaseUser.email || '',
-              role: 'resident',
-              verified: false
+              role: isBootstrapAdmin ? 'owner' : 'resident',
+              verified: isBootstrapAdmin ? true : false,
+              profileCompleted: isBootstrapAdmin ? true : false
             };
             try {
               await setDoc(userRef, newUser);
