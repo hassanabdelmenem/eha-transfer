@@ -134,15 +134,15 @@ export const AppLayout: React.FC = () => {
     pendingTransfers.forEach(r => {
       const isWaitlist = r.status === 'pending' || r.status === 'dept_approved';
       if (isWaitlist) {
-        handover.carryOver.push(r.patientName);
+        handover.carryOver.push(r.patientData.name);
       } else {
-        handover.watch.push(r.patientName);
+        handover.watch.push(r.patientData.name);
       }
     });
 
     const activeAdmissions = directAdmissions.filter(a => a.facilityId === myFacilityId);
     handover.doneThisShift += activeAdmissions.length;
-    handover.doneThisShift += relevantReferrals.filter(r => r.status === 'completed' || r.status === 'discharged').length;
+    handover.doneThisShift += relevantReferrals.filter(r => r.status === 'discharged').length;
 
     return handover;
   };
@@ -160,15 +160,11 @@ export const AppLayout: React.FC = () => {
         await addShiftLog({
           userId: user.id,
           userName: user.name || 'Unknown',
-          role: user.role,
           department: user.department,
           facilityId: user.facilityId,
-          shiftSummary: handover.summary,
-          handoverData: {
-            carryOverCases: handover.carryOver.length,
-            watchCases: handover.watch.length,
-            completedCases: handover.doneThisShift
-          }
+          summary: handover.summary,
+          pendingTransfersCount: handover.carryOver.length,
+          admittedPatientsCount: handover.doneThisShift
         });
       }
       setShowEndOfShift(false);
