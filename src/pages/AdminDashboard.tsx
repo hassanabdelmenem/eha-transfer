@@ -244,6 +244,47 @@ export const AdminDashboard: React.FC = () => {
             </div>
           )}
 
+          <div className="pt-2">
+            <h2 className="text-xs font-semibold text-white/50 mb-2">Live Bed Capacity by Facility</h2>
+            <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[500px]">
+                <thead>
+                  <tr className="bg-white/10 border-b border-white/10 text-xs text-white/70">
+                    <th className="px-3 py-2 font-medium">Facility</th>
+                    <th className="px-3 py-2 font-medium text-center">ICU</th>
+                    <th className="px-3 py-2 font-medium text-center">CCU</th>
+                    <th className="px-3 py-2 font-medium text-center">PICU</th>
+                    <th className="px-3 py-2 font-medium text-center">Ward</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {facilities.map(f => {
+                    const renderBed = (type: BedType) => {
+                      const bed = f.capacity?.[type];
+                      if (!bed) return <span className="text-white/30">-</span>;
+                      const available = bed.total - bed.occupied;
+                      return (
+                        <div className="flex flex-col items-center">
+                          <span className={`font-semibold ${available > 0 ? 'text-white' : 'text-critical-400'}`}>{available}</span>
+                          <span className="text-[10px] text-white/40">/ {bed.total}</span>
+                        </div>
+                      );
+                    };
+                    return (
+                      <tr key={f.id} className="hover:bg-white/5 text-sm">
+                        <td className="px-3 py-2 text-white/90 font-medium truncate max-w-[200px]">{f.name}</td>
+                        <td className="px-3 py-2 text-center">{renderBed('ICU')}</td>
+                        <td className="px-3 py-2 text-center">{renderBed('CCU')}</td>
+                        <td className="px-3 py-2 text-center">{renderBed('PICU')}</td>
+                        <td className="px-3 py-2 text-center">{renderBed('Ward')}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           {waitlistByFacility.length > 0 && (
             <div className="pt-2">
               <h2 className="text-xs font-semibold text-white/50 mb-2">Waitlist pressure by facility</h2>

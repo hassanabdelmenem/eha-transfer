@@ -612,15 +612,9 @@
     "semantic_hash": ""
   },
   "src/components/layout/AppLayout.tsx": {
-    "mtime": 1788001517.2582679,
-    "seen": 1788097721.078621,
-    "ast_hash": "16af029ce8471789a802548ea2543a9f",
-    "semantic_hash": ""
-  },
-  "src/components/layout/AppShell.empirical.test.tsx": {
-    "mtime": 1787954642.91766,
-    "seen": 1788097721.078621,
-    "ast_hash": "f2e1a2295c4ff2f623ff892cb394ee75",
+    "mtime": 1788099868.1485262,
+    "seen": 1788099888.152819,
+    "ast_hash": "339c1f54b2226a33181fae2113bd01c2",
     "semantic_hash": ""
   },
   "src/components/layout/AppSidebar.test.tsx": {
@@ -633,12 +627,6 @@
     "mtime": 1787958535.0158894,
     "seen": 1788097721.0786219,
     "ast_hash": "6c1265196917414dd56aa0cf5e3167a2",
-    "semantic_hash": ""
-  },
-  "src/components/layout/AppTopBar.test.tsx": {
-    "mtime": 1787954392.4964068,
-    "seen": 1788097721.078623,
-    "ast_hash": "1ced20fcc19437e4cc636672d0c1d66d",
     "semantic_hash": ""
   },
   "src/components/layout/NotificationMenu.test.tsx": {
@@ -954,9 +942,9 @@
     "semantic_hash": ""
   },
   "src/contexts/AuthContext.tsx": {
-    "mtime": 1786933855.8996189,
-    "seen": 1788097721.078649,
-    "ast_hash": "42b01bca66c12afc63499f792e7aa1fd",
+    "mtime": 1788100288.2800725,
+    "seen": 1788100298.307966,
+    "ast_hash": "ac11fb5b7524f22990f46bbd1ae297e4",
     "semantic_hash": ""
   },
   "src/contexts/DataContext.cancel.test.tsx": {

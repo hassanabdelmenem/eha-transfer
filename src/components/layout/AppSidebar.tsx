@@ -67,7 +67,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 }) => {
   const location = useLocation();
 
-  const isDoctor = ['consultant', 'specialist', 'resident', 'clinician', 'er_official', 'medical_director', 'head_of_department'].includes(user.role);
+  const isDoctor = ['consultant', 'specialist', 'resident', 'clinician', 'er_official', 'medical_director', 'head_of_department', 'owner', 'system_admin'].includes(user.role);
   const isNurse = isNurseRole(user.role) || user.role === 'owner' || user.role === 'er_room';
   const isHeadOfDept = user.role === 'head_of_department' || user.role === 'owner';
   const isLeadership = ['hospital_manager', 'deputy_manager', 'medical_director', 'owner', 'system_admin'].includes(user.role);

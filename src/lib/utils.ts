@@ -5,15 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+import { format } from 'date-fns';
+
 export function formatDateTime(isoString?: string | null) {
   if (!isoString) return 'Unknown Time';
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return 'Invalid Date';
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+  return format(date, 'MMM d, yyyy h:mm a');
 }
