@@ -11,9 +11,9 @@
     "lint": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:e2e": "firebase emulators:exec --only auth,firestore --project eha-transfer-1785622025 \"playwright test\"",
-    "test:rules": "firebase emulators:exec --only firestore --project eha-transfer-rules-test \"vitest run --config vitest.rules.config.ts\"",
-    "test:csp-headers": "npm run build && firebase emulators:exec --only hosting --project eha-transfer-1785622025 \"node scripts/verify-csp-headers.mjs\"",
+    "test:e2e": "NO_UPDATE_NOTIFIER=1 XDG_CONFIG_HOME=/tmp/.config PATH=\"/opt/homebrew/opt/openjdk/bin:$PATH\" firebase emulators:exec --only auth,firestore --project eha-transfer-1785622025 \"playwright test\"",
+    "test:rules": "NO_UPDATE_NOTIFIER=1 XDG_CONFIG_HOME=/tmp/.config PATH=\"/opt/homebrew/opt/openjdk/bin:$PATH\" firebase emulators:exec --only firestore --project eha-transfer-rules-test \"vitest run --config vitest.rules.config.ts\"",
+    "test:csp-headers": "npm run build && NO_UPDATE_NOTIFIER=1 XDG_CONFIG_HOME=/tmp/.config PATH=\"/opt/homebrew/opt/openjdk/bin:$PATH\" firebase emulators:exec --only hosting --project eha-transfer-1785622025 \"node scripts/verify-csp-headers.mjs\"",
     "test:coverage": "vitest --coverage",
     "mutate": "stryker run"
   },

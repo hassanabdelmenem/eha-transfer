@@ -30,7 +30,7 @@ export const ReferralWorkspacePane: React.FC = () => {
   return (
     <div className="lg:flex lg:gap-6 lg:items-start">
       <div className="hidden lg:block w-[436px] shrink-0 space-y-2 sticky top-8 max-h-[calc(100vh-6rem)] overflow-y-auto pb-8">
-        <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 px-1 pt-1">
+        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 px-1 pt-1">
           {queue.length} referral{queue.length === 1 ? '' : 's'}
         </h2>
         {queue.map(r => (
@@ -50,7 +50,7 @@ export const ReferralWorkspacePane: React.FC = () => {
                   {r.requiredBedType} · {r.isEscalated ? 'Escalated' : r.status.replace(/_/g, ' ')}
                 </p>
               </div>
-              <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${priorityChipClasses(r.priority)}`}>
+              <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold  ${priorityChipClasses(r.priority)}`}>
                 {r.priority}
               </span>
             </div>

@@ -107,7 +107,7 @@ export const ArchivePage: React.FC = () => {
   [myReferrals, outcomeFilter, q]);
 
   return (
-    <div className="flex flex-col space-y-6 pb-16">
+    <div className="flex flex-col space-y-6">
       {/* 3b/3d: unified archive header + stat toggles + search + case list,
           same cards at every width -- edge-to-edge on phones, contained in a
           rounded header card once there's room, cases reflow into a grid. */}
@@ -117,7 +117,7 @@ export const ArchivePage: React.FC = () => {
             <Archive className="w-5 h-5 text-white/60 hidden sm:block" />
             <h1 className="text-lg sm:text-xl font-heading font-semibold">Archive</h1>
           </div>
-          <button onClick={handleExportCSV} className="min-h-[40px] px-3 rounded-lg border border-white/25 text-xs font-bold uppercase tracking-wide hover:bg-white/10 transition-colors flex items-center gap-1.5">
+          <button onClick={handleExportCSV} className="min-h-[40px] px-3 rounded-lg border border-white/25 text-xs font-semibold hover:bg-white/10 transition-colors flex items-center gap-1.5">
             <Download className="w-3.5 h-3.5" />
             Export CSV
           </button>
@@ -152,7 +152,7 @@ export const ArchivePage: React.FC = () => {
             />
           </div>
 
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">All ended cases · {mobileRows.length}</p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">All ended cases · {mobileRows.length}</p>
           {mobileRows.length === 0 ? (
             <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">No ended cases match.</p>
           ) : (
@@ -170,7 +170,7 @@ export const ArchivePage: React.FC = () => {
                         {r.patientData.hospitalId} · {facilitiesById.get(r.referringFacilityId)?.name || '—'} → {r.receivingFacilityId === 'auto' ? 'auto-routed' : (facilitiesById.get(r.receivingFacilityId)?.name || '—')}
                       </p>
                     </div>
-                    <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${r.status === 'admitted' ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400' : 'bg-critical-100 text-critical-700 dark:bg-critical-900/30 dark:text-critical-400'}`}>
+                    <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold  ${r.status === 'admitted' ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400' : 'bg-critical-100 text-critical-700 dark:bg-critical-900/30 dark:text-critical-400'}`}>
                       {r.status}
                     </span>
                   </div>

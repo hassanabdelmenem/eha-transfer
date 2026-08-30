@@ -57,7 +57,7 @@ export const Toaster: React.FC = () => {
           <div
             key={toast.id}
             className={cn(
-              'flex items-start gap-3 rounded shadow-lg ring-1 ring-black/5 px-4 py-3',
+              'flex items-start gap-3 rounded-xl shadow-md-lg ring-1 ring-black/5 px-4 py-3',
               TONE_STYLES[toast.tone]
             )}
           >
@@ -67,7 +67,7 @@ export const Toaster: React.FC = () => {
               type="button"
               onClick={() => dismissToast(toast.id)}
               aria-label="Dismiss notification"
-              className="shrink-0 rounded p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+              className="shrink-0 rounded-xl p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>

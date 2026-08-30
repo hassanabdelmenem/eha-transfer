@@ -726,19 +726,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error('Add the accompanying doctor’s name and phone number before dispatching the ambulance.');
         }
 
+        if (status === 'rejected') {
+          if (!notes || !notes.trim()) {
+            throw new Error('A rejection reason is required.');
+          }
+        }
+
         const isApproving = ['dept_approved', 'manager_approved', 'accepted'].includes(status);
         finalReceivingFacilityId = (r.receivingFacilityId === 'auto' && isApproving)
           ? (user.facilityId || r.receivingFacilityId)
           : r.receivingFacilityId;
 
-        const newHistory = [...r.statusHistory, { status, timestamp: now, userId: user.id, notes }];
+        const trimmedNotes = notes ? notes.trim() : '';
+        const formattedNotes = status === 'rejected'
+          ? trimmedNotes.toLowerCase().startsWith('rejected')
+            ? trimmedNotes
+            : `Rejected: ${trimmedNotes}`
+          : notes;
 
-        transaction.update(refDocRef, {
+        const newHistory = [...r.statusHistory, { status, timestamp: now, userId: user.id, notes: formattedNotes }];
+
+        const updatePayload: any = {
           status,
           receivingFacilityId: finalReceivingFacilityId,
           updatedAt: now,
           statusHistory: newHistory
-        });
+        };
+
+        if (status === 'rejected') {
+          updatePayload.rejectionReason = trimmedNotes;
+          updatePayload.rejectedAt = now;
+          updatePayload.rejectedBy = user.id;
+        }
+
+        transaction.update(refDocRef, updatePayload);
 
         // Bed capacity is adjusted from the transactionally-read prior status,
         // so two concurrent admit/discharge calls can't both fire the increment.
@@ -1097,6 +1118,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // rejections -- they carry a user-facing reason (wrong role, or already in transit).
   const cancelReferral = useCallback(async (id: string, reason: string) => {
     if (!user) return;
+    if (!reason || !reason.trim()) {
+      throw new Error('A cancellation reason is required.');
+    }
     const now = new Date().toISOString();
     const refDocRef = doc(db, 'referrals', id);
     let patientName = '';
@@ -1128,9 +1152,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         status: 'cancelled',
         cancelledAt: now,
         cancelledBy: user.id,
-        cancelReason: reason || 'Not specified',
+        cancelReason: reason.trim(),
         updatedAt: now,
-        statusHistory: [...r.statusHistory, { status: 'cancelled', timestamp: now, userId: user.id, notes: reason ? `Cancelled: ${reason}` : 'Cancelled' }]
+        statusHistory: [...r.statusHistory, { status: 'cancelled', timestamp: now, userId: user.id, notes: `Cancelled: ${reason.trim()}` }]
       });
     });
 

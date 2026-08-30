@@ -24,7 +24,7 @@ describe('Input', () => {
   it('applies error styling when error prop is true', () => {
     render(<Input placeholder="Error input" error data-testid="input" />);
     const input = screen.getByTestId('input');
-    expect(input).toHaveClass('border-red-500');
+    expect(input).toHaveClass('border-critical-500');
   });
 
   it('can be disabled', async () => {

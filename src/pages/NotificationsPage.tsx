@@ -49,14 +49,14 @@ export const NotificationsPage: React.FC = () => {
   const unreadCount = userNotifs.filter(n => !n.read).length;
 
   return (
-    <div className="max-w-5xl mx-auto pb-16">
+    <div className="max-w-5xl mx-auto">
       {/* 2d/3d: unified inbox, same cards at every width -- edge-to-edge on
           phones, contained in a rounded header card once there's room. */}
       <div className="-mt-4 -mx-4 sm:mt-0 sm:mx-0 sm:rounded-xl sm:overflow-hidden">
         <div className="bg-slate-950 text-white px-4 py-4 sm:px-6 flex items-center justify-between">
           <h1 className="text-lg sm:text-xl font-heading font-semibold">Inbox</h1>
           {unreadCount > 0 && (
-            <button onClick={() => markAllNotificationsRead()} className="min-h-[40px] px-3 rounded-lg border border-white/25 text-xs font-bold uppercase tracking-wide hover:bg-white/10 transition-colors">
+            <button onClick={() => markAllNotificationsRead()} className="min-h-[40px] px-3 rounded-lg border border-white/25 text-xs font-semibold hover:bg-white/10 transition-colors">
               Mark all read
             </button>
           )}
@@ -75,14 +75,14 @@ export const NotificationsPage: React.FC = () => {
                 return (
                   <div key={notif.id} className={`rounded-xl border p-3.5 ${TINT_CLASSES[notif.type]}`}>
                     <div className="flex items-center justify-between gap-2">
-                      <span className={`text-xs font-bold uppercase tracking-wide ${LABEL_TEXT_CLASSES[notif.type]}`}>{kind.label}</span>
+                      <span className={`text-xs font-bold   ${LABEL_TEXT_CLASSES[notif.type]}`}>{kind.label}</span>
                       <span className="text-xs font-mono font-medium text-slate-500 dark:text-slate-400">{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                     <p className="text-[15.5px] text-slate-800 dark:text-slate-200 mt-1.5 leading-snug">{notif.message}</p>
                     {notif.referralId && (
                       <button
                         onClick={() => { markNotificationRead(notif.id); navigate(`/referrals/${notif.referralId}`); }}
-                        className="w-full mt-3 min-h-[50px] rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-bold uppercase tracking-wide"
+                        className="w-full mt-3 min-h-[50px] rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold"
                       >
                         {kind.action}
                       </button>

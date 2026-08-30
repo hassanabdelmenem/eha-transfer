@@ -35,3 +35,9 @@ firestore-export/
 .claude/
 .copilot/
 _to_delete/
+
+# Graphify knowledge graph
+# graphify-out/ IS committed on purpose - the graph travels with the repo.
+# These two are local-only:
+graphify-out/cost.json
+graphify-out/cache/

@@ -119,7 +119,7 @@ export const NetworkDirectoryPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6 pb-16 h-full overflow-auto">
+    <div className="space-y-6 h-full overflow-auto">
       {/* 2e/3d: unified directory header + on-call + facility list, same
           cards at every width -- edge-to-edge on phones, contained in a
           rounded header card once there's room. */}
@@ -143,7 +143,7 @@ export const NetworkDirectoryPage: React.FC = () => {
         <div className="p-4 sm:p-6 sm:bg-slate-50 sm:dark:bg-slate-950/40 space-y-3">
           {ownFacilityId && (
             <>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">On call right now · your hospital</p>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">On call right now · your hospital</p>
               {onCallNow.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400 py-2">No on-call staff found.</p>
               ) : (
@@ -153,7 +153,7 @@ export const NetworkDirectoryPage: React.FC = () => {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
-                          <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400">On call</span>
+                          <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400">On call</span>
                         </div>
                         <p className="text-sm text-slate-500 dark:text-slate-400 truncate capitalize">{(u.role || '').replace(/_/g, ' ')}{u.department ? ` · ${u.department}` : ''}</p>
                       </div>
@@ -171,7 +171,7 @@ export const NetworkDirectoryPage: React.FC = () => {
             </>
           )}
 
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 pt-2">Network · {filteredFacilities.length} facilit{filteredFacilities.length === 1 ? 'y' : 'ies'}</p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 pt-2">Network · {filteredFacilities.length} facilit{filteredFacilities.length === 1 ? 'y' : 'ies'}</p>
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
@@ -182,7 +182,7 @@ export const NetworkDirectoryPage: React.FC = () => {
                     <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{f.name}</p>
                     <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{f.location} · {capacityHint(f)}</p>
                   </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold uppercase ${f.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>
+                  <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold  ${f.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>
                     {(f.type || '').replace('_', ' ')}
                   </span>
                 </div>

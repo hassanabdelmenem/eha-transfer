@@ -131,7 +131,7 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
         <button
           type="button"
           onClick={toggleRecording}
-          className={`absolute right-2 bottom-2 p-1.5 rounded-full transition-colors ${isRecording ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+          className={`absolute right-2 bottom-2 p-1.5 rounded-full transition-colors ${isRecording ? 'bg-critical-100 text-critical-600 animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
           title={isRecording ? "Stop recording" : "Start voice dictation"}
           aria-label={isRecording ? "Stop recording" : "Start voice dictation"}
           aria-pressed={isRecording}

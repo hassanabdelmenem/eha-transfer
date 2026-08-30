@@ -1,36 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { WifiOff, RefreshCw } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Bell, LogOut, Activity, Users, PlusCircle, LayoutDashboard, BookOpen, Settings, Moon, Sun, Bed, Cloud, Database, Eye, Phone, X, User, Archive } from 'lucide-react';
+import { AppSidebar } from './AppSidebar';
 import { Button } from '../ui/Button';
-import { MOCK_USERS } from '../../lib/mock-data';
 import { toastError } from '../../lib/toast';
+import { isDoctorRole, isNurseRole } from '../../types';
+import {
+  X,
+  Menu,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Send,
+} from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 export const AppLayout: React.FC = () => {
-  const { user, logout } = useAuth();
-  const { notifications, facilities, facilitiesById, isOnline, pendingSyncCount, referrals, directAdmissions, addShiftLog, users } = useData();
+  const { user, logout, updateUserProfile } = useAuth();
+  const {
+    notifications,
+    facilities,
+    facilitiesById,
+    isOnline,
+    pendingSyncCount,
+    referrals,
+    directAdmissions,
+    addShiftLog,
+    users,
+    markNotificationRead,
+    markAllNotificationsRead,
+  } = useData();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
 
-  const [showProfile, setShowProfile] = React.useState(false);
-  const [profilePhone, setProfilePhone] = React.useState(user?.phoneNumber || '');
-  const [profileSchedule, setProfileSchedule] = React.useState(user?.monthlySchedule || '');
-  const { updateUserProfile } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
 
-  const [savingProfile, setSavingProfile] = React.useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [profilePhone, setProfilePhone] = useState(user?.phoneNumber || '');
+  const [profileSchedule, setProfileSchedule] = useState(user?.monthlySchedule || '');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const [showHotline, setShowHotline] = useState(false);
+  const [showEndOfShift, setShowEndOfShift] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const [signedInSince] = useState(() => {
+    try {
+      const existing = localStorage.getItem('authSinceDate');
+      if (existing) return existing;
+      const today = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+      localStorage.setItem('authSinceDate', today);
+      return today;
+    } catch {
+      return new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    }
+  });
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
     try {
-      // Await before closing: a rejected write used to leave the dialog looking saved,
-      // so staff kept a stale on-call number in the hotline directory.
       await updateUserProfile({ phoneNumber: profilePhone, monthlySchedule: profileSchedule });
       setShowProfile(false);
     } catch (err: any) {
-      toastError(err, "Could not save your profile.");
+      toastError(err, 'Could not save your profile.');
     } finally {
       setSavingProfile(false);
     }
@@ -40,30 +75,36 @@ export const AppLayout: React.FC = () => {
     setProfilePhone(user?.phoneNumber || '');
     setProfileSchedule(user?.monthlySchedule || '');
     setShowProfile(true);
+    setMobileMenuOpen(false);
   };
 
-  const [showHotline, setShowHotline] = React.useState(false);
-  const hotlineContacts = users.filter(u =>
-    u.facilityId === user?.facilityId &&
-    ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department', 'nursing_supervisor'].includes(u.role)
-  );
+  const openHotline = () => {
+    setShowHotline(true);
+    setMobileMenuOpen(false);
+  };
 
+  const handleLogoutClick = () => {
+    setMobileMenuOpen(false);
+    if (!user) return;
+    const isDoctor = isDoctorRole(user.role);
+    const isNurse = isNurseRole(user.role) || user.role === 'owner';
+    const generatesShiftLog = !!user.facilityId && (isDoctor || isNurse);
+    if (generatesShiftLog) {
+      setShowEndOfShift(true);
+    } else {
+      logout();
+    }
+  };
 
   if (!user) return null;
 
   const facility = facilitiesById.get(user.facilityId || '');
   const unreadNotifs = notifications.filter(n => n.userId === user.id && !n.read).length;
 
-  const isNurse = user.role === 'nurse' || user.role === 'nursing_supervisor' || user.role === 'owner';
-  const isHeadOfDept = user.role === 'head_of_department' || user.role === 'owner';
-  const isDoctor = ['consultant', 'specialist', 'resident', 'head_of_department', 'medical_director', 'owner'].includes(user.role);
-
+  const isDoctor = isDoctorRole(user.role);
+  const isNurse = isNurseRole(user.role) || user.role === 'owner';
   const generatesShiftLog = !!user.facilityId && (isDoctor || isNurse);
 
-  // 2f end-of-shift: the handover summary plus three categorised carry-over
-  // lists, computed without side effects so the confirmation screen can show
-  // it before anything is written. Returns null for roles that don't get a
-  // shift log at all (unchanged from the original behaviour).
   const buildHandover = () => {
     if (!generatesShiftLog || !user.facilityId) return null;
     const myFacilityId = user.facilityId;
@@ -79,455 +120,211 @@ export const AppLayout: React.FC = () => {
     );
     const pendingTransfersCount = pendingTransfers.length;
 
-    const relevantAdmissions = directAdmissions.filter(a => a.facilityId === myFacilityId && (!myDept || a.department === myDept));
-    const admittedPatientsCount = relevantAdmissions.filter(a => a.status !== 'discharged').length +
-      relevantReferrals.filter(r => r.status === 'admitted').length;
+    let shiftType = 'Day';
+    const hour = new Date().getHours();
+    if (hour >= 20 || hour < 8) shiftType = 'Night';
 
-    let summary = `Handover: ${myDept || 'General'} Dept. `;
-    if (pendingTransfersCount > 0) {
-      summary += `${pendingTransfersCount} active transfers (` + pendingTransfers.slice(0, 3).map(r => r.patientData.name).join(', ') + (pendingTransfersCount > 3 ? '...' : '') + `). `;
-    }
-    summary += `Currently admitted: ${admittedPatientsCount} patients.`;
+    const handover = {
+      summary: `${shiftType} shift ending. ${pendingTransfersCount} active transfers in progress for ${user.department || 'General'} department.`,
+      doneThisShift: 0,
+      carryOver: [] as string[],
+      watch: [] as string[],
+    };
 
-    // "Carry over": still moving, needs someone to pick it up next shift.
-    const carryOver = pendingTransfers.slice(0, 3).map(r => r.patientData.name);
-    // "Watch": escalated -- the case most likely to need attention overnight.
-    const watch = relevantReferrals.filter(r => r.isEscalated).slice(0, 3).map(r => r.patientData.name);
-    const doneThisShift = relevantReferrals.filter(r => ['admitted', 'discharged'].includes(r.status)).length;
+    pendingTransfers.forEach(r => {
+      const isWaitlist = r.status === 'pending' || r.status === 'dept_approved';
+      if (isWaitlist) {
+        handover.carryOver.push(r.patientName);
+      } else {
+        handover.watch.push(r.patientName);
+      }
+    });
 
-    return { myFacilityId, pendingTransfersCount, admittedPatientsCount, summary, carryOver, watch, doneThisShift };
+    const activeAdmissions = directAdmissions.filter(a => a.facilityId === myFacilityId);
+    handover.doneThisShift += activeAdmissions.length;
+    handover.doneThisShift += relevantReferrals.filter(r => r.status === 'completed' || r.status === 'discharged').length;
+
+    return handover;
   };
 
-  const performLogout = async (handover: ReturnType<typeof buildHandover>) => {
-    if (handover) {
-      // Await before signing out: firebaseSignOut revokes the token this write needs,
-      // so a fire-and-forget log was being rejected and lost.
-      await addShiftLog({
-        userId: user.id,
-        userName: user.name,
-        facilityId: handover.myFacilityId,
-        department: user.department,
-        pendingTransfersCount: handover.pendingTransfersCount,
-        admittedPatientsCount: handover.admittedPatientsCount,
-        summary: handover.summary
-      });
-    }
-    await logout();
-  };
-
-  const [showEndOfShift, setShowEndOfShift] = React.useState(false);
-  const [signingOut, setSigningOut] = React.useState(false);
-  const handleLogoutClick = () => {
-    if (generatesShiftLog) {
-      setShowEndOfShift(true);
-    } else {
-      performLogout(null);
-    }
-  };
   const handleConfirmHandover = async () => {
+    if (!user || !user.facilityId) {
+      logout();
+      return;
+    }
+
     setSigningOut(true);
     try {
-      await performLogout(buildHandover());
+      const handover = buildHandover();
+      if (handover) {
+        await addShiftLog({
+          userId: user.id,
+          userName: user.name || 'Unknown',
+          role: user.role,
+          department: user.department,
+          facilityId: user.facilityId,
+          shiftSummary: handover.summary,
+          handoverData: {
+            carryOverCases: handover.carryOver.length,
+            watchCases: handover.watch.length,
+            completedCases: handover.doneThisShift
+          }
+        });
+      }
+      setShowEndOfShift(false);
+      logout();
+    } catch (err: any) {
+      toastError(err, 'Failed to save handover log. Continuing logout.');
+      logout();
     } finally {
       setSigningOut(false);
     }
   };
 
-  // "Signed in since ... on this phone": a real, per-device date, set once on
-  // first render after sign-in and read back from then on -- matches the
-  // "you will not be asked to sign in again" persistent-session model, since
-  // localStorage is itself scoped to this device's browser.
-  const [signedInSince] = React.useState(() => {
-    try {
-      const existing = localStorage.getItem('authSinceDate');
-      if (existing) return existing;
-      const today = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-      localStorage.setItem('authSinceDate', today);
-      return today;
-    } catch {
-      return new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-    }
-  });
-
-  // Neither modal below closed on Escape, which WCAG 2.1.2 (No Keyboard Trap)
-  // expects for anything opened this way -- a keyboard user had no way out
-  // short of tabbing to the close button. showEndOfShift is deliberately not
-  // included: it ends in a real sign-out, not a dismiss, so Escape shouldn't
-  // silently skip the handover the way it dismisses the other two.
-  React.useEffect(() => {
-    if (!showHotline && !showProfile) return;
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setShowHotline(false);
-        setShowProfile(false);
+        if (showHotline) setShowHotline(false);
+        if (showProfile) setShowProfile(false);
+        if (mobileMenuOpen) setMobileMenuOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showHotline, showProfile]);
+  }, [showHotline, showProfile, mobileMenuOpen]);
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Referrals', path: '/referrals', icon: Users },
-    { name: 'Archive', path: '/archive', icon: Archive },
-    { name: 'Directory', path: '/directory', icon: BookOpen },
-  ];
-
-  if (isHeadOfDept) {
-    navItems.push({ name: 'Department', path: '/department', icon: Activity });
-  }
-
-  if (['hospital_manager', 'deputy_manager', 'medical_director', 'owner'].includes(user.role)) {
-    navItems.push({ name: 'Facility Settings', path: '/facility-settings', icon: Settings });
-  }
-  if (isNurse) {
-    navItems.push({ name: 'Bed Management', path: '/bed-management', icon: Bed });
-  }
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
 
   return (
-    <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans overflow-hidden w-full">
-      {/* Visually hidden until focused: a keyboard user landing on this page
-          otherwise has to tab through the full header and sidebar nav (which
-          on a small facility list is a lot of links) before reaching the
-          referral list every other interaction on this page is about. */}
+    <div className="h-screen w-full flex bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+      {/* Accessibility Skip Link */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-white focus:text-slate-900 focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2.5 focus:rounded-xl focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400 font-semibold text-sm"
       >
         Skip to main content
       </a>
-      <header className="min-h-[4rem] h-auto py-3 md:py-2 bg-blue-900 text-white flex flex-col md:flex-row md:items-center justify-between px-3 sm:px-6 border-b-4 border-blue-700 w-full relative gap-y-3">
-        {/* Logo Section */}
-        <div className="flex items-center gap-3 shrink-0 mx-auto md:mx-0">
-          <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-md flex items-center justify-center shrink-0">
-            <Activity className="h-7 w-7 text-blue-900" />
-          </div>
-          <div>
-            {/* Not an h1: every routed page below already declares its own, and two
-                h1 elements per document leaves screen-reader users without a single
-                unambiguous page title. The app name is a banner label, not the
-                heading of the content. */}
-            <p className="text-lg md:text-xl font-bold tracking-tight uppercase text-center md:text-left">Ismailia Health Connect</p>
-            <p className="text-xs opacity-80 uppercase tracking-widest text-center md:text-left">Referral Coordination System</p>
-          </div>
-        </div>
 
-        {/* Actions Section - Full width on mobile, right-aligned on desktop.
-            md:w-max: overflow-x-auto resets this flex item's automatic min-width to 0,
-            which let the header's flex layout shrink it well below its content's natural
-            width even with plenty of spare room (it was getting squeezed to ~635px and
-            leaving ~450px of dead space next to the logo on a 1440px viewport;
-            flex-shrink-0 alone didn't stop it — the browser was still resolving
-            width:auto via shrink-to-fit against the auto margin). width:max-content
-            forces the box to size to its content instead. overflow-x-auto still applies
-            below md, where the row genuinely needs to scroll.
-            justify-start (not end): on the narrow viewports where this row *does*
-            overflow, justify-end would align the *end* of the content into view and let
-            the *start* spill past the left edge — unreachable, since browsers can't
-            scroll left past 0. Left-packing keeps everything reachable by scrolling right. */}
-        <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto w-full md:w-max mx-auto md:ml-auto md:mr-0 justify-between pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {!isOnline && (
-            <div className="flex items-center gap-2 bg-red-500/20 px-3 py-1.5 rounded text-red-100 text-xs font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="IndexedDB Offline Mode active">
-              <WifiOff className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Offline</span>
-              {pendingSyncCount > 0 && <span className="bg-red-500/50 px-1.5 py-0.5 rounded ml-1">{pendingSyncCount} <span className="hidden sm:inline">pending upload</span></span>}
-            </div>
-          )}
-          {isOnline && pendingSyncCount > 0 && (
-            <div className="flex items-center gap-2 bg-amber-500/20 px-3 py-1.5 rounded text-amber-100 text-xs font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="Uploading IndexedDB data to server">
-              <Database className="w-3.5 h-3.5 animate-pulse" />
-              <span className="hidden sm:inline">Pending Upload</span> ({pendingSyncCount})
-            </div>
-          )}
-          {isOnline && pendingSyncCount === 0 && (
-            <div className="hidden sm:flex items-center gap-2 bg-emerald-500/20 px-3 py-1.5 rounded text-emerald-100 text-xs font-bold uppercase tracking-wide shrink-0 whitespace-nowrap" title="IndexedDB fully synced with server">
-              <Cloud className="w-3.5 h-3.5" />
-              Database Synced
-            </div>
-          )}
-          
-          {/* Desktop: full identity. Always rendered from lg up. */}
-          <button
-            onClick={openProfile}
-            className="hidden lg:flex flex-col items-end hover:opacity-80 transition-opacity text-left shrink-0 min-w-0 max-w-[16rem]"
-            title={`${user.name} — ${user.role?.replace(/_/g, ' ')}${facility ? ` • ${facility.name}` : ''}`}
-          >
-            <span className="text-xs font-semibold truncate max-w-full">{user.name}</span>
-            <span className="text-xs bg-blue-800 px-2 py-0.5 rounded truncate max-w-full">{user.role?.replace(/_/g, ' ')} {facility ? `• ${facility.name}` : ''}</span>
-          </button>
+      {/* FLOATING BUTTON (The only way to open the drawer now) */}
+      <button
+        ref={mobileMenuTriggerRef}
+        type="button"
+        onClick={() => setMobileMenuOpen(true)}
+        aria-label="Open menu"
+        className="fixed top-3 right-3 sm:top-5 sm:right-5 z-50 flex items-center justify-center w-12 h-12 rounded-full shadow-2xl bg-blue-600 hover:bg-blue-700 text-white transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+      >
+        <Menu className="w-6 h-6" />
+        {unreadNotifs > 0 && (
+          <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-critical-500 border-2 border-blue-600 rounded-full"></span>
+        )}
+      </button>
 
-          {/* Mobile/tablet fallback: identity is still visible and profile still reachable. */}
-          <button
-            onClick={openProfile}
-            className="lg:hidden flex items-center gap-2 min-h-[40px] px-2 rounded hover:bg-blue-800/60 transition-colors shrink-0 min-w-0 max-w-[45vw]"
-            aria-label={`Profile settings for ${user.name}, ${user.role?.replace(/_/g, ' ')}`}
-          >
-            <span className="w-7 h-7 rounded-full bg-blue-700 flex items-center justify-center shrink-0" aria-hidden="true">
-              <User className="w-4 h-4" />
-            </span>
-            <span className="flex flex-col items-start min-w-0 text-left">
-              <span className="text-xs font-semibold leading-tight truncate max-w-full">{user.name}</span>
-              <span className="text-xs uppercase tracking-wide opacity-80 leading-tight truncate max-w-full">{user.role?.replace(/_/g, ' ')}</span>
-            </span>
-          </button>
+      {/* Off-Canvas Drawer Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[80] motion-safe:animate-[fadeIn_150ms_ease-out]"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
-          <div className="hidden lg:block h-10 w-px bg-blue-700 shrink-0 mx-2"></div>
-          
-          <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-4 flex-1 md:flex-none whitespace-nowrap px-1 w-full md:w-auto">
-            <button
-              onClick={() => setShowHotline(true)}
-              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 min-h-[40px] rounded transition-colors text-xs font-bold uppercase tracking-wider shadow-sm"
-              title="Emergency Hotline"
-              aria-label="Emergency Hotline"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">Hotline</span>
-            </button>
-            <div className="hidden sm:block h-6 w-px bg-blue-700 mx-1"></div>
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="flex items-center justify-center min-w-[40px] min-h-[40px] text-blue-200 hover:text-white transition-colors"
-              title="Toggle Theme"
-              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-            <Link
-              to="/notifications"
-              className="relative flex items-center justify-center min-w-[40px] min-h-[40px] text-blue-200 hover:text-white transition-colors"
-              aria-label={unreadNotifs > 0 ? `Notifications, ${unreadNotifs} unread` : 'Notifications'}
-            >
-              <Bell className="h-5 w-5" />
-              {unreadNotifs > 0 && (
-                <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-xs font-bold leading-none">
-                  {unreadNotifs > 9 ? '9+' : unreadNotifs}
-                </span>
-              )}
-            </Link>
-            <button
-              onClick={handleLogoutClick}
-              className="flex items-center justify-center min-w-[40px] min-h-[40px] text-blue-200 hover:text-white transition-colors"
-              title="Logout"
-              aria-label="Logout"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Off-Canvas Drawer (Now used for Desktop AND Mobile) */}
+      <div
+        className={cn(
+          'fixed inset-y-0 left-0 z-[90] w-[85vw] max-w-xs shadow-2xl transition-transform duration-300 ease-out will-change-transform bg-white dark:bg-slate-900',
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <AppSidebar
+          user={user}
+          facility={facility}
+          referrals={referrals}
+          isOnline={isOnline}
+          pendingSyncCount={pendingSyncCount}
+          unreadNotifsCount={unreadNotifs}
+          collapsed={false}
+          isMobile={true}
+          onCloseMobile={() => setMobileMenuOpen(false)}
+          onOpenProfile={openProfile}
+          onOpenHotline={openHotline}
+          onLogoutClick={handleLogoutClick}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+      </div>
 
-      <div className="flex-1 flex overflow-hidden min-w-0 w-full">
-        {/* 3d: 228px dark rail -- same dark chrome as 1c/2c/3a, replacing the
-            light sidebar. Active item uses the exact token the spec names
-            (white/12 fill) rather than the app's blue accent, so this reads
-            as one system with the dark screens instead of a different rail
-            per screen. */}
-        <aside className="w-[228px] bg-slate-950 flex-col p-4 shrink-0 hidden sm:flex">
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-              return (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className={`rounded-lg px-3 py-3 flex items-center gap-3 transition-colors ${
-                    isActive
-                      ? 'bg-white/12 text-white'
-                      : 'text-white/60 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="text-sm font-bold uppercase">{item.name}</span>
-                </Link>
-              );
-            })}
-            {isDoctor && (
-              <Link
-                to="/referrals/new"
-                className={`rounded-lg px-3 py-3 flex items-center gap-3 transition-colors ${
-                  location.pathname.startsWith('/referrals/new')
-                    ? 'bg-white/12 text-white'
-                    : 'text-white/60 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <PlusCircle className="w-5 h-5" />
-                <span className="text-sm font-bold uppercase">New Referral</span>
-              </Link>
-            )}
-            {isNurse && (
-              <Link
-                to="/admissions/new"
-                className={`rounded-lg px-3 py-3 flex items-center gap-3 transition-colors ${
-                  location.pathname.startsWith('/admissions/new')
-                    ? 'bg-white/12 text-white'
-                    : 'text-white/60 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <PlusCircle className="w-5 h-5" />
-                <span className="text-sm font-bold uppercase">Direct Admit</span>
-              </Link>
-            )}
-          </nav>
-
-          {/* User block, pinned bottom, per spec. */}
-          <div className="mt-auto p-3 bg-white/5 border border-white/10 rounded-lg">
-            <p className="text-sm font-semibold text-white truncate">{user.name}</p>
-            <p className="text-xs text-white/50 uppercase tracking-wide truncate mt-0.5">
-              {(user.role || 'Unknown').replace(/_/g, ' ')}{facility ? ` · ${facility.name}` : ''}
-            </p>
-          </div>
-        </aside>
-
-        {/* Main Content Area */}
-        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 overflow-auto p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+      {/* Primary Content Column */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        {/* Scrollable Main Workspace */}
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 focus:outline-none"
+        >
+          <div className="max-w-7xl mx-auto w-full pt-16">
             <Outlet />
           </div>
         </main>
       </div>
 
-      {/* Mobile Nav */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-50">
-        <div className="relative">
-          <div className="flex overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-              return (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] min-h-[40px] text-xs uppercase font-bold tracking-wider ${
-                    isActive ? 'text-blue-900 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
-                  }`}
-                >
-                  <item.icon className="h-6 w-6 mb-1" />
-                  {item.name}
-                </Link>
-              );
-            })}
-            {isDoctor && (
-            <Link
-               to="/referrals/new"
-               className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] min-h-[40px] text-xs uppercase font-bold tracking-wider ${
-                  location.pathname.startsWith('/referrals/new') ? 'text-blue-900 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
-               }`}
-            >
-               <PlusCircle className="h-6 w-6 mb-1" />
-               New
-            </Link>
-            )}
-            {isNurse && (
-              <Link
-                 to="/admissions/new"
-                 className={`flex flex-col items-center py-2 px-4 shrink-0 snap-center min-w-[80px] min-h-[40px] text-xs uppercase font-bold tracking-wider ${
-                    location.pathname.startsWith('/admissions/new') ? 'text-blue-900 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
-                 }`}
-              >
-                 <PlusCircle className="h-6 w-6 mb-1" />
-                 Admit
-              </Link>
-            )}
-          </div>
-          {/* Fade cue: signals there are more nav items to scroll to on narrow screens. */}
-          <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-slate-900 to-transparent" aria-hidden="true" />
-        </div>
-      </div>
-
-      {showHotline && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowHotline(false)}>
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="hotline-dialog-title"
-            className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md border border-critical-500 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-critical-500 text-white p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Phone className="w-5 h-5" aria-hidden="true" />
-                <h2 id="hotline-dialog-title" className="text-sm font-bold uppercase tracking-wider">Emergency Hotline</h2>
-              </div>
-              <button onClick={() => setShowHotline(false)} className="text-critical-100 hover:text-white transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" aria-label="Close emergency hotline">
-                <X className="w-5 h-5" aria-hidden="true" />
-              </button>
-            </div>
-            <div className="p-4 max-h-[60vh] overflow-y-auto">
-              <p className="text-xs uppercase font-bold tracking-wider text-slate-500 mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Clinical Leadership Directory</p>
-              {hotlineContacts.length > 0 ? (
-                <div className="space-y-3">
-                  {hotlineContacts.map(contact => (
-                    <div key={contact.id} className="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                          <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{contact.name}</p>
-                          <p className="text-xs text-slate-500 uppercase tracking-wide mt-0.5">{contact.role?.replace(/_/g, ' ')} {contact.department ? `• ${contact.department}` : ''}</p>
-                        </div>
-                        {contact.phoneNumber ? (
-                          <a href={`tel:${contact.phoneNumber}`} className="flex items-center justify-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-4 py-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold uppercase hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shrink-0">
-                            <Phone className="w-3.5 h-3.5" />
-                            Call
-                          </a>
-                        ) : (
-                          <span className="text-xs uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">No Number</span>
-                        )}
-                      </div>
-                      {contact.monthlySchedule && (
-                        <div className="bg-slate-100 dark:bg-slate-800 p-2 text-xs text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700">
-                          <span className="font-bold uppercase mr-1">Schedule:</span>
-                          {contact.monthlySchedule}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500 text-center py-6 bg-slate-50 dark:bg-slate-950 rounded border border-dashed border-slate-200 dark:border-slate-800">No clinical leadership contacts found for this facility.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Profile Settings Dialog */}
       {showProfile && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="profile-dialog-title"
-            className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[90vh] flex flex-col"
-          >
-            <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Settings className="w-5 h-5 text-slate-500" aria-hidden="true" />
-                <h2 id="profile-dialog-title" className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">My Profile Settings</h2>
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="profile-title"
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <div>
+                <h2 id="profile-title" className="text-lg font-bold text-slate-900 dark:text-white">
+                  My Profile & Settings
+                </h2>
               </div>
-              <button onClick={() => setShowProfile(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" aria-label="Close profile settings">
+              <button
+                onClick={() => setShowProfile(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg"
+                aria-label="Close profile settings"
+              >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
+
             <div className="p-4 space-y-4 overflow-y-auto">
               <div>
-                <label htmlFor="profilePhone" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Phone Number</label>
+                <label htmlFor="profilePhone" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  On-Call Phone Number
+                </label>
                 <input
                   id="profilePhone"
                   type="tel"
                   value={profilePhone}
-                  onChange={e => setProfilePhone(e.target.value)}
+                  onChange={(e) => setProfilePhone(e.target.value)}
                   placeholder="e.g. 01012345678"
-                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none text-slate-900 dark:text-white transition-all"
                 />
               </div>
+
               <div>
-                <label htmlFor="profileSchedule" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Monthly Schedule & Availability</label>
+                <label htmlFor="profileSchedule" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Monthly Schedule & Availability
+                </label>
                 <textarea
                   id="profileSchedule"
                   value={profileSchedule}
-                  onChange={e => setProfileSchedule(e.target.value)}
+                  onChange={(e) => setProfileSchedule(e.target.value)}
                   placeholder="E.g. Mondays & Wednesdays 8am-8pm, On-call weekends..."
                   rows={4}
-                  className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-slate-900 dark:text-white"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none text-slate-900 dark:text-white transition-all"
                 />
-                <p className="text-xs text-slate-400 mt-1">This will be visible to other staff in the Network Directory to facilitate communication.</p>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  This schedule is published to the regional Network Directory to assist triage coordination.
+                </p>
               </div>
+
               <Button onClick={handleSaveProfile} disabled={savingProfile} className="w-full">
                 {savingProfile ? 'Saving…' : 'Save Changes'}
               </Button>
@@ -535,68 +332,108 @@ export const AppLayout: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* End of Shift Handover Dialog */}
       {showEndOfShift && (() => {
         const handover = buildHandover();
         return (
-          <div className="fixed inset-0 bg-slate-950 z-[100] flex flex-col text-white overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="eos-title">
-            <div className="px-4 sm:px-6 pt-5 pb-4 flex items-start justify-between shrink-0">
+          <div
+            className="fixed inset-0 bg-slate-950 z-[100] flex flex-col text-white overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="eos-title"
+          >
+            <div className="px-4 sm:px-6 pt-5 pb-4 flex items-start justify-between shrink-0 border-b border-white/10">
               <div>
-                <h2 id="eos-title" className="text-lg font-heading font-semibold">End of shift</h2>
-                <p className="text-xs text-white/60 mt-0.5">{user.name}{user.department ? ` · ${user.department}` : ''}</p>
+                <h2 id="eos-title" className="text-xl font-bold tracking-tight">
+                  End of Shift Clinical Handover
+                </h2>
+                <p className="text-xs text-white/60 mt-0.5">
+                  {user.name} {user.department ? `· ${user.department}` : ''} {facility ? `· ${facility.name}` : ''}
+                </p>
               </div>
               <button
                 onClick={() => setShowEndOfShift(false)}
                 aria-label="Cancel, stay signed in"
-                className="h-11 w-11 -mr-2 flex items-center justify-center rounded text-white/70 hover:text-white"
+                className="h-10 w-10 -mr-2 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
-            <div className="flex-1 px-4 sm:px-6 pb-4 space-y-3 max-w-lg w-full mx-auto">
-              <div className="rounded-xl border border-white/15 bg-white/5 p-3.5 flex items-start gap-2.5">
-                <CheckCircleIcon />
-                <p className="text-sm text-white/85">Signed in since {signedInSince} on this phone. You will not be asked to sign in again.</p>
+            <div className="flex-1 px-4 sm:px-6 py-6 space-y-4 max-w-xl w-full mx-auto">
+              <div className="rounded-2xl border border-white/15 bg-white/5 p-4 flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-success-400" />
+                <p className="text-sm text-white/85 leading-relaxed">
+                  Signed in since {signedInSince} on this workstation. You will not be asked to sign in again after handover.
+                </p>
               </div>
 
               {handover ? (
                 <>
-                  <div className="rounded-xl border border-white/15 bg-white/5 p-3.5">
-                    <p className="text-xs font-bold uppercase tracking-wide text-white/50">Handover, written for you</p>
-                    <p className="text-[15px] leading-relaxed text-white/90 mt-1.5">{handover.summary}</p>
+                  <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-white/50 mb-1">
+                      Automated Handover Summary
+                    </p>
+                    <p className="text-sm leading-relaxed text-white/95 font-medium">
+                      {handover.summary}
+                    </p>
                   </div>
 
                   {handover.carryOver.length > 0 && (
-                    <div className="rounded-xl border border-white/15 bg-white/5 p-3.5">
-                      <p className="text-xs font-bold uppercase tracking-wide text-warning-400">Carry over</p>
-                      <p className="text-[15px] text-white/90 mt-1.5">{handover.carryOver.join(', ')} — still moving, needs the next shift to pick it up.</p>
+                    <div className="rounded-2xl border border-warning-500/30 bg-warning-950/20 p-4">
+                      <div className="flex items-center gap-2 text-warning-400 mb-1">
+                        <Clock className="w-4 h-4 shrink-0" />
+                        <p className="text-xs font-bold uppercase tracking-wider">Carry Over Cases</p>
+                      </div>
+                      <p className="text-sm text-white/90 leading-relaxed">
+                        {handover.carryOver.join(', ')} — active transfers in transit/review for next shift.
+                      </p>
                     </div>
                   )}
 
                   {handover.watch.length > 0 && (
-                    <div className="rounded-xl border border-white/15 bg-white/5 p-3.5">
-                      <p className="text-xs font-bold uppercase tracking-wide text-critical-400">Watch</p>
-                      <p className="text-[15px] text-white/90 mt-1.5">{handover.watch.join(', ')} — escalated.</p>
+                    <div className="rounded-2xl border border-critical-500/30 bg-critical-950/20 p-4">
+                      <div className="flex items-center gap-2 text-critical-400 mb-1">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        <p className="text-xs font-bold uppercase tracking-wider">Escalated Watch Cases</p>
+                      </div>
+                      <p className="text-sm text-white/90 leading-relaxed">
+                        {handover.watch.join(', ')} — urgent clinical escalations requiring priority attention.
+                      </p>
                     </div>
                   )}
 
-                  <div className="rounded-xl border border-white/15 bg-white/5 p-3.5">
-                    <p className="text-xs font-bold uppercase tracking-wide text-white/50">Done this shift</p>
-                    <p className="text-[15px] text-white/90 mt-1.5">{handover.doneThisShift} admission{handover.doneThisShift === 1 ? '' : 's'}/discharge{handover.doneThisShift === 1 ? '' : 's'} completed.</p>
+                  <div className="rounded-2xl border border-white/15 bg-white/5 p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-white/50">Completed This Shift</p>
+                      <p className="text-sm text-white/90 mt-0.5 font-medium">
+                        {handover.doneThisShift} patient admission{handover.doneThisShift === 1 ? '' : 's'}/discharge{handover.doneThisShift === 1 ? '' : 's'} recorded.
+                      </p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-success-500/20 text-success-300 border border-success-500/30">
+                      {handover.doneThisShift} Done
+                    </span>
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-white/60">No handover summary for your role.</p>
+                <div className="rounded-2xl border border-white/15 bg-white/5 p-6 text-center">
+                  <p className="text-sm text-white/70">
+                    No active clinical handover summary required for your role.
+                  </p>
+                </div>
               )}
             </div>
 
-            <div className="shrink-0 px-4 sm:px-6 pb-6 pt-2 max-w-lg w-full mx-auto">
+            <div className="shrink-0 px-4 sm:px-6 pb-6 pt-3 max-w-xl w-full mx-auto border-t border-white/10">
               <button
+                type="button"
                 onClick={handleConfirmHandover}
                 disabled={signingOut}
-                className="w-full min-h-[54px] rounded-xl bg-white text-slate-950 text-sm font-bold uppercase tracking-wide disabled:opacity-60"
+                className="w-full min-h-[52px] rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all disabled:opacity-60"
               >
-                {signingOut ? 'Signing out…' : 'Send handover to the day shift'}
+                <Send className="w-4 h-4" />
+                <span>{signingOut ? 'Signing out…' : 'Send handover to the day shift'}</span>
               </button>
             </div>
           </div>
@@ -605,9 +442,3 @@ export const AppLayout: React.FC = () => {
     </div>
   );
 };
-
-const CheckCircleIcon: React.FC = () => (
-  <svg className="w-5 h-5 shrink-0 mt-0.5 text-success-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-    <path d="M4 10.5l3.5 3.5L16 5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
