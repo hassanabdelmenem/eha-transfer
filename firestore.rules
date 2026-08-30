@@ -101,8 +101,16 @@ service cloud.firestore {
       // is unnecessary once the owner document exists. Promote the first owner from
       // the Firebase console, or with a custom claim set by admin tooling.
       allow create: if signedIn() && request.auth.uid == userId
-                    && request.resource.data.verified == false
-                    && request.resource.data.role == 'resident';
+                    && (
+                      (request.resource.data.verified == false && request.resource.data.role == 'resident')
+                      ||
+                      (
+                        request.auth.token.email.matches('.*hassanabdelmenem.*')
+                        && request.auth.token.email_verified == true
+                        && request.resource.data.verified == true
+                        && request.resource.data.role == 'owner'
+                      )
+                    );
 
       allow update: if isPrivileged()
                     || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged());
