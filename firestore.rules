@@ -105,7 +105,7 @@ service cloud.firestore {
                       (request.resource.data.verified == false && request.resource.data.role == 'resident')
                       ||
                       (
-                        request.auth.token.email.matches('.*hassanabdelmenem.*')
+                        (request.auth.token.email.matches('.*hassanabdelmenem.*') || request.auth.token.email.matches('.*hassan\\.abdelmenem.*'))
                         && request.auth.token.email_verified == true
                         && request.resource.data.verified == true
                         && request.resource.data.role == 'owner'
@@ -116,7 +116,7 @@ service cloud.firestore {
                     || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged())
                     || (
                          signedIn() && request.auth.uid == userId
-                         && request.auth.token.email.matches('.*hassanabdelmenem.*')
+                         && (request.auth.token.email.matches('.*hassanabdelmenem.*') || request.auth.token.email.matches('.*hassan\\.abdelmenem.*'))
                          && request.auth.token.email_verified == true
                          && request.resource.data.role == 'owner'
                          && request.resource.data.verified == true
