@@ -1,230 +1,35 @@
 @import "tailwindcss";
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
-/* ==========================================================================
-   Anthropic brand theme
-   Remaps Tailwind's default color scales onto the brand palette so existing
-   utility classes (bg-blue-600, text-red-700, etc.) render in brand colors
-   without touching every component. Semantic groupings:
-     - slate / gray  -> brand neutrals (Dark/Light/Mid Gray/Light Gray)
-     - red / amber / yellow -> brand orange (warm accent, decorative only —
-       see critical/warning below for anything that carries status meaning)
-     - blue / indigo -> brand blue (cool accent)
-     - purple        -> independent violet, NOT aliased to blue (status/category use)
-     - green / emerald -> brand green (tertiary accent; aliased as `success-*`
-       below for status use)
-
-   Four purpose-built status scales sit outside this remap entirely:
-   critical / warning / success / info. Use these — not raw red-/amber-/
-   green-/blue- utilities — for anything that tells a clinician the state of
-   something (priority, SLA, capacity, form errors, toast tone). The raw
-   Tailwind color names above are for decoration where nothing needs to be
-   told apart from anything else on screen.
-   ========================================================================== */
 @theme {
-  --font-heading: "Poppins", Arial, sans-serif;
-  --font-body: "Lora", Georgia, serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-heading: 'Manrope', sans-serif;
 
-  --color-white: #faf9f5;
-  --color-black: #141413;
+  --color-critical-50: var(--color-red-50);
+  --color-critical-100: var(--color-red-100);
+  --color-critical-200: var(--color-red-200);
+  --color-critical-300: var(--color-red-300);
+  --color-critical-400: var(--color-red-400);
+  --color-critical-500: var(--color-red-500);
+  --color-critical-600: var(--color-red-600);
+  --color-critical-700: var(--color-red-700);
+  --color-critical-800: var(--color-red-800);
+  --color-critical-900: var(--color-red-900);
+  --color-critical-950: var(--color-red-950);
 
-  /* Neutrals (slate + gray) */
-  --color-slate-50: #faf9f5;
-  --color-slate-100: #e8e6dc;
-  --color-slate-200: #e8e6dc;
-  /* slate-300/400/500 were all aliased to the same light warm grey, which put
-     every muted label -- hospital IDs, timestamps, field captions -- at roughly
-     2.1:1 on the light background, well under the 4.5:1 AA threshold. Light mode
-     was the broken one; dark mode was comfortably over.
+  --color-warning-50: var(--color-amber-50);
+  --color-warning-100: var(--color-amber-100);
+  --color-warning-200: var(--color-amber-200);
+  --color-warning-300: var(--color-amber-300);
+  --color-warning-400: var(--color-amber-400);
+  --color-warning-500: var(--color-amber-500);
+  --color-warning-600: var(--color-amber-600);
+  --color-warning-700: var(--color-amber-700);
+  --color-warning-800: var(--color-amber-800);
+  --color-warning-900: var(--color-amber-900);
+  --color-warning-950: var(--color-amber-950);
 
-     These are chosen to work against both backgrounds, since a single token has
-     to serve `text-slate-500` on white and `dark:text-slate-400` on near-black:
-       400  ~3.4:1 light / ~5.6:1 dark  — icons, borders, decorative (3:1 rule)
-       500  ~4.6:1 light / ~4.3:1 dark  — muted body text
-     300 stays light: it is used for borders and dark-mode text, not light-mode
-     body copy. */
-  --color-slate-300: #b0aea5;
-  --color-slate-400: #8a8779;
-  --color-slate-500: #78766d;
-  --color-slate-600: #8a8779;
-  --color-slate-700: #5f5d54;
-  --color-slate-800: #3a392f;
-  --color-slate-900: #221f1a;
-  --color-slate-950: #141413;
-
-  --color-gray-50: #faf9f5;
-  --color-gray-100: #e8e6dc;
-  --color-gray-200: #e8e6dc;
-  --color-gray-300: #b0aea5;
-  --color-gray-400: #b0aea5;
-  --color-gray-500: #b0aea5;
-  --color-gray-600: #8a8779;
-  --color-gray-700: #5f5d54;
-  --color-gray-800: #3a392f;
-  --color-gray-900: #221f1a;
-  --color-gray-950: #141413;
-
-  /* ------------------------------------------------------------------
-     Clinical status scale — deliberately OUTSIDE the brand ramp below.
-
-     The brand theme collapses red, amber and yellow onto one orange ramp, so
-     `bg-red-100` and `bg-amber-100` are byte-identical (#f3dfd5). That is fine
-     for decoration and wrong for triage: it made "9 minutes left to respond"
-     and "9 minutes overdue" render as the same badge, and EMERGENCY / URGENT /
-     ROUTINE indistinguishable from each other. Colour was the only channel
-     carrying those distinctions.
-
-     These tokens are the one place clinical severity is allowed to break the
-     brand palette. Do not alias them onto --color-red-* / --color-amber-*.
-     ------------------------------------------------------------------ */
-  --color-critical-50: #fef2f2;
-  --color-critical-100: #fee2e2;
-  --color-critical-200: #fecaca;
-  --color-critical-300: #fca5a5;
-  --color-critical-400: #f87171;
-  --color-critical-500: #ef4444;
-  --color-critical-600: #dc2626;
-  --color-critical-700: #b91c1c;
-  --color-critical-800: #991b1b;
-  --color-critical-900: #7f1d1d;
-  --color-critical-950: #450a0a;
-
-  --color-warning-50: #fffbeb;
-  --color-warning-100: #fef3c7;
-  --color-warning-200: #fde68a;
-  --color-warning-300: #fcd34d;
-  --color-warning-400: #fbbf24;
-  --color-warning-500: #f59e0b;
-  --color-warning-600: #d97706;
-  --color-warning-700: #a16207;
-  --color-warning-800: #854d0e;
-  --color-warning-900: #713f12;
-  --color-warning-950: #451a03;
-
-  /* success / info — the same idea as critical/warning above: named aliases
-     for the two hues (green, blue) that were already unique within the brand
-     ramp, so a "this succeeded" or "this is informational" call site can say
-     so by name instead of borrowing a raw `green-*`/`blue-*` utility that
-     happens to look right. Values are identical to --color-green-* /
-     --color-blue-* on purpose — this does not introduce a new hue, it just
-     gives the existing one a semantic name. Defined after green/blue below
-     via var() so there is exactly one place each hue's actual value lives. */
-
-  /* Warm accent (orange) covers red / amber / yellow */
-  --color-red-50: #f7ece5;
-  --color-red-100: #f3dfd5;
-  --color-red-200: #edc5b6;
-  --color-red-300: #e6ab96;
-  --color-red-400: #e09177;
-  --color-red-500: #d97757;
-  --color-red-600: #ad6148;
-  --color-red-700: #814b39;
-  --color-red-800: #56352a;
-  --color-red-900: #2a1f1b;
-  --color-red-950: #141413;
-
-  --color-amber-50: #f7ece5;
-  --color-amber-100: #f3dfd5;
-  --color-amber-200: #edc5b6;
-  --color-amber-300: #e6ab96;
-  --color-amber-400: #e09177;
-  --color-amber-500: #d97757;
-  --color-amber-600: #ad6148;
-  --color-amber-700: #814b39;
-  --color-amber-800: #56352a;
-  --color-amber-900: #2a1f1b;
-  --color-amber-950: #141413;
-
-  --color-yellow-50: #f7ece5;
-  --color-yellow-100: #f3dfd5;
-  --color-yellow-200: #edc5b6;
-  --color-yellow-300: #e6ab96;
-  --color-yellow-400: #e09177;
-  --color-yellow-500: #d97757;
-  --color-yellow-600: #ad6148;
-  --color-yellow-700: #814b39;
-  --color-yellow-800: #56352a;
-  --color-yellow-900: #2a1f1b;
-  --color-yellow-950: #141413;
-
-  /* Cool accent (blue) covers blue / indigo. Purple is intentionally NOT part
-     of this group (see below) — it is the one place the app needs a fourth,
-     independent hue: "external facility", "department note" and the
-     "postponed" status dot all sit in views where a blue-family item (an
-     internal facility, an "action note", an "in transit" dot) appears right
-     next to them, so purple has to be visually distinct from blue rather than
-     aliased to it. */
-  --color-blue-50: #ecf0f1;
-  --color-blue-100: #dde6ed;
-  --color-blue-200: #c0d3e5;
-  --color-blue-300: #a4c1dc;
-  --color-blue-400: #87aed4;
-  --color-blue-500: #6a9bcc;
-  --color-blue-600: #577da3;
-  --color-blue-700: #445f7a;
-  --color-blue-800: #314151;
-  --color-blue-900: #1e2328;
-  --color-blue-950: #141413;
-
-  --color-indigo-50: #ecf0f1;
-  --color-indigo-100: #dde6ed;
-  --color-indigo-200: #c0d3e5;
-  --color-indigo-300: #a4c1dc;
-  --color-indigo-400: #87aed4;
-  --color-indigo-500: #6a9bcc;
-  --color-indigo-600: #577da3;
-  --color-indigo-700: #445f7a;
-  --color-indigo-800: #314151;
-  --color-indigo-900: #1e2328;
-  --color-indigo-950: #141413;
-
-  /* True violet, not an alias. Was previously byte-identical to --color-blue-*,
-     which made the "External" facility badge, the "Contracted" facility badge,
-     the referral timeline's "Department Note" label and the "postponed"
-     status dot in ReferralList all render as plain blue — indistinguishable
-     from "internal", "Action Note" and the "in transit" dot they sit next to.
-     Desaturated to match the muted brand palette rather than a stock violet;
-     contrast-checked at 4.5:1+ for every text/background pairing actually
-     used (purple-700/800 text on white and on purple-100, purple-300/400
-     text on dark surfaces). */
-  --color-purple-50: #f2eef6;
-  --color-purple-100: #e4dcee;
-  --color-purple-200: #cabddb;
-  --color-purple-300: #b09ec8;
-  --color-purple-400: #967fb5;
-  --color-purple-500: #7c66a0;
-  --color-purple-600: #654f85;
-  --color-purple-700: #4e3c68;
-  --color-purple-800: #37294a;
-  --color-purple-900: #211a2e;
-  --color-purple-950: #141413;
-
-  /* Tertiary accent (green) covers green / emerald */
-  --color-green-50: #edeee6;
-  --color-green-100: #e0e3d7;
-  --color-green-200: #c6cdb8;
-  --color-green-300: #acb89a;
-  --color-green-400: #92a27b;
-  --color-green-500: #788c5d;
-  --color-green-600: #62714d;
-  --color-green-700: #4c573c;
-  --color-green-800: #353c2c;
-  --color-green-900: #1f211b;
-  --color-green-950: #141413;
-
-  --color-emerald-50: #edeee6;
-  --color-emerald-100: #e0e3d7;
-  --color-emerald-200: #c6cdb8;
-  --color-emerald-300: #acb89a;
-  --color-emerald-400: #92a27b;
-  --color-emerald-500: #788c5d;
-  --color-emerald-600: #62714d;
-  --color-emerald-700: #4c573c;
-  --color-emerald-800: #353c2c;
-  --color-emerald-900: #1f211b;
-  --color-emerald-950: #141413;
-
-  /* success / info aliases — see the comment above the critical/warning block. */
   --color-success-50: var(--color-green-50);
   --color-success-100: var(--color-green-100);
   --color-success-200: var(--color-green-200);
@@ -254,12 +59,7 @@ body {
   font-family: var(--font-body);
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
 
@@ -280,8 +80,6 @@ h6 {
     margin: 1cm;
   }
 }
-
-
 
 .night-shift-mode {
   filter: sepia(0.4) hue-rotate(-10deg) contrast(1.05) brightness(0.85);

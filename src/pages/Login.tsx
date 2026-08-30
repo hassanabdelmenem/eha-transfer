@@ -92,7 +92,7 @@ export const Login: React.FC = () => {
         <h1 className="mt-6 text-center text-3xl font-light text-slate-900 dark:text-slate-100 tracking-tight">
           Ismailia Health Connect
         </h1>
-        <p className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
           Referral Coordination & Governance
         </p>
       </div>
@@ -130,14 +130,14 @@ export const Login: React.FC = () => {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-200 dark:border-slate-800" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase font-bold tracking-widest">
+              <div className="relative flex justify-center text-xs font-semibold">
                 <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">Or continue with email</span>
               </div>
             </div>
 
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div>
-                <label htmlFor="loginEmail" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Email address</label>
+                <label htmlFor="loginEmail" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Email address</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                   <Input
@@ -153,7 +153,7 @@ export const Login: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label htmlFor="loginPassword" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Password</label>
+                <label htmlFor="loginPassword" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Password</label>
                 <Input
                   id="loginPassword"
                   type="password"

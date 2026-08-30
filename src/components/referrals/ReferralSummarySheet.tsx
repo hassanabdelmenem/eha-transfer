@@ -11,7 +11,7 @@ const show = (value: number | undefined, suffix = '') => (value === undefined ? 
 
 const VitalCell: React.FC<{ label: string; value: React.ReactNode; abnormal: boolean }> = ({ label, value, abnormal }) => (
   <div className={`p-2 rounded border text-center ${abnormal ? 'bg-critical-50 dark:bg-critical-950/30 border-critical-200 dark:border-critical-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
-    <p className={`text-[10px] font-bold uppercase flex items-center justify-center gap-0.5 ${abnormal ? 'text-critical-600' : 'text-slate-500'}`}>
+    <p className={`text-[10px] font-bold  flex items-center justify-center gap-0.5 ${abnormal ? 'text-critical-600' : 'text-slate-500'}`}>
       {label}
       {abnormal && <AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" />}
     </p>
@@ -71,12 +71,12 @@ export const ReferralSummarySheet: React.FC<{ referral: Referral; onClose: () =>
 
         <div className="overflow-y-auto px-5 pb-5 space-y-4">
           <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Why the transfer</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Why the transfer</p>
             <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed">{referral.reasonForReferral || '—'}</p>
           </div>
 
           <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Vitals {vitals?.timestamp ? `· ${new Date(vitals.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Vitals {vitals?.timestamp ? `· ${new Date(vitals.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}</p>
             <div className="grid grid-cols-3 gap-2">
               <VitalCell label="HR" value={show(vitals?.hr, ' bpm')} abnormal={isAbnormal(vitals?.hr, n => n > 100 || n < 60)} />
               <VitalCell label="BP" value={vitals?.bp || NOT_RECORDED} abnormal={isAbnormal(parseInt(String(vitals?.bp || '').split('/')[0] || ''), n => !Number.isNaN(n) && (n > 140 || n < 90))} />
@@ -89,14 +89,14 @@ export const ReferralSummarySheet: React.FC<{ referral: Referral; onClose: () =>
 
           {referral.patientData.diagnosis && (
             <div>
-              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Diagnosis</p>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Diagnosis</p>
               <p className="text-sm text-slate-800 dark:text-slate-200">{referral.patientData.diagnosis}</p>
             </div>
           )}
 
           <button
             onClick={() => navigate(`/referrals/${referral.id}`)}
-            className="w-full flex items-center justify-between min-h-[52px] px-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="w-full flex items-center justify-between min-h-[52px] px-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             ECG + full chart
             <ChevronRight className="w-4 h-4" />

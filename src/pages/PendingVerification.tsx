@@ -34,19 +34,19 @@ export const PendingVerification: React.FC = () => {
         <Card className="border-t-4 border-t-yellow-500 shadow-xl">
           <CardHeader className="bg-white dark:bg-slate-900 text-center">
             <div className="flex justify-center mb-4">
-              <Clock className="h-12 w-12 text-yellow-500" />
+              <Clock className="h-12 w-12 text-warning-500" />
             </div>
             <CardTitle>Account Pending Verification</CardTitle>
           </CardHeader>
           <CardContent className="pt-6 text-center space-y-6">
             {/* Email verification status */}
             {!emailVerified && (
-              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 space-y-3">
-                <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-amber-400">
+              <div className="rounded-lg bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-800 p-4 space-y-3">
+                <div className="flex items-center justify-center gap-2 text-warning-700 dark:text-warning-400">
                   <Mail className="h-5 w-5" />
                   <span className="text-sm font-semibold">Email Not Verified</span>
                 </div>
-                <p className="text-xs text-amber-600 dark:text-amber-400">
+                <p className="text-xs text-warning-600 dark:text-warning-400">
                   Please check your inbox for a verification link. You must verify your email address before an administrator can approve your account.
                 </p>
                 <div className="flex flex-col gap-2">
@@ -75,8 +75,8 @@ export const PendingVerification: React.FC = () => {
             )}
 
             {emailVerified && (
-              <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-4">
-                <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-400">
+              <div className="rounded-lg bg-success-50 dark:bg-success-950/30 border border-success-200 dark:border-success-800 p-4">
+                <div className="flex items-center justify-center gap-2 text-success-700 dark:text-success-400">
                   <CheckCircle className="h-5 w-5" />
                   <span className="text-sm font-semibold">Email Verified</span>
                 </div>

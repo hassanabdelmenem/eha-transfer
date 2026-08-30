@@ -72,7 +72,7 @@ export const ReferralsPage: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="h-full flex flex-col space-y-6 pb-16 sm:pb-0">
+    <div className="h-full flex flex-col space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Referrals</h1>
@@ -95,7 +95,7 @@ export const ReferralsPage: React.FC = () => {
           </div>
         </div>
         <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-full text-amber-600 dark:text-amber-500">
+          <div className="bg-warning-100 dark:bg-warning-900/30 p-3 rounded-full text-warning-600 dark:text-warning-500">
             <Clock className="h-6 w-6" />
           </div>
           <div>
@@ -127,7 +127,7 @@ export const ReferralsPage: React.FC = () => {
           />
         </div>
         <select 
-          className="h-10 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
+          className="h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -140,7 +140,7 @@ export const ReferralsPage: React.FC = () => {
           <option value="archived">Admitted & Cancelled (Archive)</option>
         </select>
         <select 
-          className="h-10 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
+          className="h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value)}
         >
@@ -150,7 +150,7 @@ export const ReferralsPage: React.FC = () => {
           <option value="routine">Routine</option>
         </select>
         <select 
-          className="h-10 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
+          className="h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
           value={deptFilter}
           onChange={(e) => setDeptFilter(e.target.value)}
         >
@@ -163,7 +163,7 @@ export const ReferralsPage: React.FC = () => {
           <option value="Internal Medicine">Internal Medicine</option>
         </select>
         <select 
-          className="h-10 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
+          className="h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
           value={bedFilter}
           onChange={(e) => setBedFilter(e.target.value)}
         >
@@ -177,10 +177,10 @@ export const ReferralsPage: React.FC = () => {
 
       <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
-          <h3 className="text-sm font-bold uppercase text-slate-700 dark:text-slate-300">All Referrals Grid</h3>
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">All Referrals Grid</h3>
           <button 
             onClick={() => setPrioritySort(!prioritySort)}
-            className={`flex items-center gap-2 px-3 min-h-[40px] text-xs font-bold uppercase rounded transition-colors ${prioritySort ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+            className={`flex items-center gap-2 px-3 min-h-[40px] text-xs font-bold  rounded transition-colors ${prioritySort ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
           >
             <ArrowDownUp className="w-3.5 h-3.5" />
             Priority Sort

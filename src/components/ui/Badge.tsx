@@ -11,7 +11,7 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       <div
         ref={ref}
         className={cn(
-          "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold uppercase transition-colors focus:outline-none focus:ring-1 focus:ring-slate-400 focus:ring-offset-1",
+          "inline-flex items-center rounded-xl-full px-2 py-0.5 text-xs font-bold  transition-colors focus:outline-none focus:ring-1 focus:ring-slate-400 focus:ring-offset-1",
           {
             'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200': variant === 'default',
             // success/warning/danger use the dedicated status scale, not raw

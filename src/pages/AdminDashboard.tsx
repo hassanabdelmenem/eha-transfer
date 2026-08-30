@@ -128,7 +128,7 @@ export const AdminDashboard: React.FC = () => {
   })();
 
   return (
-    <div className="space-y-6 pb-16 h-full overflow-auto">
+    <div className="space-y-6 h-full overflow-auto">
       {/* 3a/3d: unified escalation console -- edge-to-edge on phones,
           contained in a rounded card once there's room, escalation cards
           reflow into a responsive grid at wider widths. */}
@@ -149,7 +149,7 @@ export const AdminDashboard: React.FC = () => {
           <div className="grid grid-cols-4 sm:grid-cols-8 xl:grid-cols-4 gap-2">
             {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => (
               <div key={bed} className="rounded-lg bg-white/5 border border-white/10 p-2.5 text-center">
-                <p className="text-[10px] font-bold uppercase text-white/50">{bed}</p>
+                <p className="text-[10px] font-bold text-white/50">{bed}</p>
                 <p className="text-xl font-bold tabular-nums mt-0.5">{globalTotals[bed].available}</p>
                 <p className="text-[10px] text-white/50">of {globalTotals[bed].total}</p>
               </div>
@@ -165,7 +165,7 @@ export const AdminDashboard: React.FC = () => {
                 const fromFacility = facilitiesById.get(r.referringFacilityId)?.name || 'referring facility';
                 return (
                   <div key={r.id} className="rounded-xl border-2 border-critical-700 bg-critical-950/40 overflow-hidden">
-                    <div className="bg-critical-700 px-3 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center justify-between">
+                    <div className="bg-critical-700 px-3 py-1.5 text-xs font-semibold flex items-center justify-between">
                       <span>System level · {ESCALATION_LABEL[reason]}</span>
                       <span className="font-mono normal-case">{escalationAge(r)}</span>
                     </div>
@@ -193,14 +193,14 @@ export const AdminDashboard: React.FC = () => {
                           <div className="grid grid-cols-2 gap-2">
                             <button
                               onClick={() => { setPlacingId(null); setPlacementFacilityId(''); }}
-                              className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-bold uppercase tracking-wide"
+                              className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-semibold"
                             >
                               Cancel
                             </button>
                             <button
                               onClick={() => handleConfirmPlacement(r.id)}
                               disabled={!placementFacilityId || busyId === r.id}
-                              className="min-h-[48px] rounded-lg bg-white text-slate-950 text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                              className="min-h-[48px] rounded-lg bg-white text-slate-950 text-xs font-semibold disabled:opacity-50"
                             >
                               Confirm placement
                             </button>
@@ -216,7 +216,7 @@ export const AdminDashboard: React.FC = () => {
                               navigate(`/referrals/${r.id}`);
                             }
                           }}
-                          className="w-full min-h-[52px] rounded-lg bg-white text-slate-950 text-sm font-bold uppercase tracking-wide"
+                          className="w-full min-h-[52px] rounded-lg bg-white text-slate-950 text-sm font-semibold"
                         >
                           {ESCALATION_PRIMARY[reason] || 'Review now'}
                         </button>
@@ -225,14 +225,14 @@ export const AdminDashboard: React.FC = () => {
                         <button
                           onClick={() => handlePostpone(r.id)}
                           disabled={busyId === r.id}
-                          className="min-h-[48px] rounded-lg border border-warning-500 text-warning-400 text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                          className="min-h-[48px] rounded-lg border border-warning-500 text-warning-400 text-xs font-semibold disabled:opacity-50"
                         >
                           Postpone
                         </button>
                         <button
                           onClick={() => handleDeEscalate(r.id)}
                           disabled={busyId === r.id}
-                          className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-bold uppercase tracking-wide disabled:opacity-50"
+                          className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-semibold disabled:opacity-50"
                         >
                           De-escalate
                         </button>
@@ -246,7 +246,7 @@ export const AdminDashboard: React.FC = () => {
 
           {waitlistByFacility.length > 0 && (
             <div className="pt-2">
-              <h2 className="text-xs font-bold uppercase tracking-wide text-white/50 mb-2">Waitlist pressure by facility</h2>
+              <h2 className="text-xs font-semibold text-white/50 mb-2">Waitlist pressure by facility</h2>
               <div className="rounded-xl bg-white/5 border border-white/10 divide-y divide-white/10">
                 {waitlistByFacility.map(f => (
                   <div key={f.facilityId} className="px-3.5 py-2.5 flex items-center justify-between gap-3">

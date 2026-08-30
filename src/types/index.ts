@@ -64,6 +64,8 @@ export interface Attachment {
   url: string;
   type: 'image' | 'video' | 'document';
   name: string;
+  size?: number;
+  mimeType?: string;
 }
 
 export interface PatientData {
@@ -180,6 +182,9 @@ export interface Referral {
   cancelledAt?: string;
   cancelledBy?: string;
   cancelReason?: string;
+  rejectionReason?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
   // Set at referral creation by the referring clinician when the patient's
   // condition means a doctor must physically ride with the ambulance. The
   // concrete escort is not known yet at that point -- only that one is needed.
@@ -230,4 +235,17 @@ export interface Notification {
   // Optional only for notifications created before the field existed.
   createdAtMs?: number;
   referralId?: string;
+}
+
+export const DOCTOR_ROLES: Role[] = ['consultant', 'specialist', 'resident', 'clinician', 'head_of_department', 'medical_director', 'owner'];
+export const NURSE_ROLES: Role[] = ['nursing_supervisor', 'nurse'];
+export const CLINICAL_PRACTITIONER_ROLES: Role[] = ['clinician', 'resident', 'specialist', 'consultant', 'head_of_department', 'medical_director'];
+export const CLINICAL_BROADCAST_ROLES: Role[] = ['clinician', 'resident', 'specialist', 'consultant', 'medical_director', 'er_official'];
+
+export function isDoctorRole(role: Role | undefined): boolean {
+  return role ? DOCTOR_ROLES.includes(role) : false;
+}
+
+export function isNurseRole(role: Role | undefined): boolean {
+  return role ? NURSE_ROLES.includes(role) : false;
 }

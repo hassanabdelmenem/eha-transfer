@@ -48,7 +48,7 @@ const UrgencyTimer: React.FC<{ referral: Referral; now: Date }> = ({ referral, n
     return (
       <div className="inline-flex items-center gap-1 mt-1 text-white bg-critical-700 px-2 py-0.5 rounded motion-safe:animate-pulse border border-critical-800">
         <AlertTriangle className="w-3 h-3" aria-hidden="true" />
-        <span className="text-xs font-sans font-bold uppercase tabular-nums">
+        <span className="text-xs font-sans font-semibold tabular-nums">
           {referral.isEscalated ? 'Escalated' : 'No response'} +{m}:{s.toString().padStart(2, '0')}
         </span>
         {/* The escalated/pending distinction used to live only in a title
@@ -71,7 +71,7 @@ const UrgencyTimer: React.FC<{ referral: Referral; now: Date }> = ({ referral, n
       <Timer className="w-3 h-3" aria-hidden="true" />
       {/* tabular-nums stops the digits shifting horizontally on every tick, which
           is its own legibility problem on a 1Hz counter. */}
-      <span className="text-xs font-sans font-bold uppercase tabular-nums" aria-hidden="true">
+      <span className="text-xs font-sans font-semibold tabular-nums" aria-hidden="true">
         {m}:{s.toString().padStart(2, '0')} left
       </span>
       {/* Coarse, so it does not change every second under a screen reader. */}
@@ -112,7 +112,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
         </div>
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">
+            <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-semibold">
               <tr>
                 <th className="px-6 py-3">Patient Identity</th>
                 <th className="px-6 py-3">Origin Facility</th>
@@ -289,17 +289,17 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
             >
               <div className="flex justify-between items-start gap-3 mb-2">
                 <div className="min-w-0 flex-1">
-                  <div className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{referral.patientData.name || 'Unknown Patient'}</div>
+                  <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm truncate">{referral.patientData.name || 'Unknown Patient'}</div>
                   <div className="text-xs text-slate-400 font-mono mt-0.5 truncate">HID: {referral.patientData.hospitalId}</div>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-critical-700 text-white dark:bg-critical-600 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">EMERGENCY</span>}
-                  {referral.priority === 'urgent' && <span className="px-2 py-0.5 bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-300 border border-warning-300 dark:border-warning-700 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">URGENT</span>}
-                  {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">ROUTINE</span>}
+                  {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-critical-700 text-white dark:bg-critical-600 rounded text-xs font-sans font-semibold whitespace-nowrap">Emergency</span>}
+                  {referral.priority === 'urgent' && <span className="px-2 py-0.5 bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-300 border border-warning-300 dark:border-warning-700 rounded text-xs font-sans font-semibold whitespace-nowrap">Urgent</span>}
+                  {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-sans font-semibold whitespace-nowrap">Routine</span>}
                   <div className="mt-1">
                     <UrgencyTimer referral={referral} now={now} />
                   </div>
-                  <div className="flex items-center gap-1 font-medium text-xs uppercase text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                  <div className="flex items-center gap-1 font-medium text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
                     {['in_transit', 'accepted', 'patient_consented', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-info-500 rounded-full shrink-0"></div>}
                     {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-warning-500 rounded-full shrink-0"></div>}
                     {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-success-500 rounded-full shrink-0"></div>}
@@ -310,18 +310,18 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               </div>
               <div className="flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-400 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <div className="min-w-0">
-                  <span className="block text-xs font-bold text-slate-400 uppercase">From</span>
+                  <span className="block text-xs font-semibold text-slate-400">From</span>
                   <span className="block truncate">{fromFacility?.name || '—'}</span>
                 </div>
                 <div className="min-w-0">
-                  <span className="block text-xs font-bold text-slate-400 uppercase">Target</span>
-                  <span className="block uppercase truncate">{referral.receivingDepartments?.join(', ') || 'N/A'}</span>
+                  <span className="block text-xs font-semibold text-slate-400">Target</span>
+                  <span className="block truncate">{referral.receivingDepartments?.join(', ') || 'N/A'}</span>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                 <Link
                   to={`/referrals/${referral.id}`}
-                  className="inline-flex items-center justify-center gap-1 min-h-[40px] px-3 rounded text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs font-bold uppercase tracking-wider transition-colors"
+                  className="inline-flex items-center justify-center gap-1 min-h-[40px] px-3 rounded text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs font-semibold transition-colors"
                 >
                   View Card
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -335,7 +335,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
       {/* Desktop View */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">
+          <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-semibold">
             <tr>
               <th className="px-6 py-3">Patient Identity</th>
               <th className="px-6 py-3">Origin Facility</th>
@@ -357,15 +357,15 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                     <div className="text-xs text-slate-400 font-mono mt-1 truncate">HID: {referral.patientData.hospitalId}</div>
                   </td>
                   <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium max-w-[200px] truncate">{fromFacility?.name || '—'}</td>
-                  <td className="px-6 py-4 uppercase text-slate-700 dark:text-slate-300 max-w-[180px] truncate">{referral.receivingDepartments?.join(', ') || 'N/A'}</td>
+                  <td className="px-6 py-4 text-slate-700 dark:text-slate-300 max-w-[180px] truncate">{referral.receivingDepartments?.join(', ') || 'N/A'}</td>
                   <td className="px-6 py-4">
-                    {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-critical-700 text-white dark:bg-critical-600 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">EMERGENCY</span>}
-                    {referral.priority === 'urgent' && <span className="px-2 py-0.5 bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-300 border border-warning-300 dark:border-warning-700 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">URGENT</span>}
-                    {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-sans font-bold uppercase whitespace-nowrap">ROUTINE</span>}
+                    {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-critical-700 text-white dark:bg-critical-600 rounded text-xs font-sans font-semibold whitespace-nowrap">Emergency</span>}
+                    {referral.priority === 'urgent' && <span className="px-2 py-0.5 bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-300 border border-warning-300 dark:border-warning-700 rounded text-xs font-sans font-semibold whitespace-nowrap">Urgent</span>}
+                    {referral.priority === 'routine' && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-sans font-semibold whitespace-nowrap">Routine</span>}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <div className="flex items-center gap-1 font-medium text-xs uppercase text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                      <div className="flex items-center gap-1 font-medium text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
                         {['in_transit', 'accepted', 'patient_consented', 'arrived', 'manager_approved', 'dept_approved'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-info-500 rounded-full shrink-0"></div>}
                         {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-warning-500 rounded-full shrink-0"></div>}
                         {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-success-500 rounded-full shrink-0"></div>}
@@ -374,14 +374,14 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                         <span className="capitalize">{referral.status?.replace(/_/g, ' ') || 'UNKNOWN'}</span>
                       </div>
                       {referral.isEscalated && (
-                        <span className="px-2 py-0.5 bg-critical-700 text-white rounded text-xs font-sans font-bold uppercase tracking-wider motion-safe:animate-pulse whitespace-nowrap">
+                        <span className="px-2 py-0.5 bg-critical-700 text-white rounded text-xs font-sans font-semibold motion-safe:animate-pulse whitespace-nowrap">
                           ESCALATED
                         </span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Link to={`/referrals/${referral.id}`} className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-400 font-bold uppercase text-xs border border-blue-200 dark:border-blue-800 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors whitespace-nowrap">
+                    <Link to={`/referrals/${referral.id}`} className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-400 font-semibold text-xs border border-blue-200 dark:border-blue-800 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors whitespace-nowrap">
                       View Card
                       <ChevronRight className="w-3 h-3" />
                     </Link>

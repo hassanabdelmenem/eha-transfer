@@ -46,7 +46,7 @@ export const Onboarding: React.FC = () => {
         <h2 className="mt-6 text-center text-3xl font-light text-slate-900 dark:text-slate-100 tracking-tight">
           Complete Your Profile
         </h2>
-        <p className="mt-2 text-center text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
           Required for Verification
         </p>
       </div>
@@ -59,7 +59,7 @@ export const Onboarding: React.FC = () => {
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="onboardName" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Full Name</label>
+                <label htmlFor="onboardName" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                   <Input
@@ -75,7 +75,7 @@ export const Onboarding: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="onboardPhone" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Phone Number</label>
+                <label htmlFor="onboardPhone" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Phone Number</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                   <Input
@@ -91,14 +91,14 @@ export const Onboarding: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="onboardRole" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">
+                <label htmlFor="onboardRole" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                   Requested Role <span className="font-normal normal-case tracking-normal text-slate-400">— confirmed by your facility during verification</span>
                 </label>
                 <select
                   id="onboardRole"
                   value={role}
                   onChange={(e) => setRole(e.target.value as Role)}
-                  className="w-full rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
                   disabled={user?.role === 'owner'}
                 >
                   {user?.role === 'owner' && <option value="owner">Owner</option>}
@@ -117,7 +117,7 @@ export const Onboarding: React.FC = () => {
 
               {role !== 'system_admin' && role !== 'owner' && (
                 <div>
-                  <label htmlFor="onboardFacility" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Hospital</label>
+                  <label htmlFor="onboardFacility" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Hospital</label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                     <select
@@ -125,7 +125,7 @@ export const Onboarding: React.FC = () => {
                       required
                       value={facilityId}
                       onChange={(e) => { setFacilityId(e.target.value); setDepartment(''); }}
-                      className="w-full pl-10 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
+                      className="w-full pl-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
                     >
                       <option value="">Select a Hospital</option>
                       {facilities.map(f => (
@@ -138,13 +138,13 @@ export const Onboarding: React.FC = () => {
 
               {(role === 'consultant' || role === 'specialist' || role === 'resident' || role === 'head_of_department' || role === 'nurse' || role === 'nursing_supervisor') && selectedFacility && (
                 <div>
-                  <label htmlFor="onboardDepartment" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Department</label>
+                  <label htmlFor="onboardDepartment" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Department</label>
                   <select
                     id="onboardDepartment"
                     required
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
                   >
                     <option value="">Select a Department</option>
                     {selectedFacility.departments.map(d => (

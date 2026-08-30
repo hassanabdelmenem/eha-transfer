@@ -18,11 +18,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           // similarly-coloured background, which is what WCAG 2.4.13 (Focus
           // Appearance) is about. The offset colour has to be set for dark mode too,
           // or the ring is drawn against the light default.
-          "inline-flex items-center justify-center rounded font-bold uppercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center rounded-xl font-bold  transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 disabled:pointer-events-none disabled:opacity-50",
           {
-            'bg-blue-900 text-white hover:bg-blue-800 shadow-sm': variant === 'primary',
+            'bg-blue-900 text-white hover:bg-blue-800 shadow-md': variant === 'primary',
             'bg-blue-100 text-blue-900 hover:bg-blue-200': variant === 'secondary',
-            'bg-critical-600 text-white hover:bg-critical-700 shadow-sm': variant === 'destructive',
+            'bg-critical-600 text-white hover:bg-critical-700 shadow-md': variant === 'destructive',
             'border border-slate-300 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300': variant === 'outline',
             'bg-transparent hover:bg-slate-100 text-slate-700 dark:text-slate-300': variant === 'ghost',
             // 40px, not 28px: every other interactive element in this app
