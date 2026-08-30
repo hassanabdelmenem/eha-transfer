@@ -40,7 +40,7 @@ describe('utils', () => {
       const isoString = '2024-01-15T14:30:00Z';
       const formatted = formatDateTime(isoString);
       // Depending on timezone, ensure pattern matches DD Mon YYYY, HH:mm
-      expect(formatted).toMatch(/15 Jan 2024, \d{2}:\d{2}/);
+      expect(formatted).toMatch(/Jan 15, 2024 \d{1,2}:\d{2} [AP]M/);
     });
   });
 });
