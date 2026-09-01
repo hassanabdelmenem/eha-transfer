@@ -25,6 +25,7 @@ export const ReferralDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const {
     referrals,
+    referralsById,
     updateReferralStatus,
     overrideReferralDestination,
     toggleReferralEscalation,
@@ -63,7 +64,7 @@ export const ReferralDetailPage: React.FC = () => {
   const [escortPhone, setEscortPhone] = useState('');
   const [escortBusy, setEscortBusy] = useState(false);
 
-  const referral = referrals.find(r => r.id === id);
+  const referral = referralsById.get(id || '');
 
   // Hooks must run unconditionally on every render -- keep these above any early return
   const printRef = useRef<HTMLDivElement>(null);

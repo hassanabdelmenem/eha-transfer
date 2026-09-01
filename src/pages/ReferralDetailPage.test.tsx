@@ -20,6 +20,7 @@ vi.mock('../contexts/DataContext', async (importOriginal) => {
     ...actual,
     useData: () => ({
       referrals: mockReferrals,
+      referralsById: new Map(mockReferrals.map(r => [r.id, r])),
       updateReferralStatus: mockUpdateReferralStatus,
       cancelReferral: mockCancelReferral,
       overrideReferralDestination: vi.fn(),

@@ -40,6 +40,7 @@ interface DataContextType {
   users: User[];
   usersById: Map<string, User>;
   referrals: Referral[];
+  referralsById: Map<string, Referral>;
   notifications: Notification[];
   facilities: Facility[];
   facilitiesById: Map<string, Facility>;

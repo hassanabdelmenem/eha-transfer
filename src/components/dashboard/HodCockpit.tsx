@@ -199,8 +199,8 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                 className="w-full sm:flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-xs font-medium focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               >
                 <option value="">Select Department...</option>
-                {facilities
-                  .find(f => f.id === selectedFacilityId)
+                {facilitiesById
+                  .get(selectedFacilityId)
                   ?.departments?.map(d => (
                     <option key={d} value={d}>
                       {d}

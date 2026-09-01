@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "src/components/layout/AppSidebar.tsx": {
-    "mtime": 1787958535.0158894,
-    "seen": 1788097721.0786219,
-    "ast_hash": "6c1265196917414dd56aa0cf5e3167a2",
+    "mtime": 1788106853.3717263,
+    "seen": 1788107072.491787,
+    "ast_hash": "faa666518263168220ada357d268f64d",
     "semantic_hash": ""
   },
   "src/components/layout/NotificationMenu.test.tsx": {
@@ -1152,15 +1152,15 @@
     "semantic_hash": ""
   },
   "src/lib/utils.test.ts": {
-    "mtime": 1786933855.9046981,
-    "seen": 1788097721.078668,
-    "ast_hash": "affcd37c1db92b13b6e8821e59fce1f2",
+    "mtime": 1788108690.325115,
+    "seen": 1788108704.4086668,
+    "ast_hash": "126d4b4308a2e4ece48f002f44a6106c",
     "semantic_hash": ""
   },
   "src/lib/utils.ts": {
-    "mtime": 1786933855.9048111,
-    "seen": 1788097721.078669,
-    "ast_hash": "42256f735e34f0a7bb02dcd5b76927c4",
+    "mtime": 1788107060.4468305,
+    "seen": 1788107072.491853,
+    "ast_hash": "a9564f37bf55d3088c68df134f0c0ea9",
     "semantic_hash": ""
   },
   "src/main.tsx": {
@@ -1176,9 +1176,9 @@
     "semantic_hash": ""
   },
   "src/pages/AdminDashboard.tsx": {
-    "mtime": 1787919739.2332768,
-    "seen": 1788097721.07867,
-    "ast_hash": "4c1861d223538dfb0305c53f8eca80c8",
+    "mtime": 1788106784.7841606,
+    "seen": 1788107072.4918551,
+    "ast_hash": "191f12efdf36fbd43a14a22f5c03d7ac",
     "semantic_hash": ""
   },
   "src/pages/AdmitPatientPage.test.tsx": {
@@ -1206,9 +1206,9 @@
     "semantic_hash": ""
   },
   "src/pages/BedManagementPage.tsx": {
-    "mtime": 1787997189.0172918,
-    "seen": 1788097721.078673,
-    "ast_hash": "4cf8094c0a8498bbbc6db6ee9bca159c",
+    "mtime": 1788106762.690363,
+    "seen": 1788107072.491858,
+    "ast_hash": "14333b4b75a99e37f8fd95f55b600040",
     "semantic_hash": ""
   },
   "src/pages/Dashboard.tsx": {
@@ -1326,9 +1326,9 @@
     "semantic_hash": ""
   },
   "src/pages/ReferralWorkspacePane.tsx": {
-    "mtime": 1787910072.0305424,
-    "seen": 1788097721.078683,
-    "ast_hash": "3dc2c1632f0b82e672aa4aa39584cbd9",
+    "mtime": 1788106972.967464,
+    "seen": 1788107072.491872,
+    "ast_hash": "3f973f167fef537cca20ac36b9b51d4a",
     "semantic_hash": ""
   },
   "src/pages/ReferralsPage.tsx": {
