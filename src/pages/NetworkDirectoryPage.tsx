@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { Search, Phone } from 'lucide-react';
+import { Search, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Skeleton } from '../components/ui/Skeleton';
 import { BedType, Facility } from '../types';
 
@@ -21,6 +21,8 @@ export const NetworkDirectoryPage: React.FC = () => {
   const { user } = useAuth();
   const { facilities, shiftAssignments, referrals, users, usersById, loading } = useData();
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
 
   if (!user) return null;
 
@@ -120,6 +122,17 @@ export const NetworkDirectoryPage: React.FC = () => {
     return matchFacility || matchUsers;
   });
 
+  // Pagination logic: reset to page 1 when search changes, then paginate
+  const totalPages = Math.ceil(filteredFacilities.length / pageSize);
+  const paginatedFacilities = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredFacilities.slice(start, start + pageSize);
+  }, [filteredFacilities, currentPage, pageSize]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(Math.max(1, Math.min(newPage, totalPages)));
+  };
+
   // 2e "On call right now": own facility's staff, filtered to whoever is
   // actually responsible right now -- same isResponsibleNow rule the desktop
   // table below uses per row.
@@ -193,23 +206,68 @@ export const NetworkDirectoryPage: React.FC = () => {
             </>
           )}
 
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 pt-2">Network · {filteredFacilities.length} facilit{filteredFacilities.length === 1 ? 'y' : 'ies'}</p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 pt-2">Network · {filteredFacilities.length} facilit{filteredFacilities.length === 1 ? 'y' : 'ies'}{filteredFacilities.length > pageSize && ` (page ${currentPage} of ${totalPages})`}</p>
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {filteredFacilities.map(f => (
-                <div key={f.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{f.name}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{f.location} · {capacityHint(f)}</p>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {paginatedFacilities.map(f => (
+                  <div key={f.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{f.name}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{f.location} · {capacityHint(f)}</p>
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold  ${f.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>
+                      {(f.type || '').replace('_', ' ')}
+                    </span>
                   </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold  ${f.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>
-                    {(f.type || '').replace('_', ' ')}
-                  </span>
+                ))}
+              </div>
+              
+              {filteredFacilities.length > pageSize && (
+                <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Show per page:</span>
+                    <select
+                      value={pageSize}
+                      onChange={e => {
+                        setPageSize(parseInt(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="px-2 py-1 text-xs rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                    >
+                      <option value={6}>6</option>
+                      <option value={12}>12</option>
+                      <option value={24}>24</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="p-1 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-slate-600 dark:text-slate-400 min-w-[4rem] text-center">
+                      {(currentPage - 1) * pageSize + 1} – {Math.min(currentPage * pageSize, filteredFacilities.length)}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="p-1 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>

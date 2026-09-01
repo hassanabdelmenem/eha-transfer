@@ -1,28 +1,28 @@
-# Graph Report - eha-transfer  (2026-09-01)
+# Graph Report - eha-transfer  (2026-08-30)
 
 ## Corpus Check
-- 652 files · ~389,730 words
+- 652 files · ~389,650 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2926 nodes · 3490 edges · 392 communities (230 shown, 162 thin omitted)
+- 2925 nodes · 3464 edges · 394 communities (233 shown, 161 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b344d258`
+- Built from commit: `1a9b69f0`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- AppSidebar.tsx
+- types/index.ts
 - dependencies
 - tier5-ui.adversarial.test.tsx
 - Milestone4.empirical-adversarial.test.tsx
 - ReferralActionConsole.tsx
-- Wizard.test.tsx
+- StepDestinationPriority.tsx
 - devDependencies
-- User
+- Facility
 - Toaster.tsx
 - exceptions-edge-cases.spec.ts
 - RoleHomeHeader.tsx
@@ -55,14 +55,14 @@
 - @vitest/coverage-v8
 - Comprehensive E2E Test Suite & Test Contract Analysis
 - DashboardCockpits.adversarial.test.tsx
-- StepDestinationPriority.tsx
-- BedManagementPage.tsx
+- AdminCockpit.tsx
+- BedManagementPage.test.tsx
 - NotificationsPage.tsx
 - Ismailia Health Connect (eha-transfer) — Survey Report 3
-- ReferralDetailPage
+- AdminDashboard.tsx
 - Card.tsx
-- types/index.ts
-- MockSpeechRecognition
+- DataContext.tsx
+- MobileActionFooter.tsx
 - SimulatedHealthcareNetwork
 - useData
 - Milestone 3 Investigation Report: Clinical Cockpits & Role Dashboards
@@ -85,7 +85,7 @@
 - 3. Detailed Component Analysis
 - Milestone 3 Re-evaluation Review & Verification Report: Clinical Cockpits & Role Dashboards
 - Forensic Audit Report: Milestone 3 (Clinical Cockpits & Role Dashboards)
-- RejectionModal.tsx
+- ActiveInpatientCensus.tsx
 - Comprehensive Forensic Integrity Audit Report (Re-evaluation) — Milestone 5 & Project Acceptance
 - Comprehensive Forensic Integrity Audit Report — Milestone 5 & Project Acceptance
 - 1. Observation
@@ -237,7 +237,7 @@
 - Milestone 5 TypeScript Fix Handoff Report
 - Progress Tracking
 - teamwork_preview_orchestrator_1/GATE_STATUS.md
-- ReferralDetailPage.tsx
+- detail/EscalationAlertBanner.tsx
 - Gate Status Tracking — Orchestrator Gen 2
 - Progress — 2026-08-23T02:25:00+03:00
 - Forensic Audit Report: Milestone 2 — Unified Referral Intake Wizard
@@ -381,67 +381,69 @@
 - worker_m6/DISPATCH.md
 - worker_m6/progress.md
 - take_screenshots.js
+- dashboard/types.ts
+- ClinicianCockpit.tsx
 
 ## God Nodes (most connected - your core abstractions)
 1. `useData()` - 47 edges
-2. `Referral` - 43 edges
+2. `Referral` - 44 edges
 3. `SimulatedHealthcareNetwork` - 36 edges
-4. `Facility` - 33 edges
-5. `BedType` - 28 edges
-6. `Card` - 25 edges
-7. `User` - 24 edges
+4. `Facility` - 34 edges
+5. `BedType` - 29 edges
+6. `User` - 25 edges
+7. `Card` - 25 edges
 8. `CardContent` - 23 edges
 9. `Button` - 21 edges
 10. `CardHeader` - 20 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `HodCockpit()` --calls--> `useData()`  [EXTRACTED]
-  src/components/dashboard/HodCockpit.tsx → src/contexts/DataContext.tsx
-- `DataProvider()` --calls--> `useAuth()`  [EXTRACTED]
-  src/contexts/DataContext.tsx → src/contexts/AuthContext.tsx
-- `DataProvider()` --calls--> `formatDateTime()`  [EXTRACTED]
-  src/contexts/DataContext.tsx → src/lib/utils.ts
-- `DirectAdmissionModal()` --calls--> `useData()`  [EXTRACTED]
-  src/components/beds/DirectAdmissionModal.tsx → src/contexts/DataContext.tsx
-- `AdminCockpit()` --calls--> `useData()`  [EXTRACTED]
-  src/components/dashboard/AdminCockpit.tsx → src/contexts/DataContext.tsx
+- `BedOccupancyHeatmapProps` --references--> `Facility`  [EXTRACTED]
+  src/components/dashboard/BedOccupancyHeatmap.tsx → src/types/index.ts
+- `DirectAdmission` --references--> `BedType`  [EXTRACTED]
+  src/contexts/DataContext.tsx → src/types/index.ts
+- `PrintableSummaryProps` --references--> `Referral`  [EXTRACTED]
+  src/components/referrals/PrintableSummary.tsx → src/types/index.ts
+- `PrintableSummaryProps` --references--> `User`  [EXTRACTED]
+  src/components/referrals/PrintableSummary.tsx → src/types/index.ts
+- `DataContextType` --references--> `User`  [EXTRACTED]
+  src/contexts/DataContext.tsx → src/types/index.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (392 total, 162 thin omitted)
+## Communities (394 total, 161 thin omitted)
 
-### Community 0 - "AppSidebar.tsx"
-Cohesion: 0.18
-Nodes (10): AppSidebar(), AppSidebarProps, mockFacility, mockReferrals, mockUser, ROLE_CONFIGS, RoleBadge(), RoleBadgeProps (+2 more)
+### Community 0 - "types/index.ts"
+Cohesion: 0.12
+Nodes (22): AppLayout(), AppSidebar(), AppSidebarProps, mockFacility, mockReferrals, mockUser, ROLE_CONFIGS, RoleBadge() (+14 more)
 
 ### Community 1 - "dependencies"
 Cohesion: 0.04
-Nodes (45): clsx, date-fns, firebase, idb, lucide-react, motion, dependencies, clsx (+37 more)
+Nodes (47): clsx, date-fns, firebase, idb, lucide-react, motion, dependencies, clsx (+39 more)
 
 ### Community 2 - "tier5-ui.adversarial.test.tsx"
-Cohesion: 0.13
-Nodes (12): mockAddDeptComment, mockAddReferral, mockCancelReferral, mockFacilities, mockOverrideReferralDestination, mockRecordPatientConsent, mockRecordPatientDecline, mockReferrals (+4 more)
+Cohesion: 0.08
+Nodes (19): ECGViewerOverlay(), ECGViewerOverlayProps, mockReferrals, ReferralDetailPage(), mockCancelReferral, mockReferrals, mockUpdateReferralStatus, mockAddDeptComment (+11 more)
 
 ### Community 3 - "Milestone4.empirical-adversarial.test.tsx"
-Cohesion: 0.12
-Nodes (15): ECGViewerOverlay(), ECGViewerOverlayProps, mockAddDeptComment, mockCancelReferral, mockFacilities, mockFacilitiesById, mockOverrideReferralDestination, mockRecordPatientConsent (+7 more)
+Cohesion: 0.11
+Nodes (17): ReferralTimeline(), ReferralTimelineProps, TimelineEvent, mockAddDeptComment, mockCancelReferral, mockFacilities, mockFacilitiesById, mockOverrideReferralDestination (+9 more)
 
 ### Community 4 - "ReferralActionConsole.tsx"
-Cohesion: 0.18
-Nodes (13): AdminDirectActionsCard(), AdminDirectActionsCardProps, CancellationDialog(), CancellationDialogProps, EscortAssignmentForm(), EscortAssignmentFormProps, PatientConsentCard(), PatientConsentCardProps (+5 more)
+Cohesion: 0.13
+Nodes (15): AdminDirectActionsCard(), CancellationDialog(), CancellationDialogProps, EscortAssignmentForm(), EscortAssignmentFormProps, PatientConsentCard(), PatientConsentCardProps, ReferralActionConsoleProps (+7 more)
 
-### Community 5 - "Wizard.test.tsx"
-Cohesion: 0.10
-Nodes (20): DraftRestoreBanner(), DraftRestoreBannerProps, StepClinicalPresentation(), StepDestinationPriority(), StepDiagnosticsReview(), StepPatientDemographics(), WIZARD_STEPS, evaluateVital() (+12 more)
+### Community 5 - "StepDestinationPriority.tsx"
+Cohesion: 0.06
+Nodes (34): DraftRestoreBanner(), DraftRestoreBannerProps, StepClinicalPresentation(), StepDestinationPriority(), StepDestinationPriorityProps, StepDiagnosticsReview(), StepPatientDemographics(), AiRankedFacility (+26 more)
 
 ### Community 6 - "devDependencies"
 Cohesion: 0.22
 Nodes (9): autoprefixer, devDependencies, autoprefixer, tsx, @types/uuid, typescript, tsx, @types/uuid (+1 more)
 
-### Community 7 - "User"
-Cohesion: 0.31
-Nodes (5): PrintableSummaryProps, ReferralTimeline(), ReferralTimelineProps, TimelineEvent, User
+### Community 7 - "Facility"
+Cohesion: 0.15
+Nodes (12): DirectAdmissionForm(), DirectAdmissionFormData, mockFacility, DirectAdmissionModal(), DirectAdmissionModalProps, mockAddDirectAdmission, mockFacility, AdminDirectActionsCardProps (+4 more)
 
 ### Community 8 - "Toaster.tsx"
 Cohesion: 0.40
@@ -453,23 +455,23 @@ Nodes (5): E2E_USER, E2E_USERS, createMockImageFile(), loginAs(), UserCredential
 
 ### Community 12 - "Milestone5.empirical-adversarial.test.tsx"
 Cohesion: 0.05
-Nodes (57): ActiveInpatientCensus(), ActiveInpatientCensusProps, mockAdmissions, ArrivedTransfersQueue(), ArrivedTransfersQueueProps, mockArrivedReferrals, BedCapacityCard(), BedCapacityCardProps (+49 more)
+Nodes (43): ActiveInpatientCensus(), mockAdmissions, ArrivedTransfersQueue(), ArrivedTransfersQueueProps, mockArrivedReferrals, BedCapacityCard(), BedCapacityCardProps, BedCapacityGrid() (+35 more)
 
 ### Community 38 - "Comprehensive E2E Test Suite & Test Contract Analysis"
 Cohesion: 0.06
 Nodes (32): 1. Executive Summary, 2.1 Test Execution Matrix, 2.2 Playwright Configuration (`playwright.config.ts`), 2.3 Emulator Seed Data & Personas (`e2e/seed.ts`, `e2e/global-setup.ts`), 2. Test Suite Architecture & Execution Topology, 3. Catalog of Playwright E2E Tests & Scenarios, 4.1 Authentication & Global Shell (`e2e/auth.spec.ts`, `e2e/test-helpers.ts`, `e2e/navigation.spec.ts`), 4.2 New Referral Page (`/referrals/new`) (+24 more)
 
 ### Community 40 - "DashboardCockpits.adversarial.test.tsx"
-Cohesion: 0.04
-Nodes (53): AdminCockpit(), ClinicianCockpit(), mockAddDeptComment, mockAssignShift, mockDirectAdmissions, mockFacilities, mockFacilitiesById, mockOverrideReferralDestination (+45 more)
+Cohesion: 0.06
+Nodes (47): mockAddDeptComment, mockAssignShift, mockDirectAdmissions, mockFacilities, mockFacilitiesById, mockOverrideReferralDestination, mockQuickTransfer, mockReferrals (+39 more)
 
-### Community 41 - "StepDestinationPriority.tsx"
-Cohesion: 0.11
-Nodes (21): StepDestinationPriorityProps, ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES, StepDiagnosticsReviewProps, AiRankedFacility, BED_TYPES, DRAFT_STORAGE_KEY, MAX_ATTACHMENT_SIZE_BYTES (+13 more)
+### Community 41 - "AdminCockpit.tsx"
+Cohesion: 0.25
+Nodes (7): AdminCockpit(), ESCALATION_DESC, ESCALATION_LABEL, ESCALATION_PRIMARY, BED_TYPES, BedOccupancyHeatmap(), BedOccupancyHeatmapProps
 
-### Community 42 - "BedManagementPage.tsx"
-Cohesion: 0.08
-Nodes (26): HodCockpit(), AuthContext, AuthContextType, AuthProvider(), isMobileDevice(), useAuth(), AdminDashboard(), ESCALATION_DESC (+18 more)
+### Community 42 - "BedManagementPage.test.tsx"
+Cohesion: 0.15
+Nodes (12): mockAddDirectAdmission, mockDirectAdmission, mockDirectAdmissions, mockDischargeDirectAdmission, mockFacilities, mockFacilitiesById, mockFacility, mockReferral (+4 more)
 
 ### Community 43 - "NotificationsPage.tsx"
 Cohesion: 0.24
@@ -479,21 +481,21 @@ Nodes (8): NotificationMenu(), NotificationMenuProps, mockNotifications, inboxKi
 Cohesion: 0.06
 Nodes (31): 1.1 Transfer Cancellation and Rejection with Mandatory Reason Logging, 1.2 Fast-Track vs Routine Workflows, 1.3 0-Bed Capacity Exhaustion & Fallback Routing, 1.4 ECG Viewer & Media Attachment Validation, 1. Edge Case & Exception Pathways, 2.1 Test Scripts in `package.json`, 2.2 Test Suite Architecture & Verification Results, 2.3 Emulator & Environment Requirements (+23 more)
 
-### Community 45 - "ReferralDetailPage"
-Cohesion: 0.14
-Nodes (6): react-router-dom, mockReferrals, ReferralDetailPage(), mockCancelReferral, mockReferrals, mockUpdateReferralStatus
+### Community 45 - "AdminDashboard.tsx"
+Cohesion: 0.21
+Nodes (10): AuthContext, AuthContextType, AuthProvider(), isMobileDevice(), useAuth(), AdminDashboard(), ESCALATION_DESC, ESCALATION_LABEL (+2 more)
 
 ### Community 46 - "Card.tsx"
-Cohesion: 0.14
-Nodes (23): ESCALATION_DESC, ESCALATION_LABEL, ESCALATION_PRIMARY, BED_TYPES, BedOccupancyHeatmap(), FacilityAnalyticsCharts(), HodCockpitProps, ReferralCockpitCard() (+15 more)
-
-### Community 47 - "types/index.ts"
 Cohesion: 0.16
-Nodes (28): AppLayout(), CANCEL_LOCKED_STATUSES, DataContext, DataContextType, DataProvider(), SENIOR_CANCEL_ROLES, writeFailed(), ALL_ROLES (+20 more)
+Nodes (14): BED_TYPES, BedCapacityGridProps, DirectAdmissionFormProps, TransferJourneyCardProps, StepClinicalPresentationProps, ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES, StepDiagnosticsReviewProps (+6 more)
+
+### Community 47 - "DataContext.tsx"
+Cohesion: 0.27
+Nodes (18): CANCEL_LOCKED_STATUSES, DataContext, DataContextType, DataProvider(), SENIOR_CANCEL_ROLES, writeFailed(), BedType, DeptApprovalStatus (+10 more)
 
 ### Community 50 - "useData"
-Cohesion: 0.16
-Nodes (12): ReferralList(), ReferralListProps, Input, InputProps, useData(), AdversarialConsumer(), ArchivePage(), Dashboard() (+4 more)
+Cohesion: 0.13
+Nodes (15): useData(), AdversarialConsumer(), ArchivePage(), FacilitySettingsPage(), BED_TYPES, capacityHint(), NetworkDirectoryPage(), mockAddReferral (+7 more)
 
 ### Community 51 - "Milestone 3 Investigation Report: Clinical Cockpits & Role Dashboards"
 Cohesion: 0.07
@@ -574,6 +576,10 @@ Nodes (15): 1.1 Direct Source Code Verification of React Hook Ordering, 1.2 Veri
 ### Community 70 - "Forensic Audit Report: Milestone 3 (Clinical Cockpits & Role Dashboards)"
 Cohesion: 0.13
 Nodes (14): 1.1 Source Code Static Analysis, 1. `npm run lint`, 1. Observation, 2. Logic Chain, 2. `npm test -- --run`, 3. Empirical Test Execution Results, 3. `npm run test:rules`, 4. Caveats (+6 more)
+
+### Community 71 - "ActiveInpatientCensus.tsx"
+Cohesion: 0.20
+Nodes (7): ActiveInpatientCensusProps, ReferralList(), ReferralListProps, Badge, BadgeProps, Input, InputProps
 
 ### Community 72 - "Comprehensive Forensic Integrity Audit Report (Re-evaluation) — Milestone 5 & Project Acceptance"
 Cohesion: 0.14
@@ -1179,9 +1185,9 @@ Nodes (5): Active Subagents, Current Status, Iteration Status, Milestone Gate St
 Cohesion: 0.33
 Nodes (5): Gate — Milestone 1 (Iteration 1), Gate — Milestone 2 (Iteration 1), Gate — Milestone 3 (Iteration 1), Gate — Milestone 4 (Iteration 1), Gate — Milestone 5 (Final Project Gate — Iteration 2 Re-Evaluation)
 
-### Community 224 - "ReferralDetailPage.tsx"
-Cohesion: 0.15
-Nodes (13): ReferralActionConsole(), ClinicalSummaryCard(), ESCALATION_DETAIL, ESCALATION_HEADLINE, EscalationAlertBanner(), EscalationAlertBannerProps, EscalationKey, FooterAction (+5 more)
+### Community 224 - "detail/EscalationAlertBanner.tsx"
+Cohesion: 0.33
+Nodes (4): ESCALATION_DETAIL, ESCALATION_HEADLINE, EscalationAlertBannerProps, EscalationKey
 
 ### Community 225 - "Gate Status Tracking — Orchestrator Gen 2"
 Cohesion: 0.40
@@ -1227,25 +1233,33 @@ Nodes (3): Completed Tasks, Progress Log - Milestone 3 Implementation, Status
 Cohesion: 0.50
 Nodes (3): Progress Log, Status: Complete, Task Checklist
 
+### Community 393 - "dashboard/types.ts"
+Cohesion: 0.28
+Nodes (7): DashboardStatGrid(), KPIGrid, DashboardMetric, DashboardStatGridProps, EscalationAlertBannerProps, FacilityAnalyticsChartsProps, ShiftHandoverFeedProps
+
+### Community 394 - "ClinicianCockpit.tsx"
+Cohesion: 0.31
+Nodes (6): ClinicianCockpit(), ShiftHandoverFeed(), ClinicianSegment, isAbnormal(), ReferralSummarySheet(), show()
+
 ## Knowledge Gaps
-- **1844 isolated node(s):** `HodCockpitProps`, `DataContextType`, `DataContext`, `mockReferrals`, `mockUpdateReferralStatus` (+1839 more)
+- **1846 isolated node(s):** `AppSidebarProps`, `RoleBadgeProps`, `DeptComment`, `RoleHomeHeaderProps`, `StatusTimelineProps` (+1841 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **162 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **161 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `dependencies` connect `dependencies` to `ReferralDetailPage`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
-- **Why does `react-router-dom` connect `ReferralDetailPage` to `dependencies`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Why does `devDependencies` connect `devDependencies` to `dependencies`, `dotenv`, `esbuild`, `fake-indexeddb`, `firebase-admin`, `@firebase/rules-unit-testing`, `firebase-tools`, `@google/genai`, `jsdom`, `playwright`, `@playwright/test`, `@stryker-mutator/core`, `@stryker-mutator/vitest-runner`, `tailwindcss`, `@tailwindcss/vite`, `@testing-library/dom`, `@testing-library/jest-dom`, `@testing-library/react`, `@testing-library/user-event`, `@types/node`, `@types/react`, `@types/react-dom`, `vite`, `@vitejs/plugin-react`, `vitest`, `@vitest/coverage-v8`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
-- **What connects `HodCockpitProps`, `DataContextType`, `DataContext` to the rest of the system?**
-  _1844 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `SimulatedHealthcareNetwork` connect `SimulatedHealthcareNetwork` to `DataContext.tsx`?**
+  _High betweenness centrality (0.004) - this node is a cross-community bridge._
+- **Why does `Referral` connect `DataContext.tsx` to `types/index.ts`, `detail/EscalationAlertBanner.tsx`, `tier5-ui.adversarial.test.tsx`, `Milestone4.empirical-adversarial.test.tsx`, `ReferralActionConsole.tsx`, `Facility`, `DashboardCockpits.adversarial.test.tsx`, `AdminCockpit.tsx`, `ClinicianCockpit.tsx`, `dashboard/types.ts`, `Milestone5.empirical-adversarial.test.tsx`, `ActiveInpatientCensus.tsx`, `Card.tsx`, `AdminDashboard.tsx`, `BedManagementPage.test.tsx`, `ReferralDetailHeader.tsx`?**
+  _High betweenness centrality (0.003) - this node is a cross-community bridge._
+- **Why does `Facility` connect `Facility` to `types/index.ts`, `tier5-ui.adversarial.test.tsx`, `Milestone4.empirical-adversarial.test.tsx`, `ReferralActionConsole.tsx`, `StepDestinationPriority.tsx`, `DashboardCockpits.adversarial.test.tsx`, `AdminCockpit.tsx`, `dashboard/types.ts`, `BedManagementPage.test.tsx`, `Milestone5.empirical-adversarial.test.tsx`, `Card.tsx`, `DataContext.tsx`, `useData`?**
+  _High betweenness centrality (0.001) - this node is a cross-community bridge._
+- **What connects `AppSidebarProps`, `RoleBadgeProps`, `DeptComment` to the rest of the system?**
+  _1846 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `types/index.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.11596638655462185 - nodes in this community are weakly interconnected._
 - **Should `dependencies` be split into smaller, more focused modules?**
-  _Cohesion score 0.043478260869565216 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.041666666666666664 - nodes in this community are weakly interconnected._
 - **Should `tier5-ui.adversarial.test.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
-- **Should `Milestone4.empirical-adversarial.test.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.11578947368421053 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08064516129032258 - nodes in this community are weakly interconnected._
