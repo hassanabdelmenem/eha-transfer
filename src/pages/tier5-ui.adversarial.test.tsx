@@ -36,6 +36,7 @@ vi.mock('../contexts/AuthContext', () => ({
 vi.mock('../contexts/DataContext', () => ({
   useData: () => ({
     referrals: mockReferrals,
+    referralsById: new Map(mockReferrals.map(r => [r.id, r])),
     facilities: mockFacilities,
     users: [
       { id: 'u1', name: 'Dr. Referring', role: 'clinician', facilityId: 'f1', verified: true, phoneNumber: '01011112222', email: 'ref@eha.eg' },
@@ -56,6 +57,7 @@ vi.mock('../contexts/DataContext', () => ({
     ]),
     shiftAssignmentsByFacility: new Map(),
     shiftAssignments: [],
+    notifications: [],
     directAdmissions: [],
     shiftLogs: [],
     loading: mockLoading,

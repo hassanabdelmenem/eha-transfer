@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Search, Phone } from 'lucide-react';
@@ -19,10 +19,32 @@ const capacityHint = (f: Facility): string => {
 
 export const NetworkDirectoryPage: React.FC = () => {
   const { user } = useAuth();
-  const { facilities, shiftAssignments, referrals, users, loading } = useData();
+  const { facilities, shiftAssignments, referrals, users, usersById, loading } = useData();
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!user) return null;
+
+  // Memoized maps for fast HOD and assignment lookups
+  const hodByFacilityAndDept = useMemo(() => {
+    const map = new Map<string, Map<string, any>>();
+    users.forEach(u => {
+      if (u.role === 'head_of_department' && u.facilityId && u.department) {
+        const key = `${u.facilityId}:${u.department}`;
+        if (!map.has(u.facilityId)) map.set(u.facilityId, new Map());
+        map.get(u.facilityId)!.set(u.department, u);
+      }
+    });
+    return map;
+  }, [users]);
+
+  const assignmentsByFacilityAndDept = useMemo(() => {
+    const map = new Map<string, Map<string, any>>();
+    (shiftAssignments || []).forEach(s => {
+      if (!map.has(s.facilityId)) map.set(s.facilityId, new Map());
+      map.get(s.facilityId)!.set(s.department, s);
+    });
+    return map;
+  }, [shiftAssignments]);
 
   const isAdmin = user.role === 'owner' || user.role === 'system_admin';
   const isLeadership = ['hospital_manager', 'deputy_manager', 'medical_director', 'owner'].includes(user.role);
@@ -38,18 +60,18 @@ export const NetworkDirectoryPage: React.FC = () => {
     if (isReceiving || isInitiating || isLeadershipInvolved) {
       if (r.referringFacilityId !== user.facilityId) {
         allowedExternalUsers.add(r.referringUserId);
-        const referringUser = users.find(u => u.id === r.referringUserId);
-        if (referringUser && referringUser.department) {
-           const hod = users.find(u => u.facilityId === referringUser.facilityId && u.department === referringUser.department && u.role === 'head_of_department');
+        const referringUser = usersById.get(r.referringUserId);
+        if (referringUser && referringUser.department && referringUser.facilityId) {
+           const hod = hodByFacilityAndDept.get(referringUser.facilityId)?.get(referringUser.department);
            if (hod) allowedExternalUsers.add(hod.id);
         }
       }
 
       if (r.receivingFacilityId !== user.facilityId) {
         r.receivingDepartments.forEach(dept => {
-           const hod = users.find(u => u.facilityId === r.receivingFacilityId && u.department === dept && u.role === 'head_of_department');
+           const hod = hodByFacilityAndDept.get(r.receivingFacilityId)?.get(dept);
            if (hod) allowedExternalUsers.add(hod.id);
-           const assignment = (shiftAssignments || []).find(s => s.facilityId === r.receivingFacilityId && s.department === dept);
+           const assignment = assignmentsByFacilityAndDept.get(r.receivingFacilityId)?.get(dept);
            if (assignment?.assignedUserId) allowedExternalUsers.add(assignment.assignedUserId);
         });
       }

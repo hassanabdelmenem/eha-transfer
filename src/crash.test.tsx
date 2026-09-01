@@ -12,30 +12,32 @@ vi.mock('./contexts/AuthContext', async () => {
 
 vi.mock('./contexts/DataContext', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./contexts/DataContext')>();
+  const referrals = [{
+    id: 'r1',
+    patientId: 'p1',
+    patientData: {
+      id: 'p1', hospitalId: 'h1', name: 'Test', age: 30, gender: 'male',
+      vitalSigns: { hr: 80, bp: '120/80', spo2: 98, temp: 37, rr: 16, timestamp: new Date().toISOString() },
+      complaint: 'Pain', presentation: '', pastHistory: '', medications: '', clinicalNotes: '',
+      diagnosis: '', investigations: '', attachments: []
+    },
+    referringFacilityId: 'f1',
+    referringUserId: 'u1',
+    receivingFacilityId: 'f2',
+    receivingDepartments: ['ICU'],
+    requiredBedType: 'Ward',
+    status: 'PENDING',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    priority: 'emergency',
+    statusHistory: [],
+    deptComments: []
+  }];
   return {
     ...actual,
     useData: () => ({
-      referrals: [{
-        id: 'r1',
-        patientId: 'p1',
-        patientData: {
-          id: 'p1', hospitalId: 'h1', name: 'Test', age: 30, gender: 'male',
-          vitalSigns: { hr: 80, bp: '120/80', spo2: 98, temp: 37, rr: 16, timestamp: new Date().toISOString() },
-          complaint: 'Pain', presentation: '', pastHistory: '', medications: '', clinicalNotes: '',
-          diagnosis: '', investigations: '', attachments: []
-        },
-        referringFacilityId: 'f1',
-        referringUserId: 'u1',
-        receivingFacilityId: 'f2',
-        receivingDepartments: ['ICU'],
-        requiredBedType: 'Ward',
-        status: 'PENDING',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        priority: 'emergency',
-        statusHistory: [],
-        deptComments: []
-      }],
+      referrals,
+      referralsById: new Map(referrals.map(r => [r.id, r])),
       facilities: [{ id: 'f1', name: 'Fac 1', type: 'primary', capacity: { Ward: { total: 10, occupied: 5 } } }, { id: 'f2', name: 'Fac 2', type: 'secondary', capacity: { Ward: { total: 10, occupied: 5 } } }],
       users: [{ id: 'u1', name: 'Doc', facilityId: 'f1', role: 'clinician' }],
       facilitiesById: new Map([['f1', {}], ['f2', {}]]),
