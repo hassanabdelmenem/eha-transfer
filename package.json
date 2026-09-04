@@ -68,6 +68,8 @@
   },
   "overrides": {
     "qs": "^6.15.3",
-    "react-router": "^8.3.0"
+    "react-router": "^8.3.0",
+    "fast-uri": "^3.1.6",
+    "stream-json": "^3.5.0"
   }
 }
