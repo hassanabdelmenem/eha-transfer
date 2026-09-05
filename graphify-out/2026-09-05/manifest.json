@@ -4132,5 +4132,11 @@
     "seen": 1788626614.781016,
     "ast_hash": "995b9db52dace3af043903f678a61551",
     "semantic_hash": ""
+  },
+  ".agents/rules/ux-ui-guidelines.md": {
+    "mtime": 1788629473.8901756,
+    "seen": 1788629569.348445,
+    "ast_hash": "b5509b89c467eeeaae3808348e80195a",
+    "semantic_hash": ""
   }
 }
