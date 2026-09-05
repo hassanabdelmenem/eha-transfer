@@ -12,6 +12,7 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<{email?: string, password?: string}>({});
   const [submitting, setSubmitting] = useState(false);
 
 
@@ -50,6 +51,7 @@ export const Login: React.FC = () => {
     e.preventDefault();
     if (submitting) return;
     setError(null);
+    setFormErrors({});
     setSubmitting(true);
     try {
       if (isRegistering) {
@@ -59,7 +61,14 @@ export const Login: React.FC = () => {
       }
     } catch (err) {
       console.error('Email auth failed:', err);
-      setError(describeAuthError(err));
+      const msg = describeAuthError(err);
+      if (msg.toLowerCase().includes('password')) {
+        setFormErrors({ password: msg });
+      } else if (msg.toLowerCase().includes('email')) {
+        setFormErrors({ email: msg });
+      } else {
+        setError(msg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -113,7 +122,7 @@ export const Login: React.FC = () => {
             )}
             <Button
               variant="outline"
-              className="w-full h-12 flex items-center justify-center gap-2"
+              className="w-full min-h-[56px] text-base font-semibold flex items-center justify-center gap-2"
               onClick={handleGoogleLogin}
               disabled={submitting}
             >
@@ -148,9 +157,14 @@ export const Login: React.FC = () => {
                     className="pl-10"
                     placeholder="you@hospital.gov"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    error={!!formErrors.email}
+                    onChange={e => {
+                      setEmail(e.target.value);
+                      if (formErrors.email) setFormErrors(prev => ({ ...prev, email: undefined }));
+                    }}
                   />
                 </div>
+                {formErrors.email && <p className="mt-1 text-xs text-critical-500 font-medium">{formErrors.email}</p>}
               </div>
               <div>
                 <label htmlFor="loginPassword" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Password</label>
@@ -161,13 +175,18 @@ export const Login: React.FC = () => {
                   autoComplete={isRegistering ? 'new-password' : 'current-password'}
                   placeholder="••••••••"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  error={!!formErrors.password}
+                  onChange={e => {
+                    setPassword(e.target.value);
+                    if (formErrors.password) setFormErrors(prev => ({ ...prev, password: undefined }));
+                  }}
                 />
+                {formErrors.password && <p className="mt-1 text-xs text-critical-500 font-medium">{formErrors.password}</p>}
               </div>
-              <Button type="submit" className="w-full h-12 text-sm bg-blue-900 hover:bg-blue-800" disabled={submitting}>
+              <Button type="submit" className="w-full min-h-[56px] text-lg font-bold shadow-md bg-blue-900 hover:bg-blue-800" disabled={submitting}>
                 {submitting
                   ? 'Working…'
-                  : isRegistering ? 'Sign up with Email' : 'Sign in with Email'}
+                  : isRegistering ? 'Create Account' : 'Authenticate with Email'}
               </Button>
             </form>
             

@@ -18,9 +18,29 @@ export const Onboarding: React.FC = () => {
   const [facilityId, setFacilityId] = useState<string>('');
   const [department, setDepartment] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validate = () => {
+    const errors: Record<string, string> = {};
+    if (!name.trim()) errors.name = 'Full Name is required.';
+    if (!phoneNumber.trim()) errors.phoneNumber = 'Phone Number is required.';
+    if (role !== 'system_admin' && role !== 'owner' && !facilityId) {
+      errors.facilityId = 'Please select a hospital.';
+    }
+    if ((role === 'consultant' || role === 'specialist' || role === 'resident' || role === 'head_of_department' || role === 'nurse' || role === 'nursing_supervisor') && selectedFacility && !department) {
+      errors.department = 'Please select a department.';
+    }
+    return errors;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors = validate();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
     setSubmitting(true);
     try {
       // Submit the role as a *request* only. Writing `role` directly used to let
@@ -69,9 +89,14 @@ export const Onboarding: React.FC = () => {
                     className="pl-10"
                     placeholder="Dr. Ahmed Ali"
                     value={name}
-                    onChange={e => setName(e.target.value)}
+                    error={!!formErrors.name}
+                    onChange={e => {
+                      setName(e.target.value);
+                      if (formErrors.name) setFormErrors(prev => ({ ...prev, name: '' }));
+                    }}
                   />
                 </div>
+                {formErrors.name && <p className="mt-1 text-xs text-critical-500 font-medium">{formErrors.name}</p>}
               </div>
 
               <div>
@@ -85,9 +110,14 @@ export const Onboarding: React.FC = () => {
                     className="pl-10"
                     placeholder="+20 100 000 0000"
                     value={phoneNumber}
-                    onChange={e => setPhoneNumber(e.target.value)}
+                    error={!!formErrors.phoneNumber}
+                    onChange={e => {
+                      setPhoneNumber(e.target.value);
+                      if (formErrors.phoneNumber) setFormErrors(prev => ({ ...prev, phoneNumber: '' }));
+                    }}
                   />
                 </div>
+                {formErrors.phoneNumber && <p className="mt-1 text-xs text-critical-500 font-medium">{formErrors.phoneNumber}</p>}
               </div>
 
               <div>
@@ -98,7 +128,7 @@ export const Onboarding: React.FC = () => {
                   id="onboardRole"
                   value={role}
                   onChange={(e) => setRole(e.target.value as Role)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  className="w-full min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
                   disabled={user?.role === 'owner'}
                 >
                   {user?.role === 'owner' && <option value="owner">Owner</option>}
@@ -124,8 +154,12 @@ export const Onboarding: React.FC = () => {
                       id="onboardFacility"
                       required
                       value={facilityId}
-                      onChange={(e) => { setFacilityId(e.target.value); setDepartment(''); }}
-                      className="w-full pl-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
+                      onChange={(e) => { 
+                        setFacilityId(e.target.value); 
+                        setDepartment(''); 
+                        if (formErrors.facilityId) setFormErrors(prev => ({ ...prev, facilityId: '' }));
+                      }}
+                      className={`w-full min-h-[48px] pl-10 rounded-xl border ${formErrors.facilityId ? 'border-critical-500' : 'border-slate-200 dark:border-slate-800'} bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900`}
                     >
                       <option value="">Select a Hospital</option>
                       {facilities.map(f => (
@@ -133,6 +167,7 @@ export const Onboarding: React.FC = () => {
                       ))}
                     </select>
                   </div>
+                  {formErrors.facilityId && <p className="mt-1 text-xs text-critical-500 font-medium">{formErrors.facilityId}</p>}
                 </div>
               )}
 
@@ -143,19 +178,23 @@ export const Onboarding: React.FC = () => {
                     id="onboardDepartment"
                     required
                     value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    onChange={(e) => {
+                      setDepartment(e.target.value);
+                      if (formErrors.department) setFormErrors(prev => ({ ...prev, department: '' }));
+                    }}
+                    className={`w-full min-h-[48px] rounded-xl border ${formErrors.department ? 'border-critical-500' : 'border-slate-200 dark:border-slate-800'} bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900`}
                   >
                     <option value="">Select a Department</option>
                     {selectedFacility.departments.map(d => (
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
+                  {formErrors.department && <p className="mt-1 text-xs text-critical-500 font-medium">{formErrors.department}</p>}
                 </div>
               )}
 
-              <Button type="submit" disabled={submitting} className="w-full h-12 text-sm bg-blue-900 hover:bg-blue-800 disabled:opacity-60">
-                {submitting ? 'Saving...' : 'Submit Profile'}
+              <Button type="submit" disabled={submitting} className="w-full min-h-[56px] text-lg font-bold bg-blue-900 hover:bg-blue-800 disabled:opacity-60 shadow-md">
+                {submitting ? 'Saving...' : 'Complete Onboarding'}
               </Button>
             </form>
           </CardContent>

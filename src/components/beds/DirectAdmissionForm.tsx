@@ -307,8 +307,8 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
             </div>
 
             {/* Age & Gender */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+              <div className="sm:col-span-3">
                 <label
                   htmlFor="admitPatientAge"
                   className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
@@ -341,23 +341,25 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                 )}
               </div>
 
-              <div>
-                <label
-                  htmlFor="admitPatientGender"
-                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
-                >
+              <div className="sm:col-span-9">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   Gender
                 </label>
-                <select
-                  id="admitPatientGender"
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-[44px]"
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'other')}
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
+                <div className="flex flex-wrap gap-4 items-center min-h-[44px]">
+                  {['male', 'female', 'other'].map(g => (
+                    <label key={g} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value={g}
+                        checked={gender === g}
+                        onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'other')}
+                        className="w-5 h-5 text-blue-600 focus:ring-blue-500 border-slate-300"
+                      />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">{g}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
 

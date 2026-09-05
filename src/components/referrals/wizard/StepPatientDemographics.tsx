@@ -119,8 +119,8 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
         </div>
 
         {/* Patient Name, Age, & Gender */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-2">
+          <div className="md:col-span-6">
             <label
               htmlFor="patientName"
               className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 after:content-['_*'] after:text-critical-500"
@@ -138,7 +138,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
             </div>
           </div>
 
-          <div>
+          <div className="md:col-span-2">
             <label
               htmlFor="patientAge"
               className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 after:content-['_*'] after:text-critical-500"
@@ -157,22 +157,36 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
             />
           </div>
 
-          <div>
+          <div className="md:col-span-4">
             <label
-              htmlFor="patientGender"
-              className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 after:content-['_*'] after:text-critical-500"
+              className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-3 after:content-['_*'] after:text-critical-500"
             >
               Gender
             </label>
-            <select
-              id="patientGender"
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 p-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-              value={patientData.gender || 'male'}
-              onChange={e => setPatientData({ ...patientData, gender: e.target.value as PatientData['gender'] })}
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
+            <div className="flex gap-6 items-center min-h-[48px]">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="male"
+                  checked={patientData.gender === 'male' || !patientData.gender}
+                  onChange={() => setPatientData({ ...patientData, gender: 'male' })}
+                  className="w-5 h-5 text-blue-600 focus:ring-blue-500 border-slate-300"
+                />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Male</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="female"
+                  checked={patientData.gender === 'female'}
+                  onChange={() => setPatientData({ ...patientData, gender: 'female' })}
+                  className="w-5 h-5 text-blue-600 focus:ring-blue-500 border-slate-300"
+                />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Female</span>
+              </label>
+            </div>
           </div>
         </div>
       </CardContent>
