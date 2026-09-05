@@ -20,8 +20,6 @@ interface StepDiagnosticsReviewProps {
   sendCriticalAlert: boolean;
   reasonForReferral: string;
   isOnline: boolean;
-  isSubmitting: boolean;
-  onCancel: () => void;
 }
 
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.pdf'];
@@ -47,8 +45,6 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
   sendCriticalAlert,
   reasonForReferral,
   isOnline,
-  isSubmitting,
-  onCancel,
 }) => {
   const [uploading, setUploading] = useState(false);
   const [activeEcgUrl, setActiveEcgUrl] = useState<string | null>(null);
@@ -301,28 +297,6 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
           </div>
         )}
 
-        {/* Form Actions */}
-        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            className="w-full sm:w-auto font-semibold"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full sm:w-auto font-bold shadow-md px-10 py-4 text-lg min-h-[56px] ${
-              priority === 'emergency'
-                ? 'bg-critical-600 hover:bg-critical-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
-          >
-            {isSubmitting ? 'Creating Referral...' : 'Submit Referral'}
-          </Button>
-        </div>
       </CardContent>
 
       {/* ECG Quick View Modal */}
