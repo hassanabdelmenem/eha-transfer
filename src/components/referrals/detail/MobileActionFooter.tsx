@@ -28,7 +28,7 @@ export const MobileActionFooter: React.FC<MobileActionFooterProps> = ({
         type="button"
         onClick={footerPrimary.onClick}
         disabled={footerPrimary.disabled}
-        className={`w-full h-[54px] rounded-lg text-sm font-bold disabled:opacity-50 disabled:pointer-events-none ${footerPrimary.className}`}
+        className={`w-full h-[60px] rounded-xl text-lg font-bold shadow-md disabled:opacity-50 disabled:pointer-events-none ${footerPrimary.className}`}
       >
         {footerPrimary.label}
       </button>
@@ -43,7 +43,7 @@ export const MobileActionFooter: React.FC<MobileActionFooterProps> = ({
             <button
               type="button"
               onClick={footerSecondary.onClick}
-              className={`flex-1 h-12 rounded-lg text-xs font-bold ${footerSecondary.className}`}
+              className={`flex-1 h-14 rounded-xl text-sm font-bold shadow-sm ${footerSecondary.className}`}
             >
               {footerSecondary.label}
             </button>
@@ -52,9 +52,9 @@ export const MobileActionFooter: React.FC<MobileActionFooterProps> = ({
             <a
               href={`tel:${footerCallNumber}`}
               aria-label="Call the referring doctor"
-              className="shrink-0 h-12 w-12 rounded-lg border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300"
+              className="shrink-0 h-14 w-14 rounded-xl border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-700 dark:text-slate-300 shadow-sm"
             >
-              <Phone className="h-5 w-5" aria-hidden="true" />
+              <Phone className="h-6 w-6" aria-hidden="true" />
             </a>
           )}
         </div>

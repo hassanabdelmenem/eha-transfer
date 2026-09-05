@@ -314,7 +314,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
           <Button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full sm:w-auto font-bold shadow-md px-8 py-2.5 ${
+            className={`w-full sm:w-auto font-bold shadow-md px-10 py-4 text-lg min-h-[56px] ${
               priority === 'emergency'
                 ? 'bg-critical-600 hover:bg-critical-700 text-white'
                 : 'bg-blue-600 hover:bg-blue-700 text-white'

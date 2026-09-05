@@ -104,9 +104,13 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
         {referral.status === 'pending' && (
-          <div className="bg-warning-50 border border-warning-200 p-3 rounded text-warning-800 text-xs flex items-start gap-2 mb-4">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>Waiting for Department Head review before final Manager approval.</span>
+          <div className="relative bg-warning-50 border-2 border-warning-400 p-3 rounded-lg text-warning-900 text-sm flex items-start gap-3 mb-4 shadow-sm">
+            <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-warning-500"></span>
+            </span>
+            <AlertCircle className="w-5 h-5 shrink-0 text-warning-600 mt-0.5" />
+            <span className="font-semibold">Action Required: Waiting for Department Head review before final Manager approval.</span>
           </div>
         )}
 
@@ -219,19 +223,28 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
                 </p>
               </div>
             ) : isErRoom ? (
-              <EscortAssignmentForm
-                escortName={escortName}
-                setEscortName={setEscortName}
-                escortPhone={escortPhone}
-                setEscortPhone={setEscortPhone}
-                escortBusy={escortBusy}
-                onSave={onSetAccompanyingDoctor}
-              />
+              <div className="relative p-1 rounded-xl ring-2 ring-warning-400 ring-offset-2 animate-[pulse_2s_ease-in-out_infinite]">
+                <EscortAssignmentForm
+                  escortName={escortName}
+                  setEscortName={setEscortName}
+                  escortPhone={escortPhone}
+                  setEscortPhone={setEscortPhone}
+                  escortBusy={escortBusy}
+                  onSave={onSetAccompanyingDoctor}
+                />
+              </div>
             ) : (
-              <div className="p-3 bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-900 rounded-lg">
-                <p className="text-xs text-warning-700 dark:text-warning-400">
-                  Waiting on the ER Room Official to record the accompanying doctor before dispatch.
-                </p>
+              <div className="relative p-3 bg-warning-50 dark:bg-warning-950/30 border-2 border-warning-400 rounded-lg shadow-sm mt-2">
+                <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-warning-500"></span>
+                </span>
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-warning-600 shrink-0 mt-0.5" />
+                  <p className="text-sm font-semibold text-warning-800 dark:text-warning-300">
+                    Waiting on the ER Room Official to record the accompanying doctor before dispatch.
+                  </p>
+                </div>
               </div>
             )
           )}

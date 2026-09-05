@@ -542,7 +542,7 @@ export const NewReferralPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => submitReferral(true)}
-                className="flex-1 min-h-[48px] rounded-lg bg-emerald-600 text-white text-sm font-semibold"
+                className="flex-1 min-h-[56px] rounded-lg bg-emerald-600 text-white text-lg font-bold shadow-md"
               >
                 Submit Referral
               </button>

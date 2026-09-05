@@ -11,7 +11,12 @@ import { PrintableSummary } from '../components/referrals/PrintableSummary';
 import { ECGViewerOverlay } from '../components/referrals/ECGViewerOverlay';
 import { ReferralDetailHeader, BannerTint } from '../components/referrals/detail/ReferralDetailHeader';
 import { EscalationAlertBanner } from '../components/referrals/detail/EscalationAlertBanner';
-import { ClinicalSummaryCard } from '../components/referrals/detail/ClinicalSummaryCard';
+import { TransferContextCard } from '../components/referrals/detail/TransferContextCard';
+import { ClinicalHistoryCard } from '../components/referrals/detail/ClinicalHistoryCard';
+import { ClinicalMedicationsCard } from '../components/referrals/detail/ClinicalMedicationsCard';
+import { ClinicalAttachmentsCard } from '../components/referrals/detail/ClinicalAttachmentsCard';
+import { DepartmentReviewCard } from '../components/referrals/detail/DepartmentReviewCard';
+import { PatientCard } from '../components/referrals/PatientCard';
 import { TransferJourneyCard } from '../components/referrals/detail/TransferJourneyCard';
 import { MobileActionFooter, FooterAction } from '../components/referrals/detail/MobileActionFooter';
 import { ReferralActionConsole } from '../components/referrals/actions/ReferralActionConsole';
@@ -365,9 +370,24 @@ export const ReferralDetailPage: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           <EscalationAlertBanner referral={referral} />
 
-          <ClinicalSummaryCard
+          <PatientCard patient={referral.patientData} />
+          
+          <TransferContextCard 
+            referral={referral} 
+            referringUser={referringUser} 
+          />
+
+          <ClinicalHistoryCard referral={referral} />
+          
+          <ClinicalMedicationsCard referral={referral} />
+          
+          <ClinicalAttachmentsCard 
+            referral={referral} 
+            onSelectECG={(url) => setSelectedECGUrl(url)} 
+          />
+
+          <DepartmentReviewCard
             referral={referral}
-            referringUser={referringUser}
             usersById={usersById}
             isTargetDeptHead={isTargetDeptHead}
             isAdmin={isAdmin}
@@ -376,7 +396,6 @@ export const ReferralDetailPage: React.FC = () => {
             deptCommentText={deptCommentText}
             setDeptCommentText={setDeptCommentText}
             onSubmitDeptComment={submitDeptComment}
-            onSelectECG={(url) => setSelectedECGUrl(url)}
           />
         </div>
 
