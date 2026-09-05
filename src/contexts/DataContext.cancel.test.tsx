@@ -118,6 +118,10 @@ const Consumer = () => {
       }}>Cancel</button>
       <button onClick={async () => {
         capturedError = null;
+        try { await cancelReferral('r1', '   '); } catch (e: any) { capturedError = e.message; }
+      }}>CancelBlank</button>
+      <button onClick={async () => {
+        capturedError = null;
         try { await recordPatientDecline('r1', 'patient said no'); } catch (e: any) { capturedError = e.message; }
       }}>Decline</button>
     </div>
@@ -132,6 +136,29 @@ describe('cancelReferral guard', () => {
     capturedError = null;
     mockUser = null;
     mockReferral = null;
+  });
+
+  it('is refused with a blank reason', async () => {
+    mockUser = { id: 'admin-1', email: 'a@x.com', name: 'Admin', role: 'system_admin', verified: true };
+    mockReferral = makeReferral({ status: 'pending' });
+    renderConsumer();
+
+    await act(async () => { screen.getByText('CancelBlank').click(); });
+    await waitFor(() => expect(capturedError).toBeTruthy());
+
+    expect(capturedError).toMatch(/cancellation reason is required/i);
+    expect(capturedUpdates).toHaveLength(0);
+  });
+
+  it('is refused when the referral no longer exists', async () => {
+    mockUser = { id: 'admin-1', email: 'a@x.com', name: 'Admin', role: 'system_admin', verified: true };
+    mockReferral = null;
+    renderConsumer();
+
+    await act(async () => { screen.getByText('Cancel').click(); });
+    await waitFor(() => expect(capturedError).toBeTruthy());
+
+    expect(capturedError).toMatch(/not found/i);
   });
 
   it('is refused once the referral is in_transit, even for a privileged caller', async () => {
@@ -225,5 +252,36 @@ describe('recordPatientDecline re-routing', () => {
 
     expect(capturedError).toMatch(/accepted/i);
     expect(capturedUpdates).toHaveLength(0);
+  });
+});
+
+describe('cancelReferral edge cases', () => {
+  beforeEach(() => {
+    capturedUpdates.length = 0;
+    capturedError = null;
+    mockUser = null;
+    mockReferral = null;
+  });
+
+  it('does nothing without a signed-in user', async () => {
+    mockReferral = makeReferral({ status: 'pending' });
+    renderConsumer();
+
+    await act(async () => { screen.getByText('Cancel').click(); });
+
+    expect(capturedUpdates).toHaveLength(0);
+    expect(capturedError).toBeNull();
+  });
+
+  it('sends only the referring-facility notice for an intra-facility referral', async () => {
+    mockUser = { id: 'creator-1', email: 'c@x.com', name: 'Creator', role: 'resident', facilityId: 'f1', verified: true };
+    mockReferral = makeReferral({ status: 'pending', referringUserId: 'creator-1', referringFacilityId: 'f1', receivingFacilityId: 'f1' });
+    renderConsumer();
+
+    await act(async () => { screen.getByText('Cancel').click(); });
+    await waitFor(() => expect(capturedUpdates.length).toBeGreaterThan(0));
+
+    expect(capturedError).toBeNull();
+    expect(capturedUpdates[0].data.status).toBe('cancelled');
   });
 });

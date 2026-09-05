@@ -159,6 +159,10 @@ const Consumer = () => {
         capturedError = null;
         try { await recordPatientDecline('r1', 'patient said no'); } catch (e: any) { capturedError = e.message; }
       }}>Decline</button>
+      <button onClick={async () => {
+        capturedError = null;
+        try { await recordPatientDecline('r1', ''); } catch (e: any) { capturedError = e.message; }
+      }}>DeclineNoReason</button>
     </div>
   );
 };
@@ -216,6 +220,17 @@ describe('toggleReferralEscalation', () => {
     expect(capturedUpdates).toHaveLength(0);
     expect(capturedError).toBeNull();
   });
+
+  it('attributes an escalation to "system" with no signed-in user', async () => {
+    mockUser = null;
+    renderConsumer();
+
+    await act(async () => { screen.getByText('Escalate').click(); });
+    await waitFor(() => expect(capturedUpdates.length).toBeGreaterThan(0));
+
+    expect(capturedUpdates[0].data.escalatedBy).toBe('system');
+    expect(capturedUpdates[0].data.statusHistory.at(-1).userId).toBe('system');
+  });
 });
 
 describe('SLA/capacity sweep -> autoEscalateReferral', () => {
@@ -233,9 +248,9 @@ describe('SLA/capacity sweep -> autoEscalateReferral', () => {
   });
 
   it('escalates an SLA-tracked referral once its 30-minute window has breached', async () => {
-    referralsStore = {
-      r1: makeReferral({ status: 'pending', priority: 'emergency', requiredBedType: 'ICU', createdAt: breachedCreatedAt() }),
-    };
+    const r = makeReferral({ status: 'pending', priority: 'emergency', requiredBedType: 'ICU', createdAt: breachedCreatedAt() });
+    delete (r as any).candidateFacilityIds;
+    referralsStore = { r1: r };
     renderConsumer();
 
     await waitFor(() => expect(capturedUpdates.length).toBeGreaterThan(0));
@@ -256,6 +271,18 @@ describe('SLA/capacity sweep -> autoEscalateReferral', () => {
     await act(async () => { await Promise.resolve(); });
 
     expect(capturedUpdates).toHaveLength(0);
+  });
+
+  it('logs but does not crash the sweep when the auto-escalation transaction itself fails', async () => {
+    referralsStore = {
+      r1: makeReferral({ status: 'pending', priority: 'emergency', requiredBedType: 'ICU', createdAt: breachedCreatedAt() }),
+    };
+    const firestore = await import('firebase/firestore');
+    vi.spyOn(firestore, 'runTransaction').mockRejectedValueOnce(new Error('offline'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    renderConsumer();
+
+    await waitFor(() => expect(errSpy).toHaveBeenCalledWith('Auto-escalation failed for referral r1:', expect.any(Error)));
   });
 
   it('is idempotent: does not re-escalate a referral that is already escalated', async () => {
@@ -315,6 +342,19 @@ describe('SLA/capacity sweep -> escalateForCapacity', () => {
     expect(update.escalationReason).toBe('no_beds_available');
     expect(update.escalationLevel).toBe('system');
     expect(update.statusHistory.at(-1).notes).toMatch(/administrative placement/);
+  });
+
+  it('logs but does not crash the sweep when the capacity-escalation transaction itself fails', async () => {
+    mockFacilitiesList = [makeFacility({ id: 'f2', capacity: { ICU: { total: 0, occupied: 0 }, CCU: { total: 0, occupied: 0 }, PICU: { total: 0, occupied: 0 }, Ward: { total: 1, occupied: 1 } } })];
+    referralsStore = {
+      r1: makeReferral({ status: 'pending', isEscalated: false, autoEscalationSuppressed: false, receivingFacilityId: 'f2', candidateFacilityIds: [] }),
+    };
+    const firestore = await import('firebase/firestore');
+    vi.spyOn(firestore, 'runTransaction').mockRejectedValueOnce(new Error('offline'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    renderConsumer();
+
+    await waitFor(() => expect(errSpy).toHaveBeenCalledWith('Capacity escalation failed for referral r1:', expect.any(Error)));
   });
 
   it('escalates with no_matching_facility when the candidate list is empty', async () => {
@@ -401,5 +441,45 @@ describe('recordPatientDecline exhausting all candidates', () => {
     await waitFor(() => expect(capturedUpdates.length).toBeGreaterThan(0));
 
     expect(capturedUpdates[0].data.patientDeclinedFacilityIds).toEqual(['f0', 'f2']);
+  });
+
+  it('records "Not specified" when declined with no reason', async () => {
+    referralsStore = { r1: makeReferral({ status: 'accepted', receivingFacilityId: 'f2', candidateFacilityIds: [] }) };
+    renderConsumer();
+
+    await act(async () => { screen.getByText('DeclineNoReason').click(); });
+    await waitFor(() => expect(capturedUpdates.length).toBeGreaterThan(0));
+
+    expect(capturedUpdates[0].data.statusHistory.at(-1).notes).toMatch(/Reason: Not specified/);
+  });
+
+  it('tolerates a referral with no candidateFacilityIds field at all', async () => {
+    const r = makeReferral({ status: 'accepted', receivingFacilityId: 'f2' });
+    delete (r as any).candidateFacilityIds;
+    referralsStore = { r1: r };
+    renderConsumer();
+
+    await act(async () => { screen.getByText('Decline').click(); });
+    await waitFor(() => expect(capturedUpdates.length).toBeGreaterThan(0));
+
+    expect(capturedUpdates[0].data.candidateFacilityIds).toEqual([]);
+  });
+
+  it('is refused when the referral no longer exists', async () => {
+    referralsStore = {};
+    renderConsumer();
+
+    await act(async () => { screen.getByText('Decline').click(); });
+    await waitFor(() => expect(capturedError).toBeTruthy());
+    expect(capturedError).toMatch(/not found/i);
+  });
+
+  it('does nothing without a signed-in user', async () => {
+    mockUser = null;
+    referralsStore = { r1: makeReferral({ status: 'accepted', receivingFacilityId: 'f2' }) };
+    renderConsumer();
+
+    await act(async () => { screen.getByText('Decline').click(); });
+    expect(capturedUpdates).toHaveLength(0);
   });
 });
