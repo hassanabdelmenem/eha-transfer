@@ -1,4 +1,4 @@
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, runTransaction } from 'firebase/firestore';
 import { db } from './firebase';
 import { Notification, Referral, Role } from '../types';
 import { getOfflineReferrals, deleteOfflineReferral } from './db';
@@ -25,11 +25,18 @@ export type CreateNotificationFn = (params: {
  * first, this cache is the only copy.
  *
  * The write uses the referral's own client-generated id, so re-running this
- * after a partial failure (some referrals synced, some didn't) is safe: a
- * referral already present in Firestore is just overwritten with the same
- * data. The live onSnapshot listeners in DataContext pick up each synced
- * referral on their own once the write lands, so this does not touch React
- * state directly.
+ * after a partial failure (some referrals synced, some didn't) is safe -- but
+ * only because the write is conditioned on the document not existing yet (see
+ * below), not because overwriting is harmless. `addReferral` already attempts
+ * this same write itself, fire-and-forget, before ever caching to IndexedDB;
+ * on a flaky connection that attempt can land (via the SDK's own internal
+ * retry) before this device's `isOnline` flag catches up and this sweep runs
+ * again with the same now-stale cached copy. A referral that already exists
+ * in Firestore may have moved on since -- approved, rejected, even
+ * dispatched, however unlikely in that window -- and blindly overwriting it
+ * with the frozen pre-write snapshot would silently revert that. The live
+ * onSnapshot listeners in DataContext pick up each synced referral on their
+ * own once the write lands, so this does not touch React state directly.
  */
 export async function syncOfflineReferrals(options: {
   createNotification: CreateNotificationFn;
@@ -46,7 +53,17 @@ export async function syncOfflineReferrals(options: {
   for (const ref of offlineReferrals) {
     try {
       // eslint-disable-next-line no-await-in-loop
-      await setDoc(doc(db, 'referrals', ref.id), ref);
+      await runTransaction(db, async (transaction) => {
+        const refDocRef = doc(db, 'referrals', ref.id);
+        const snap = await transaction.get(refDocRef);
+        // Only write if nothing is there yet. If it already exists, this
+        // device's own earlier fire-and-forget write from addReferral already
+        // landed -- write nothing further, so whatever has happened to the
+        // referral since is not clobbered by this stale cached copy.
+        if (!snap.exists()) {
+          transaction.set(refDocRef, ref);
+        }
+      });
     } catch (err) {
       // Left in IndexedDB for the next sync attempt (next reconnect, or next
       // app load) rather than lost -- a failed write here means the referral

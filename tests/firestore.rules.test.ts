@@ -90,6 +90,12 @@ beforeEach(async () => {
     await setDoc(doc(db, 'users', NEWCOMER), { id: NEWCOMER, name: 'New', email: 'n@x.gov', role: 'resident', verified: false });
     await setDoc(doc(db, 'users', F2_ER_OFFICIAL), { id: F2_ER_OFFICIAL, name: 'F2 ER Official', email: 'er2@x.gov', role: 'er_official', verified: true, facilityId: 'f2' });
     await setDoc(doc(db, 'referrals', 'ref1'), referral());
+    // Intra-facility (f1 only) -- unlike ref1, F2_DOCTOR/F3_CANDIDATE are not
+    // parties to this one, which is what the notification-relatedness tests
+    // below rely on.
+    await setDoc(doc(db, 'referrals', 'ref2'), referral({
+      id: 'ref2', referringFacilityId: 'f1', receivingFacilityId: 'f1', candidateFacilityIds: [],
+    }));
     await setDoc(doc(db, 'directAdmissions', 'adm1'), { id: 'adm1', facilityId: 'f1', patientName: 'Patient B', hospitalId: 'H-2', department: 'ICU', bedType: 'ICU', admittedAt: '2026-01-01T00:00:00.000Z', admittedBy: F1_DOCTOR, status: 'admitted' });
     await setDoc(doc(db, 'notifications', 'n1'), { id: 'n1', userId: F1_DOCTOR, title: 'T', message: 'Referral for Patient A', type: 'info', read: false, createdAt: '2026-01-01T00:00:00.000Z' });
     await setDoc(doc(db, 'shiftLogs', 'log1'), { id: 'log1', userId: F1_DOCTOR, userName: 'F1 Doc', facilityId: 'f1', timestamp: '2026-01-01T00:00:00.000Z', pendingTransfersCount: 1, admittedPatientsCount: 2, summary: 'Handover: Patient A pending' });
@@ -151,10 +157,10 @@ describe('PHI collections (security review #2)', () => {
     await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'notifications', 'n1'), { message: 'forged' }));
   });
 
-  it('allows verified staff to fan out a notification to another user', async () => {
+  it('allows verified staff to fan out a notification to another user, when they are a party to the referenced referral', async () => {
     await assertSucceeds(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n2'), {
       id: 'n2', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false,
-      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(),
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1',
     }));
   });
 
@@ -409,14 +415,56 @@ describe('notification shape constraints', () => {
   it('blocks a notification that arrives pre-read', async () => {
     await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n3'), {
       id: 'n3', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: true,
-      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(),
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1',
     }));
   });
 
   it('blocks an unrecognised notification type', async () => {
     await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n4'), {
       id: 'n4', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'system', read: false,
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1',
+    }));
+  });
+});
+
+describe('notification relatedness (security review follow-up)', () => {
+  it('blocks a caller with no relation at all to the referenced referral', async () => {
+    // F2_DOCTOR/F3_CANDIDATE are parties to ref1, not ref2 (intra-facility f1 only).
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n6'), {
+      id: 'n6', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false,
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref2',
+    }));
+    await assertFails(setDoc(doc(authed(F3_CANDIDATE), 'notifications', 'n7'), {
+      id: 'n7', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false,
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref2',
+    }));
+  });
+
+  it('allows the actual party to notify about that same referral', async () => {
+    await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n8'), {
+      id: 'n8', userId: F1_MANAGER, title: 'T', message: 'M', type: 'info', read: false,
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref2',
+    }));
+  });
+
+  it('blocks a notification that names no referral at all', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n9'), {
+      id: 'n9', userId: F1_MANAGER, title: 'T', message: 'M', type: 'info', read: false,
       createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(),
+    }));
+  });
+
+  it('blocks a notification referencing a referral that does not exist', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n10'), {
+      id: 'n10', userId: F1_MANAGER, title: 'T', message: 'M', type: 'info', read: false,
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'no-such-referral',
+    }));
+  });
+
+  it('lets a privileged caller notify about a referral they are not themselves a facility-party to', async () => {
+    await assertSucceeds(setDoc(doc(authed(OWNER), 'notifications', 'n11'), {
+      id: 'n11', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false,
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref2',
     }));
   });
 });

@@ -5,6 +5,12 @@ const functions = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const sla_1 = require("./sla");
+const notificationRecipients_1 = require("./notificationRecipients");
+// Firestore's `in` operator accepts at most 30 comparison values. Real fan-outs
+// here (a referral's own facilities, or a handful of named individuals) never
+// come close, but the slice is a defensive bound rather than a silent
+// truncation nobody would notice.
+const FIRESTORE_IN_LIMIT = 30;
 admin.initializeApp();
 const db = admin.firestore();
 // Firestore caps a single batch at 500 writes. Both notification fan-outs below
@@ -12,20 +18,26 @@ const db = admin.firestore();
 // escalation sweep), so writes are committed in chunks rather than one batch.
 const FIRESTORE_BATCH_LIMIT = 500;
 async function commitInChunks(writes) {
+    const chunks = [];
     for (let i = 0; i < writes.length; i += FIRESTORE_BATCH_LIMIT) {
-        const batch = db.batch();
-        for (const write of writes.slice(i, i + FIRESTORE_BATCH_LIMIT)) {
-            write(batch);
-        }
-        await batch.commit();
+        chunks.push(writes.slice(i, i + FIRESTORE_BATCH_LIMIT));
     }
+    // Each chunk is its own batch of freshly-generated, disjoint document refs
+    // (new notification docs), with no ordering dependency between chunks, so
+    // committing them concurrently rather than one-at-a-time cuts wall-clock
+    // latency roughly by the chunk count on a large fan-out.
+    await Promise.all(chunks.map(chunk => {
+        const batch = db.batch();
+        chunk.forEach(write => write(batch));
+        return batch.commit();
+    }));
 }
 exports.sendNotification = functions.https.onCall(async (request) => {
     const auth = request.auth;
     if (!auth) {
         throw new functions.https.HttpsError('unauthenticated', 'Must be logged in to send notifications.');
     }
-    const { title, message, type, referralId, facilityId, targetRoles, departments } = request.data;
+    const { title, message, type, referralId, facilityId, facilityIds, targetRoles, departments, targetUserIds } = request.data;
     if (!referralId || !facilityId) {
         throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters: referralId and facilityId.');
     }
@@ -52,61 +64,75 @@ exports.sendNotification = functions.https.onCall(async (request) => {
         throw new functions.https.HttpsError('permission-denied', 'Caller is not a party to this referral.');
     }
     // The caller being a party to the referral only proves they may notify about
-    // it — not that `facilityId` (the notification's fan-out target) is actually
-    // one of the facilities involved. Without this, any party to any referral
-    // could direct a notification blast at an unrelated facility.
+    // it — not that the notification's fan-out targets are actually facilities
+    // involved in it. Without this, any party to any referral could direct a
+    // notification blast at an unrelated facility.
     //
     // 'auto' is filtered out rather than left in: it is the sentinel an
     // auto-routed referral's own receivingFacilityId holds before a facility has
     // claimed it, not a real facility. Left in, it would trivially satisfy this
-    // check for `facilityId: 'auto'` on any auto-routed referral -- harmless
-    // today only because no real facility document is ever named 'auto', so the
-    // users query below just returns nobody. The guard's intent is a real,
-    // related facility, so 'auto' must never count as one.
+    // check for a target of 'auto' on any auto-routed referral -- harmless today
+    // only because no real facility document is ever named 'auto', so the users
+    // query below just returns nobody. The guard's intent is a real, related
+    // facility, so 'auto' must never count as one.
     const referralFacilityIds = [
         refData === null || refData === void 0 ? void 0 : refData.referringFacilityId,
         refData === null || refData === void 0 ? void 0 : refData.receivingFacilityId,
         ...((refData === null || refData === void 0 ? void 0 : refData.candidateFacilityIds) || []),
     ].filter(id => id && id !== 'auto');
-    if (facilityId === 'auto' || !referralFacilityIds.includes(facilityId)) {
+    // Mirrors DataContext.createNotification: `facilityIds` (plural) takes
+    // priority when present; `[]` is valid (capacity escalation) and vacuously
+    // satisfies the `.every` check below since there is nothing to validate.
+    const targetFacilityIds = (facilityIds !== null && facilityIds !== void 0 ? facilityIds : [facilityId]).filter((id) => !!id);
+    if (targetFacilityIds.some(id => id === 'auto') || !targetFacilityIds.every(id => referralFacilityIds.includes(id))) {
         throw new functions.https.HttpsError('permission-denied', 'Target facility is not related to this referral.');
     }
-    // 2. Fetch users at the target facility
-    const usersSnap = await db.collection('users').where('facilityId', '==', facilityId).get();
-    // 3. Fetch shift assignments for the target facility
-    const shiftAssignmentsSnap = await db.collection('shiftAssignments').where('facilityId', '==', facilityId).get();
-    const assignments = shiftAssignmentsSnap.docs.map(d => d.data());
+    // 2. Fetch candidate users: anyone at a target facility, every owner/system_admin
+    // regardless of facility, and anyone named directly via targetUserIds regardless
+    // of their current facility (they may have moved since the referral was raised).
+    const facilityIdsForQuery = targetFacilityIds.slice(0, FIRESTORE_IN_LIMIT);
+    const targetUserIdsForQuery = (targetUserIds || []).slice(0, FIRESTORE_IN_LIMIT);
+    const [facilityUsersSnap, privilegedUsersSnap, namedUsersSnap, shiftAssignmentsSnap] = await Promise.all([
+        facilityIdsForQuery.length > 0
+            ? db.collection('users').where('facilityId', 'in', facilityIdsForQuery).get()
+            : null,
+        db.collection('users').where('role', 'in', ['owner', 'system_admin']).get(),
+        targetUserIdsForQuery.length > 0
+            ? db.collection('users').where(admin.firestore.FieldPath.documentId(), 'in', targetUserIdsForQuery).get()
+            : null,
+        facilityIdsForQuery.length > 0
+            ? db.collection('shiftAssignments').where('facilityId', 'in', facilityIdsForQuery).get()
+            : null,
+    ]);
+    // Merge by doc id: a user can plausibly appear in more than one of the three
+    // queries above (an owner who also happens to have a facilityId set, say),
+    // and each must only be notified once. `id` is the actual snapshot doc id,
+    // not whatever the document's own `id` field claims, so this is correct even
+    // if that field were ever missing or stale.
+    const candidateUsers = new Map();
+    [facilityUsersSnap, privilegedUsersSnap, namedUsersSnap].forEach(snap => {
+        snap === null || snap === void 0 ? void 0 : snap.forEach(userDoc => {
+            const u = userDoc.data();
+            candidateUsers.set(userDoc.id, { id: userDoc.id, role: u.role, facilityId: u.facilityId, department: u.department });
+        });
+    });
+    const assignmentsByFacility = new Map();
+    shiftAssignmentsSnap === null || shiftAssignmentsSnap === void 0 ? void 0 : shiftAssignmentsSnap.forEach(a => {
+        const data = a.data();
+        const list = assignmentsByFacility.get(data.facilityId) || [];
+        list.push({ assignedUserId: data.assignedUserId, department: data.department });
+        assignmentsByFacility.set(data.facilityId, list);
+    });
     const writes = [];
     const nowIso = new Date().toISOString();
-    usersSnap.forEach(userDoc => {
-        const u = userDoc.data();
-        // System admins and owners always receive notifications if they happen to be listed at the target facility,
-        // though typically they have no facility or act globally.
-        if (u.role === 'owner' || u.role === 'system_admin') {
-            // Allow through
-        }
-        else {
-            let isDelegatedTarget = false;
-            if ((targetRoles === null || targetRoles === void 0 ? void 0 : targetRoles.includes('head_of_department')) && ['consultant', 'specialist', 'resident'].includes(u.role)) {
-                const assignment = assignments.find(s => s.assignedUserId === userDoc.id &&
-                    (!departments || departments.includes(s.department)));
-                if (assignment) {
-                    isDelegatedTarget = true;
-                }
-            }
-            if (targetRoles && !targetRoles.includes(u.role) && !isDelegatedTarget)
-                return;
-            // A delegated target is covering the on-call department via shiftAssignments,
-            // already confirmed against `departments` above — their home department is
-            // irrelevant and must not be re-checked here, or on-call coverage never fires.
-            if (!isDelegatedTarget && departments && u.department && !departments.includes(u.department))
-                return;
-        }
-        // Prepare notification document
+    candidateUsers.forEach(u => {
+        const isRecipient = (0, notificationRecipients_1.isNotificationRecipient)(u, assignmentsByFacility.get(u.facilityId || '') || [], { facilityIds: targetFacilityIds, targetRoles, departments, targetUserIds });
+        if (!isRecipient)
+            return;
         const notifRef = db.collection('notifications').doc();
         writes.push((batch) => batch.set(notifRef, {
             id: notifRef.id,
-            userId: userDoc.id,
+            userId: u.id,
             title: title || 'Notification',
             message: message || '',
             type: type || 'info',

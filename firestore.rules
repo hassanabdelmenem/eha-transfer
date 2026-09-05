@@ -185,6 +185,9 @@ service cloud.firestore {
               && 'candidateFacilityIds' in data
               && callerFacility() in data.candidateFacilityIds);
     }
+    function referralData(referralId) {
+      return get(/databases/$(database)/documents/referrals/$(referralId)).data;
+    }
     // Mirrors SENIOR_CANCEL_ROLES / CANCEL_LOCKED_STATUSES in
     // src/contexts/DataContext.tsx -- keep all three in sync.
     function isSeniorCancelRole() {
@@ -463,18 +466,30 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------- notifications
-    // Fan-out is client-side, so any verified caller may create a notification
-    // addressed to another user — but reads stay strictly per-recipient, and the
-    // only mutable field is the read flag.
+    // Fan-out is client-side, so any verified caller who is actually a party to
+    // the referenced referral may create a notification addressed to another
+    // user — but reads stay strictly per-recipient, and the only mutable field
+    // is the read flag.
     match /notifications/{notificationId} {
       allow read: if isPrivileged() || (signedIn() && resource.data.userId == request.auth.uid);
-      // Still open to any verified caller, because fan-out runs in the browser. The
-      // shape constraints below are what keep that from being a free-form message
-      // channel into every clinician's notification tray: a fabricated alert cannot
-      // arrive pre-read, cannot carry an unbounded body, and -- via createdAtMs --
-      // cannot be dated into the future to pin itself to the top of the tray
-      // forever. An earlier version of this comment claimed backdating was blocked
-      // when nothing checked the timestamp at all.
+      // The shape constraints below keep this from being a free-form message
+      // channel into every clinician's notification tray: a fabricated alert
+      // cannot arrive pre-read, cannot carry an unbounded body, and -- via
+      // createdAtMs -- cannot be dated into the future to pin itself to the top
+      // of the tray forever. An earlier version of this comment claimed
+      // backdating was blocked when nothing checked the timestamp at all.
+      //
+      // referralId must name a real referral the caller is actually a party to
+      // (or the caller must be privileged) -- without this, any verified user
+      // could reference any referral's id, or none at all, to blast a
+      // fabricated alert at a facility they have nothing to do with. This does
+      // not further constrain *which* user within that referral's own parties
+      // the notification is addressed to (targetUserIds/on-call delegation are
+      // resolved client-side against users/shiftAssignments, which would be
+      // expensive to re-derive per write here) -- residual risk is a legitimate
+      // party to a real referral misdirecting a notification to an arbitrary
+      // uid, not an outsider reaching a referral or facility they are not
+      // involved with at all.
       //
       // Moving fan-out into a Cloud Function would let this become a deny rule and
       // would also let the /users list rule narrow to a single facility.
@@ -487,7 +502,10 @@ service cloud.firestore {
                     && request.resource.data.type in ['urgent', 'info', 'success', 'warning', 'purple']
                     && request.resource.data.read == false
                     && request.resource.data.createdAtMs is number
-                    && request.resource.data.createdAtMs <= request.time.toMillis() + 300000;
+                    && request.resource.data.createdAtMs <= request.time.toMillis() + 300000
+                    && request.resource.data.referralId is string
+                    && exists(/databases/$(database)/documents/referrals/$(request.resource.data.referralId))
+                    && (isPrivileged() || isReferralParty(referralData(request.resource.data.referralId)));
       allow update: if signedIn() && resource.data.userId == request.auth.uid
                     && changedKeys().hasOnly(['read']);
       // The recipient can clear their own tray. Previously only an admin could
