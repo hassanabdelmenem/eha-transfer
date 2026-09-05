@@ -182,7 +182,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
 
             <label className="w-28 h-28 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 rounded-xl flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-white dark:bg-slate-900/50 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 cursor-pointer transition-all">
               {uploading ? (
-                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-full h-full bg-slate-200 dark:bg-slate-700 animate-pulse rounded-xl" aria-hidden="true" />
               ) : (
                 <>
                   <Upload className="w-6 h-6 mb-1 text-slate-400" />

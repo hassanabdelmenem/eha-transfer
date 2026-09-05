@@ -132,7 +132,7 @@ export const AdminDashboard: React.FC = () => {
       {/* 3a/3d: unified escalation console -- edge-to-edge on phones,
           contained in a rounded card once there's room, escalation cards
           reflow into a responsive grid at wider widths. */}
-      <div className="-mt-4 -mx-4 sm:mt-0 sm:mx-0 sm:rounded-xl sm:overflow-hidden bg-slate-950 text-white">
+      <div className="-mt-4 sm:mt-0 rounded-2xl overflow-hidden bg-slate-950 text-white">
         <div className="px-4 pt-4 pb-4 sm:px-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>

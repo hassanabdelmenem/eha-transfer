@@ -74,7 +74,7 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({
       </div>
 
       {/* Modern interactive executive header card */}
-      <div className="-mt-4 sm:mt-0 -mx-3.5 sm:mx-0 sm:rounded-xl sm:overflow-hidden print:hidden">
+      <div className="-mt-4 sm:mt-0 rounded-2xl overflow-hidden print:hidden">
         <div className="bg-slate-950 text-white px-4 pt-4 pb-4 sm:px-6 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">

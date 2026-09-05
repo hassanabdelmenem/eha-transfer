@@ -378,7 +378,7 @@ export const NewReferralPage: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Mobile Wizard Header Bar */}
-      <div className="md:hidden -mt-4 -mx-4 bg-slate-950 text-white px-4 pt-4 pb-4 space-y-3 shrink-0">
+      <div className="md:hidden -mt-4 bg-slate-950 text-white px-4 pt-4 pb-4 space-y-3 shrink-0 rounded-2xl">
         <div className="flex items-center gap-3">
           <button
             type="button"

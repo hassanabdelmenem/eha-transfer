@@ -25,16 +25,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             'bg-critical-600 text-white hover:bg-critical-700 shadow-md': variant === 'destructive',
             'border border-slate-300 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300': variant === 'outline',
             'bg-transparent hover:bg-slate-100 text-slate-700 dark:text-slate-300': variant === 'ghost',
-            // 40px, not 28px: every other interactive element in this app
-            // (inputs, ghost icon buttons, links styled as buttons) was
-            // already hand-patched to min-h-[40px] one at a time — 30 call
-            // sites doing it individually — because size="sm" alone landed
-            // under a comfortable touch target. Fixing it here removes the
-            // need for that override everywhere it was applied to a Button.
-            'h-10 px-3 text-xs': size === 'sm',
-            'h-9 px-4 py-2 text-xs': size === 'md',
-            'h-11 px-6 text-sm': size === 'lg',
-            'h-10 w-10': size === 'icon',
+            // Enforce minimum touch targets (48px) globally as per Fitts's Law
+            'min-h-[44px] px-3 text-xs': size === 'sm',
+            'min-h-[48px] px-4 py-2 text-sm': size === 'md',
+            'min-h-[56px] px-6 text-sm': size === 'lg',
+            'h-12 w-12': size === 'icon',
           },
           className
         )}
