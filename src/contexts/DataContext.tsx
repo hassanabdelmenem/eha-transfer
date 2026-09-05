@@ -23,6 +23,11 @@ export const SENIOR_CANCEL_ROLES: Role[] = ['medical_director', 'hospital_manage
 // Statuses at which the patient is already in motion or the case is closed; cancellation
 // is refused past this point (both here and in firestore.rules).
 export const CANCEL_LOCKED_STATUSES: Referral['status'][] = ['in_transit', 'arrived', 'admitted', 'discharged'];
+// Safety valve for the offline-sync in-flight guard below: long enough that a
+// normal sync (a handful of writes against a real connection) never comes
+// close, short enough that a stalled attempt against a network that is
+// actually down doesn't block every later sync for the rest of the outage.
+export const OFFLINE_SYNC_STALL_TIMEOUT_MS = 15_000;
 
 export interface DirectAdmission {
   id: string;
@@ -489,9 +494,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!isOnline || dataLoading || offlineSyncInFlightRef.current) return;
     offlineSyncInFlightRef.current = true;
+
+    // A write attempted while `isOnline` optimistically still reads true but the
+    // network is genuinely down (see the note on `isOnline`'s own initial value
+    // above -- nothing here guarantees a listener has surfaced the outage yet)
+    // sits pending in the Firestore SDK's internal queue for as long as the
+    // outage lasts, since this app runs without a persistent local cache to
+    // resolve against. Left unbounded, that stalled write's `.finally()` below
+    // never runs, so the in-flight guard stays stuck true and silently skips
+    // every later attempt to flush a referral cached in the meantime -- for the
+    // whole outage, not just this one attempt. This timeout only resets the
+    // guard; it does not cancel the underlying sync, which keeps running and
+    // still flushes (and notifies) once real connectivity returns.
+    let inFlightSettled = false;
+    const clearInFlight = () => {
+      if (inFlightSettled) return;
+      inFlightSettled = true;
+      offlineSyncInFlightRef.current = false;
+    };
+    const stallTimeoutId = setTimeout(clearInFlight, OFFLINE_SYNC_STALL_TIMEOUT_MS);
+
     syncOfflineReferrals({ createNotification, facilities, setPendingSyncCount })
       .catch(err => console.error('Failed to sync offline referrals', err))
-      .finally(() => { offlineSyncInFlightRef.current = false; });
+      .finally(() => {
+        clearTimeout(stallTimeoutId);
+        clearInFlight();
+      });
   }, [isOnline, dataLoading, createNotification, facilities]);
 
   const updateUserVerified = useCallback((id: string, verified: boolean) => {

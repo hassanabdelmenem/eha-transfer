@@ -296,6 +296,37 @@ describe('DataContext offline-referral sync effect', () => {
     await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
     await waitFor(() => expect(errSpy).toHaveBeenCalledWith('Failed to sync offline referrals', expect.any(Error)));
   });
+
+  it('resets the in-flight guard via a stall timeout, so a sync that never settles does not block every later attempt for the rest of the outage', async () => {
+    vi.useFakeTimers();
+    const db = await import('../lib/db');
+    const getOfflineReferralsSpy = vi.spyOn(db, 'getOfflineReferrals')
+      .mockReturnValueOnce(new Promise(() => {})) // never settles -- simulates a write stuck against a real outage
+      .mockResolvedValue([]);
+    // Other tests in this file also mount a DataProvider (and so also trigger
+    // this same shared spy) before this one runs; only calls from this test
+    // itself are relevant.
+    getOfflineReferralsSpy.mockClear();
+
+    renderProvider();
+    await act(async () => { await Promise.resolve(); });
+    expect(getOfflineReferralsSpy).toHaveBeenCalledTimes(1);
+
+    // Re-trigger the effect (facilities is one of its dependencies) while the
+    // first sync is still hung -- the in-flight guard must skip this one.
+    act(() => { fsState.subscribers['facilities'][0].success({ docs: [{ data: () => makeFacility() }] }); });
+    await act(async () => { await Promise.resolve(); });
+    expect(getOfflineReferralsSpy).toHaveBeenCalledTimes(1);
+
+    // Once the stall timeout elapses, the guard resets on its own -- the next
+    // effect run is no longer blocked by the still-pending first attempt.
+    await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
+    act(() => { fsState.subscribers['facilities'][0].success({ docs: [{ data: () => makeFacility({ id: 'f9' }) }] }); });
+    await act(async () => { await Promise.resolve(); });
+    expect(getOfflineReferralsSpy).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
 });
 
 describe('useData outside a provider', () => {

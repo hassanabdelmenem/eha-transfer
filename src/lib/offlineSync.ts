@@ -47,14 +47,28 @@ export async function syncOfflineReferrals(options: {
     try {
       // eslint-disable-next-line no-await-in-loop
       await setDoc(doc(db, 'referrals', ref.id), ref);
-      // eslint-disable-next-line no-await-in-loop
-      await deleteOfflineReferral(ref.id);
-      synced.push(ref);
     } catch (err) {
       // Left in IndexedDB for the next sync attempt (next reconnect, or next
       // app load) rather than lost -- a failed write here means the referral
       // still only exists in this cache.
       console.warn('Failed syncing offline referral', ref.id, err);
+      continue;
+    }
+
+    // The write above succeeded: this referral now exists in Firestore and is
+    // visible to its recipients, so it must be queued for notification even if
+    // the IndexedDB cleanup below fails -- gating notification on the delete
+    // succeeding meant a delete failure silently dropped the alert for a
+    // referral that really is there, which is exactly the kind of silent
+    // failure this module exists to end. Worst case on a delete failure is a
+    // duplicate notification the next time this referral gets synced again;
+    // that is recoverable in a way a missing notification is not.
+    synced.push(ref);
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await deleteOfflineReferral(ref.id);
+    } catch (err) {
+      console.warn('Failed to clear synced referral from the offline cache', ref.id, err);
     }
   }
 
