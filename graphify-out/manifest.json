@@ -822,9 +822,9 @@
     "semantic_hash": ""
   },
   "src/components/referrals/wizard/StepDiagnosticsReview.tsx": {
-    "mtime": 1788630126.460263,
-    "seen": 1788630832.6348832,
-    "ast_hash": "af3b0da0b5c8d77d9bb693a5d267c287",
+    "mtime": 1788631036.889481,
+    "seen": 1788631126.9992971,
+    "ast_hash": "f2d63d9498372e1675a10e9e98ddf095",
     "semantic_hash": ""
   },
   "src/components/referrals/wizard/StepPatientDemographics.tsx": {
@@ -1248,9 +1248,9 @@
     "semantic_hash": "6d65b73fedaa233dea87b417eeab72a0"
   },
   "src/pages/NewReferralPage.tsx": {
-    "mtime": 1788630682.1640942,
-    "seen": 1788630832.634942,
-    "ast_hash": "5e35eaff3c11a60364f9d88c4f50de90",
+    "mtime": 1788631058.7492232,
+    "seen": 1788631126.9993658,
+    "ast_hash": "1ca68de0ec21e765dffbc66f4b194345",
     "semantic_hash": ""
   },
   "src/pages/NewReferralPage.upload.test.tsx": {

@@ -2845,7 +2845,7 @@
       "file_type": "code",
       "norm_label": "stepdiagnosticsreview()",
       "source_file": "src/components/referrals/wizard/StepDiagnosticsReview.tsx",
-      "source_location": "L37"
+      "source_location": "L35"
     },
     {
       "id": "src_components_referrals_wizard_steppatientdemographics_steppatientdemographics",
@@ -8889,7 +8889,7 @@
       "file_type": "code",
       "norm_label": "allowed_extensions",
       "source_file": "src/components/referrals/wizard/StepDiagnosticsReview.tsx",
-      "source_location": "L27"
+      "source_location": "L25"
     },
     {
       "id": "src_components_referrals_wizard_stepdiagnosticsreview_allowed_mime_types",
@@ -8900,7 +8900,7 @@
       "file_type": "code",
       "norm_label": "allowed_mime_types",
       "source_file": "src/components/referrals/wizard/StepDiagnosticsReview.tsx",
-      "source_location": "L28"
+      "source_location": "L26"
     },
     {
       "id": "src_components_referrals_wizard_types",
@@ -28880,7 +28880,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/referrals/wizard/StepDiagnosticsReview.tsx",
-      "source_location": "L63",
+      "source_location": "L59",
       "weight": 1.0
     },
     {
@@ -56404,7 +56404,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/referrals/wizard/StepDiagnosticsReview.tsx",
-      "source_location": "L27",
+      "source_location": "L25",
       "weight": 1.0
     },
     {
@@ -56415,7 +56415,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/referrals/wizard/StepDiagnosticsReview.tsx",
-      "source_location": "L28",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -56426,7 +56426,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/referrals/wizard/StepDiagnosticsReview.tsx",
-      "source_location": "L37",
+      "source_location": "L35",
       "weight": 1.0
     },
     {
@@ -78948,5 +78948,5 @@
       "source_file": ".agents/skills/firebase-firestore/references/enterprise/security_rules.md"
     }
   ],
-  "built_at_commit": "10d17564889ba9ba1d4af7e88097622c67ca7567"
+  "built_at_commit": "12ae741c94c71fea64570a1ef523d64d0aaff5c9"
 }
