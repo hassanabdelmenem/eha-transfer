@@ -1,40 +1,40 @@
-# Graph Report - eha-transfer  (2026-09-04)
+# Graph Report - eha-transfer  (2026-09-05)
 
 ## Corpus Check
-- 655 files · ~392,041 words
+- 654 files · ~394,013 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1961 nodes · 4188 edges · 213 communities (145 shown, 68 thin omitted)
+- 1968 nodes · 4196 edges · 212 communities (144 shown, 68 thin omitted)
 - Extraction: 95% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 184 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `883a5f93`
+- Built from commit: `e1f6ce29`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - types/index.ts
-- Frontend UX & Component Architecture Survey
+- Orchestrator Gen1-to-Gen2 Soft Handoff
 - useAuth
-- Milestone5.empirical-adversarial.test.tsx
-- ManagerCockpit.tsx
+- m5-dom-integration.adversarial.test.tsx
+- Facility
 - dependencies
 - Generate Firestore Rules Guide (Enterprise)
 - referral-lifecycle.spec.ts
 - Firebase SQL Connect Skill
 - scripts
-- DashboardCockpits.test.tsx
+- Data Layer & Business Logic Survey Analysis
 - Referral
 - Ismailia Health Connect Application
 - useSpeechRecognition
-- DataContext.tsx
+- Frontend UX & Component Architecture Survey
 - ignorePatterns
 - compilerOptions
 - Reviewer M5.1 Handoff Report
-- DashboardCockpits.adversarial.test.tsx
-- AdminDashboard.tsx
+- ManagerCockpit.tsx
+- Milestone5.empirical-adversarial.test.tsx
 - README.md
 - src/sla.ts
 - UI_UPDATE_REPORT.md
@@ -42,20 +42,20 @@
 - ReferralList.tsx
 - toast.ts
 - firebase-basics SKILL
-- App.tsx
-- db.ts
+- DashboardCockpits.adversarial.test.tsx
+- Challenger M4-2 Briefing
 - M4 Explorer 2 Handoff: DOM Selector Contracts & E2E Invariants
 - Explorer M5-2 Handoff: Direct Admission & Capacity Integration
 - ReferralDetailPage
 - REVIEW.md
 - PROJECT.md
 - Unified Clinical Cockpit Consolidation Architecture (rationale: eliminate ~600 lines of duplicated card/status logic across Dashboard, DepartmentPage, ERDashboard, AdminDashboard)
-- C1: Unfiltered Referrals Listener
+- firestore.rules.test.ts
 - formatted.js
 - ECGViewerOverlay.tsx
 - NewReferralPage.tsx
 - Auditor M5 Report (Project Acceptance Audit — INTEGRITY VIOLATION)
-- routing.ts
+- Challenger M5-1 Tier 5 White-Box Adversarial Hardening Report
 - Firestore Enterprise Native Mode on iOS Guide
 - main.tsx
 - Milestone4.empirical-adversarial.test.tsx
@@ -64,25 +64,25 @@
 - Milestone 3 Handoff Report (Clinical Cockpits & Role Dashboards)
 - compilerOptions
 - scripts
-- Original User Request (Agent Copy)
+- Card.tsx
 - tier5-ui.adversarial.test.tsx: 37-case White-Box Adversarial UI Test Suite
 - Survey 1 Report: Codebase Architecture & Persona Lifecycle
 - ReferralDetailPage.tsx
-- ReferralActionConsole.tsx
+- App.tsx
 - benchmarks.ts
-- AuthContext.tsx
+- firebase.ts
 - Milestone 5: Integrated Bed Management & Capacity Hub
 - M5 Explorer 1 Handoff: Bed Management Concurrency & Decomposition
 - request.auth Security Rules
 - main.swift
 - Clinician Role Alignment Across Doctor Role Checks (rationale: clinician omitted from copy-pasted inline isDoctor array literals across UI files)
-- ORIGINAL_REQUEST.md
-- ReferralDetailHeader.tsx
-- edge-cases-exceptions.test.ts
+- docs/DEPLOYMENT.md
+- DashboardCockpits.test.tsx
+- dashboard/types.ts
 - NEXT_STEPS_PROMPT.md
 - Explorer Survey-3 Handoff: Edge Cases & Test Infrastructure
-- NewReferralPage.empirical-challenge.test.tsx
-- Challenger M2 Handoff (Milestone 2 APPROVE Verdict)
+- MockSpeechRecognition
+- PatientCard.tsx
 - Milestone 1: App Shell & Navigation
 - Crashlytics Android Setup Guide
 - Cloud Firestore in Flutter (Enterprise)
@@ -90,29 +90,29 @@
 - firebase-remote-config-basics SKILL
 - devDependencies
 - package.json
-- simulation-harness.ts
+- Reviewer M3-1 Handoff Report
 - Milestone 4: Referral Detail, Timeline & Action Console
 - Worker M3 Dispatch
 - Worker M1 Dispatch
 - Firebase AI Logic Basics Skill
-- Card.tsx
+- ReferralActionConsole.tsx
 - Referrals Page UI (Ismailia Health Connect)
 - Firebase App Hosting Basics Skill
 - Firebase Auth Basics Skill
 - Firebase Basics Skill / Firebase CLI
 - Milestone 4: Full Automated Test Suite Execution & Augmentation (R4)
 - Extension to Functions Codebase Skill
-- src/contexts/DataContext.tsx
+- PERFORMANCE.md
 - Verdict: APPROVE
-- Reviewer M3-2 Handoff Report
+- AuthContext.tsx
 - storage.ts
-- Challenger M3 Briefing (Edge Case & Exception Pathways)
+- global-setup.ts
 - Explorer M1.1 Briefing: Rejection & Cancellation Reason Hardening
 - Explorer M1.2 Briefing: Clinician Role Alignment
 - Firestore Data Model Reference (Enterprise)
 - index.js
 - babel-test.cjs
-- NetworkDirectoryPage.tsx
+- C1: Unfiltered Referrals Listener
 - ReferralDetailPage.test.tsx
 - Cloud Firestore on Android (Kotlin) Guide
 - test_real_login.cjs
@@ -122,7 +122,7 @@
 - verify-csp-headers.mjs
 - server.cjs
 - server.js
-- RoleHomeHeader.tsx
+- TEST_READY.md
 - Milestone 2: Unified Referral Intake Wizard
 - backfill_status_history.js
 - verify_layout.cjs
@@ -166,7 +166,7 @@
 - test_click.cjs
 - test_full_flow.cjs
 - test_view_card.cjs
-- NotificationMenu.tsx
+- buffer
 - vite.config.ts
 - Challenger M4-2 Progress Log
 - Reviewer M2_1 Briefing (Unified Referral Intake Wizard)
@@ -183,7 +183,6 @@
 - Reviewer M3 Dispatch Message
 - Milestone 3 Reviewer Handoff Report — Edge Case & Exception Pathway Verification (R3)
 - Reviewer M3 Progress Log
-- RejectionModal.tsx
 - firebase
 - lucide-react
 - motion
@@ -192,12 +191,12 @@
 - uuid
 
 ## God Nodes (most connected - your core abstractions)
-1. `Referral` - 84 edges
+1. `Referral` - 83 edges
 2. `useAuth()` - 61 edges
-3. `User` - 59 edges
-4. `Facility` - 51 edges
-5. `useData()` - 51 edges
-6. `BedType` - 39 edges
+3. `User` - 56 edges
+4. `useData()` - 51 edges
+5. `Facility` - 50 edges
+6. `BedType` - 38 edges
 7. `SimulatedHealthcareNetwork` - 36 edges
 8. `toastError()` - 30 edges
 9. `cn()` - 29 edges
@@ -206,12 +205,12 @@
 ## Surprising Connections (you probably didn't know these)
 - `Referral` --shares_data_with--> `DataContext.tsx updateReferralStatus()`  [INFERRED]
   src/types/index.ts → .agents/explorer_m1_1/handoff.md
+- `Survey 1 Report: Codebase Architecture & Persona Lifecycle` --references--> `AuthContext`  [EXTRACTED]
+  .agents/explorer_survey_1/report.md → src/contexts/AuthContext.tsx
 - `Survey 1 Report: Codebase Architecture & Persona Lifecycle` --references--> `Role`  [EXTRACTED]
   .agents/explorer_survey_1/report.md → src/types/index.ts
 - `Survey 2 Report: Security & Access Control Audit` --references--> `Role`  [EXTRACTED]
   .agents/explorer_survey_2/report.md → src/types/index.ts
-- `Explorer M5-2 Handoff: Direct Admission & Capacity Integration` --references--> `DirectAdmission`  [EXTRACTED]
-  .agents/explorer_m5_2/handoff.md → src/contexts/DataContext.tsx
 - `Mandatory Rejection Reason Validation & Audit Trail (rationale: rejection is a clinical decision affecting patient destination, must be captured at point of action)` --references--> `Referral`  [EXTRACTED]
   .agents/explorer_m1_1/handoff.md → src/types/index.ts
 
@@ -276,27 +275,27 @@
 - **Milestone 4 Referral Detail Console Dual Review** — agents_reviewer_m4_1_handoff, agents_reviewer_m4_2_handoff, concept_milestone4_referral_detail_console [INFERRED 0.85]
 - **Security Rules Generation & Audit Workflow** — agents_skills_firebase_firestore_references_enterprise_security_rules_doc, agents_skills_firebase_firestore_references_standard_security_rules_doc, agents_skills_firebase_security_rules_auditor_skill_doc [INFERRED 0.85]
 
-## Communities (213 total, 68 thin omitted)
+## Communities (212 total, 68 thin omitted)
 
 ### Community 0 - "types/index.ts"
-Cohesion: 0.13
-Nodes (23): AppLayout(), AppSidebar(), mockFacility, mockReferrals, mockUser, ROLE_CONFIGS, RoleBadge(), RoleBadgeProps (+15 more)
+Cohesion: 0.06
+Nodes (81): Challenger M2 Progress Tracker, Challenger M2 Adversarial Challenge Report (RBAC & Persona Simulations), Challenger M3 Briefing (Edge Case & Exception Pathways), Challenger M3 Dispatch Instructions, Challenger M3 Handoff Report (Edge Case Verification), Challenger M3 Progress Log, Challenger M3 Adversarial Challenge Report (Edge Cases), Milestone 2 Reviewer Handoff Report (Persona Simulations) (+73 more)
 
-### Community 1 - "Frontend UX & Component Architecture Survey"
-Cohesion: 0.05
-Nodes (73): Survey Report 3: Edge Cases & Test Infrastructure, Data Layer & Business Logic Survey Analysis, Data Explorer BRIEFING, Data Explorer Handoff Report, Data Explorer Progress Log, E2E Test Suite & Contract Analysis, E2E Explorer BRIEFING, E2E Explorer DISPATCH (+65 more)
+### Community 1 - "Orchestrator Gen1-to-Gen2 Soft Handoff"
+Cohesion: 0.17
+Nodes (29): Orchestrator (Gen1) Briefing, Explorer-Worker-Reviewer-Challenger-Auditor Gate Protocol, Milestone M1: App Shell & Navigation, Milestone M2: Referral Intake Wizard, Milestone M3: Clinical Cockpits, Milestone M4: Referral Detail & Action Console, Milestone M5: Bed Management & Capacity Hub, Milestone M6: Full Verification (+21 more)
 
 ### Community 2 - "useAuth"
-Cohesion: 0.24
-Nodes (17): Auditor M3 Briefing, Auditor M3 Dispatch, M3: Clinical Cockpits & Role Dashboards, AdminCockpit(), ERCockpit(), HodCockpit(), NurseCockpit(), ReferralList() (+9 more)
+Cohesion: 0.20
+Nodes (25): Auditor M3 Briefing, Auditor M3 Dispatch, Reviewer M3_1 Briefing (Clinical Cockpits & Role Dashboards), M3: Clinical Cockpits & Role Dashboards, ReferralsPage, AdminCockpit(), ClinicianCockpit(), ERCockpit() (+17 more)
 
-### Community 3 - "Milestone5.empirical-adversarial.test.tsx"
-Cohesion: 0.06
-Nodes (55): Challenger M5-1 Briefing, Challenger M5-1 Handoff Report (Bed Management), Challenger M5-1 Progress Log, Challenger M5-2 Briefing, Challenger M5-2 Handoff Report (E2E/DOM Integration), Challenger M5-2 Progress Log, Bed Capacity Stepper Debounced Writes, Milestone 5: Integrated Bed Management & Capacity Hub (+47 more)
+### Community 3 - "m5-dom-integration.adversarial.test.tsx"
+Cohesion: 0.08
+Nodes (26): Challenger M5-2 Briefing, Challenger M5-2 Handoff Report (E2E/DOM Integration), Challenger M5-2 Progress Log, Milestone 5: Integrated Bed Management & Capacity Hub, ArrivedTransfersQueue(), ArrivedTransfersQueueProps, mockArrivedReferrals, BedCapacityCard() (+18 more)
 
-### Community 4 - "ManagerCockpit.tsx"
-Cohesion: 0.12
-Nodes (21): Challenger M3_1 Briefing (Clinical Cockpits & Dashboards), Challenger M3_1 Dispatch Instructions, ESCALATION_DESC, ESCALATION_LABEL, ESCALATION_PRIMARY, BED_TYPES, BedOccupancyHeatmap(), BedOccupancyHeatmapProps (+13 more)
+### Community 4 - "Facility"
+Cohesion: 0.25
+Nodes (8): DirectAdmissionFormProps, mockFacility, DirectAdmissionModalProps, AdminDirectActionsCardProps, PatientConsentCardProps, StepDestinationPriorityProps, AiRankedFacility, Facility
 
 ### Community 5 - "dependencies"
 Cohesion: 0.13
@@ -307,8 +306,8 @@ Cohesion: 0.06
 Nodes (47): Composite Index (Enterprise), Firestore Indexes Reference (Enterprise), firestore.indexes.json (Enterprise), Index Density (Dense/Sparse), Unique Index Option, firestore:databases:create --edition=enterprise Command, Provisioning Firestore Enterprise Native Mode, firebase.json (Enterprise Firestore Config) (+39 more)
 
 ### Community 7 - "referral-lifecycle.spec.ts"
-Cohesion: 0.08
-Nodes (35): Challenger M3_1 Handoff Report (Dashboard Adversarial Tests), Challenger M3_1 Progress Log, Challenger M3_2 Briefing (E2E Verification), Challenger M3_2 Dispatch Instructions, Challenger M3_2 Handoff Report (Playwright E2E Verification), Challenger M3-2 Progress Log, Challenger M4-1 Handoff Report, Challenger M4-1 Progress Log (+27 more)
+Cohesion: 0.26
+Nodes (10): Challenger M3_2 Briefing (E2E Verification), Challenger M3_2 Dispatch Instructions, Challenger M3-2 Progress Log, E2E_USER, E2E_USERS, createMockImageFile(), loginAs(), UserCredentials (+2 more)
 
 ### Community 8 - "Firebase SQL Connect Skill"
 Cohesion: 0.07
@@ -318,13 +317,13 @@ Nodes (45): SQL Connect Examples, Cloud Functions Integration Reference, onMutat
 Cohesion: 0.05
 Nodes (38): eslint, eslint-config-google, eslint-plugin-import, firebase-functions, firebase-functions-test, dependencies, firebase-admin, firebase-functions (+30 more)
 
-### Community 10 - "DashboardCockpits.test.tsx"
-Cohesion: 0.11
-Nodes (18): mockAddDeptComment, mockAssignShift, mockDirectAdmissions, mockFacilities, mockFacilitiesById, mockOverrideReferralDestination, mockQuickTransfer, mockReferrals (+10 more)
+### Community 10 - "Data Layer & Business Logic Survey Analysis"
+Cohesion: 0.12
+Nodes (27): Survey Report 3: Edge Cases & Test Infrastructure, Data Layer & Business Logic Survey Analysis, Data Explorer BRIEFING, Data Explorer DISPATCH, Data Explorer Handoff Report, Data Explorer Progress Log, E2E Test Suite & Contract Analysis, E2E Explorer BRIEFING (+19 more)
 
 ### Community 11 - "Referral"
-Cohesion: 0.06
-Nodes (50): ActiveInpatientCensusProps, ArrivedTransfersQueueProps, ClinicianSegment, DashboardMetric, DashboardStatGridProps, EscalationAlertBannerProps, FacilityAnalyticsChartsProps, ShiftHandoverFeedProps (+42 more)
+Cohesion: 0.07
+Nodes (34): AppSidebarProps, ReferralActionConsoleProps, ClinicalSummaryCardProps, BANNER_TINT_CLASSES, BannerTint, ReferralDetailHeader(), ReferralDetailHeaderProps, StageRail() (+26 more)
 
 ### Community 12 - "Ismailia Health Connect Application"
 Cohesion: 0.12
@@ -334,9 +333,9 @@ Nodes (27): Email/Password Sign-In Form, Google OAuth Sign-In Option, Continue W
 Cohesion: 0.12
 Nodes (16): react, react, TestComp(), MockAudio, play, TestComp(), useAudioAlert(), defaultSpeechRecognitionFactory() (+8 more)
 
-### Community 14 - "DataContext.tsx"
-Cohesion: 0.15
-Nodes (13): Milestone 2 Quality & Adversarial Review Report (Persona Simulations), Milestone 3 (R3) Review & Adversarial Challenge Report, System Admin Destination Override, Accompanying Doctor Escort Dispatch Gate, CANCEL_LOCKED_STATUSES, capturedUpdates, Consumer(), DataProvider() (+5 more)
+### Community 14 - "Frontend UX & Component Architecture Survey"
+Cohesion: 0.11
+Nodes (21): Proposal: Integrated Bed & Capacity Hub, Pain Point: Bed Management & Direct Admission Fragmentation, Proposal: Standardized Design System & UI Tokens, Pain Point: Disconnected Forms & Split Mobile/Desktop Logic, Frontend UX & Component Architecture Survey, E2E Test & Functional Preservation Matrix, Pain Point: Fragmented Clinical & Managerial Dashboards, Pain Point: Header Redundancy & Visual Clutter (+13 more)
 
 ### Community 15 - "ignorePatterns"
 Cohesion: 0.08
@@ -350,49 +349,49 @@ Nodes (24): DOM, DOM.Iterable, ES2022, functions, node_modules, vite/client, com
 Cohesion: 0.14
 Nodes (23): Reviewer M4.2 Progress Log, Reviewer M5.1 Briefing, Reviewer M5.1 Dispatch, Reviewer M5.1 Handoff Report, Reviewer M5.1 Progress Log, Reviewer M5.2 Briefing, Reviewer M5.2 Dispatch, Reviewer M5.2 Handoff (Re-Evaluation) (+15 more)
 
-### Community 18 - "DashboardCockpits.adversarial.test.tsx"
-Cohesion: 0.08
-Nodes (23): Reviewer M3_1 Briefing (Clinical Cockpits & Role Dashboards), Milestone 3: Clinical Cockpits & Role Dashboards, Milestone 3 Cockpits Verdict: REQUEST_CHANGES (React Hook Rule Violations), Reviewer Agent M3_1 (Clinical Cockpits & Role Dashboards), mockAddDeptComment, mockAssignShift, mockDirectAdmissions, mockFacilities (+15 more)
+### Community 18 - "ManagerCockpit.tsx"
+Cohesion: 0.13
+Nodes (21): Challenger M3_1 Briefing (Clinical Cockpits & Dashboards), Challenger M3_1 Dispatch Instructions, Challenger M3_1 Handoff Report (Dashboard Adversarial Tests), Challenger M3_1 Progress Log, Challenger M3_2 Handoff Report (Playwright E2E Verification), Milestone 3: Clinical Cockpits & Role Dashboards, Milestone 3 Cockpits Verdict: REQUEST_CHANGES (React Hook Rule Violations), Reviewer Agent M3_1 (Clinical Cockpits & Role Dashboards) (+13 more)
 
-### Community 19 - "AdminDashboard.tsx"
-Cohesion: 0.16
-Nodes (16): Reviewer M3-1 Handoff Report, Reviewer M3-1 Progress Log, Reviewer M3 Re-verification Briefing, Reviewer M3 Re-verification Dispatch, Reviewer M3 Re-verification Handoff Report, Reviewer M3 Re-verification Progress Log, React Hooks Rule Violation (hooks after early return), Verdict: REQUEST_CHANGES (+8 more)
+### Community 19 - "Milestone5.empirical-adversarial.test.tsx"
+Cohesion: 0.09
+Nodes (31): Challenger M5-1 Briefing, Challenger M5-1 Handoff Report (Bed Management), Challenger M5-1 Progress Log, Bed Capacity Stepper Debounced Writes, AdmitPatientPage, ActiveInpatientCensus(), DirectAdmissionForm(), DirectAdmissionFormData (+23 more)
 
 ### Community 20 - "README.md"
-Cohesion: 0.11
-Nodes (20): Deployment Guide (docs/DEPLOYMENT.md), CSP in firebase.json Coupled to Google Sign-In, src/lib/csp.security.test.ts, github-deployer Service Account (IAM roles), Deployment Pipeline (commit -> CI -> preview -> merge -> deploy), F10: sevensn Branch Doc/Automation Mismatch (corrected), scripts/verify-csp-headers.mjs, CI Workflow (+12 more)
+Cohesion: 0.22
+Nodes (8): Deployment Guide (docs/DEPLOYMENT.md), F10: sevensn Branch Doc/Automation Mismatch (corrected), er-app-final Repository (Unrelated Firebase Project), F10: sevensn Branch Mismatch (Security Assessment Finding), One-Repo-One-Firebase-Project Binding, imc-er Repository (Unrelated Firebase Project), Repository-to-Firebase-Project Binding (1:1, no shared backend), npm Scripts & CI Test Pipeline
 
 ### Community 21 - "src/sla.ts"
 Cohesion: 0.14
-Nodes (20): db, escalateBreachedReferrals, escalateOne(), ESCALATION_TARGET_ROLES, NotificationParams, notifyEscalation(), sendNotification, hasBreachedSla() (+12 more)
+Nodes (21): commitInChunks(), db, escalateBreachedReferrals, escalateOne(), ESCALATION_TARGET_ROLES, NotificationParams, notifyEscalation(), sendNotification (+13 more)
 
 ### Community 22 - "UI_UPDATE_REPORT.md"
-Cohesion: 0.17
-Nodes (12): D1 Residual: Status Color Scale Outside Brand Ramp, D3 Residual: Muted Text Contrast Compromise, Overnight Escalation Gap (2a), Typography and Touch Targets (2e), M6: Accessibility Essentially Absent, src/index.css, WCAG 2.1 AA Accessibility Pass, Accessibility Pass (WCAG 2.1 AA) (+4 more)
+Cohesion: 0.14
+Nodes (14): D1 Residual: Status Color Scale Outside Brand Ramp, D3 Residual: Muted Text Contrast Compromise, Overnight Escalation Gap (2a), Typography and Touch Targets (2e), M6: Accessibility Essentially Absent, src/index.css, WCAG 2.1 AA Accessibility Pass, Accessibility Pass (WCAG 2.1 AA) (+6 more)
 
 ### Community 23 - "Independent Victory Audit Handoff Report (redesign)"
 Cohesion: 0.12
 Nodes (19): Final Victory Forensic Audit Report (victory_auditor_1), Victory Auditor 1 Progress Log, Victory Auditor Redesign Briefing, Independent Victory Audit Handoff Report (redesign), Victory Auditor Redesign Progress Log, Worker M1 Briefing (App Shell Modernization), Milestone 1 Handoff Report (App Shell, Navigation & Design System), Worker M1 Progress Tracker (+11 more)
 
 ### Community 24 - "ReferralList.tsx"
-Cohesion: 0.13
-Nodes (15): NotificationsPage, DashboardStatGrid(), KPIGrid, ReferralListProps, Skeleton(), SkeletonDetailBlock(), SkeletonGroup(), SkeletonLine() (+7 more)
+Cohesion: 0.12
+Nodes (17): NetworkDirectoryPage, NotificationsPage, ReferralListProps, Skeleton(), SkeletonDetailBlock(), SkeletonGroup(), SkeletonLine(), SkeletonReferralCard() (+9 more)
 
 ### Community 25 - "toast.ts"
-Cohesion: 0.11
-Nodes (20): Toaster(), TONE_ICON_COLORS, TONE_ICONS, TONE_STYLES, clearToasts(), DEFAULT_TTL_MS, describeError(), dismissToast() (+12 more)
+Cohesion: 0.06
+Nodes (46): Auditor M1 Forensic Audit Report (App Shell), AppLayout(), AppSidebar(), mockFacility, mockReferrals, mockUser, NotificationMenu(), NotificationMenuProps (+38 more)
 
 ### Community 26 - "firebase-basics SKILL"
 Cohesion: 0.16
 Nodes (18): Firebase Android Setup Guide, Firebase CLI Exploring Commands Guide, Firebase Service Initialization Guide, Firebase Local Environment Setup Guide, Refresh Android Studio Local Environment Guide, Refresh Antigravity Local Environment Guide, Refresh Claude Code Local Environment Guide, Refresh Gemini CLI Local Environment Guide (+10 more)
 
-### Community 27 - "App.tsx"
+### Community 27 - "DashboardCockpits.adversarial.test.tsx"
 Cohesion: 0.08
-Nodes (22): AdmitPatientPage, AppRoutes(), ArchivePage, BedManagementPage, Dashboard, DepartmentPage, ERDashboard, FacilitySettingsPage (+14 more)
+Nodes (24): ESCALATION_DESC, ESCALATION_LABEL, ESCALATION_PRIMARY, BED_TYPES, BedOccupancyHeatmap(), BedOccupancyHeatmapProps, mockAddDeptComment, mockAssignShift (+16 more)
 
-### Community 28 - "db.ts"
-Cohesion: 0.15
-Nodes (11): deleteOfflineReferral(), getOfflineReferrals(), ReferralDB, clear, del, getAll, openDB, put (+3 more)
+### Community 28 - "Challenger M4-2 Briefing"
+Cohesion: 0.29
+Nodes (7): Challenger M4-2 Briefing, ActionConsole.tsx, ECGViewer.tsx, MedicalRecordViewer.tsx, ReferralDetail.tsx, StatusBadge.tsx, Timeline.tsx
 
 ### Community 29 - "M4 Explorer 2 Handoff: DOM Selector Contracts & E2E Invariants"
 Cohesion: 0.15
@@ -408,39 +407,39 @@ Nodes (11): Reviewer M4-1 Briefing, Reviewer M4-1 Dispatch, Reviewer M4-1 Handof
 
 ### Community 32 - "REVIEW.md"
 Cohesion: 0.14
-Nodes (17): firestore.rules, Audit Trail Subcollection Migration (2c), S6: /users Collection Cross-Facility Exposure, C2: Consent/Cancel-Lock Enforced Client-Side Only, C2: Consent/Cancel-Lock Enforced Client-Side Only, H1: auditTrailAppendOnly Not Enforced, H2: Fire-and-Forget Mutations Hide Rule Denials, H3: directAdmissions Update Does Not Pin facilityId (+9 more)
+Nodes (17): firestore.rules, S6: /users Collection Cross-Facility Exposure, C2: Consent/Cancel-Lock Enforced Client-Side Only, C2: Consent/Cancel-Lock Enforced Client-Side Only, H2: Fire-and-Forget Mutations Hide Rule Denials, H3: directAdmissions Update Does Not Pin facilityId, H3: directAdmissions facilityId Unpinned, H4: Auth Errors Leak and Enumerate (+9 more)
 
 ### Community 33 - "PROJECT.md"
-Cohesion: 0.16
-Nodes (17): Auditor M1 Briefing, Auditor M1 Dispatch, Auditor M1 Forensic Audit Report (App Shell), src/pages/AdmitPatientPage.tsx, src/components/layout/AppLayout.tsx, M1: App Shell, Navigation & Design System, App Shell, Navigation & Header Modernization (M1), Unified Bed & Capacity Console (M5) (+9 more)
+Cohesion: 0.11
+Nodes (25): Auditor M1 Briefing, Auditor M1 Dispatch, Auditor M2 Briefing, Auditor M2 Dispatch, Auditor M2 Progress Log, Auditor M2 Forensic Audit Summary, Original User Request (Agent Copy), R1: Multi-Party Persona Lifecycle Simulation (+17 more)
 
 ### Community 34 - "Unified Clinical Cockpit Consolidation Architecture (rationale: eliminate ~600 lines of duplicated card/status logic across Dashboard, DepartmentPage, ERDashboard, AdminDashboard)"
 Cohesion: 0.20
 Nodes (16): Explorer M3.1 Briefing: Clinical Cockpits & Role Dashboards, Explorer M3.1 Dispatch Instructions, Milestone 3 Investigation Report: Clinical Cockpits & Role Dashboards, Explorer M3.1 Progress Log, Explorer M3.2 Briefing: E2E Test Contracts & Selector Invariants, Explorer M3.2 Dispatch Instructions, Unified Clinical Cockpit Consolidation Architecture (rationale: eliminate ~600 lines of duplicated card/status logic across Dashboard, DepartmentPage, ERDashboard, AdminDashboard), Playwright/Vitest DOM Selector Invariants for Dashboard Refactor (headings, table rows, modal contracts that must be preserved) (+8 more)
 
-### Community 35 - "C1: Unfiltered Referrals Listener"
-Cohesion: 0.25
-Nodes (6): C1: Unfiltered Referrals Listener, referralsQuery (unfiltered, limit 200), firestore.rules referrals allow read rule, M4: Any Verified User Could Write Facility Config, Tier 2: Firestore Security Rules Tests, projectRoot
+### Community 35 - "firestore.rules.test.ts"
+Cohesion: 0.33
+Nodes (3): Audit Trail Subcollection Migration (2c), H1: auditTrailAppendOnly Not Enforced, projectRoot
 
 ### Community 36 - "formatted.js"
 Cohesion: 0.30
 Nodes (15): A(), be(), g(), _e(), v(), F(), he(), I() (+7 more)
 
 ### Community 37 - "ECGViewerOverlay.tsx"
-Cohesion: 0.17
-Nodes (11): Challenger M2_1 Briefing (Referral Intake Wizard), Challenger M2_1 Dispatch Instructions, Challenger M2_1 Handoff Report (Wizard Stress Test), Challenger M2_1 Progress Log, Reviewer 2 (Milestone 1) Progress Log, Milestone 1 Review Report — Core Exception & Alignment Hardening, Review & Adversarial Verification Report — Unified Referral Intake Wizard (Reviewer 1), ECGViewerOverlay() (+3 more)
+Cohesion: 0.22
+Nodes (8): Auditor M1 Progress Log, Auditor M1 Report (Core Exception & Alignment Hardening), Reviewer 2 (Milestone 1) Progress Log, Milestone 1 Review Report — Core Exception & Alignment Hardening, Review & Adversarial Verification Report — Unified Referral Intake Wizard (Reviewer 1), R3: Edge Case & Exception Pathways, ECGViewerOverlay(), ECGViewerOverlayProps
 
 ### Community 38 - "NewReferralPage.tsx"
-Cohesion: 0.08
-Nodes (44): Auditor M2 Forensic Audit Report (Referral Wizard), Challenger M2_2 Briefing (RBAC & Data Context), Challenger M2_2 Dispatch Instructions, Handoff Report — Reviewer 2: Unified Referral Intake Wizard, NewReferralPage, BedCapacityGridProps, DirectAdmissionFormProps, DirectAdmissionModalProps (+36 more)
+Cohesion: 0.06
+Nodes (46): Auditor M2 Forensic Audit Report (Referral Wizard), Challenger M2_1 Briefing (Referral Intake Wizard), Challenger M2_1 Dispatch Instructions, Challenger M2_1 Handoff Report (Wizard Stress Test), Challenger M2_1 Progress Log, Challenger M2_2 Briefing (RBAC & Data Context), Challenger M2_2 Dispatch Instructions, Challenger M2_2 Handoff Report (Empirical Challenge) (+38 more)
 
 ### Community 39 - "Auditor M5 Report (Project Acceptance Audit — INTEGRITY VIOLATION)"
-Cohesion: 0.30
-Nodes (14): Auditor M5_2 Briefing (Re-evaluation Audit Memory), Auditor M5_2 Dispatch (Forensic Re-evaluation Assignment), Auditor M5_2 Handoff (Re-evaluation CLEAN Verdict), Auditor M5_2 Progress Log, Auditor M5_2 Report (Re-evaluation Forensic Audit — CLEAN), Auditor M5 Report (Project Acceptance Audit — INTEGRITY VIOLATION), Challenger M1_1 Report (Rejection/Cancellation/Role/ECG Adversarial Stress Test — APPROVE), Challenger M1_2 Report (Media Attachment & ECG Viewer Hardening — APPROVE) (+6 more)
+Cohesion: 0.17
+Nodes (24): Auditor M5_2 Briefing (Re-evaluation Audit Memory), Auditor M5_2 Dispatch (Forensic Re-evaluation Assignment), Auditor M5_2 Handoff (Re-evaluation CLEAN Verdict), Auditor M5_2 Progress Log, Auditor M5_2 Report (Re-evaluation Forensic Audit — CLEAN), Auditor M5 Dispatch (Bed Management Forensic Audit Assignment), Auditor M5 Handoff (Milestone 5 CLEAN Verdict), Auditor M5 Progress Tracker (+16 more)
 
-### Community 40 - "routing.ts"
-Cohesion: 0.18
-Nodes (12): Challenger M5-1 Tier 5 White-Box Adversarial Hardening Report, Candidate List Non-Widening Security Invariant, db, runSweep(), 30-Minute Fast-Track SLA Breach Threshold, availableBeds(), CandidateQuery, CapacityCandidate (+4 more)
+### Community 40 - "Challenger M5-1 Tier 5 White-Box Adversarial Hardening Report"
+Cohesion: 0.21
+Nodes (13): Challenger M4-1 Handoff Report, Challenger M4-1 Progress Log, Challenger M4 Briefing, Challenger M4 Handoff Report, Challenger M4 Progress Log, Challenger M4 Adversarial Challenge Report, Challenger M5-1 Tier 5 White-Box Adversarial Hardening Report, Candidate List Non-Widening Security Invariant (+5 more)
 
 ### Community 41 - "Firestore Enterprise Native Mode on iOS Guide"
 Cohesion: 0.14
@@ -451,8 +450,8 @@ Cohesion: 0.14
 Nodes (7): clear-cache.js, Rendered Login Page HTML Snapshot, Vite Entry HTML (index.html), App(), ErrorBoundary, Props, State
 
 ### Community 43 - "Milestone4.empirical-adversarial.test.tsx"
-Cohesion: 0.11
-Nodes (17): isAbnormal(), PatientCard(), PatientCardProps, show(), mockAddDeptComment, mockCancelReferral, mockFacilities, mockFacilitiesById (+9 more)
+Cohesion: 0.13
+Nodes (13): mockAddDeptComment, mockCancelReferral, mockFacilities, mockFacilitiesById, mockOverrideReferralDestination, mockRecordPatientConsent, mockRecordPatientDecline, mockReferrals (+5 more)
 
 ### Community 44 - "tier5-ui.adversarial.test.tsx"
 Cohesion: 0.13
@@ -474,9 +473,9 @@ Nodes (12): compileOnSave, compilerOptions, module, noImplicitReturns, noUnusedL
 Cohesion: 0.14
 Nodes (14): scripts, bench, build, clean, dev, lint, mutate, preview (+6 more)
 
-### Community 49 - "Original User Request (Agent Copy)"
-Cohesion: 0.31
-Nodes (9): Auditor M2 Briefing, Auditor M2 Dispatch, Auditor M2 Progress Log, Auditor M2 Forensic Audit Summary, Original User Request (Agent Copy), Data Explorer DISPATCH, Orchestrator (Gen1) Dispatch Context, Orchestrator (Gen1) Dispatch Log (+1 more)
+### Community 49 - "Card.tsx"
+Cohesion: 0.28
+Nodes (10): Egyptian 14-Digit National ID Decoder, StepClinicalPresentationProps, StepPatientDemographicsProps, Card, CardContent, CardFooter, CardHeader, CardTitle (+2 more)
 
 ### Community 50 - "tier5-ui.adversarial.test.tsx: 37-case White-Box Adversarial UI Test Suite"
 Cohesion: 0.24
@@ -487,20 +486,20 @@ Cohesion: 0.21
 Nodes (11): Explorer Survey-1 Briefing, Explorer Survey-1 Dispatch, Explorer Survey-1 Handoff, Explorer Survey-1 Progress Log, Survey 1 Report: Codebase Architecture & Persona Lifecycle, Explorer Survey-2 Progress Log, Survey 2 Report: Security & Access Control Audit, 14-Role RBAC Permission Matrix (+3 more)
 
 ### Community 52 - "ReferralDetailPage.tsx"
-Cohesion: 0.18
-Nodes (12): DOM Test Contracts (Playwright Invariants), ClinicalSummaryCard(), ESCALATION_DETAIL, ESCALATION_HEADLINE, EscalationAlertBanner(), EscalationAlertBannerProps, EscalationKey, FooterAction (+4 more)
+Cohesion: 0.19
+Nodes (8): ReferralWorkspacePane, RejectionModal(), RejectionModalProps, ClinicalSummaryCard(), FooterAction, MobileActionFooter(), MobileActionFooterProps, TransferJourneyCard()
 
-### Community 53 - "ReferralActionConsole.tsx"
-Cohesion: 0.18
-Nodes (13): Challenger M4-1 Briefing, AdminDirectActionsCard(), AdminDirectActionsCardProps, CancellationDialog(), CancellationDialogProps, EscortAssignmentForm(), EscortAssignmentFormProps, PatientConsentCard() (+5 more)
+### Community 53 - "App.tsx"
+Cohesion: 0.11
+Nodes (16): AdminDashboard, AppRoutes(), ArchivePage, BedManagementPage, Dashboard, DepartmentPage, ERDashboard, FacilitySettingsPage (+8 more)
 
 ### Community 54 - "benchmarks.ts"
 Cohesion: 0.35
 Nodes (9): bench(), benchmarkPermissionChecks(), benchmarkReferralLookup(), BenchmarkResult, generateMockFacilities(), generateMockReferrals(), generateMockUsers(), printResults() (+1 more)
 
-### Community 55 - "AuthContext.tsx"
-Cohesion: 0.13
-Nodes (16): AuthProvider(), isMobileDevice(), AuthConsumer(), useIdleTimeout(), clearOfflineReferrals(), app, auth, db (+8 more)
+### Community 55 - "firebase.ts"
+Cohesion: 0.09
+Nodes (22): deleteOfflineReferral(), getOfflineReferrals(), ReferralDB, clear, del, getAll, openDB, put (+14 more)
 
 ### Community 56 - "Milestone 5: Integrated Bed Management & Capacity Hub"
 Cohesion: 0.27
@@ -522,17 +521,17 @@ Nodes (10): addCrashlyticsRunScriptBuildPhase(), hasCrashlyticsRunScriptBuildPha
 Cohesion: 0.24
 Nodes (11): Clinician Role Alignment Across Doctor Role Checks (rationale: clinician omitted from copy-pasted inline isDoctor array literals across UI files), Proposed DOCTOR_ROLES / CLINICAL_PRACTITIONER_ROLES canonical constants and isDoctorRole() helper, AppLayout.tsx isDoctor role-check constant, DataContext.tsx notification targetRoles broadcast arrays, lib/mock-data.ts clinician seed user (u2, Fayed Primary Care Unit), lib/notifications.ts targetRoles delegated-check, Dashboard.tsx canCreateReferral role-check constant, FacilitySettingsPage.tsx user-role assignment dropdown (+3 more)
 
-### Community 61 - "ORIGINAL_REQUEST.md"
-Cohesion: 0.15
-Nodes (12): Auditor M1 Progress Log, Auditor M1 Report (Core Exception & Alignment Hardening), R4: Automated Test Suite Execution & Expansion, R3: Edge Case & Exception Pathways, R1: Multi-Party Persona Lifecycle Simulation, Multi-Role Healthcare Persona Simulation Request, R2: Role Boundary & Security Enforcement, UX & Structural Redesign Request (2026-08-28) (+4 more)
+### Community 61 - "docs/DEPLOYMENT.md"
+Cohesion: 0.19
+Nodes (12): CSP in firebase.json Coupled to Google Sign-In, src/lib/csp.security.test.ts, github-deployer Service Account (IAM roles), Deployment Pipeline (commit -> CI -> preview -> merge -> deploy), scripts/verify-csp-headers.mjs, CI Workflow, Firebase Deploy Workflow, Firebase PR Preview Workflow (+4 more)
 
-### Community 62 - "ReferralDetailHeader.tsx"
-Cohesion: 0.27
-Nodes (7): BANNER_TINT_CLASSES, BannerTint, ReferralDetailHeader(), ReferralDetailHeaderProps, StageRail(), STAGE_LABELS, stageIndexForStatus()
+### Community 62 - "DashboardCockpits.test.tsx"
+Cohesion: 0.10
+Nodes (19): mockAddDeptComment, mockAssignShift, mockDirectAdmissions, mockFacilities, mockFacilitiesById, mockOverrideReferralDestination, mockQuickTransfer, mockReferrals (+11 more)
 
-### Community 63 - "edge-cases-exceptions.test.ts"
-Cohesion: 0.29
-Nodes (15): SLA Breach Timing Detection, UrgencyTimer(), Clock, hasBreachedSla(), isSlaTracked(), needsAutoEscalation(), secondsUntilSlaBreach(), SLA_MINUTES (+7 more)
+### Community 63 - "dashboard/types.ts"
+Cohesion: 0.18
+Nodes (11): ActiveInpatientCensusProps, mockAdmissions, DashboardStatGrid(), KPIGrid, ClinicianSegment, DashboardMetric, DashboardStatGridProps, FacilityAnalyticsChartsProps (+3 more)
 
 ### Community 64 - "NEXT_STEPS_PROMPT.md"
 Cohesion: 0.22
@@ -542,13 +541,9 @@ Nodes (9): Audit Trail Append-Only Subcollection Migration Plan, createdAtMs Bac
 Cohesion: 0.24
 Nodes (10): Explorer Survey-3 Briefing, Explorer Survey-3 Dispatch, Explorer Survey-3 Handoff: Edge Cases & Test Infrastructure, Explorer Survey-3 Progress Log, Mandatory Cancellation Reason Validation (rationale: current UI marks reason optional, allowing empty 'Not specified' entries in audit trail), DataContext.tsx cancelReferral(), routing.ts, sla.ts (+2 more)
 
-### Community 66 - "NewReferralPage.empirical-challenge.test.tsx"
-Cohesion: 0.18
-Nodes (6): Challenger M2_2 Handoff Report (Empirical Challenge), Challenger M2_2 Progress Log, mockAddReferral, mockCurrentUser, mockFacilities, MockSpeechRecognition
-
-### Community 67 - "Challenger M2 Handoff (Milestone 2 APPROVE Verdict)"
-Cohesion: 0.33
-Nodes (10): Auditor M5 Dispatch (Bed Management Forensic Audit Assignment), Auditor M5 Handoff (Milestone 5 CLEAN Verdict), Auditor M5 Progress Tracker, Challenger M2 Briefing (Persona Simulation & RBAC Challenge Memory), Challenger M2 Dispatch (Persona/RBAC Adversarial Assignment), Challenger M2 Handoff (Milestone 2 APPROVE Verdict), Bed Capacity Mutation & Bounds Validation, Forensic Integrity Audit — Binary Veto Policy (CLEAN vs INTEGRITY VIOLATION) (+2 more)
+### Community 67 - "PatientCard.tsx"
+Cohesion: 0.47
+Nodes (4): isAbnormal(), PatientCard(), PatientCardProps, show()
 
 ### Community 68 - "Milestone 1: App Shell & Navigation"
 Cohesion: 0.50
@@ -578,9 +573,9 @@ Nodes (9): autoprefixer, devDependencies, autoprefixer, @testing-library/react, 
 Cohesion: 0.20
 Nodes (9): name, overrides, fast-uri, qs, react-router, stream-json, private, type (+1 more)
 
-### Community 75 - "simulation-harness.ts"
-Cohesion: 0.24
-Nodes (13): Challenger M2 Progress Tracker, Challenger M2 Adversarial Challenge Report (RBAC & Persona Simulations), Milestone 2 Reviewer Handoff Report (Persona Simulations), Bed Capacity Arithmetic Integrity, Multi-Facility Tenant Isolation, RBAC Permission Boundary Enforcement, StepClinicalPresentationProps, StepPatientDemographicsProps (+5 more)
+### Community 75 - "Reviewer M3-1 Handoff Report"
+Cohesion: 0.16
+Nodes (14): Reviewer M3-1 Handoff Report, Reviewer M3-1 Progress Log, Reviewer M3-2 Briefing, Reviewer M3-2 Dispatch, Reviewer M3-2 Handoff Report, Reviewer M3-2 Progress Log, Reviewer M3 Re-verification Briefing, Reviewer M3 Re-verification Dispatch (+6 more)
 
 ### Community 76 - "Milestone 4: Referral Detail, Timeline & Action Console"
 Cohesion: 0.36
@@ -598,9 +593,9 @@ Nodes (8): Explorer Survey Data Analysis, Explorer Survey E2E Analysis, Orchestr
 Cohesion: 0.32
 Nodes (8): firebase_ai Flutter Package Setup, FirebaseAILogic iOS SDK Setup, Firebase AI Logic Android (Kotlin) Usage, Firebase AI Logic Web (JS) Usage, Agent Platform Gemini API (Vertex AI), App Check, Firebase AI Logic Basics Skill, Gemini Developer API
 
-### Community 80 - "Card.tsx"
-Cohesion: 0.30
-Nodes (9): Egyptian 14-Digit National ID Decoder, Card, CardContent, CardFooter, CardHeader, CardTitle, Input, InputProps (+1 more)
+### Community 80 - "ReferralActionConsole.tsx"
+Cohesion: 0.21
+Nodes (11): Challenger M4-1 Briefing, AdminDirectActionsCard(), CancellationDialog(), CancellationDialogProps, EscortAssignmentForm(), EscortAssignmentFormProps, PatientConsentCard(), Button (+3 more)
 
 ### Community 81 - "Referrals Page UI (Ismailia Health Connect)"
 Cohesion: 0.38
@@ -626,25 +621,25 @@ Nodes (6): Challenger M4 Dispatch, Worker M4_2 Briefing — Full Automated Test 
 Cohesion: 0.53
 Nodes (6): Configuration Migration Reference, Destructuring Compatibility Shim Reference, V1 vs V2 Signature Mapping Reference, Extension to Functions Codebase Skill, Destructuring Compatibility Shim Pattern, Firebase Functions V1 to V2 Migration
 
-### Community 87 - "src/contexts/DataContext.tsx"
-Cohesion: 0.15
-Nodes (12): firestore.rules list rules coupled to DataContext query shapes, S6 Accepted Risk: /users Collection Network-Wide Readable, src/lib/benchmarks.ts, Memoized O(1) Lookup Maps Optimization, NetworkDirectoryPage Pagination, src/contexts/AuthContext.tsx, src/contexts/DataContext.tsx, src/pages/ReferralDetailPage.tsx (+4 more)
+### Community 87 - "PERFORMANCE.md"
+Cohesion: 0.33
+Nodes (5): src/lib/benchmarks.ts, Memoized O(1) Lookup Maps Optimization, NetworkDirectoryPage Pagination, src/pages/ReferralDetailPage.tsx, Referral Detail & Clinical Timeline Console (M4)
 
 ### Community 88 - "Verdict: APPROVE"
 Cohesion: 0.29
 Nodes (8): Reviewer M4 Briefing, Reviewer M4 Dispatch, Reviewer M4 Handoff Report, Reviewer M4 Progress Log, Reviewer M4 Detailed Adversarial Report, Anti-Facade / Integrity Audit, Milestone 4: Full Automated Test Suite Execution & Augmentation (R4), Verdict: APPROVE
 
-### Community 89 - "Reviewer M3-2 Handoff Report"
-Cohesion: 0.33
-Nodes (6): Reviewer M3-2 Briefing, Reviewer M3-2 Dispatch, Reviewer M3-2 Handoff Report, Reviewer M3-2 Progress Log, DOM Invariant: Overview Heading Selector, Milestone 3: Clinical Cockpits & Role Dashboards
+### Community 89 - "AuthContext.tsx"
+Cohesion: 0.31
+Nodes (6): AuthContextType, AuthProvider(), isMobileDevice(), AuthConsumer(), Consumer(), clearOfflineReferrals()
 
 ### Community 90 - "storage.ts"
 Cohesion: 0.53
 Nodes (4): debouncedSetItem(), safeGetItem(), safeSetItem(), timers
 
-### Community 91 - "Challenger M3 Briefing (Edge Case & Exception Pathways)"
-Cohesion: 0.60
-Nodes (5): Challenger M3 Briefing (Edge Case & Exception Pathways), Challenger M3 Dispatch Instructions, Challenger M3 Handoff Report (Edge Case Verification), Challenger M3 Progress Log, Challenger M3 Adversarial Challenge Report (Edge Cases)
+### Community 91 - "global-setup.ts"
+Cohesion: 0.83
+Nodes (3): globalSetup(), waitFor(), seed()
 
 ### Community 92 - "Explorer M1.1 Briefing: Rejection & Cancellation Reason Hardening"
 Cohesion: 0.70
@@ -659,16 +654,16 @@ Cohesion: 0.70
 Nodes (5): Collection (Firestore concept), Collection Group Query, Firestore Data Model Reference (Enterprise), Document (Firestore concept), Subcollection (Firestore concept)
 
 ### Community 95 - "index.js"
-Cohesion: 0.40
-Nodes (3): admin, db, functions
+Cohesion: 0.17
+Nodes (15): admin, commitInChunks(), db, escalateBreachedReferrals(), escalateOne(), ESCALATION_TARGET_ROLES, functions, notifyEscalation() (+7 more)
 
 ### Community 96 - "babel-test.cjs"
 Cohesion: 0.40
 Nodes (4): babel, code, fs, result
 
-### Community 97 - "NetworkDirectoryPage.tsx"
-Cohesion: 0.50
-Nodes (4): NetworkDirectoryPage, BED_TYPES, capacityHint(), NetworkDirectoryPage()
+### Community 97 - "C1: Unfiltered Referrals Listener"
+Cohesion: 0.29
+Nodes (8): firestore.rules list rules coupled to DataContext query shapes, S6 Accepted Risk: /users Collection Network-Wide Readable, src/contexts/AuthContext.tsx, src/contexts/DataContext.tsx, C1: Unfiltered Referrals Listener, referralsQuery (unfiltered, limit 200), firestore.rules referrals allow read rule, M5: Unconstrained Notification Fan-Out
 
 ### Community 98 - "ReferralDetailPage.test.tsx"
 Cohesion: 0.40
@@ -698,13 +693,13 @@ Nodes (3): fs, http, server
 Cohesion: 0.50
 Nodes (3): fs, http, server
 
+### Community 107 - "TEST_READY.md"
+Cohesion: 0.33
+Nodes (5): R4: Automated Test Suite Execution & Expansion, Multi-Role Healthcare Persona Simulation Request, e2e/exceptions-edge-cases.spec.ts, Complete Referral Lifecycle Journey, Tier 1: Static Typecheck
+
 ### Community 108 - "Milestone 2: Unified Referral Intake Wizard"
 Cohesion: 1.00
 Nodes (3): Milestone 2: Unified Referral Intake Wizard, Reviewer Agent M2_1 (Unified Referral Wizard, Instance 1), Reviewer Agent M2_2 (Unified Referral Wizard, Instance 2)
-
-### Community 157 - "NotificationMenu.tsx"
-Cohesion: 0.50
-Nodes (3): NotificationMenu(), NotificationMenuProps, mockNotifications
 
 ## Ambiguous Edges - Review These
 - `ReferralTimeline.tsx` → `Timeline.tsx`  [AMBIGUOUS]
@@ -715,8 +710,6 @@ Nodes (3): NotificationMenu(), NotificationMenuProps, mockNotifications
   .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
 - `ReferralActionConsole.tsx` → `ActionConsole.tsx`  [AMBIGUOUS]
   .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
-- `Auditor M1 Forensic Audit Report (App Shell)` → `Auditor M1 Report (Core Exception & Alignment Hardening)`  [AMBIGUOUS]
-  .agents/auditor_m1/report.md · relation: semantically_similar_to
 - `Permission Denied Toast Notification` → `System Admin Role Badge`  [AMBIGUOUS]
   test_referral_detail.png · relation: conceptually_related_to
 - `Ismailia Health Connect UX & Structural Redesign` → `Reviewer M4.2 Progress Log`  [AMBIGUOUS]
@@ -725,18 +718,20 @@ Nodes (3): NotificationMenu(), NotificationMenuProps, mockNotifications
   .agents/reviewer_m5_2/BRIEFING.md · relation: references
 - `Reviewer M5.2 Handoff (Re-Evaluation)` → `Reviewer M5.2 Adversarial Review Report`  [AMBIGUOUS]
   .agents/reviewer_m5_2/report.md · relation: conceptually_related_to
+- `Auditor M3 Briefing` → `Auditor M1 Briefing`  [AMBIGUOUS]
+  .agents/auditor_m3/BRIEFING.md · relation: conceptually_related_to
 - `Android Studio Setup Guide` → `Antigravity Setup Guide`  [AMBIGUOUS]
   .agents/skills/firebase-basics/references/setup/android_studio.md · relation: conceptually_related_to
 - `Challenger M5-1 Handoff Report (Bed Management)` → `Challenger M5-1 Tier 5 White-Box Adversarial Hardening Report`  [AMBIGUOUS]
   .agents/challenger_m5_1/report.md · relation: conceptually_related_to
+- `Auditor M1 Forensic Audit Report (App Shell)` → `Auditor M1 Report (Core Exception & Alignment Hardening)`  [AMBIGUOUS]
+  .agents/auditor_m1/report.md · relation: semantically_similar_to
 - `Auditor M1 Progress Log` → `Auditor M1 Report (Core Exception & Alignment Hardening)`  [AMBIGUOUS]
   .agents/auditor_m1/progress.md · relation: references
 - `Reviewer 2 (Milestone 1) Progress Log` → `Milestone 1 Review Report — Core Exception & Alignment Hardening`  [AMBIGUOUS]
   .agents/reviewer_m1_2/progress.md · relation: conceptually_related_to
-- `Auditor M5 Report (Project Acceptance Audit — INTEGRITY VIOLATION)` → `Auditor M5 Dispatch (Bed Management Forensic Audit Assignment)`  [AMBIGUOUS]
+- `Auditor M5 Dispatch (Bed Management Forensic Audit Assignment)` → `Auditor M5 Report (Project Acceptance Audit — INTEGRITY VIOLATION)`  [AMBIGUOUS]
   .agents/auditor_m5/report.md · relation: references
-- `Auditor M1 Briefing` → `Auditor M3 Briefing`  [AMBIGUOUS]
-  .agents/auditor_m3/BRIEFING.md · relation: conceptually_related_to
 - `Dashboard.tsx Role-Cockpit Component Decomposition` → `M5 Explorer 1 Handoff: Bed Management Concurrency & Decomposition`  [AMBIGUOUS]
   .agents/explorer_m5_1/handoff.md · relation: conceptually_related_to
 - `subscribe() Client Pattern` → `Data Connect Android SDK Reference`  [AMBIGUOUS]
@@ -745,7 +740,7 @@ Nodes (3): NotificationMenu(), NotificationMenuProps, mockNotifications
   playwright_no_card.png · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **618 isolated node(s):** `name`, `lint`, `build`, `build:watch`, `serve` (+613 more)
+- **620 isolated node(s):** `functions`, `admin`, `scheduler_1`, `sla_1`, `db` (+615 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **68 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -760,9 +755,9 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `ReferralActionConsole.tsx` and `ActionConsole.tsx`?**
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
-- **What is the exact relationship between `Auditor M1 Forensic Audit Report (App Shell)` and `Auditor M1 Report (Core Exception & Alignment Hardening)`?**
-  _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `Permission Denied Toast Notification` and `System Admin Role Badge`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `Ismailia Health Connect UX & Structural Redesign` and `Reviewer M4.2 Progress Log`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
+- **What is the exact relationship between `Reviewer M5.2 Briefing` and `Reviewer M5.2 Adversarial Review Report`?**
+  _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
