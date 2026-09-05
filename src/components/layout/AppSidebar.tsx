@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { User, Facility, Referral } from '../../types';
 import { RoleBadge } from './RoleBadge';
@@ -25,7 +25,9 @@ import {
   Hospital,
   Flame,
   CheckCircle2,
-  X
+  X,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { isDoctorRole, isNurseRole } from '../../types';
 import { cn } from '../../lib/utils';
@@ -71,6 +73,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const isNurse = isNurseRole(user.role) || user.role === 'owner' || user.role === 'er_room';
   const isHeadOfDept = user.role === 'head_of_department' || user.role === 'owner';
   const isLeadership = ['hospital_manager', 'deputy_manager', 'medical_director', 'owner', 'system_admin'].includes(user.role);
+
+  const [adminExpanded, setAdminExpanded] = useState(false);
 
   // Active referrals count for user's facility or network
   const activeReferralsCount = referrals.filter(r =>
@@ -340,35 +344,42 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         {(isHeadOfDept || isLeadership) && (
           <div>
             {(!collapsed || isMobile) && (
-              <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-                Administration
-              </p>
+              <button
+                type="button"
+                onClick={() => setAdminExpanded(!adminExpanded)}
+                className="w-full flex items-center justify-between px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              >
+                <span>Settings & Admin</span>
+                {adminExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
             )}
-            <div className="space-y-1">
-              {isHeadOfDept && (
-                <Link
-                  to="/department"
-                  onClick={onCloseMobile}
-                  className={navLinkClass(isActivePath('/department'))}
-                  title={collapsed ? "Department" : undefined}
-                >
-                  <Activity className="w-5 h-5 shrink-0" aria-hidden="true" />
-                  {(!collapsed || isMobile) && <span className="flex-1 truncate">Department</span>}
-                </Link>
-              )}
+            {((!collapsed || isMobile) ? adminExpanded : true) && (
+              <div className="space-y-1">
+                {isHeadOfDept && (
+                  <Link
+                    to="/department"
+                    onClick={onCloseMobile}
+                    className={navLinkClass(isActivePath('/department'))}
+                    title={collapsed ? "Department" : undefined}
+                  >
+                    <Activity className="w-5 h-5 shrink-0" aria-hidden="true" />
+                    {(!collapsed || isMobile) && <span className="flex-1 truncate">Department</span>}
+                  </Link>
+                )}
 
-              {isLeadership && (
-                <Link
-                  to="/facility-settings"
-                  onClick={onCloseMobile}
-                  className={navLinkClass(isActivePath('/facility-settings'))}
-                  title={collapsed ? "Facility Settings" : undefined}
-                >
-                  <Settings className="w-5 h-5 shrink-0" aria-hidden="true" />
-                  {(!collapsed || isMobile) && <span className="flex-1 truncate">Facility Settings</span>}
-                </Link>
-              )}
-            </div>
+                {isLeadership && (
+                  <Link
+                    to="/facility-settings"
+                    onClick={onCloseMobile}
+                    className={navLinkClass(isActivePath('/facility-settings'))}
+                    title={collapsed ? "Facility Settings" : undefined}
+                  >
+                    <Settings className="w-5 h-5 shrink-0" aria-hidden="true" />
+                    {(!collapsed || isMobile) && <span className="flex-1 truncate">Facility Settings</span>}
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
