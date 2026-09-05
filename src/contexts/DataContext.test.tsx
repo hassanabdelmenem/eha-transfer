@@ -88,4 +88,23 @@ describe('DataContext offline addReferral', () => {
     const val = screen.getByTestId('pending').textContent;
     expect(Number(val)).toBeGreaterThanOrEqual(1);
   });
+
+  it('logs but does not throw when caching the offline referral itself fails', async () => {
+    const db = await import('../lib/db');
+    vi.spyOn(db, 'saveOfflineReferral').mockRejectedValueOnce(new Error('quota exceeded'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { AuthProvider } = await import('./AuthContext');
+    render(
+      <AuthProvider>
+        <DataProvider>
+          <Consumer />
+        </DataProvider>
+      </AuthProvider>
+    );
+    act(() => { window.dispatchEvent(new Event('offline')); });
+
+    await act(async () => { screen.getByText('Add').click(); });
+
+    expect(errSpy).toHaveBeenCalledWith('Failed to cache offline referral', expect.any(Error));
+  });
 });
