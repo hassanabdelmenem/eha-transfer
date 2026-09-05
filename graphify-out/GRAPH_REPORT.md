@@ -1,7 +1,7 @@
 # Graph Report - eha-transfer  (2026-09-05)
 
 ## Corpus Check
-- 673 files · ~418,077 words
+- 673 files · ~418,019 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `10d17564`
+- Built from commit: `12ae741c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -213,14 +213,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `Referral` --shares_data_with--> `DataContext.tsx updateReferralStatus()`  [INFERRED]
   src/types/index.ts → .agents/explorer_m1_1/handoff.md
-- `RoleBasedDashboard()` --calls--> `AdminDashboard.tsx page (281 lines, system escalation console)`  [EXTRACTED]
-  src/App.tsx → .agents/explorer_m3_1/handoff.md
-- `RoleBasedDashboard()` --calls--> `ERDashboard.tsx page (269 lines, ER logistics workspace)`  [EXTRACTED]
-  src/App.tsx → .agents/explorer_m3_1/handoff.md
-- `Reviewer M3-2 Handoff Report` --references--> `ReferralList()`  [EXTRACTED]
-  .agents/reviewer_m3_2/handoff.md → src/components/referrals/ReferralList.tsx
-- `Survey 2 Report: Security & Access Control Audit` --references--> `FacilitySettingsPage()`  [EXTRACTED]
-  .agents/explorer_survey_2/report.md → src/pages/FacilitySettingsPage.tsx
+- `Survey 2 Report: Security & Access Control Audit` --references--> `NewReferralPage()`  [EXTRACTED]
+  .agents/explorer_survey_2/report.md → src/pages/NewReferralPage.tsx
+- `Explorer Survey-3 Handoff: Edge Cases & Test Infrastructure` --references--> `NewReferralPage()`  [EXTRACTED]
+  .agents/explorer_survey_3/handoff.md → src/pages/NewReferralPage.tsx
+- `Survey 1 Report: Codebase Architecture & Persona Lifecycle` --references--> `Role`  [EXTRACTED]
+  .agents/explorer_survey_1/report.md → src/types/index.ts
+- `Survey 2 Report: Security & Access Control Audit` --references--> `Role`  [EXTRACTED]
+  .agents/explorer_survey_2/report.md → src/types/index.ts
 
 ## Import Cycles
 - None detected.
@@ -774,13 +774,13 @@ Cohesion: 0.18
 Nodes (9): ActiveInpatientCensusProps, mockAdmissions, FacilityAnalyticsChartsProps, DirectAdmission, mockAddDirectAdmission, mockDirectAdmission, mockDischargeDirectAdmission, mockFacility (+1 more)
 
 ## Ambiguous Edges - Review These
-- `ReferralDetailPage.tsx` → `ReferralDetail.tsx`  [AMBIGUOUS]
-  .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
 - `ECGViewerOverlay.tsx` → `ECGViewer.tsx`  [AMBIGUOUS]
   .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
 - `ReferralTimeline.tsx` → `Timeline.tsx`  [AMBIGUOUS]
   .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
 - `ReferralActionConsole.tsx` → `ActionConsole.tsx`  [AMBIGUOUS]
+  .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
+- `ReferralDetailPage.tsx` → `ReferralDetail.tsx`  [AMBIGUOUS]
   .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
 - `Permission Denied Toast Notification` → `System Admin Role Badge`  [AMBIGUOUS]
   test_referral_detail.png · relation: conceptually_related_to
@@ -794,38 +794,38 @@ Nodes (9): ActiveInpatientCensusProps, mockAdmissions, FacilityAnalyticsChartsPr
   .agents/auditor_m3/BRIEFING.md · relation: conceptually_related_to
 - `Android Studio Setup Guide` → `Antigravity Setup Guide`  [AMBIGUOUS]
   .agents/skills/firebase-basics/references/setup/android_studio.md · relation: conceptually_related_to
+- `Challenger M5-1 Handoff Report (Bed Management)` → `Challenger M5-1 Tier 5 White-Box Adversarial Hardening Report`  [AMBIGUOUS]
+  .agents/challenger_m5_1/report.md · relation: conceptually_related_to
 - `Auditor M1 Forensic Audit Report (App Shell)` → `Auditor M1 Report (Core Exception & Alignment Hardening)`  [AMBIGUOUS]
   .agents/auditor_m1/report.md · relation: semantically_similar_to
 - `Auditor M1 Progress Log` → `Auditor M1 Report (Core Exception & Alignment Hardening)`  [AMBIGUOUS]
   .agents/auditor_m1/progress.md · relation: references
-- `Challenger M5-1 Tier 5 White-Box Adversarial Hardening Report` → `Challenger M5-1 Handoff Report (Bed Management)`  [AMBIGUOUS]
-  .agents/challenger_m5_1/report.md · relation: conceptually_related_to
-- `Reviewer 2 (Milestone 1) Progress Log` → `Milestone 1 Review Report — Core Exception & Alignment Hardening`  [AMBIGUOUS]
-  .agents/reviewer_m1_2/progress.md · relation: conceptually_related_to
 - `Dashboard.tsx Role-Cockpit Component Decomposition` → `M5 Explorer 1 Handoff: Bed Management Concurrency & Decomposition`  [AMBIGUOUS]
   .agents/explorer_m5_1/handoff.md · relation: conceptually_related_to
 - `Auditor M5 Dispatch (Bed Management Forensic Audit Assignment)` → `Auditor M5 Report (Project Acceptance Audit — INTEGRITY VIOLATION)`  [AMBIGUOUS]
   .agents/auditor_m5/report.md · relation: references
+- `Reviewer 2 (Milestone 1) Progress Log` → `Milestone 1 Review Report — Core Exception & Alignment Hardening`  [AMBIGUOUS]
+  .agents/reviewer_m1_2/progress.md · relation: conceptually_related_to
 - `subscribe() Client Pattern` → `Data Connect Android SDK Reference`  [AMBIGUOUS]
   .agents/skills/firebase-data-connect/reference/sdk_android.md · relation: conceptually_related_to
 - `RBAC Filter (Role-Based Access Control)` → `All Referrals Grid Empty/Skeleton Loading State`  [AMBIGUOUS]
   playwright_no_card.png · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **669 isolated node(s):** `ReferralListProps`, `BANNER_TINT_CLASSES`, `ReferralDetailHeaderProps`, `StepDiagnosticsReviewProps`, `ALLOWED_EXTENSIONS` (+664 more)
+- **669 isolated node(s):** `StepDiagnosticsReviewProps`, `ALLOWED_EXTENSIONS`, `ALLOWED_MIME_TYPES`, `DEFAULT_VITALS`, `AppSidebarProps` (+664 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **60 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **What is the exact relationship between `ReferralDetailPage.tsx` and `ReferralDetail.tsx`?**
-  _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `ECGViewerOverlay.tsx` and `ECGViewer.tsx`?**
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `ReferralTimeline.tsx` and `Timeline.tsx`?**
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `ReferralActionConsole.tsx` and `ActionConsole.tsx`?**
+  _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
+- **What is the exact relationship between `ReferralDetailPage.tsx` and `ReferralDetail.tsx`?**
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `Permission Denied Toast Notification` and `System Admin Role Badge`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
