@@ -1,33 +1,64 @@
-import { Referral } from '../types';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from './firebase';
+import { Notification, Referral, Role } from '../types';
 import { getOfflineReferrals, deleteOfflineReferral } from './db';
 
+// Matches the shape of DataContext's createNotification exactly (not a
+// widened `string`/`string[]`), so that callback can be passed here directly
+// without a TS2322 mismatch on `type`/`targetRoles`.
 export type CreateNotificationFn = (params: {
   title: string;
   message: string;
-  type: string;
+  type: Notification['type'];
   referralId: string;
   facilityId: string;
-  targetRoles?: string[];
+  targetRoles?: Role[];
   departments?: string[];
 }) => void;
 
+/**
+ * Flushes referrals created while offline (cached in IndexedDB by
+ * addReferral) to Firestore. This is the durable fallback for the case
+ * db.ts exists for: Firestore runs without persistent cache
+ * (src/lib/firebase.ts), so a referral created offline lives only in this
+ * IndexedDB cache until the tab reconnects -- if the tab closes or crashes
+ * first, this cache is the only copy.
+ *
+ * The write uses the referral's own client-generated id, so re-running this
+ * after a partial failure (some referrals synced, some didn't) is safe: a
+ * referral already present in Firestore is just overwritten with the same
+ * data. The live onSnapshot listeners in DataContext pick up each synced
+ * referral on their own once the write lands, so this does not touch React
+ * state directly.
+ */
 export async function syncOfflineReferrals(options: {
-  addReferralsToState: (refs: Referral[]) => void;
   createNotification: CreateNotificationFn;
   facilities: any[];
   setPendingSyncCount?: (n: number) => void;
 }) {
-  const { addReferralsToState, createNotification, facilities, setPendingSyncCount } = options;
-  // build a quick lookup map to avoid repeated linear scans when emitting notifications for many referrals
+  const { createNotification, facilities, setPendingSyncCount } = options;
   const facilitiesById = new Map(facilities.map(f => [f.id, f]));
   const offlineReferrals = await getOfflineReferrals();
   if (!offlineReferrals || offlineReferrals.length === 0) return;
 
-  // Merge into state (new ones first)
-  addReferralsToState(offlineReferrals);
+  const synced: Referral[] = [];
 
-  // Emit notifications for each synced referral
   for (const ref of offlineReferrals) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await setDoc(doc(db, 'referrals', ref.id), ref);
+      // eslint-disable-next-line no-await-in-loop
+      await deleteOfflineReferral(ref.id);
+      synced.push(ref);
+    } catch (err) {
+      // Left in IndexedDB for the next sync attempt (next reconnect, or next
+      // app load) rather than lost -- a failed write here means the referral
+      // still only exists in this cache.
+      console.warn('Failed syncing offline referral', ref.id, err);
+    }
+  }
+
+  for (const ref of synced) {
     if (ref.receivingFacilityId === 'auto' && ref.candidateFacilityIds) {
       for (const candidateId of ref.candidateFacilityIds) {
         createNotification({
@@ -53,18 +84,8 @@ export async function syncOfflineReferrals(options: {
     }
   }
 
-  // Remove offline entries
-  for (const ref of offlineReferrals) {
-    try {
-      // best-effort
-      // eslint-disable-next-line no-await-in-loop
-      await deleteOfflineReferral(ref.id);
-    } catch (err) {
-      // swallow
-      // eslint-disable-next-line no-console
-      console.warn('Failed deleting offline referral', err);
-    }
+  if (setPendingSyncCount) {
+    const remaining = await getOfflineReferrals();
+    setPendingSyncCount(remaining.length);
   }
-
-  if (setPendingSyncCount) setPendingSyncCount(0);
 }
