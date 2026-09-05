@@ -8,6 +8,7 @@ import { toastError } from '../lib/toast';
 import { formatDateTime } from '../lib/utils';
 import { SLA_MINUTES, needsAutoEscalation } from '../lib/sla';
 import { capacityEscalationReason, describeCapacityEscalation } from '../lib/routing';
+import { isNotificationRecipient } from '../lib/notificationRecipients';
 // Type-only: `isolatedModules` is on, so esbuild transpiles this file without
 // cross-file type information and would emit a runtime import for a binding that
 // only exists at compile time.
@@ -426,36 +427,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // once, so the recipient set is built in a single pass instead.
   const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, facilityIds?: string[], targetRoles?: Role[], departments?: string[], targetUserIds?: string[] }) => {
     const targetFacilityIds = params.facilityIds ?? [params.facilityId];
-    const relevantUsers = users.filter(u => {
-       // Named individuals (e.g. the doctor who raised the referral) always get
-       // it, regardless of role or department -- those filters exist to scope a
-       // role-based broadcast, not to gate someone addressed by name.
-       if (params.targetUserIds?.includes(u.id)) return true;
-       if (u.role === 'owner' || u.role === 'system_admin') return true;
-       if (!u.facilityId || !targetFacilityIds.includes(u.facilityId)) return false;
+    const relevantUsers = users.filter(u => isNotificationRecipient(
+      u,
+      // Keyed off the recipient's own facility, not the first one in the list,
+      // so delegated on-call cover still resolves in a multi-facility fan-out.
+      shiftAssignmentsByFacility.get(u.facilityId || '') || [],
+      { facilityIds: targetFacilityIds, targetRoles: params.targetRoles, departments: params.departments, targetUserIds: params.targetUserIds }
+    ));
 
-       let isDelegatedTarget = false;
-       if (params.targetRoles?.includes('head_of_department') && ['consultant', 'specialist', 'resident'].includes(u.role)) {
-          // Keyed off the recipient's own facility, not the first one in the list,
-          // so delegated on-call cover still resolves in a multi-facility fan-out.
-          const assignments = shiftAssignmentsByFacility.get(u.facilityId) || [];
-          const assignment = assignments.find(s => 
-            s.assignedUserId === u.id && 
-            (!params.departments || params.departments.includes(s.department))
-          );
-          if (assignment) {
-             isDelegatedTarget = true;
-          }
-       }
-
-       if (params.targetRoles && !params.targetRoles.includes(u.role) && !isDelegatedTarget) return false;
-       // A delegated target is covering the requested department per shiftAssignments,
-       // already confirmed above -- their own department must not be re-checked here,
-       // or on-call coverage for a department other than their own never notifies.
-       if (!isDelegatedTarget && params.departments && u.department && !params.departments.includes(u.department)) return false;
-       return true;
-    });
-    
     const batch = writeBatch(db);
     const createdAt = new Date().toISOString();
     const createdAtMs = Date.parse(createdAt);
