@@ -618,10 +618,10 @@
     "semantic_hash": "23e82f61a5bacaa510aa04a4bac30a7c"
   },
   "src/components/layout/AppSidebar.tsx": {
-    "mtime": 1788106853.3717263,
-    "seen": 1788540341.5709188,
-    "ast_hash": "faa666518263168220ada357d268f64d",
-    "semantic_hash": "faa666518263168220ada357d268f64d"
+    "mtime": 1788626220.7133594,
+    "seen": 1788626614.7806048,
+    "ast_hash": "915bdbfdc0073ba2bcce6d0b6016a1fb",
+    "semantic_hash": ""
   },
   "src/components/layout/NotificationMenu.test.tsx": {
     "mtime": 1788617789.8490362,
@@ -750,16 +750,16 @@
     "semantic_hash": "2874523b1176237455d0d3bcb087810f"
   },
   "src/components/referrals/actions/PatientConsentCard.tsx": {
-    "mtime": 1787981975.797791,
-    "seen": 1788540341.570934,
-    "ast_hash": "0a99180953e58518845c73922a021cb5",
-    "semantic_hash": "0a99180953e58518845c73922a021cb5"
+    "mtime": 1788626363.3295815,
+    "seen": 1788626614.7806232,
+    "ast_hash": "4d6e284e6a86e284b77bd03266eaf4f4",
+    "semantic_hash": ""
   },
   "src/components/referrals/actions/ReferralActionConsole.tsx": {
-    "mtime": 1787982012.6899781,
-    "seen": 1788540341.570934,
-    "ast_hash": "191980e50713ed1156368e4ad9221d83",
-    "semantic_hash": "191980e50713ed1156368e4ad9221d83"
+    "mtime": 1788626375.599587,
+    "seen": 1788626614.780624,
+    "ast_hash": "11e412f7e8592557cefd8d72f62c4c6d",
+    "semantic_hash": ""
   },
   "src/components/referrals/actions/RejectionModal.test.tsx": {
     "mtime": 1787982082.5991702,
@@ -773,12 +773,6 @@
     "ast_hash": "ada979d8340f84df94b1014ac0975ab1",
     "semantic_hash": "ada979d8340f84df94b1014ac0975ab1"
   },
-  "src/components/referrals/detail/ClinicalSummaryCard.tsx": {
-    "mtime": 1787981873.4475203,
-    "seen": 1788540341.570936,
-    "ast_hash": "c6f2fce5e1fcbee7a6cd7ce0f9b606cc",
-    "semantic_hash": "c6f2fce5e1fcbee7a6cd7ce0f9b606cc"
-  },
   "src/components/referrals/detail/EscalationAlertBanner.tsx": {
     "mtime": 1787981866.0252612,
     "seen": 1788540341.5709372,
@@ -786,10 +780,10 @@
     "semantic_hash": "8d08a90d5adbd0158aac4f4c9b4e1b68"
   },
   "src/components/referrals/detail/MobileActionFooter.tsx": {
-    "mtime": 1787982003.475261,
-    "seen": 1788540341.570938,
-    "ast_hash": "daf4d7e04b181ef339dc581314fdb5bd",
-    "semantic_hash": "daf4d7e04b181ef339dc581314fdb5bd"
+    "mtime": 1788626468.2768478,
+    "seen": 1788626614.780638,
+    "ast_hash": "dc50462cdce201b524fb85bf5c4f1b00",
+    "semantic_hash": ""
   },
   "src/components/referrals/detail/ReferralDetailHeader.test.tsx": {
     "mtime": 1787982105.321062,
@@ -828,10 +822,10 @@
     "semantic_hash": "258b48c2777f330adbdc7f77a5891a1e"
   },
   "src/components/referrals/wizard/StepDiagnosticsReview.tsx": {
-    "mtime": 1787955260.3426468,
-    "seen": 1788540341.570942,
-    "ast_hash": "8b127fb21e36b524358d4867035f27e8",
-    "semantic_hash": "8b127fb21e36b524358d4867035f27e8"
+    "mtime": 1788626443.0094647,
+    "seen": 1788626614.7806442,
+    "ast_hash": "f8bd3123bb9227ceb0e829a29114acc7",
+    "semantic_hash": ""
   },
   "src/components/referrals/wizard/StepPatientDemographics.tsx": {
     "mtime": 1787955813.185141,
@@ -1254,10 +1248,10 @@
     "semantic_hash": "6d65b73fedaa233dea87b417eeab72a0"
   },
   "src/pages/NewReferralPage.tsx": {
-    "mtime": 1787958298.3378165,
-    "seen": 1788540341.570994,
-    "ast_hash": "82063f4215229a0ea917bd67475e73bd",
-    "semantic_hash": "82063f4215229a0ea917bd67475e73bd"
+    "mtime": 1788626451.7552164,
+    "seen": 1788626614.780716,
+    "ast_hash": "28e3ae22b908cf6c11e6e6d76f0b02f7",
+    "semantic_hash": ""
   },
   "src/pages/NewReferralPage.upload.test.tsx": {
     "mtime": 1787424738.794913,
@@ -1296,10 +1290,10 @@
     "semantic_hash": "40cdf5c1ed073f903d60248aad72a10e"
   },
   "src/pages/ReferralDetailPage.tsx": {
-    "mtime": 1788237017.0751905,
-    "seen": 1788540341.5709991,
-    "ast_hash": "bc122b869dc5c6956465773d7e3bc0f1",
-    "semantic_hash": "bc122b869dc5c6956465773d7e3bc0f1"
+    "mtime": 1788626315.5642655,
+    "seen": 1788626614.780721,
+    "ast_hash": "923effca1a75fdea74885babd6ab484a",
+    "semantic_hash": ""
   },
   "src/pages/ReferralWorkspacePane.tsx": {
     "mtime": 1788106972.967464,
@@ -4095,6 +4089,48 @@
     "mtime": 1788621863.9873326,
     "seen": 1788622449.732425,
     "ast_hash": "6c405e639e65123d188b73cbb1c8337f",
+    "semantic_hash": ""
+  },
+  "src/components/referrals/detail/ClinicalAttachmentsCard.tsx": {
+    "mtime": 1788626285.437381,
+    "seen": 1788626614.7806258,
+    "ast_hash": "77f5b9977a6a193e3c2881df1a895e1a",
+    "semantic_hash": ""
+  },
+  "src/components/referrals/detail/ClinicalHistoryCard.tsx": {
+    "mtime": 1788626265.691755,
+    "seen": 1788626614.7806349,
+    "ast_hash": "17d3378f9c1d02d9b0a7e65503057d41",
+    "semantic_hash": ""
+  },
+  "src/components/referrals/detail/ClinicalMedicationsCard.tsx": {
+    "mtime": 1788626274.6932487,
+    "seen": 1788626614.7806358,
+    "ast_hash": "9a95ef9e497eb90bf6dcaf2a2c3d8428",
+    "semantic_hash": ""
+  },
+  "src/components/referrals/detail/DepartmentReviewCard.tsx": {
+    "mtime": 1788626299.4090953,
+    "seen": 1788626614.780637,
+    "ast_hash": "e610bfec01ea3b440209924a6fd44e54",
+    "semantic_hash": ""
+  },
+  "src/components/referrals/detail/TransferContextCard.tsx": {
+    "mtime": 1788626255.9882832,
+    "seen": 1788626614.780641,
+    "ast_hash": "8386bee158c576702dab33fa75bc3117",
+    "semantic_hash": ""
+  },
+  ".github/workflows/claude-code-review.yml": {
+    "mtime": 1788625127.65047,
+    "seen": 1788626614.781016,
+    "ast_hash": "d40e7779902a9f5a759bcade951e3b67",
+    "semantic_hash": ""
+  },
+  ".github/workflows/claude.yml": {
+    "mtime": 1788625127.6506844,
+    "seen": 1788626614.781016,
+    "ast_hash": "995b9db52dace3af043903f678a61551",
     "semantic_hash": ""
   }
 }
