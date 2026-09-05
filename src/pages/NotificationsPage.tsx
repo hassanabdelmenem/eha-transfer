@@ -52,7 +52,7 @@ export const NotificationsPage: React.FC = () => {
     <div className="max-w-5xl mx-auto">
       {/* 2d/3d: unified inbox, same cards at every width -- edge-to-edge on
           phones, contained in a rounded header card once there's room. */}
-      <div className="-mt-4 -mx-4 sm:mt-0 sm:mx-0 sm:rounded-xl sm:overflow-hidden">
+      <div className="-mt-4 sm:mt-0 rounded-2xl overflow-hidden">
         <div className="bg-slate-950 text-white px-4 py-4 sm:px-6 flex items-center justify-between">
           <h1 className="text-lg sm:text-xl font-heading font-semibold">Inbox</h1>
           {unreadCount > 0 && (

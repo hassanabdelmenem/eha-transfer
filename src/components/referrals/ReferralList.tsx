@@ -253,7 +253,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
   return (
     <div className="w-full">
       {/* Mobile View */}
-      <div className="block md:hidden space-y-3">
+      <div className="block md:hidden space-y-3 p-3.5 sm:p-0">
         {filtered.map(referral => {
           const fromFacility = facilityMap.get(referral.referringFacilityId);
           return (

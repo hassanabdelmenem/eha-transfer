@@ -10,6 +10,7 @@ import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { Toaster } from './components/ui/Toaster';
+import { SkeletonGroup, Skeleton } from './components/ui/Skeleton';
 
 // Each page is imported by its named export.
 //
@@ -41,11 +42,25 @@ const PendingVerification = lazy(() => import('./pages/PendingVerification').the
 // Shown while Firebase restores a session. Without it, a refresh on any deep
 // link renders one frame with user === null and redirects to /login.
 const AuthLoading = () => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-    <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
-      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Loading</p>
-    </div>
+  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6">
+    <SkeletonGroup className="w-full max-w-4xl space-y-6" label="Loading application...">
+      {/* Header/Nav mimic */}
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-10 w-10 rounded-full" />
+      </div>
+      {/* Content mimic */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+        </div>
+      </div>
+    </SkeletonGroup>
   </div>
 );
 

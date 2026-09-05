@@ -158,7 +158,7 @@ export const NetworkDirectoryPage: React.FC = () => {
       {/* 2e/3d: unified directory header + on-call + facility list, same
           cards at every width -- edge-to-edge on phones, contained in a
           rounded header card once there's room. */}
-      <div className="-mt-4 -mx-4 sm:mt-0 sm:mx-0 sm:rounded-xl sm:overflow-hidden space-y-0">
+      <div className="-mt-4 sm:mt-0 rounded-2xl overflow-hidden space-y-0">
         <div className="bg-slate-950 text-white px-4 pt-4 pb-4 sm:px-6 space-y-3">
           <div>
             <h1 className="text-lg sm:text-xl font-heading font-semibold">{canViewNetwork ? 'Network Directory' : 'Hospital Directory'}</h1>

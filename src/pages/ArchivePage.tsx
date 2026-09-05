@@ -111,7 +111,7 @@ export const ArchivePage: React.FC = () => {
       {/* 3b/3d: unified archive header + stat toggles + search + case list,
           same cards at every width -- edge-to-edge on phones, contained in a
           rounded header card once there's room, cases reflow into a grid. */}
-      <div className="-mt-4 -mx-4 sm:mt-0 sm:mx-0 sm:rounded-xl sm:overflow-hidden shrink-0">
+      <div className="-mt-4 sm:mt-0 rounded-2xl overflow-hidden shrink-0">
         <div className="bg-slate-950 text-white px-4 pt-4 pb-4 sm:px-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Archive className="w-5 h-5 text-white/60 hidden sm:block" />
