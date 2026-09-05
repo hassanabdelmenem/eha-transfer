@@ -55,12 +55,20 @@ exports.sendNotification = functions.https.onCall(async (request) => {
     // it — not that `facilityId` (the notification's fan-out target) is actually
     // one of the facilities involved. Without this, any party to any referral
     // could direct a notification blast at an unrelated facility.
+    //
+    // 'auto' is filtered out rather than left in: it is the sentinel an
+    // auto-routed referral's own receivingFacilityId holds before a facility has
+    // claimed it, not a real facility. Left in, it would trivially satisfy this
+    // check for `facilityId: 'auto'` on any auto-routed referral -- harmless
+    // today only because no real facility document is ever named 'auto', so the
+    // users query below just returns nobody. The guard's intent is a real,
+    // related facility, so 'auto' must never count as one.
     const referralFacilityIds = [
         refData === null || refData === void 0 ? void 0 : refData.referringFacilityId,
         refData === null || refData === void 0 ? void 0 : refData.receivingFacilityId,
         ...((refData === null || refData === void 0 ? void 0 : refData.candidateFacilityIds) || []),
-    ];
-    if (!referralFacilityIds.includes(facilityId)) {
+    ].filter(id => id && id !== 'auto');
+    if (facilityId === 'auto' || !referralFacilityIds.includes(facilityId)) {
         throw new functions.https.HttpsError('permission-denied', 'Target facility is not related to this referral.');
     }
     // 2. Fetch users at the target facility
