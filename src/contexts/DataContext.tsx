@@ -13,6 +13,8 @@ import { capacityEscalationReason, describeCapacityEscalation } from '../lib/rou
 // only exists at compile time.
 import type { CapacityEscalationReason } from '../lib/routing';
 import { collection, doc, setDoc, getDocs, onSnapshot, updateDoc, deleteDoc, writeBatch, increment, runTransaction, query, where, orderBy, limit as firestoreLimit, startAfter } from 'firebase/firestore';
+import { saveOfflineReferral } from '../lib/db';
+import { syncOfflineReferrals } from '../lib/offlineSync';
 
 // Roles at the referring facility trusted to withdraw a referral they didn't personally
 // create. Exported so the UI can gate the Cancel control identically to the rules below,
@@ -442,7 +444,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
        }
 
        if (params.targetRoles && !params.targetRoles.includes(u.role) && !isDelegatedTarget) return false;
-       if (params.departments && u.department && !params.departments.includes(u.department)) return false;
+       // A delegated target is covering the requested department per shiftAssignments,
+       // already confirmed above -- their own department must not be re-checked here,
+       // or on-call coverage for a department other than their own never notifies.
+       if (!isDelegatedTarget && params.departments && u.department && !params.departments.includes(u.department)) return false;
        return true;
     });
     
@@ -467,6 +472,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     batch.commit().catch(writeFailed("Could not send notifications for that update."));
   }, [users, shiftAssignmentsByFacility]);
+
+  // Flushes referrals cached in IndexedDB while offline (see addReferral) to
+  // Firestore. Runs on reconnect, and once data is ready in case referrals were
+  // stranded by a page reload/crash during a prior offline session and the app
+  // is already online by the time it next loads.
+  //
+  // `facilities` gets a new array reference on every facilities onSnapshot
+  // fire, so this effect re-runs far more often than "isOnline just became
+  // true" -- e.g. once per bed-capacity update anywhere in the network. The
+  // in-flight ref guards against two overlapping runs both reading the same
+  // still-cached referral before either has deleted it, which would write it
+  // twice (harmless, same id) and send its notification batch twice (not
+  // harmless -- every recipient sees the alert twice).
+  const offlineSyncInFlightRef = useRef(false);
+  useEffect(() => {
+    if (!isOnline || dataLoading || offlineSyncInFlightRef.current) return;
+    offlineSyncInFlightRef.current = true;
+    syncOfflineReferrals({ createNotification, facilities, setPendingSyncCount })
+      .catch(err => console.error('Failed to sync offline referrals', err))
+      .finally(() => { offlineSyncInFlightRef.current = false; });
+  }, [isOnline, dataLoading, createNotification, facilities]);
 
   const updateUserVerified = useCallback((id: string, verified: boolean) => {
     updateDoc(doc(db, 'users', id), { verified }).catch(writeFailed("Could not change that user's verification status."));
@@ -664,7 +690,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setDoc(doc(db, 'referrals', newReferral.id), newReferral).catch(writeFailed("Could not create the referral."));
     if (!isOnline) {
+      // Firestore runs without persistent cache here (src/lib/firebase.ts), so the
+      // write above only lives in memory until it succeeds -- closing the tab or a
+      // crash before reconnect loses it with no trace. Cache it in IndexedDB as the
+      // durable copy; syncOfflineReferrals flushes it to Firestore on reconnect.
+      saveOfflineReferral(newReferral).catch(err => console.error('Failed to cache offline referral', err));
       setPendingSyncCount(prev => prev + 1);
+
+      // Notifications are deferred entirely to syncOfflineReferrals here. The
+      // Firestore SDK queues writes made while offline and replays them itself
+      // once the network returns, so a batch.commit() attempted here would
+      // eventually succeed on its own -- and syncOfflineReferrals sends its own
+      // notification batch for this same cached referral once it flushes.
+      // Sending here too would double-notify every recipient for one referral.
+      return;
     }
 
     // Generate notification for receiving facility managers/heads
