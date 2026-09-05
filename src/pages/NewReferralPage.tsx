@@ -453,11 +453,11 @@ export const NewReferralPage: React.FC = () => {
         onStepClick={handleStepClick}
       />
 
-      {/* Form Container Rendering All 4 Modular Steps */}
+      {/* Form Container Rendering One Step at a Time */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* STEP 1: Destination & Priority */}
-        <div ref={step1Ref} id="step-1" className="scroll-mt-6">
-          <StepDestinationPriority
+        {currentStep === 1 && (
+          <div ref={step1Ref} id="step-1" className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <StepDestinationPriority
             receivingDepartments={receivingDepartments}
             setReceivingDepartments={setReceivingDepartments}
             isAutoRouting={isAutoRouting}
@@ -481,27 +481,30 @@ export const NewReferralPage: React.FC = () => {
             aiRankedFacilities={aiRankedFacilities}
             onRunAiTriage={handleRunAiTriage}
           />
-        </div>
+          </div>
+        )}
 
-        {/* STEP 2: Patient Identification & Demographics */}
-        <div ref={step2Ref} id="step-2" className="scroll-mt-6">
-          <StepPatientDemographics
+        {currentStep === 2 && (
+          <div ref={step2Ref} id="step-2" className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <StepPatientDemographics
             patientData={patientData}
             setPatientData={setPatientData}
           />
-        </div>
+          </div>
+        )}
 
-        {/* STEP 3: Clinical Vitals & Presentation */}
-        <div ref={step3Ref} id="step-3" className="scroll-mt-6">
-          <StepClinicalPresentation
+        {currentStep === 3 && (
+          <div ref={step3Ref} id="step-3" className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <StepClinicalPresentation
             patientData={patientData}
             setPatientData={setPatientData}
           />
-        </div>
+          </div>
+        )}
 
-        {/* STEP 4: Diagnostics & Review */}
-        <div ref={step4Ref} id="step-4" className="scroll-mt-6">
-          <StepDiagnosticsReview
+        {currentStep === 4 && (
+          <div ref={step4Ref} id="step-4" className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <StepDiagnosticsReview
             patientData={patientData}
             setPatientData={setPatientData}
             receivingDepartments={receivingDepartments}
@@ -514,13 +517,12 @@ export const NewReferralPage: React.FC = () => {
             sendCriticalAlert={sendCriticalAlert}
             reasonForReferral={reasonForReferral}
             isOnline={isOnline}
-            isSubmitting={isSubmitting}
-            onCancel={() => navigate(-1)}
           />
-        </div>
+          </div>
+        )}
 
-        {/* Mobile Stepper Navigation Footer */}
-        <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-4 space-y-2 rounded-xl">
+        {/* Global Wizard Footer (Desktop & Mobile) */}
+        <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-4 space-y-2 rounded-xl">
           <div className="flex gap-2">
             <button
               type="button"
@@ -540,11 +542,11 @@ export const NewReferralPage: React.FC = () => {
               </button>
             ) : (
               <button
-                type="button"
-                onClick={() => submitReferral(true)}
-                className="flex-1 min-h-[56px] rounded-lg bg-emerald-600 text-white text-lg font-bold shadow-md"
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 min-h-[56px] rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-bold shadow-md transition-colors disabled:opacity-50"
               >
-                Submit Referral
+                {isSubmitting ? 'Submitting...' : 'Submit Referral'}
               </button>
             )}
           </div>
