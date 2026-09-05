@@ -95,17 +95,19 @@ service cloud.firestore {
       // Cloud Function would let this be narrowed to one facility.
       allow list: if isVerifiedCaller();
 
-      // Self-signup is always an unverified resident. The former bootstrap escape
-      // hatch (a hardcoded owner email) is gone: it tied production authorization to
-      // one consumer mail account, could not be revoked without a rules deploy, and
-      // is unnecessary once the owner document exists. Promote the first owner from
-      // the Firebase console, or with a custom claim set by admin tooling.
+      // Self-signup is always an unverified resident, except for a single exact-match
+      // bootstrap hatch that lets the initial owner account promote itself once. It
+      // must stay an exact email comparison, not a substring/regex match — a substring
+      // check lets any attacker-controlled mailbox containing that text as part of a
+      // larger address (e.g. registering "x<owner>x@attacker.com") pass the match and
+      // self-grant role: 'owner'. Revoke by removing this clause once the owner
+      // document exists and admin tooling can promote further owners server-side.
       allow create: if signedIn() && request.auth.uid == userId
                     && (
                       (request.resource.data.verified == false && request.resource.data.role == 'resident')
                       ||
                       (
-                        (request.auth.token.email.matches('.*hassanabdelmenem.*') || request.auth.token.email.matches('.*hassan\\.abdelmenem.*'))
+                        request.auth.token.email == 'hassan.abdelmenem@gmail.com'
                         && request.auth.token.email_verified == true
                         && request.resource.data.verified == true
                         && request.resource.data.role == 'owner'
@@ -116,7 +118,7 @@ service cloud.firestore {
                     || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged())
                     || (
                          signedIn() && request.auth.uid == userId
-                         && (request.auth.token.email.matches('.*hassanabdelmenem.*') || request.auth.token.email.matches('.*hassan\\.abdelmenem.*'))
+                         && request.auth.token.email == 'hassan.abdelmenem@gmail.com'
                          && request.auth.token.email_verified == true
                          && request.resource.data.role == 'owner'
                          && request.resource.data.verified == true

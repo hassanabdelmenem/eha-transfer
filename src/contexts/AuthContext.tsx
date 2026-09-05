@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // string) sailed past the typeof guard and read as truthy, routing an
             // unverified account into the authenticated shell where every listener
             // then failed on the rules.
-            const isBootstrapAdmin = ((firebaseUser.email || '').includes('hassanabdelmenem') || (firebaseUser.email || '').includes('hassan.abdelmenem')) && firebaseUser.emailVerified;
+            const isBootstrapAdmin = firebaseUser.email === 'hassan.abdelmenem@gmail.com' && firebaseUser.emailVerified;
             
             let finalRole = (data?.role as User['role']) || 'resident';
             let finalVerified = data?.verified === true;
@@ -131,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Always create new users as non-owners by default. Owner assignment is
             // performed via emulator seeding or server-side admin tooling, not the
             // client. This prevents accidental client-side privilege escalation.
-            const isBootstrapAdmin = ((firebaseUser.email || '').includes('hassanabdelmenem') || (firebaseUser.email || '').includes('hassan.abdelmenem')) && firebaseUser.emailVerified;
+            const isBootstrapAdmin = firebaseUser.email === 'hassan.abdelmenem@gmail.com' && firebaseUser.emailVerified;
             newUser = {
               id: firebaseUser.uid,
               name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
