@@ -11,6 +11,21 @@ import {
 admin.initializeApp();
 const db = admin.firestore();
 
+// Firestore caps a single batch at 500 writes. Both notification fan-outs below
+// can exceed that at scale (a large facility roster, or a platform-wide
+// escalation sweep), so writes are committed in chunks rather than one batch.
+const FIRESTORE_BATCH_LIMIT = 500;
+
+async function commitInChunks(writes: Array<(batch: admin.firestore.WriteBatch) => void>): Promise<void> {
+  for (let i = 0; i < writes.length; i += FIRESTORE_BATCH_LIMIT) {
+    const batch = db.batch();
+    for (const write of writes.slice(i, i + FIRESTORE_BATCH_LIMIT)) {
+      write(batch);
+    }
+    await batch.commit();
+  }
+}
+
 interface NotificationParams {
   title: string;
   message: string;
@@ -46,15 +61,32 @@ export const sendNotification = functions.https.onCall(async (request) => {
   }
   const caller = callerSnap.data();
 
-  const isParty = 
-    caller?.role === 'owner' || 
-    caller?.role === 'system_admin' || 
-    refData?.referringFacilityId === caller?.facilityId || 
-    refData?.receivingFacilityId === caller?.facilityId || 
+  if (caller?.verified !== true) {
+    throw new functions.https.HttpsError('permission-denied', 'Caller account is not verified.');
+  }
+
+  const isParty =
+    caller?.role === 'owner' ||
+    caller?.role === 'system_admin' ||
+    refData?.referringFacilityId === caller?.facilityId ||
+    refData?.receivingFacilityId === caller?.facilityId ||
     (refData?.candidateFacilityIds || []).includes(caller?.facilityId);
 
   if (!isParty) {
     throw new functions.https.HttpsError('permission-denied', 'Caller is not a party to this referral.');
+  }
+
+  // The caller being a party to the referral only proves they may notify about
+  // it — not that `facilityId` (the notification's fan-out target) is actually
+  // one of the facilities involved. Without this, any party to any referral
+  // could direct a notification blast at an unrelated facility.
+  const referralFacilityIds = [
+    refData?.referringFacilityId,
+    refData?.receivingFacilityId,
+    ...((refData?.candidateFacilityIds || []) as string[]),
+  ];
+  if (!referralFacilityIds.includes(facilityId)) {
+    throw new functions.https.HttpsError('permission-denied', 'Target facility is not related to this referral.');
   }
 
   // 2. Fetch users at the target facility
@@ -64,12 +96,12 @@ export const sendNotification = functions.https.onCall(async (request) => {
   const shiftAssignmentsSnap = await db.collection('shiftAssignments').where('facilityId', '==', facilityId).get();
   const assignments = shiftAssignmentsSnap.docs.map(d => d.data());
 
-  const batch = db.batch();
-  let count = 0;
+  const writes: Array<(batch: admin.firestore.WriteBatch) => void> = [];
+  const nowIso = new Date().toISOString();
 
   usersSnap.forEach(userDoc => {
     const u = userDoc.data();
-    
+
     // System admins and owners always receive notifications if they happen to be listed at the target facility,
     // though typically they have no facility or act globally.
     if (u.role === 'owner' || u.role === 'system_admin') {
@@ -77,8 +109,8 @@ export const sendNotification = functions.https.onCall(async (request) => {
     } else {
       let isDelegatedTarget = false;
       if (targetRoles?.includes('head_of_department') && ['consultant', 'specialist', 'resident'].includes(u.role)) {
-        const assignment = assignments.find(s => 
-          s.assignedUserId === userDoc.id && 
+        const assignment = assignments.find(s =>
+          s.assignedUserId === userDoc.id &&
           (!departments || departments.includes(s.department))
         );
         if (assignment) {
@@ -87,29 +119,31 @@ export const sendNotification = functions.https.onCall(async (request) => {
       }
 
       if (targetRoles && !targetRoles.includes(u.role) && !isDelegatedTarget) return;
-      if (departments && u.department && !departments.includes(u.department)) return;
+      // A delegated target is covering the on-call department via shiftAssignments,
+      // already confirmed against `departments` above — their home department is
+      // irrelevant and must not be re-checked here, or on-call coverage never fires.
+      if (!isDelegatedTarget && departments && u.department && !departments.includes(u.department)) return;
     }
 
     // Prepare notification document
     const notifRef = db.collection('notifications').doc();
-    batch.set(notifRef, {
+    writes.push((batch) => batch.set(notifRef, {
       id: notifRef.id,
       userId: userDoc.id,
       title: title || 'Notification',
       message: message || '',
       type: type || 'info',
       read: false,
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
       referralId: referralId
-    });
-    count++;
+    }));
   });
 
-  if (count > 0) {
-    await batch.commit();
+  if (writes.length > 0) {
+    await commitInChunks(writes);
   }
 
-  return { success: true, count };
+  return { success: true, count: writes.length };
 });
 
 // ---------------------------------------------------------------------------
@@ -245,8 +279,7 @@ async function notifyEscalation(referral: admin.firestore.DocumentData): Promise
 
   const usersSnap = await db.collection('users').where('verified', '==', true).get();
 
-  const batch = db.batch();
-  let count = 0;
+  const writes: Array<(batch: admin.firestore.WriteBatch) => void> = [];
   const nowIso = new Date().toISOString();
 
   usersSnap.forEach((userDoc) => {
@@ -259,7 +292,7 @@ async function notifyEscalation(referral: admin.firestore.DocumentData): Promise
     if (!isGlobal && !isTargetedLocal) return;
 
     const notifRef = db.collection('notifications').doc();
-    batch.set(notifRef, {
+    writes.push((batch) => batch.set(notifRef, {
       id: notifRef.id,
       userId: userDoc.id,
       title: `Referral Escalated — No Response in ${SLA_MINUTES} Minutes`,
@@ -268,12 +301,11 @@ async function notifyEscalation(referral: admin.firestore.DocumentData): Promise
       read: false,
       createdAt: nowIso,
       referralId: referral.id,
-    });
-    count++;
+    }));
   });
 
-  if (count > 0) {
-    await batch.commit();
+  if (writes.length > 0) {
+    await commitInChunks(writes);
   } else {
     functions.logger.warn(`Referral ${referral.id} escalated but no recipient matched.`);
   }
