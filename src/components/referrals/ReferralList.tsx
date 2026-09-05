@@ -3,8 +3,6 @@ import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Referral } from '../../types';
 import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
-import { formatDateTime } from '../../lib/utils';
 import { isSlaTracked, secondsUntilSlaBreach } from '../../lib/sla';
 import { sortByWorkflow, priorityRailClass } from '../../lib/referralPriority';
 import { Link, useNavigate } from 'react-router-dom';
@@ -251,29 +249,6 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
       </Card>
     );
   }
-
-  const getPriorityBadge = (priority: Referral['priority']) => {
-    switch (priority) {
-      case 'emergency': return <Badge variant="danger">Emergency</Badge>;
-      case 'urgent': return <Badge variant="warning">Urgent</Badge>;
-      default: return <Badge variant="default">Routine</Badge>;
-    }
-  };
-
-  const getStatusBadge = (status: Referral['status']) => {
-    switch (status) {
-      case 'pending': return <Badge variant="warning">Pending</Badge>;
-      case 'accepted': return <Badge variant="info">Accepted</Badge>;
-      case 'patient_consented': return <Badge variant="info">Patient Consented</Badge>;
-      case 'rejected': return <Badge variant="danger">Rejected</Badge>;
-      case 'in_transit': return <Badge variant="info">In Transit</Badge>;
-      case 'arrived': return <Badge variant="info">Arrived</Badge>;
-      case 'admitted': return <Badge variant="success">Admitted</Badge>;
-      case 'discharged': return <Badge variant="default">Discharged</Badge>;
-      case 'cancelled': return <Badge variant="danger">Cancelled</Badge>;
-      default: return <Badge>{status}</Badge>;
-    }
-  };
 
   return (
     <div className="w-full">
