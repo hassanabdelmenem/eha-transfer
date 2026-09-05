@@ -300,49 +300,67 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
         </div>
 
         {/* Priority, Transfer Type, & Reason Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col gap-6 pt-4 border-t border-slate-100 dark:border-slate-800">
           {/* Clinical Priority */}
           <div>
-            <label htmlFor="priority" className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
               Clinical Priority <span className="text-critical-500">*</span>
             </label>
-            <select
-              id="priority"
-              className={`w-full rounded-lg border p-2.5 text-sm font-semibold outline-none focus:ring-2 ${
-                isEmergency
-                  ? 'border-critical-400 bg-critical-50 dark:bg-critical-950/40 text-critical-900 dark:text-critical-100 focus:ring-critical-500'
-                  : priority === 'urgent'
-                  ? 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 focus:ring-amber-500'
-                  : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-blue-500'
-              }`}
-              value={priority}
-              onChange={e => setPriority(e.target.value as ReferralPriority)}
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-h-[48px]">
               {PRIORITY_OPTIONS.map(p => (
-                <option key={p.value} value={p.value}>
+                <label
+                  key={p.value}
+                  className={`flex items-center justify-center gap-2 p-3 rounded-xl border font-semibold cursor-pointer transition-all ${
+                    priority === p.value
+                      ? p.value === 'emergency'
+                        ? 'border-critical-400 bg-critical-50 dark:bg-critical-950/40 text-critical-900 dark:text-critical-100 ring-2 ring-critical-500/20'
+                        : p.value === 'urgent'
+                        ? 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 ring-2 ring-amber-500/20'
+                        : 'border-blue-400 bg-blue-50 dark:bg-blue-900/40 text-blue-900 dark:text-blue-100 ring-2 ring-blue-500/20'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="priority"
+                    value={p.value}
+                    checked={priority === p.value}
+                    onChange={() => setPriority(p.value as ReferralPriority)}
+                    className="sr-only"
+                  />
                   {p.label}
-                </option>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* Transfer Type */}
           <div>
-            <label htmlFor="transferType" className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
               Transfer Type <span className="text-critical-500">*</span>
             </label>
-            <select
-              id="transferType"
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 p-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-              value={transferType}
-              onChange={e => setTransferType(e.target.value as ReferralTransferType)}
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-h-[48px]">
               {TRANSFER_TYPES.map(t => (
-                <option key={t.value} value={t.value}>
+                <label
+                  key={t.value}
+                  className={`flex items-center justify-center gap-2 p-3 rounded-xl border font-semibold cursor-pointer transition-all text-sm ${
+                    transferType === t.value
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/40 text-blue-900 dark:text-blue-100 ring-2 ring-blue-500/20'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="transferType"
+                    value={t.value}
+                    checked={transferType === t.value}
+                    onChange={() => setTransferType(t.value as ReferralTransferType)}
+                    className="sr-only"
+                  />
                   {t.label}
-                </option>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* Main Reason for Referral */}
