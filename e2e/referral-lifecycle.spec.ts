@@ -14,7 +14,7 @@ test.describe('Complete Referral Lifecycle Journey', () => {
 
     const form = page.locator('form');
 
-    // Select target department: ICU
+    // Step 1: Destination & Priority (default step) — select target department: ICU
     const icuDeptBtn = form.getByRole('button', { name: 'ICU', exact: true });
     await icuDeptBtn.click();
 
@@ -27,40 +27,49 @@ test.describe('Complete Referral Lifecycle Journey', () => {
 
     // Bed type & Clinical priority
     await form.locator('#requiredBedType').selectOption('ICU');
-    await form.locator('#priority').selectOption('urgent');
+    await form.getByRole('radio', { name: /Urgent/i }).check({ force: true });
     await form.locator('#reasonForReferral').fill('Severe acute respiratory distress with hemodynamic instability');
 
     // Flag accompanying doctor requirement
     await form.locator('#requires-accompanying-doctor').check();
     await expect(form.locator('#requires-accompanying-doctor')).toBeChecked();
 
-    // Patient identity
+    // Step 2: Patient Identification
+    await page.getByText('Patient Identification').click();
     await form.locator('#hospitalId').fill('ISM-98231');
     await form.locator('#patientName').fill('Sayed Abdel-Rahman');
     await form.locator('#patientAge').fill('58');
-    await form.locator('#patientGender').selectOption('male');
+    await form.getByRole('radio', { name: 'Male', exact: true }).check();
 
-    // Patient vitals
+    // Step 3: Clinical & Vitals
+    await page.getByText('Clinical & Vitals').click();
     await form.locator('#vitalHr').fill('118');
     await form.locator('#vitalBp').fill('135/85');
     await form.locator('#vitalSpo2').fill('89');
     await form.locator('#vitalTemp').fill('38.2');
     await form.locator('#vitalRr').fill('26');
     await form.locator('#vitalGcs').fill('14');
-
-    // Clinical assessment
     await form.locator('#complaint').fill('Sudden onset severe chest tightness and dyspnea');
     await form.locator('#presentation').fill('Patient presented with acute hypoxemic respiratory failure');
     await form.locator('#diagnosis').fill('Severe ARDS and acute coronary syndrome');
     await form.locator('#investigations').fill('Trop I positive, ST elevation on Lead II');
 
-    // Attach mock diagnostic image (ECG trace)
+    // Step 4: Diagnostics & Review — attach mock diagnostic image (ECG trace)
+    await page.getByText('Diagnostics & Review').click();
     const mockFile = createMockImageFile('ecg_lead2_trace.png');
     await form.locator('input[type="file"]').setInputFiles(mockFile);
     await expect(form.locator('img[alt="ecg_lead2_trace.png"]')).toBeVisible({ timeout: 10000 });
 
-    // Submit referral form
-    await form.getByRole('button', { name: /Submit Referral/i }).click();
+    // Advance to the confirm/submit screen, then submit
+    await form.getByRole('button', { name: /Continue/i }).click();
+    await expect(form.getByRole('button', { name: /Continue/i })).toHaveCount(0);
+    const submitBtn = form.getByRole('button', { name: /Submit Referral/i });
+    await expect(submitBtn).toBeVisible();
+    await expect(submitBtn).toBeEnabled();
+    // Submitting navigates away (client-side route change) while Playwright is
+    // still re-verifying the button is stable, which it then reports as "detached"
+    // even though the click already went through — tolerate that specific race.
+    await submitBtn.click().catch(() => {});
 
     // Verify navigation to /referrals and presence of newly created patient in table
     await expect(page).toHaveURL(/\/referrals/, { timeout: 15000 });
