@@ -117,7 +117,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       // Heading
       expect(screen.getByRole('heading', { name: /New Referral Request/i })).toBeInTheDocument();
 
-      // Step 1 selectors
+      // Step 1 selectors (Destination & Priority — default step)
       const icuBtn = screen.getByRole('button', { name: 'ICU' });
       expect(icuBtn).toBeInTheDocument();
 
@@ -130,8 +130,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       const requiredBedType = document.querySelector('#requiredBedType');
       expect(requiredBedType).toBeInTheDocument();
 
-      const priority = document.querySelector('#priority');
-      expect(priority).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Urgent/i })).toBeInTheDocument();
 
       const reasonForReferral = document.querySelector('#reasonForReferral');
       expect(reasonForReferral).toBeInTheDocument();
@@ -139,7 +138,9 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       const requiresAccompanyingDoctor = document.querySelector('#requires-accompanying-doctor');
       expect(requiresAccompanyingDoctor).toBeInTheDocument();
 
-      // Step 2 selectors
+      // Step 2 selectors (Patient Identification)
+      fireEvent.click(screen.getByText('Patient Identification'));
+
       const hospitalId = document.querySelector('#hospitalId');
       expect(hospitalId).toBeInTheDocument();
 
@@ -149,10 +150,11 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       const patientAge = document.querySelector('#patientAge');
       expect(patientAge).toBeInTheDocument();
 
-      const patientGender = document.querySelector('#patientGender');
-      expect(patientGender).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Male' })).toBeInTheDocument();
 
-      // Step 3 selectors
+      // Step 3 selectors (Clinical & Vitals)
+      fireEvent.click(screen.getByText('Clinical & Vitals'));
+
       const vitalHr = document.querySelector('#vitalHr');
       expect(vitalHr).toBeInTheDocument();
 
@@ -183,12 +185,11 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       const investigations = document.querySelector('#investigations');
       expect(investigations).toBeInTheDocument();
 
-      // Step 4 selectors
+      // Step 4 selectors (Diagnostics & Review)
+      fireEvent.click(screen.getByText('Diagnostics & Review'));
+
       const fileInput = document.querySelector('input[type="file"]');
       expect(fileInput).toBeInTheDocument();
-
-      const submitButton = screen.getByRole('button', { name: /Submit Referral/i });
-      expect(submitButton).toBeInTheDocument();
     });
   });
 
@@ -224,6 +225,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
 
       // Fill hospitalId but omit patientName
+      fireEvent.click(screen.getByText('Patient Identification'));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-12345' } });
 
       const form = document.querySelector('form')!;
@@ -247,6 +249,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
 
       // Fill patientName but omit hospitalId
+      fireEvent.click(screen.getByText('Patient Identification'));
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Ahmed Ali' } });
 
       const form = document.querySelector('form')!;
@@ -269,13 +272,14 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       // Select department
       fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
 
-      // Fill patient info
-      fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-12345' } });
-      fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Ahmed Ali' } });
-
       // Uncheck Auto-Route
       const autoRouteCheckbox = screen.getByRole('checkbox', { name: 'Auto-Route' });
       fireEvent.click(autoRouteCheckbox);
+
+      // Fill patient info
+      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-12345' } });
+      fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Ahmed Ali' } });
 
       // Do NOT select receivingFacility
       const form = document.querySelector('form')!;
@@ -300,6 +304,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
         </MemoryRouter>
       );
 
+      fireEvent.click(screen.getByText('Patient Identification'));
       const nidInput = document.querySelector('#nationalId') as HTMLInputElement;
 
       // 13 digits (too short)
@@ -320,12 +325,12 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
 
       // Valid century 2 (1985-11-20, male -> code 7)
       fireEvent.change(nidInput, { target: { value: '28511201234578' } });
-      expect((document.querySelector('#patientGender') as HTMLSelectElement).value).toBe('male');
+      expect(screen.getByRole('radio', { name: 'Male' })).toBeChecked();
       expect(Number((document.querySelector('#patientAge') as HTMLInputElement).value)).toBeGreaterThanOrEqual(38);
 
       // Valid century 3 (2002-04-10, female -> code 2)
       fireEvent.change(nidInput, { target: { value: '30204101234528' } });
-      expect((document.querySelector('#patientGender') as HTMLSelectElement).value).toBe('female');
+      expect(screen.getByRole('radio', { name: 'Female' })).toBeChecked();
       expect(Number((document.querySelector('#patientAge') as HTMLInputElement).value)).toBeGreaterThanOrEqual(21);
     });
   });
@@ -385,6 +390,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
         </MemoryRouter>
       );
 
+      fireEvent.click(screen.getByText('Clinical & Vitals'));
       const gcsInput = document.querySelector('#vitalGcs') as HTMLInputElement;
 
       // Enter value below minimum
@@ -414,7 +420,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
         </MemoryRouter>
       );
 
-      // Fill full valid referral
+      // Fill full valid referral — Step 1: Destination & Priority
       fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
 
       // Uncheck Auto-Route and select f2
@@ -423,16 +429,24 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.change(document.querySelector('#receivingFacility')!, { target: { value: 'f2' } });
 
       fireEvent.change(document.querySelector('#requiredBedType')!, { target: { value: 'ICU' } });
-      fireEvent.change(document.querySelector('#priority')!, { target: { value: 'urgent' } });
+      fireEvent.click(screen.getByRole('radio', { name: /Urgent/i }));
       fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Offline transfer test' } });
 
+      // Step 2: Patient Identification
+      fireEvent.click(screen.getByText('Patient Identification'));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-OFFLINE-01' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Offline Patient' } });
       fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '45' } });
 
+      // Step 3: Clinical & Vitals
+      fireEvent.click(screen.getByText('Clinical & Vitals'));
       fireEvent.change(document.querySelector('#complaint')!, { target: { value: 'Severe chest pain' } });
       fireEvent.change(document.querySelector('#presentation')!, { target: { value: 'Ongoing discomfort' } });
       fireEvent.change(document.querySelector('#diagnosis')!, { target: { value: 'Unstable Angina' } });
+
+      // Step 4: Diagnostics & Review, then advance to the confirm/submit screen
+      fireEvent.click(screen.getByText('Diagnostics & Review'));
+      fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
 
       // Submit while offline
       const submitBtn = screen.getByRole('button', { name: /Submit Referral/i });
@@ -477,7 +491,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
         </MemoryRouter>
       );
 
-      // Select department
+      // Select department — Step 1: Destination & Priority
       fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
 
       // Destination options
@@ -486,7 +500,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.change(document.querySelector('#receivingFacility')!, { target: { value: 'f2' } });
 
       fireEvent.change(document.querySelector('#requiredBedType')!, { target: { value: 'ICU' } });
-      fireEvent.change(document.querySelector('#priority')!, { target: { value: 'emergency' } });
+      fireEvent.click(screen.getByRole('radio', { name: /Emergency/i }));
       fireEvent.change(document.querySelector('#reasonForReferral')!, {
         target: { value: 'Severe acute respiratory distress' },
       });
@@ -500,13 +514,18 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.click(alertCheckbox);
       expect(alertCheckbox.checked).toBe(true);
 
-      // Patient Demographics
+      // Patient Demographics — Step 2: Patient Identification
+      fireEvent.click(screen.getByText('Patient Identification'));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-98231' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Sayed Abdel-Rahman' } });
       fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '58' } });
-      fireEvent.change(document.querySelector('#patientGender')!, { target: { value: 'male' } });
+      // Male is already the visual default; click Female then Male so a real
+      // onChange fires and patientData.gender is explicitly set.
+      fireEvent.click(screen.getByRole('radio', { name: 'Female' }));
+      fireEvent.click(screen.getByRole('radio', { name: 'Male' }));
 
-      // Vitals
+      // Vitals — Step 3: Clinical & Vitals
+      fireEvent.click(screen.getByText('Clinical & Vitals'));
       fireEvent.change(document.querySelector('#vitalHr')!, { target: { value: '118' } });
       fireEvent.change(document.querySelector('#vitalBp')!, { target: { value: '135/85' } });
       fireEvent.change(document.querySelector('#vitalSpo2')!, { target: { value: '89' } });
@@ -528,7 +547,8 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
         target: { value: 'Trop I positive, ST elevation on Lead II' },
       });
 
-      // Upload file
+      // Upload file — Step 4: Diagnostics & Review
+      fireEvent.click(screen.getByText('Diagnostics & Review'));
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = new File(['content'], 'ecg_lead2_trace.png', { type: 'image/png' });
       Object.defineProperty(file, 'size', { value: 1024 * 1024 }); // 1MB
@@ -537,6 +557,9 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       await waitFor(() => {
         expect(screen.getByAltText('ecg_lead2_trace.png')).toBeInTheDocument();
       });
+
+      // Advance to the confirm/submit screen
+      fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
 
       // Submit
       const submitBtn = screen.getByRole('button', { name: /Submit Referral/i });
@@ -588,10 +611,11 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
 
       // 'Neurology' is not offered by f1, f2, or f3_full
       fireEvent.click(screen.getByRole('button', { name: 'Neurology' }));
+      fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Acute stroke' } });
 
+      fireEvent.click(screen.getByText('Patient Identification'));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-NEURO-01' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Neurology Patient' } });
-      fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Acute stroke' } });
 
       const form = document.querySelector('form')!;
       fireEvent.submit(form);
@@ -638,10 +662,11 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Pediatrics' }));
       fireEvent.change(document.querySelector('#requiredBedType')!, { target: { value: 'PICU' } });
+      fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Full PICU transfer' } });
 
+      fireEvent.click(screen.getByText('Patient Identification'));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-PICU-01' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'PICU Child' } });
-      fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Full PICU transfer' } });
 
       const form = document.querySelector('form')!;
       fireEvent.submit(form);

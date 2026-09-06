@@ -217,9 +217,7 @@ export const NewReferralPage: React.FC = () => {
   const handleStepClick = (stepId: number) => {
     setCurrentStep(stepId);
     const targetRef = stepRefs[stepId - 1];
-    if (targetRef?.current) {
-      targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    targetRef?.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   };
 
   if (!user) return null;
@@ -322,13 +320,13 @@ export const NewReferralPage: React.FC = () => {
   const canContinueMobileStep = (step: number): boolean => {
     if (step === 1) {
       return !!(
-        patientData.name &&
-        patientData.hospitalId &&
-        patientData.age &&
         receivingDepartments.length > 0 &&
         reasonForReferral &&
         (isAutoRouting || receivingFacilityId)
       );
+    }
+    if (step === 2) {
+      return !!(patientData.name && patientData.hospitalId && patientData.age);
     }
     if (step === 3) {
       return !!(patientData.complaint && patientData.presentation);

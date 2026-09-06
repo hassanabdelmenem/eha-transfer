@@ -235,16 +235,22 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
         </MemoryRouter>
       );
 
-      // Verify DOM IDs from E2E test contracts
+      // Step 1: Destination & Priority (default step, no navigation needed)
       expect(document.querySelector('#receivingFacility')).toBeInTheDocument();
       expect(document.querySelector('#requiredBedType')).toBeInTheDocument();
-      expect(document.querySelector('#priority')).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Urgent/i })).toBeInTheDocument();
       expect(document.querySelector('#reasonForReferral')).toBeInTheDocument();
       expect(document.querySelector('#requires-accompanying-doctor')).toBeInTheDocument();
+
+      // Step 2: Patient Identification
+      fireEvent.click(screen.getByText('Patient Identification'));
       expect(document.querySelector('#hospitalId')).toBeInTheDocument();
       expect(document.querySelector('#patientName')).toBeInTheDocument();
       expect(document.querySelector('#patientAge')).toBeInTheDocument();
-      expect(document.querySelector('#patientGender')).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Female' })).toBeInTheDocument();
+
+      // Step 3: Clinical & Vitals
+      fireEvent.click(screen.getByText('Clinical & Vitals'));
       expect(document.querySelector('#vitalHr')).toBeInTheDocument();
       expect(document.querySelector('#vitalBp')).toBeInTheDocument();
       expect(document.querySelector('#vitalSpo2')).toBeInTheDocument();
@@ -255,8 +261,10 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
       expect(document.querySelector('#presentation')).toBeInTheDocument();
       expect(document.querySelector('#diagnosis')).toBeInTheDocument();
       expect(document.querySelector('#investigations')).toBeInTheDocument();
+
+      // Step 4: Diagnostics & Review
+      fireEvent.click(screen.getByText('Diagnostics & Review'));
       expect(document.querySelector('input[type="file"]')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Submit Referral/i })).toBeInTheDocument();
     });
 
     it('submits a complete referral request and invokes addReferral', async () => {
@@ -266,7 +274,7 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
         </MemoryRouter>
       );
 
-      // Select Department
+      // Step 1: Destination & Priority — select department
       const icuBtn = screen.getByRole('button', { name: 'ICU' });
       fireEvent.click(icuBtn);
 
@@ -274,30 +282,32 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
       const autoRouteCb = screen.getByRole('checkbox', { name: /Auto-Route/i });
       fireEvent.click(autoRouteCb);
 
-      // Fill Destination & Routing
       fireEvent.change(document.querySelector('#receivingFacility')!, { target: { value: 'f2' } });
       fireEvent.change(document.querySelector('#requiredBedType')!, { target: { value: 'ICU' } });
-      fireEvent.change(document.querySelector('#priority')!, { target: { value: 'urgent' } });
+      fireEvent.click(screen.getByRole('radio', { name: /Urgent/i }));
       fireEvent.change(document.querySelector('#reasonForReferral')!, {
         target: { value: 'Severe acute respiratory distress with hemodynamic instability' }
       });
       fireEvent.click(document.querySelector('#requires-accompanying-doctor')!);
 
-      // Fill Patient Identity
+      // Step 2: Patient Identification
+      fireEvent.click(screen.getByText('Patient Identification'));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-98231' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Sayed Abdel-Rahman' } });
       fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '58' } });
-      fireEvent.change(document.querySelector('#patientGender')!, { target: { value: 'male' } });
+      // Male is already the visual default; click Female then Male so a real
+      // onChange fires and patientData.gender is explicitly set.
+      fireEvent.click(screen.getByRole('radio', { name: 'Female' }));
+      fireEvent.click(screen.getByRole('radio', { name: 'Male' }));
 
-      // Fill Vitals
+      // Step 3: Clinical & Vitals
+      fireEvent.click(screen.getByText('Clinical & Vitals'));
       fireEvent.change(document.querySelector('#vitalHr')!, { target: { value: '118' } });
       fireEvent.change(document.querySelector('#vitalBp')!, { target: { value: '135/85' } });
       fireEvent.change(document.querySelector('#vitalSpo2')!, { target: { value: '89' } });
       fireEvent.change(document.querySelector('#vitalTemp')!, { target: { value: '38.2' } });
       fireEvent.change(document.querySelector('#vitalRr')!, { target: { value: '26' } });
       fireEvent.change(document.querySelector('#vitalGcs')!, { target: { value: '14' } });
-
-      // Fill Clinical Assessment
       fireEvent.change(document.querySelector('#complaint')!, {
         target: { value: 'Sudden onset severe chest tightness and dyspnea' }
       });
@@ -311,10 +321,11 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
         target: { value: 'Trop I positive, ST elevation on Lead II' }
       });
 
-      // Submit form
+      // Step 4: Diagnostics & Review, then advance to the confirm/submit screen
+      fireEvent.click(screen.getByText('Diagnostics & Review'));
+      fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
       const submitBtn = screen.getByRole('button', { name: /Submit Referral/i });
       fireEvent.click(submitBtn);
-
       await waitFor(() => {
         expect(mockAddReferral).toHaveBeenCalledTimes(1);
         expect(mockAddReferral).toHaveBeenCalledWith(
@@ -348,11 +359,48 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
         </MemoryRouter>
       );
 
+      fireEvent.click(screen.getByText('Patient Identification'));
       const nameInput = document.querySelector('#patientName') as HTMLInputElement;
       fireEvent.change(nameInput, { target: { value: 'Draft Patient Test' } });
 
       const savedDraft = JSON.parse(localStorage.getItem('newReferralDraft') || '{}');
       expect(savedDraft.patientData?.name).toBe('Draft Patient Test');
+    });
+  });
+
+  describe('Continue-button validation gates', () => {
+    it('does not require patient identity fields to continue past Step 1 (Destination & Priority)', () => {
+      render(
+        <MemoryRouter>
+          <NewReferralPage />
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
+      fireEvent.change(document.querySelector('#reasonForReferral')!, {
+        target: { value: 'Needs a higher level of care' }
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
+
+      expect(document.querySelector('#hospitalId')).toBeInTheDocument();
+    });
+
+    it('requires patient identity fields to continue past Step 2 (Patient Identification)', () => {
+      render(
+        <MemoryRouter>
+          <NewReferralPage />
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
+      fireEvent.change(document.querySelector('#reasonForReferral')!, {
+        target: { value: 'Needs a higher level of care' }
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Continue/i })); // -> Step 2
+      fireEvent.click(screen.getByRole('button', { name: /Continue/i })); // blocked: name/hospitalId/age empty
+
+      expect(document.querySelector('#hospitalId')).toBeInTheDocument();
+      expect(document.querySelector('#vitalHr')).not.toBeInTheDocument();
     });
   });
 });
