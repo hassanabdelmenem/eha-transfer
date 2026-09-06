@@ -13,7 +13,7 @@ describe('Button', () => {
   it('applies default classes (primary, md)', () => {
     render(<Button>Default</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-blue-900', 'h-9'); // Checking one class for variant and size
+    expect(button).toHaveClass('bg-blue-900', 'min-h-[48px]'); // Checking one class for variant and size
   });
 
   it('applies destructive variant classes', () => {
@@ -25,7 +25,7 @@ describe('Button', () => {
   it('applies large size classes', () => {
     render(<Button size="lg">Large</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('h-11');
+    expect(button).toHaveClass('min-h-[56px]');
   });
 
   it('passes through additional props and handles clicks', async () => {
