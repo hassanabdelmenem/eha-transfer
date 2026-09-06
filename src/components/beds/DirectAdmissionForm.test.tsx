@@ -32,7 +32,10 @@ describe('DirectAdmissionForm', () => {
     expect(screen.getByLabelText(/Admitting Department/i)).toHaveAttribute('id', 'admitDepartment');
     expect(screen.getByLabelText(/Bed Type/i)).toHaveAttribute('id', 'admitBedType');
     expect(screen.getByLabelText(/Age/i)).toHaveAttribute('id', 'admitPatientAge');
-    expect(screen.getByLabelText(/Gender/i)).toHaveAttribute('id', 'admitPatientGender');
+    // Gender is a radio group (male/female/other), not a single labeled control
+    expect(screen.getByRole('radio', { name: 'male' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'female' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'other' })).toBeInTheDocument();
 
     const submitBtn = screen.getByRole('button', {
       name: /Admit Patient & Update Capacity/i,

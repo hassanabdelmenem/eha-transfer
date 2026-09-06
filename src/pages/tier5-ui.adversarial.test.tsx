@@ -952,9 +952,9 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
     it('parses Egyptian 14-digit National ID and calculates century, birthdate, age and gender', () => {
       renderNewReferralPage();
 
+      fireEvent.click(screen.getByText('Patient Identification'));
       const nidInput = screen.getAllByLabelText(/National ID/i)[0];
       const ageInputs = screen.getAllByLabelText(/^Age$/i);
-      const genderSelects = screen.getAllByLabelText(/^Gender$/i);
 
       // Case 1: Born in 1985 (Century 2, Male - 13th digit odd: 1)
       // NID: 28504121901234 -> 1985-04-12, Male
@@ -963,14 +963,14 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
       const currentYear = new Date().getFullYear();
       const expectedAge1985 = currentYear - 1985;
       expect(Number(ageInputs[0].getAttribute('value'))).toBeGreaterThanOrEqual(expectedAge1985 - 1);
-      expect(genderSelects[0]).toHaveValue('male');
+      expect(screen.getAllByRole('radio', { name: 'Male' })[0]).toBeChecked();
 
       // Case 2: Born in 2004 (Century 3, Female - 13th digit even: 2)
       // NID: 30409201901224 -> 2004-09-20, Female
       fireEvent.change(nidInput, { target: { value: '30409201901224' } });
       const expectedAge2004 = currentYear - 2004;
       expect(Number(ageInputs[0].getAttribute('value'))).toBeGreaterThanOrEqual(expectedAge2004 - 1);
-      expect(genderSelects[0]).toHaveValue('female');
+      expect(screen.getAllByRole('radio', { name: 'Female' })[0]).toBeChecked();
     });
 
     it('clamps GCS vital sign input between 3 and 15', () => {

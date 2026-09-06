@@ -75,7 +75,7 @@ describe('App routing', () => {
 
   it('shows the loading screen until Firebase reports the initial auth state', () => {
     render(<App />);
-    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('redirects an unauthenticated visitor at "/" to the login page', async () => {
@@ -158,7 +158,7 @@ describe('App routing', () => {
     vi.spyOn(authModule, 'useAuth').mockImplementation(authAccessor as any);
 
     render(<App />);
-    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it.each([
