@@ -976,6 +976,7 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
     it('clamps GCS vital sign input between 3 and 15', () => {
       renderNewReferralPage();
 
+      fireEvent.click(screen.getByText('Clinical & Vitals'));
       const gcsInput = screen.getAllByLabelText(/GCS/i)[0];
 
       // Enter value below minimum: 1 -> clamped to 3
@@ -990,6 +991,7 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
     it('validates mandatory department selection on submit and shows toast error', () => {
       const { container } = renderNewReferralPage();
 
+      fireEvent.click(screen.getByText('Patient Identification'));
       const hospitalIdInput = screen.getAllByLabelText(/Unified Hospital ID/i)[0];
       const nameInput = screen.getAllByLabelText(/Full Name/i)[0];
 
@@ -1018,13 +1020,15 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
       const deptButtons = screen.getAllByRole('button', { name: /^Surgery$/i });
       fireEvent.click(deptButtons[0]);
 
+      const reasonInput = screen.getAllByLabelText(/Main Reason for Transfer/i)[0];
+      fireEvent.change(reasonInput, { target: { value: 'Specialized neuro-vascular intervention' } });
+
+      fireEvent.click(screen.getByText('Patient Identification'));
       const hospitalIdInput = screen.getAllByLabelText(/Unified Hospital ID/i)[0];
       const nameInput = screen.getAllByLabelText(/Full Name/i)[0];
-      const reasonInput = screen.getAllByLabelText(/Main Reason for Transfer/i)[0];
 
       fireEvent.change(hospitalIdInput, { target: { value: 'ISM-99999' } });
       fireEvent.change(nameInput, { target: { value: 'Adel Sameh' } });
-      fireEvent.change(reasonInput, { target: { value: 'Specialized neuro-vascular intervention' } });
 
       const form = container.querySelector('form');
       expect(form).not.toBeNull();

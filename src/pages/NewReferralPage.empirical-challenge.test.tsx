@@ -133,6 +133,8 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
 
         expect(screen.queryByText(/Access Denied. Only doctors can create new referrals./i)).not.toBeInTheDocument();
         expect(screen.getByText(/New Referral Request/i)).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText("Patient Identification"));
         expect(document.querySelector("#hospitalId")).toBeInTheDocument();
       });
     });
@@ -174,6 +176,10 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
         </MemoryRouter>
       );
 
+      const cardiologyBtn = screen.getByRole("button", { name: "Cardiology" });
+      fireEvent.click(cardiologyBtn);
+
+      fireEvent.click(screen.getByText("Patient Identification"));
       const hospIdInput = document.querySelector("#hospitalId") as HTMLInputElement;
       fireEvent.change(hospIdInput, { target: { value: "ISM-77112" } });
 
@@ -183,9 +189,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       const ageInput = document.querySelector("#patientAge") as HTMLInputElement;
       fireEvent.change(ageInput, { target: { value: "45" } });
 
-      const cardiologyBtn = screen.getByRole("button", { name: "Cardiology" });
-      fireEvent.click(cardiologyBtn);
-
+      fireEvent.click(screen.getByText("Clinical & Vitals"));
       const hrInput = document.querySelector("#vitalHr") as HTMLInputElement;
       fireEvent.change(hrInput, { target: { value: "110" } });
 
@@ -245,13 +249,20 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       );
 
       expect(screen.getByText(/Draft referral restored/i)).toBeInTheDocument();
+
+      // The draft was saved mid Step 2 (Patient Identification), so that's
+      // what renders by default on restore.
       expect((document.querySelector("#hospitalId") as HTMLInputElement).value).toBe("ISM-RESTORE-1");
       expect((document.querySelector("#patientName") as HTMLInputElement).value).toBe("Restored Patient A");
       expect((document.querySelector("#patientAge") as HTMLInputElement).value).toBe("62");
-      expect((document.querySelector("#patientGender") as HTMLSelectElement).value).toBe("female");
+      expect(screen.getByRole("radio", { name: "Female" })).toBeChecked();
+
+      fireEvent.click(screen.getByText("Destination & Priority"));
       expect((document.querySelector("#requiredBedType") as HTMLSelectElement).value).toBe("CCU");
-      expect((document.querySelector("#priority") as HTMLSelectElement).value).toBe("urgent");
+      expect(screen.getByRole("radio", { name: /Urgent/i })).toBeChecked();
       expect((document.querySelector("#reasonForReferral") as HTMLTextAreaElement).value).toBe("Urgent cardiac care required");
+
+      fireEvent.click(screen.getByText("Clinical & Vitals"));
       expect((document.querySelector("#vitalHr") as HTMLInputElement).value).toBe("95");
       expect((document.querySelector("#vitalBp") as HTMLInputElement).value).toBe("140/90");
     });
@@ -305,10 +316,12 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       fireEvent.click(discardBtn);
 
       expect(screen.queryByText(/Draft referral restored/i)).not.toBeInTheDocument();
-      expect((document.querySelector("#hospitalId") as HTMLInputElement).value).toBe("");
-      expect((document.querySelector("#patientName") as HTMLInputElement).value).toBe("");
       expect((document.querySelector("#reasonForReferral") as HTMLTextAreaElement).value).toBe("");
       expect(toastSpy).toHaveBeenCalledWith("Draft discarded.", "info");
+
+      fireEvent.click(screen.getByText("Patient Identification"));
+      expect((document.querySelector("#hospitalId") as HTMLInputElement).value).toBe("");
+      expect((document.querySelector("#patientName") as HTMLInputElement).value).toBe("");
     });
 
     it("gracefully handles corrupted JSON in localStorage without throwing runtime exceptions", () => {
@@ -338,6 +351,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
           </MemoryRouter>
         );
 
+        fireEvent.click(screen.getByText("Patient Identification"));
         const nameInput = document.querySelector("#patientName") as HTMLInputElement;
         fireEvent.change(nameInput, { target: { value: "Testing Quota Error" } });
       }).not.toThrow();
@@ -454,6 +468,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
         </MemoryRouter>
       );
 
+      fireEvent.click(screen.getByText("Diagnostics & Review"));
       const fileInput = document.querySelector("input[type=\"file\"]") as HTMLInputElement;
       const ecgImage = new File(["mock image binary data"], "ecg_trace_lead_2.jpg", { type: "image/jpeg" });
       Object.defineProperty(ecgImage, "size", { value: 1.5 * 1024 * 1024 });
@@ -477,6 +492,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
         </MemoryRouter>
       );
 
+      fireEvent.click(screen.getByText("Diagnostics & Review"));
       const fileInput = document.querySelector("input[type=\"file\"]") as HTMLInputElement;
       const pdfReport = new File(["mock pdf content"], "echocardiogram_report.pdf", { type: "application/pdf" });
       Object.defineProperty(pdfReport, "size", { value: 3.2 * 1024 * 1024 });
@@ -496,6 +512,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
         </MemoryRouter>
       );
 
+      fireEvent.click(screen.getByText("Diagnostics & Review"));
       const fileInput = document.querySelector("input[type=\"file\"]") as HTMLInputElement;
       const oversizedFile = new File(["x"], "huge_mri_scan.pdf", { type: "application/pdf" });
       Object.defineProperty(oversizedFile, "size", { value: 20 * 1024 * 1024 });
@@ -516,6 +533,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
         </MemoryRouter>
       );
 
+      fireEvent.click(screen.getByText("Diagnostics & Review"));
       const fileInput = document.querySelector("input[type=\"file\"]") as HTMLInputElement;
       const testFile = new File(["data"], "lab_results.png", { type: "image/png" });
       Object.defineProperty(testFile, "size", { value: 500 * 1024 });
@@ -543,24 +561,30 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
         </MemoryRouter>
       );
 
+      // Step 1: Destination & Priority
       fireEvent.click(screen.getByRole("button", { name: "Cardiology" }));
+      fireEvent.change(document.querySelector("#reasonForReferral")!, {
+        target: { value: "Acute STEMI transfer for primary PCI" },
+      });
+      fireEvent.click(screen.getByRole("radio", { name: /Emergency/i }));
+      fireEvent.click(document.querySelector("#critical-alert")!);
+      fireEvent.click(document.querySelector("#requires-accompanying-doctor")!);
 
+      // Step 2: Patient Identification
+      fireEvent.click(screen.getByText("Patient Identification"));
       fireEvent.change(document.querySelector("#hospitalId")!, { target: { value: "ISM-33019" } });
       fireEvent.change(document.querySelector("#patientName")!, { target: { value: "Mahmoud Al-Sayed" } });
       fireEvent.change(document.querySelector("#patientAge")!, { target: { value: "52" } });
 
-      fireEvent.change(document.querySelector("#reasonForReferral")!, {
-        target: { value: "Acute STEMI transfer for primary PCI" },
-      });
-      fireEvent.change(document.querySelector("#priority")!, { target: { value: "emergency" } });
-
-      fireEvent.click(document.querySelector("#critical-alert")!);
-      fireEvent.click(document.querySelector("#requires-accompanying-doctor")!);
-
+      // Step 3: Clinical & Vitals
+      fireEvent.click(screen.getByText("Clinical & Vitals"));
       fireEvent.change(document.querySelector("#complaint")!, { target: { value: "Crushing chest pain" } });
       fireEvent.change(document.querySelector("#presentation")!, { target: { value: "Diaphoretic and hypotensive" } });
       fireEvent.change(document.querySelector("#diagnosis")!, { target: { value: "Acute Inferior STEMI" } });
 
+      // Step 4: Diagnostics & Review, then advance to the confirm/submit screen
+      fireEvent.click(screen.getByText("Diagnostics & Review"));
+      fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
       fireEvent.click(screen.getByRole("button", { name: /Submit Referral/i }));
 
       await waitFor(() => {
@@ -594,16 +618,25 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
         </MemoryRouter>
       );
 
+      // Step 1: Destination & Priority
       fireEvent.click(screen.getByRole("button", { name: "Emergency" }));
+      fireEvent.change(document.querySelector("#reasonForReferral")!, { target: { value: "Offline queue test" } });
 
+      // Step 2: Patient Identification
+      fireEvent.click(screen.getByText("Patient Identification"));
       fireEvent.change(document.querySelector("#hospitalId")!, { target: { value: "ISM-OFFLINE-1" } });
       fireEvent.change(document.querySelector("#patientName")!, { target: { value: "Offline Patient" } });
       fireEvent.change(document.querySelector("#patientAge")!, { target: { value: "40" } });
-      fireEvent.change(document.querySelector("#reasonForReferral")!, { target: { value: "Offline queue test" } });
+
+      // Step 3: Clinical & Vitals
+      fireEvent.click(screen.getByText("Clinical & Vitals"));
       fireEvent.change(document.querySelector("#complaint")!, { target: { value: "Pain" } });
       fireEvent.change(document.querySelector("#presentation")!, { target: { value: "Stable" } });
       fireEvent.change(document.querySelector("#diagnosis")!, { target: { value: "Trauma" } });
 
+      // Step 4: Diagnostics & Review, then advance to the confirm/submit screen
+      fireEvent.click(screen.getByText("Diagnostics & Review"));
+      fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
       fireEvent.click(screen.getByRole("button", { name: /Submit Referral/i }));
 
       await waitFor(() => {

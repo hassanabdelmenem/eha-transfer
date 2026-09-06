@@ -63,7 +63,13 @@ describe('NewReferralPage - Adversarial Media Upload & Boundary Testing', () => 
   });
 
   const getFileInput = () => {
-    const fileInputs = document.querySelectorAll('input[type="file"]');
+    // The file input lives on Step 4 (Diagnostics & Review), which only
+    // mounts once the wizard reaches that step.
+    let fileInputs = document.querySelectorAll('input[type="file"]');
+    if (fileInputs.length === 0) {
+      fireEvent.click(screen.getByText('Diagnostics & Review'));
+      fileInputs = document.querySelectorAll('input[type="file"]');
+    }
     return fileInputs[0] as HTMLInputElement;
   };
 

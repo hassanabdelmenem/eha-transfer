@@ -50,6 +50,8 @@ describe('NewReferralPage - Clinician Access & Media Attachment Validation', () 
     );
 
     expect(screen.queryByText(/Access Denied/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Patient Identification'));
     expect(screen.getAllByText(/Unified Hospital ID/i).length).toBeGreaterThan(0);
   });
 
@@ -60,7 +62,8 @@ describe('NewReferralPage - Clinician Access & Media Attachment Validation', () 
       </MemoryRouter>
     );
 
-    // Find the file input
+    // The file input lives on Step 4 (Diagnostics & Review)
+    fireEvent.click(screen.getByText('Diagnostics & Review'));
     const fileInputs = document.querySelectorAll('input[type="file"]');
     const fileInput = fileInputs[0] as HTMLInputElement;
 
@@ -83,6 +86,7 @@ describe('NewReferralPage - Clinician Access & Media Attachment Validation', () 
       </MemoryRouter>
     );
 
+    fireEvent.click(screen.getByText('Diagnostics & Review'));
     const fileInputs = document.querySelectorAll('input[type="file"]');
     const fileInput = fileInputs[0] as HTMLInputElement;
 
@@ -102,6 +106,7 @@ describe('NewReferralPage - Clinician Access & Media Attachment Validation', () 
       </MemoryRouter>
     );
 
+    fireEvent.click(screen.getByText('Diagnostics & Review'));
     const fileInputs = document.querySelectorAll('input[type="file"]');
     const fileInput = fileInputs[0] as HTMLInputElement;
 
