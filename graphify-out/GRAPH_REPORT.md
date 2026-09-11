@@ -1,7 +1,7 @@
-# Graph Report - eha-transfer  (2026-09-05)
+# Graph Report - eha-transfer  (2026-09-06)
 
 ## Corpus Check
-- 673 files · ~418,019 words
+- 673 files · ~418,919 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `12ae741c`
+- Built from commit: `d0164b24`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -81,7 +81,7 @@
 - ReferralDetailHeader.tsx
 - edge-cases-exceptions.test.ts
 - Explorer Survey-3 Handoff: Edge Cases & Test Infrastructure
-- Challenger M2_2 Briefing (RBAC & Data Context)
+- simulation-harness.ts
 - Original User Request (Agent Copy)
 - Milestone 1: App Shell & Navigation
 - Crashlytics Android Setup Guide
@@ -134,7 +134,7 @@
 - esbuild
 - fake-indexeddb
 - @firebase/rules-unit-testing
-- NewReferralPage.empirical-stress.test.tsx
+- Role
 - Stryker Mutation Nightly Workflow
 - @google/genai
 - jsdom
@@ -152,9 +152,9 @@
 - react-to-print
 - @types/react
 - tsx
-- simulation-harness.ts
+- NewReferralPage.empirical-challenge.test.tsx
 - @vitejs/plugin-react
-- Role
+- Challenger M2_2 Briefing (RBAC & Data Context)
 - vitest
 - @vitest/coverage-v8
 - run_mock.cjs
@@ -188,7 +188,7 @@
 - @types/uuid
 - Referral
 - Explorer M1.2 Briefing: Clinician Role Alignment
-- NewReferralPage.empirical-challenge.test.tsx
+- NewReferralPage.empirical-stress.test.tsx
 - useAudioAlert
 - Reviewer M3-2 Handoff Report
 - DataContext.cancel.test.tsx
@@ -213,10 +213,10 @@
 ## Surprising Connections (you probably didn't know these)
 - `Referral` --shares_data_with--> `DataContext.tsx updateReferralStatus()`  [INFERRED]
   src/types/index.ts → .agents/explorer_m1_1/handoff.md
-- `Survey 2 Report: Security & Access Control Audit` --references--> `NewReferralPage()`  [EXTRACTED]
-  .agents/explorer_survey_2/report.md → src/pages/NewReferralPage.tsx
-- `Explorer Survey-3 Handoff: Edge Cases & Test Infrastructure` --references--> `NewReferralPage()`  [EXTRACTED]
-  .agents/explorer_survey_3/handoff.md → src/pages/NewReferralPage.tsx
+- `Explorer M5-2 Handoff: Direct Admission & Capacity Integration` --references--> `DirectAdmission`  [EXTRACTED]
+  .agents/explorer_m5_2/handoff.md → src/contexts/DataContext.tsx
+- `Mandatory Rejection Reason Validation & Audit Trail (rationale: rejection is a clinical decision affecting patient destination, must be captured at point of action)` --references--> `Referral`  [EXTRACTED]
+  .agents/explorer_m1_1/handoff.md → src/types/index.ts
 - `Survey 1 Report: Codebase Architecture & Persona Lifecycle` --references--> `Role`  [EXTRACTED]
   .agents/explorer_survey_1/report.md → src/types/index.ts
 - `Survey 2 Report: Security & Access Control Audit` --references--> `Role`  [EXTRACTED]
@@ -545,9 +545,9 @@ Nodes (20): Milestone 3 (R3) Review & Adversarial Challenge Report, SLA Breach T
 Cohesion: 0.24
 Nodes (10): Explorer Survey-3 Briefing, Explorer Survey-3 Dispatch, Explorer Survey-3 Handoff: Edge Cases & Test Infrastructure, Explorer Survey-3 Progress Log, Mandatory Cancellation Reason Validation (rationale: current UI marks reason optional, allowing empty 'Not specified' entries in audit trail), DataContext.tsx cancelReferral(), routing.ts, sla.ts (+2 more)
 
-### Community 66 - "Challenger M2_2 Briefing (RBAC & Data Context)"
-Cohesion: 0.29
-Nodes (7): Challenger M2_2 Briefing (RBAC & Data Context), Challenger M2_2 Dispatch Instructions, Challenger M2_2 Handoff Report (Empirical Challenge), Challenger M2_2 Progress Log, DraftRestoreBanner(), DraftRestoreBannerProps, VoiceTextarea.tsx
+### Community 66 - "simulation-harness.ts"
+Cohesion: 0.23
+Nodes (14): Challenger M2 Progress Tracker, Challenger M2 Adversarial Challenge Report (RBAC & Persona Simulations), Milestone 2 Reviewer Handoff Report (Persona Simulations), Bed Capacity Arithmetic Integrity, Multi-Facility Tenant Isolation, RBAC Permission Boundary Enforcement, StepClinicalPresentationProps, CANCEL_LOCKED_STATUSES (+6 more)
 
 ### Community 67 - "Original User Request (Agent Copy)"
 Cohesion: 0.27
@@ -713,9 +713,9 @@ Nodes (3): Milestone 2: Unified Referral Intake Wizard, Reviewer Agent M2_1 (Uni
 Cohesion: 0.40
 Nodes (3): MockRecognition, TestComp(), Window
 
-### Community 120 - "NewReferralPage.empirical-stress.test.tsx"
-Cohesion: 0.40
-Nodes (3): mockAddReferral, mockFacilities, mockNavigate
+### Community 120 - "Role"
+Cohesion: 0.22
+Nodes (9): ROLE_CONFIGS, RoleBadge(), RoleBadgeProps, DELEGATABLE_ON_CALL_ROLES, isNotificationRecipient(), NotificationRecipientCandidate, NotificationTargetParams, RecipientShiftAssignment (+1 more)
 
 ### Community 129 - "PrintableSummary.tsx"
 Cohesion: 0.67
@@ -725,13 +725,13 @@ Nodes (3): PrintableSummary, PrintableSummaryProps, vital()
 Cohesion: 0.19
 Nodes (11): StepClinicalPresentation(), StepDestinationPriority(), StepDiagnosticsReview(), StepPatientDemographics(), evaluateVital(), VitalEvaluation, VitalsRangeBadge(), VitalsRangeBadgeProps (+3 more)
 
-### Community 138 - "simulation-harness.ts"
-Cohesion: 0.23
-Nodes (14): Challenger M2 Progress Tracker, Challenger M2 Adversarial Challenge Report (RBAC & Persona Simulations), Milestone 2 Reviewer Handoff Report (Persona Simulations), Bed Capacity Arithmetic Integrity, Multi-Facility Tenant Isolation, RBAC Permission Boundary Enforcement, StepClinicalPresentationProps, CANCEL_LOCKED_STATUSES (+6 more)
+### Community 138 - "NewReferralPage.empirical-challenge.test.tsx"
+Cohesion: 0.20
+Nodes (5): DRAFT_STORAGE_KEY, mockAddReferral, mockCurrentUser, mockFacilities, MockSpeechRecognition
 
-### Community 140 - "Role"
-Cohesion: 0.22
-Nodes (9): ROLE_CONFIGS, RoleBadge(), RoleBadgeProps, DELEGATABLE_ON_CALL_ROLES, isNotificationRecipient(), NotificationRecipientCandidate, NotificationTargetParams, RecipientShiftAssignment (+1 more)
+### Community 140 - "Challenger M2_2 Briefing (RBAC & Data Context)"
+Cohesion: 0.29
+Nodes (7): Challenger M2_2 Briefing (RBAC & Data Context), Challenger M2_2 Dispatch Instructions, Challenger M2_2 Handoff Report (Empirical Challenge), Challenger M2_2 Progress Log, DraftRestoreBanner(), DraftRestoreBannerProps, VoiceTextarea.tsx
 
 ### Community 157 - "TEST_READY.md"
 Cohesion: 0.33
@@ -745,9 +745,9 @@ Nodes (3): TransferJourneyCardProps, Notification, Referral
 Cohesion: 0.60
 Nodes (5): Explorer M1.2 Briefing: Clinician Role Alignment, Explorer M1.2 Dispatch Instructions, Explorer M1.2 Handoff: Clinician Role Alignment, Explorer M1.2 Progress Log, Analysis Report: Role Alignment & Inclusion for clinician
 
-### Community 211 - "NewReferralPage.empirical-challenge.test.tsx"
-Cohesion: 0.20
-Nodes (5): DRAFT_STORAGE_KEY, mockAddReferral, mockCurrentUser, mockFacilities, MockSpeechRecognition
+### Community 211 - "NewReferralPage.empirical-stress.test.tsx"
+Cohesion: 0.40
+Nodes (3): mockAddReferral, mockFacilities, mockNavigate
 
 ### Community 212 - "useAudioAlert"
 Cohesion: 0.33
@@ -774,13 +774,13 @@ Cohesion: 0.18
 Nodes (9): ActiveInpatientCensusProps, mockAdmissions, FacilityAnalyticsChartsProps, DirectAdmission, mockAddDirectAdmission, mockDirectAdmission, mockDischargeDirectAdmission, mockFacility (+1 more)
 
 ## Ambiguous Edges - Review These
+- `ReferralDetailPage.tsx` → `ReferralDetail.tsx`  [AMBIGUOUS]
+  .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
 - `ECGViewerOverlay.tsx` → `ECGViewer.tsx`  [AMBIGUOUS]
   .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
 - `ReferralTimeline.tsx` → `Timeline.tsx`  [AMBIGUOUS]
   .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
 - `ReferralActionConsole.tsx` → `ActionConsole.tsx`  [AMBIGUOUS]
-  .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
-- `ReferralDetailPage.tsx` → `ReferralDetail.tsx`  [AMBIGUOUS]
   .agents/challenger_m4_2/BRIEFING.md · relation: semantically_similar_to
 - `Permission Denied Toast Notification` → `System Admin Role Badge`  [AMBIGUOUS]
   test_referral_detail.png · relation: conceptually_related_to
@@ -812,20 +812,20 @@ Nodes (9): ActiveInpatientCensusProps, mockAdmissions, FacilityAnalyticsChartsPr
   playwright_no_card.png · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **669 isolated node(s):** `StepDiagnosticsReviewProps`, `ALLOWED_EXTENSIONS`, `ALLOWED_MIME_TYPES`, `DEFAULT_VITALS`, `AppSidebarProps` (+664 more)
+- **669 isolated node(s):** `Window`, `SpeechRecognitionFactory`, `HodCockpitProps`, `BadgeProps`, `SlaCandidate` (+664 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **60 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
+- **What is the exact relationship between `ReferralDetailPage.tsx` and `ReferralDetail.tsx`?**
+  _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `ECGViewerOverlay.tsx` and `ECGViewer.tsx`?**
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `ReferralTimeline.tsx` and `Timeline.tsx`?**
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `ReferralActionConsole.tsx` and `ActionConsole.tsx`?**
-  _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
-- **What is the exact relationship between `ReferralDetailPage.tsx` and `ReferralDetail.tsx`?**
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `Permission Denied Toast Notification` and `System Admin Role Badge`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
