@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-18T00:00:00.000Z",
+  "title": "Design System: Ismailia Health Connect",
+  "extensions": {
+    "colorMeta": {
+      "command-blue": { "role": "primary", "displayName": "Command Blue", "canonical": "#1e3a8a", "tonalRamp": ["#0a1230", "#132456", "#1e3a8a", "#1e40af", "#2563eb", "#60a5fa", "#bfdbfe", "#eff6ff"] },
+      "command-blue-soft": { "role": "primary-soft", "displayName": "Command Blue Soft", "canonical": "#dbeafe", "tonalRamp": ["#1e3a8a", "#1e40af", "#2563eb", "#3b82f6", "#93c5fd", "#dbeafe", "#eff6ff", "#f8fafc"] },
+      "neutral-canvas": { "role": "neutral", "displayName": "Canvas", "canonical": "#ffffff", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#ffffff"] },
+      "critical-600": { "role": "status-critical", "displayName": "Critical Red", "canonical": "#dc2626", "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#fecaca", "#fee2e2"] },
+      "warning-600": { "role": "status-warning", "displayName": "Warning Amber", "canonical": "#d97706", "tonalRamp": ["#451a03", "#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fde68a", "#fef3c7"] },
+      "success-600": { "role": "status-success", "displayName": "Success Green", "canonical": "#16a34a", "tonalRamp": ["#052e16", "#14532d", "#166534", "#15803d", "#16a34a", "#22c55e", "#bbf7d0", "#dcfce7"] },
+      "info-600": { "role": "status-info", "displayName": "Info Blue", "canonical": "#2563eb", "tonalRamp": ["#172554", "#1e3a8a", "#1e40af", "#1d4ed8", "#2563eb", "#3b82f6", "#bfdbfe", "#dbeafe"] }
+    },
+    "typographyMeta": {
+      "heading": { "displayName": "Heading (Manrope)", "purpose": "All h1-h6 and card titles; authority and scanability." },
+      "body": { "displayName": "Body (Inter)", "purpose": "Body copy, labels, form fields, and dense clinical data." }
+    },
+    "shadows": [
+      { "name": "floating", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "purpose": "Modals, dialogs, popovers, toasts, the ECG quick-viewer overlay — the only elements allowed real elevation." }
+    ],
+    "motion": [],
+    "breakpoints": [
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default call-to-action button; one per view.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Submit Referral</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 700; min-height: 48px; padding: 0 16px; font-size: 14px; transition: background-color 0.2s; border: none; cursor: pointer; } .ds-btn-primary { background-color: #1e3a8a; color: #ffffff; } .ds-btn-primary:hover { background-color: #1e40af; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #2563eb; }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Reject / cancel / delete actions only.",
+      "html": "<button class=\"ds-btn ds-btn-destructive\">Reject Transfer</button>",
+      "css": ".ds-btn-destructive { background-color: #dc2626; color: #ffffff; border-radius: 12px; font-weight: 700; min-height: 48px; padding: 0 16px; font-size: 14px; border: none; cursor: pointer; transition: background-color 0.2s; } .ds-btn-destructive:hover { background-color: #b91c1c; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Referral/bed state indicator; variant maps 1:1 to the status scale.",
+      "html": "<span class=\"ds-badge ds-badge-warning\">Pending</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; border-radius: 9999px; padding: 2px 8px; font-size: 12px; font-weight: 700; } .ds-badge-warning { background-color: #fef3c7; color: #92400e; } .ds-badge-success { background-color: #dcfce7; color: #15803d; } .ds-badge-danger { background-color: #fee2e2; color: #b91c1c; } .ds-badge-info { background-color: #dbeafe; color: #1d4ed8; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Standard content container; flat at rest, border-separated.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\">Referral #1042</div><div class=\"ds-card-content\">Content goes here.</div></div>",
+      "css": ".ds-card { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; } .ds-card-header { padding: 24px; border-bottom: 1px solid #e2e8f0; font-weight: 700; font-size: 12px; color: #334155; } .ds-card-content { padding: 24px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard text field for clinical/patient data entry.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Hospital ID\" />",
+      "css": ".ds-input { min-height: 48px; width: 100%; border-radius: 12px; border: 1px solid #cbd5e1; background-color: #ffffff; padding: 0 12px; font-size: 14px; color: #1e293b; } .ds-input::placeholder { color: #94a3b8; } .ds-input:focus { outline: none; box-shadow: 0 0 0 1px #3b82f6; border-color: #3b82f6; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Clinical Command Center",
+    "overview": "This is instrument-panel software, not a marketing surface: a deep institutional blue (command-blue, #1e3a8a) anchors every screen as the one color that means \"this is the primary action\" or \"this is the app,\" while slate neutrals carry everything else. Status color exists only to answer \"what state is this referral or this bed in\" at a glance, and must always resolve to exactly one unambiguous meaning per screen. Touch targets run 44-56px across every interactive control, because the real device is a shared hospital tablet or a phone operated one-handed, sometimes with gloves on. A dedicated night-shift filter exists as a first-class mode: this system was built assuming someone will read it under ER lighting at 3am. Depth is moving toward flat/tonal, away from drop shadows, reserving shadow strictly for genuinely floating elements.",
+    "keyCharacteristics": [
+      "One brand color (Command Blue), used sparingly and only for primary actions and identity.",
+      "Semantic status colors mapped onto a named critical/warning/success/info scale, never referenced by raw hue.",
+      "Large, unambiguous touch targets everywhere (44px minimum, up to 56px).",
+      "A first-class night-shift mode (sepia/dark filter) as a designed-for lighting reality.",
+      "Confident, unambiguous component states: primary vs. destructive vs. disabled must read instantly."
+    ],
+    "rules": [
+      { "name": "The Status-Scale Rule", "body": "Status meaning is always expressed through the named critical/warning/success/info scale, never through a raw Tailwind hue referenced directly in a component. warning and critical must never collapse to the same rendered color.", "section": "colors" },
+      { "name": "The One Accent Rule", "body": "Command Blue is the only non-status color allowed to carry meaning. A second arbitrary accent color appearing outside the status scale is drift, not a new feature.", "section": "colors" },
+      { "name": "The Legible-at-Distance Rule", "body": "Every clinical data point must be legible glanced at from arm's length on a shared tablet — no font size below 12px for anything carrying clinical meaning, no weight below 700 for anything that signals state.", "section": "typography" },
+      { "name": "The Floating-Only Rule", "body": "Shadow means \"this is temporarily above the page and will go away.\" If it's not a modal, popover, dropdown, or toast, it doesn't get a shadow.", "section": "elevation" },
+      { "name": "The One Radius Per Tier Rule", "body": "A given component tier (control / card / floating surface) always uses the same radius everywhere it appears.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do keep Command Blue as the only non-status accent color; resist adding a second arbitrary brand color.",
+      "Do use the named status scale for every state signal, never a raw Tailwind hue.",
+      "Do keep every interactive control at 44px minimum height, 48px default.",
+      "Do use logical CSS properties in new layout work so the pending RTL/Arabic pass doesn't require rework.",
+      "Do converge shape usage onto the four-tier radius scale (8/12/16/full).",
+      "Do reserve shadow for modals, popovers, dropdowns, and toasts only."
+    ],
+    "donts": [
+      "Don't let warning and critical render as visually indistinguishable states.",
+      "Don't add drop shadow to resting cards or buttons; use a border and tonal background instead.",
+      "Don't shrink any interactive control below 44px height to fit more on screen.",
+      "Don't hardcode left/right-specific CSS in new work; the bilingual RTL requirement makes this a real future break.",
+      "Don't introduce a second brand accent color outside Command Blue and the status scale."
+    ]
+  }
+}
