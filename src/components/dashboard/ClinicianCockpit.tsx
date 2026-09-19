@@ -182,7 +182,7 @@ export const ClinicianCockpit: React.FC = () => {
         {/* Segment Referral Grid */}
         <div className="mt-5">
           {activeSegmentReferrals.length === 0 ? (
-            <div className="py-10 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
+            <div className="py-10 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
               No referrals in this queue right now.
             </div>
           ) : (
@@ -235,7 +235,7 @@ export const ClinicianCockpit: React.FC = () => {
       {/* Admitted Census & Handover Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Currently Admitted */}
-        <Card className="flex flex-col border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
+        <Card className="flex flex-col border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -249,7 +249,7 @@ export const ClinicianCockpit: React.FC = () => {
           </CardHeader>
           <CardContent className="flex-1 overflow-auto p-0 max-h-[300px]">
             {totalAdmittedInUnit === 0 ? (
-              <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+              <div className="p-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs">
                 No patients currently admitted in your unit.
               </div>
             ) : (

@@ -93,7 +93,7 @@ export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({ referral, us
                 <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{event.title}</span>
                 <p className="text-xs text-slate-500 font-medium">by {userName} <span className="opacity-70">({userRole})</span></p>
               </div>
-              <span className="text-xs text-slate-400 font-mono whitespace-nowrap bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
                 {formatDateTime(event.timestamp)}
               </span>
             </div>

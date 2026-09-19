@@ -92,7 +92,7 @@ export const Login: React.FC = () => {
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-blue-900 rounded-lg flex items-center justify-center shadow-lg">
+          <div className="w-16 h-16 bg-command-blue rounded-lg flex items-center justify-center shadow-lg">
             <Shield className="h-8 w-8 text-white" aria-hidden="true" />
           </div>
         </div>
@@ -122,7 +122,8 @@ export const Login: React.FC = () => {
             )}
             <Button
               variant="outline"
-              className="w-full min-h-[56px] text-base font-semibold flex items-center justify-center gap-2"
+              size="lg"
+              className="w-full text-base font-semibold flex items-center justify-center gap-2"
               onClick={handleGoogleLogin}
               disabled={submitting}
             >
@@ -148,7 +149,7 @@ export const Login: React.FC = () => {
               <div>
                 <label htmlFor="loginEmail" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Email address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
                     id="loginEmail"
                     type="email"
@@ -183,7 +184,7 @@ export const Login: React.FC = () => {
                 />
                 {formErrors.password && <p className="mt-1 text-xs text-critical-500 font-medium">{formErrors.password}</p>}
               </div>
-              <Button type="submit" className="w-full min-h-[56px] text-lg font-bold shadow-md bg-blue-900 hover:bg-blue-800" disabled={submitting}>
+              <Button type="submit" size="lg" className="w-full text-lg font-bold" disabled={submitting}>
                 {submitting
                   ? 'Working…'
                   : isRegistering ? 'Create Account' : 'Authenticate with Email'}

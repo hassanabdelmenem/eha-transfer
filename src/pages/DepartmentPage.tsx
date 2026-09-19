@@ -1,10 +1,11 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { HodCockpit } from '../components/dashboard/HodCockpit';
+import { isAdmin as checkIsAdmin } from '../lib/permissions';
 
 export const DepartmentPage: React.FC = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+  const isAdmin = checkIsAdmin(user);
 
   if (!user || (user.role !== 'head_of_department' && !isAdmin)) {
     return (

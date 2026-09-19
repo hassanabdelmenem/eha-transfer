@@ -123,7 +123,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       {/* Brand & Hospital Header */}
       <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-command-blue flex items-center justify-center text-white shrink-0">
             <Activity className="w-5 h-5" aria-hidden="true" />
           </div>
           {(!collapsed || isMobile) && (
@@ -131,7 +131,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
                 Ismailia Health
               </h1>
-              <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">
+              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 dark:text-slate-500 truncate">
                 EHA Transfer Portal
               </p>
             </div>
@@ -143,7 +143,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             type="button"
             onClick={onCloseMobile}
             aria-label="Close menu"
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" aria-hidden="true" />
           </button>
@@ -152,7 +152,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             type="button"
             onClick={onToggleCollapse}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="hidden lg:flex p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
@@ -194,7 +194,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 </span>
               )}
               {user.department && (
-                <span className="text-slate-400 dark:text-slate-500 font-mono text-[10px] truncate max-w-[90px]">
+                <span className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-mono text-[10px] truncate max-w-[90px]">
                   {user.department}
                 </span>
               )}
@@ -208,7 +208,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         {/* Section 1: Clinical Workflow */}
         <div>
           {(!collapsed || isMobile) && (
-            <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+            <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-1.5">
               Clinical Workflow
             </p>
           )}
@@ -269,7 +269,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         {/* Section 2: Emergency & Triage */}
         <div>
           {(!collapsed || isMobile) && (
-            <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+            <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-1.5">
               Emergency & Triage
             </p>
           )}
@@ -311,7 +311,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         {/* Section 3: Hospital Capacity */}
         <div>
           {(!collapsed || isMobile) && (
-            <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+            <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-1.5">
               Hospital Capacity
             </p>
           )}
@@ -347,7 +347,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               <button
                 type="button"
                 onClick={() => setAdminExpanded(!adminExpanded)}
-                className="w-full flex items-center justify-between px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                className="w-full flex items-center justify-between px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-1.5 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
               >
                 <span>Settings & Admin</span>
                 {adminExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}

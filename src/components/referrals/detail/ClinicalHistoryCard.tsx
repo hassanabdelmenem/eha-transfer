@@ -12,7 +12,7 @@ export const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({ referr
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-indigo-700" />
+          <Activity className="h-5 w-5 text-command-blue" />
           Clinical History & Presentation
         </CardTitle>
       </CardHeader>

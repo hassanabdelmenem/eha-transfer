@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../../ui/Button';
+import { useDialogA11y } from '../../../hooks/useDialogA11y';
 
 export interface RejectionModalProps {
   isOpen: boolean;
@@ -23,17 +24,23 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
   onConfirm,
   isSubmitting = false,
 }) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(isOpen, onClose, dialogRef);
+
   if (!isOpen) return null;
 
   return (
-    <div
-      role="dialog"
-      aria-label="Reject Transfer"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-    >
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow-lg w-full max-w-md relative border border-slate-200 dark:border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rejection-modal-title"
+        tabIndex={-1}
+        className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow-lg w-full max-w-md relative border border-slate-200 dark:border-slate-800"
+      >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Reject Transfer</h2>
+          <h2 id="rejection-modal-title" className="text-xl font-bold text-slate-900 dark:text-slate-100">Reject Transfer</h2>
           <button
             type="button"
             aria-label="Close rejection dialog"
@@ -41,7 +48,7 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
               onClose();
               setRejectError('');
             }}
-            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

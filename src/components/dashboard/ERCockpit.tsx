@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { Truck, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { sortByWorkflow } from '../../lib/referralPriority';
-import { toastError } from '../../lib/toast';
+import { showToast, toastError } from '../../lib/toast';
 import { Skeleton, SkeletonGroup } from '../ui/Skeleton';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
 
@@ -59,6 +59,7 @@ export const ERCockpit: React.FC = () => {
   const handleRequestAmbulance = async (id: string) => {
     try {
       await updateReferralStatus(id, 'in_transit', 'Ambulance dispatched by ER team');
+      showToast('Ambulance dispatched.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not dispatch the ambulance.');
     }
@@ -67,6 +68,7 @@ export const ERCockpit: React.FC = () => {
   const handleConfirmArrival = async (id: string) => {
     try {
       await updateReferralStatus(id, 'arrived', 'Patient arrived at ER');
+      showToast('Arrival confirmed.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not confirm arrival.');
     }
@@ -75,6 +77,7 @@ export const ERCockpit: React.FC = () => {
   const handleSaveEscort = async (id: string, name: string, phone: string) => {
     try {
       await setAccompanyingDoctor(id, name, phone);
+      showToast('Escort details saved.', 'success');
     } catch (e: any) {
       toastError(e, "Could not save the accompanying doctor's details.");
     }
@@ -126,7 +129,7 @@ export const ERCockpit: React.FC = () => {
                 </SkeletonGroup>
               )}
               {!loading && outboundQueue.length === 0 && (
-                <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                <div className="p-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                   No outbound patients awaiting transport.
                 </div>
               )}
@@ -163,7 +166,7 @@ export const ERCockpit: React.FC = () => {
                 </SkeletonGroup>
               )}
               {!loading && inboundQueue.length === 0 && (
-                <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                <div className="p-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                   No incoming patients currently in transit.
                 </div>
               )}

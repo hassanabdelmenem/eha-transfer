@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ZoomIn, ZoomOut, RefreshCcw, Contrast, Activity } from 'lucide-react';
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 
 interface ECGViewerOverlayProps {
   isOpen: boolean;
@@ -21,13 +22,8 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
     setHighContrast(false);
   }, [imageUrl, isOpen]);
 
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(isOpen, onClose, dialogRef);
 
   if (!isOpen) return null;
 
@@ -53,13 +49,15 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
+        <motion.div
+          ref={dialogRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           role="dialog"
           aria-label="ECG Diagnostic Viewer"
           aria-modal="true"
+          tabIndex={-1}
           className="fixed inset-0 z-[100] bg-slate-950/95 flex flex-col backdrop-blur-sm"
         >
           {/* Header toolbar */}

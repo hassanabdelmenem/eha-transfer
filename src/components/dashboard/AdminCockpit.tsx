@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { ShieldAlert, Globe, Server, Check, ArrowRight } from 'lucide-react';
 import { sortByWorkflow } from '../../lib/referralPriority';
-import { toastError } from '../../lib/toast';
+import { showToast, toastError } from '../../lib/toast';
 import { BedOccupancyHeatmap } from './BedOccupancyHeatmap';
 
 const ESCALATION_LABEL: Record<string, string> = {
@@ -100,6 +100,7 @@ export const AdminCockpit: React.FC = () => {
     setBusyId(id);
     try {
       await updateReferralStatus(id, 'postponed', 'Postponed by system administrator.');
+      showToast('Referral postponed.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not postpone this referral.');
     } finally {
@@ -111,6 +112,7 @@ export const AdminCockpit: React.FC = () => {
     setBusyId(id);
     try {
       await toggleReferralEscalation(id, false);
+      showToast('Referral de-escalated.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not de-escalate this referral.');
     } finally {
@@ -125,6 +127,7 @@ export const AdminCockpit: React.FC = () => {
       await overrideReferralDestination(id, placementFacilityId);
       setPlacingId(null);
       setPlacementFacilityId('');
+      showToast('Referral placed at facility.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not place this referral at that facility.');
     } finally {
@@ -168,7 +171,7 @@ export const AdminCockpit: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold font-heading">
               System Escalation Console
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
               System Administrator · Network-wide unplaced referrals and contracted hospital allocations.
             </p>
           </div>

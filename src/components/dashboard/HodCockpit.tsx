@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -8,10 +8,12 @@ import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { ShieldAlert, ArrowRightLeft, UserCircle, X } from 'lucide-react';
 import { sortByWorkflow } from '../../lib/referralPriority';
-import { toastError } from '../../lib/toast';
+import { showToast, toastError } from '../../lib/toast';
 import { ReferralSummarySheet } from '../referrals/ReferralSummarySheet';
 import { EscalationAlertBanner } from './EscalationAlertBanner';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
+import { isAdmin as checkIsAdmin } from '../../lib/permissions';
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 
 interface HodCockpitProps {
   isDepartmentRoute?: boolean;
@@ -48,8 +50,10 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
   const [selectedPatient, setSelectedPatient] = useState<PatientListItem | null>(null);
   const [targetDepartment, setTargetDepartment] = useState('');
   const [transferNotes, setTransferNotes] = useState('');
+  const transferModalRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(transferModalOpen && !!selectedPatient, () => setTransferModalOpen(false), transferModalRef);
 
-  const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+  const isAdmin = checkIsAdmin(user);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
   const [selectedDepartment, setSelectedDepartment] = useState<string>(user?.department || '');
 
@@ -126,6 +130,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
     setApprovingId(id);
     try {
       await addDeptComment(id, 'direct_approval', '');
+      showToast('Referral approved.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not approve this referral.');
     } finally {
@@ -161,6 +166,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
     try {
       await assignShift(facilityId, department, assignedDoctorId);
       setAssignedDoctorId('');
+      showToast('Shift assigned.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not assign shift.');
     } finally {
@@ -229,7 +235,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
       )}
 
       {/* Unit Review Queue Card */}
-      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
+      <Card className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-4 px-5 bg-slate-50/50 dark:bg-slate-800/40">
           <div className="flex items-center justify-between">
             <div>
@@ -248,7 +254,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
         </CardHeader>
         <CardContent className="p-5">
           {pendingReview.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
+            <div className="py-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
               Your department review queue is completely clear.
             </div>
           ) : (
@@ -273,7 +279,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
       {/* Two-Column Section: Shift Delegation & Active Inpatient Census */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Shift Delegation Card */}
-        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden bg-white dark:bg-slate-900 flex flex-col">
+        <Card className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 flex flex-col">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
             <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
               <UserCircle className="w-4 h-4 text-blue-500" />
@@ -320,7 +326,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
         </Card>
 
         {/* Active Department Inpatients & Internal Transfer */}
-        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden bg-white dark:bg-slate-900 flex flex-col">
+        <Card className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 flex flex-col">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -334,7 +340,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
           </CardHeader>
           <CardContent className="p-0 overflow-auto max-h-[320px] flex-1">
             {patientsInDept.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+              <div className="p-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs">
                 No inpatients currently admitted to this department.
               </div>
             ) : (
@@ -373,9 +379,11 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
       {/* Internal Transfer Modal */}
       {transferModalOpen && selectedPatient && (
         <div
+          ref={transferModalRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="transferModalTitle"
+          tabIndex={-1}
           className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4"
         >
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
@@ -386,7 +394,8 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
               <button
                 type="button"
                 onClick={() => setTransferModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+                aria-label="Close transfer dialog"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>

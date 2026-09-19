@@ -11,6 +11,7 @@ import { ArrivedTransfersQueue } from '../components/beds/ArrivedTransfersQueue'
 import { ActiveInpatientCensus } from '../components/beds/ActiveInpatientCensus';
 import { DirectAdmissionModal } from '../components/beds/DirectAdmissionModal';
 import { UserPlus, Settings } from 'lucide-react';
+import { isAdmin as checkIsAdmin } from '../lib/permissions';
 
 export const BedManagementPage: React.FC = () => {
   // 1. All hooks called unconditionally at the top
@@ -34,7 +35,7 @@ export const BedManagementPage: React.FC = () => {
   const [dischargingId, setDischargingId] = useState<string | null>(null);
   const [isDirectAdmitOpen, setIsDirectAdmitOpen] = useState<boolean>(false);
 
-  const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+  const isAdmin = checkIsAdmin(user);
   const isLeadership =
     isAdmin ||
     user?.role === 'hospital_manager' ||

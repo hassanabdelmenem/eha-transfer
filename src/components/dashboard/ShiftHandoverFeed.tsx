@@ -22,14 +22,14 @@ export const ShiftHandoverFeed: React.FC<ShiftHandoverFeedProps> = ({
 
   if (filteredLogs.length === 0) {
     return (
-      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
+      <Card className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
           <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
             <ClipboardList className="w-4 h-4 text-slate-500" />
             Recent Shift Handovers
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 text-center text-slate-400 dark:text-slate-500 text-xs">
+        <CardContent className="p-6 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs">
           No recent handovers recorded for your unit.
         </CardContent>
       </Card>
@@ -37,7 +37,7 @@ export const ShiftHandoverFeed: React.FC<ShiftHandoverFeedProps> = ({
   }
 
   return (
-    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
+    <Card className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
       <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -73,7 +73,7 @@ export const ShiftHandoverFeed: React.FC<ShiftHandoverFeedProps> = ({
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="text-[11px] text-slate-400 font-mono block">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono block">
                     {log.timestamp ? format(new Date(log.timestamp), 'MMM d, h:mm a') : ''}
                   </span>
                   <div className="flex items-center gap-1.5 mt-1.5 justify-end text-[11px] font-semibold">

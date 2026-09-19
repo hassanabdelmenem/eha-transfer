@@ -80,6 +80,31 @@ export const NewReferralPage: React.FC = () => {
   const [aiRankedFacilities, setAiRankedFacilities] = useState<AiRankedFacility[] | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [queuedOffline, setQueuedOffline] = useState<{ facilityName: string } | null>(null);
+  const [step1FieldErrors, setStep1FieldErrors] = useState<{ departments?: string; facility?: string }>({});
+  const [step2FieldErrors, setStep2FieldErrors] = useState<{ hospitalId?: string; name?: string }>({});
+
+  // Clear a field's error as soon as the user resolves it, rather than leaving a
+  // stale "required" message on screen after they've already fixed it.
+  useEffect(() => {
+    if (receivingDepartments.length > 0 && step1FieldErrors.departments) {
+      setStep1FieldErrors(prev => ({ ...prev, departments: undefined }));
+    }
+  }, [receivingDepartments, step1FieldErrors.departments]);
+
+  useEffect(() => {
+    if ((isAutoRouting || receivingFacilityId) && step1FieldErrors.facility) {
+      setStep1FieldErrors(prev => ({ ...prev, facility: undefined }));
+    }
+  }, [isAutoRouting, receivingFacilityId, step1FieldErrors.facility]);
+
+  useEffect(() => {
+    if (patientData.name && step2FieldErrors.name) {
+      setStep2FieldErrors(prev => ({ ...prev, name: undefined }));
+    }
+    if (patientData.hospitalId && step2FieldErrors.hospitalId) {
+      setStep2FieldErrors(prev => ({ ...prev, hospitalId: undefined }));
+    }
+  }, [patientData.name, patientData.hospitalId, step2FieldErrors.name, step2FieldErrors.hospitalId]);
 
   // Step Section DOM References for smooth navigation
   const step1Ref = useRef<HTMLDivElement>(null);
@@ -233,12 +258,28 @@ export const NewReferralPage: React.FC = () => {
   }
 
   const submitReferral = (fromWizard: boolean) => {
+    setStep1FieldErrors({});
+    setStep2FieldErrors({});
+
     if (receivingDepartments.length === 0) {
       showToast('Select at least one target department before submitting.', 'error');
+      setStep1FieldErrors({ departments: 'Select at least one target department.' });
+      handleStepClick(1);
+      return;
+    }
+    if (!isAutoRouting && !receivingFacilityId) {
+      showToast('Select a receiving facility or enable Auto-Route.', 'error');
+      setStep1FieldErrors({ facility: 'Select a receiving facility, or enable Auto-Route above.' });
+      handleStepClick(1);
       return;
     }
     if (!patientData.name || !patientData.hospitalId) {
       showToast('Patient Name and Hospital ID are mandatory fields.', 'error');
+      setStep2FieldErrors({
+        name: !patientData.name ? 'Full name is required.' : undefined,
+        hospitalId: !patientData.hospitalId ? 'Hospital ID is required.' : undefined,
+      });
+      handleStepClick(2);
       return;
     }
 
@@ -248,11 +289,6 @@ export const NewReferralPage: React.FC = () => {
       excludeFacilityId: user.facilityId,
     });
     const candidateIds = matching.map(f => f.id);
-
-    if (!isAutoRouting && !receivingFacilityId) {
-      showToast('Select a receiving facility or enable Auto-Route.', 'error');
-      return;
-    }
 
     setIsSubmitting(true);
 
@@ -340,6 +376,17 @@ export const NewReferralPage: React.FC = () => {
   const goNextMobileStep = () => {
     if (!canContinueMobileStep(currentStep)) {
       showToast('Fill in the required fields before continuing.', 'error');
+      if (currentStep === 1) {
+        setStep1FieldErrors({
+          departments: receivingDepartments.length === 0 ? 'Select at least one target department.' : undefined,
+          facility: !isAutoRouting && !receivingFacilityId ? 'Select a receiving facility, or enable Auto-Route above.' : undefined,
+        });
+      } else if (currentStep === 2) {
+        setStep2FieldErrors({
+          name: !patientData.name ? 'Full name is required.' : undefined,
+          hospitalId: !patientData.hospitalId ? 'Hospital ID is required.' : undefined,
+        });
+      }
       return;
     }
     setCurrentStep(s => Math.min(5, s + 1));
@@ -382,7 +429,7 @@ export const NewReferralPage: React.FC = () => {
             type="button"
             onClick={() => navigate(-1)}
             aria-label="Go back"
-            className="h-10 w-10 -ml-2 shrink-0 flex items-center justify-center rounded text-white/80 hover:text-white"
+            className="h-11 w-11 -ml-2 shrink-0 flex items-center justify-center rounded text-white/80 hover:text-white"
           >
             <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -478,6 +525,7 @@ export const NewReferralPage: React.FC = () => {
             aiTriageRunning={aiTriageRunning}
             aiRankedFacilities={aiRankedFacilities}
             onRunAiTriage={handleRunAiTriage}
+            fieldErrors={step1FieldErrors}
           />
           </div>
         )}
@@ -487,6 +535,7 @@ export const NewReferralPage: React.FC = () => {
             <StepPatientDemographics
             patientData={patientData}
             setPatientData={setPatientData}
+            fieldErrors={step2FieldErrors}
           />
           </div>
         )}

@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Plus, Search, Phone, ShieldAlert, Bed, Check, FileText } from 'lucide-react';
 import { sortByWorkflow } from '../../lib/referralPriority';
-import { toastError } from '../../lib/toast';
+import { showToast, toastError } from '../../lib/toast';
 import { ReferralSummarySheet } from '../referrals/ReferralSummarySheet';
 import { EscalationAlertBanner } from './EscalationAlertBanner';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
@@ -77,6 +77,7 @@ export const ManagerCockpit: React.FC = () => {
     setBusyAcceptId(id);
     try {
       await updateReferralStatus(id, 'manager_approved', 'Accepted by hospital manager.');
+      showToast('Referral accepted.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not accept this referral.');
     } finally {
@@ -95,7 +96,7 @@ export const ManagerCockpit: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold font-heading">
               {managerEscalations.length + managerQueue.length} need your signature
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
               Hospital Management & Medical Director transfer authorization workspace.
             </p>
           </div>

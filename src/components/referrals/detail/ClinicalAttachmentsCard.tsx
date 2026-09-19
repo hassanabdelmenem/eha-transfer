@@ -21,7 +21,7 @@ export const ClinicalAttachmentsCard: React.FC<ClinicalAttachmentsCardProps> = (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-indigo-700" />
+          <FileText className="h-5 w-5 text-command-blue" />
           Clinical Attachments
         </CardTitle>
       </CardHeader>
@@ -32,7 +32,7 @@ export const ClinicalAttachmentsCard: React.FC<ClinicalAttachmentsCardProps> = (
               {att.type === 'image' ? (
                 <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
                   <FileText className="w-8 h-8 mb-1" />
                   <span className="text-xs px-1 truncate w-full text-center">{att.name}</span>
                 </div>

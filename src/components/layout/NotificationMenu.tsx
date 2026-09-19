@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { formatDateTime } from '../../lib/utils';
 import { cn } from '../../lib/utils';
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 
 export interface NotificationMenuProps {
   notifications: Notification[];
@@ -34,6 +35,8 @@ export const NotificationMenu: React.FC<NotificationMenuProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(isOpen, () => setIsOpen(false), dialogRef, triggerRef);
 
   // Close on outside click
   useEffect(() => {
@@ -45,18 +48,9 @@ export const NotificationMenu: React.FC<NotificationMenuProps> = ({
       }
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-
     document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
 
@@ -116,8 +110,11 @@ export const NotificationMenu: React.FC<NotificationMenuProps> = ({
       {/* Popover Dropdown */}
       {isOpen && (
         <div
+          ref={dialogRef}
           role="dialog"
+          aria-modal="true"
           aria-label="Notifications tray"
+          tabIndex={-1}
           className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150 origin-top-right"
         >
           {/* Header */}
@@ -164,7 +161,7 @@ export const NotificationMenu: React.FC<NotificationMenuProps> = ({
                       )}>
                         {notification.title}
                       </p>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap shrink-0 ml-2">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 whitespace-nowrap shrink-0 ml-2">
                         {formatDateTime(notification.createdAt)}
                       </span>
                     </div>
@@ -188,7 +185,7 @@ export const NotificationMenu: React.FC<NotificationMenuProps> = ({
                         <button
                           type="button"
                           onClick={() => onMarkRead(notification.id)}
-                          className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                          className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                         >
                           <Check className="w-3 h-3" /> Mark read
                         </button>
@@ -201,7 +198,7 @@ export const NotificationMenu: React.FC<NotificationMenuProps> = ({
               <div className="py-8 px-4 text-center">
                 <Bell className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2 opacity-50" />
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400">No notifications yet</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">All patient transfer updates will appear here</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-0.5">All patient transfer updates will appear here</p>
               </div>
             )}
           </div>

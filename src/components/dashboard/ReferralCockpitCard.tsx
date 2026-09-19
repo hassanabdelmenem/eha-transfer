@@ -31,11 +31,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   const [escortPhone, setEscortPhone] = useState('');
   const [savingEscort, setSavingEscort] = useState(false);
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Avoid triggering card navigation when clicking on buttons or inputs
-    if ((e.target as HTMLElement).closest('button, input, select, a')) {
-      return;
-    }
+  const handleCardClick = () => {
     if (onAction) {
       onAction(referral.id);
     } else {
@@ -173,7 +169,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
               className={`w-full mt-3 min-h-[50px] rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-transform active:scale-[0.99] ${
                 canDispatch
                   ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed'
               }`}
             >
               <Truck className="w-4 h-4" /> Dispatch ambulance
@@ -279,13 +275,16 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   if (variant === 'hod') {
     return (
       <div
-        onClick={handleCardClick}
-        className={`rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-xs transition-shadow hover:shadow-md cursor-pointer ${priorityRailClass(
+        className={`rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-xs transition-shadow hover:shadow-md ${priorityRailClass(
           referral.priority,
           referral.isEscalated
         )}`}
       >
-        <div className="flex items-start justify-between gap-2">
+        <button
+          type="button"
+          onClick={handleCardClick}
+          className="flex items-start justify-between gap-2 w-full text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+        >
           <div className="min-w-0">
             <p className="text-base font-bold text-slate-900 dark:text-slate-100 truncate">
               {referral.patientData.name}, {referral.patientData.age}
@@ -301,7 +300,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
           >
             {referral.priority}
           </span>
-        </div>
+        </button>
 
         <div className="grid grid-cols-2 gap-2.5 mt-3.5">
           {onSummary && (
@@ -340,13 +339,16 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   if (variant === 'manager') {
     return (
       <div
-        onClick={handleCardClick}
-        className={`rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-xs transition-shadow hover:shadow-md cursor-pointer ${priorityRailClass(
+        className={`rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-xs transition-shadow hover:shadow-md ${priorityRailClass(
           referral.priority,
           referral.isEscalated
         )}`}
       >
-        <div className="flex items-start justify-between gap-2">
+        <button
+          type="button"
+          onClick={handleCardClick}
+          className="flex items-start justify-between gap-2 w-full text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+        >
           <div className="min-w-0">
             <p className="text-base font-bold text-slate-900 dark:text-slate-100 truncate">
               {referral.patientData.name}, {referral.patientData.age}
@@ -362,7 +364,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
           >
             {referral.priority}
           </span>
-        </div>
+        </button>
 
         <div className="grid grid-cols-2 gap-2.5 mt-3.5">
           {onSummary && (
@@ -400,13 +402,16 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   // -------------------------
   return (
     <div
-      onClick={handleCardClick}
-      className={`shrink-0 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-xs transition-shadow hover:shadow-md cursor-pointer ${priorityRailClass(
+      className={`shrink-0 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-xs transition-shadow hover:shadow-md ${priorityRailClass(
         referral.priority,
         referral.isEscalated
       )}`}
     >
-      <div className="flex items-start justify-between gap-2">
+      <button
+        type="button"
+        onClick={handleCardClick}
+        className="flex items-start justify-between gap-2 w-full text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+      >
         <div className="min-w-0">
           <p className="text-base font-bold text-slate-900 dark:text-slate-100 truncate">
             {referral.patientData.name}, {referral.patientData.age}
@@ -423,7 +428,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
         >
           {referral.priority}
         </span>
-      </div>
+      </button>
 
       {actionSentence && (
         <p className="text-xs font-bold text-critical-700 dark:text-critical-400 mt-2 bg-critical-50 dark:bg-critical-950/40 p-2 rounded-lg border border-critical-200 dark:border-critical-900/50">

@@ -81,7 +81,7 @@ export const Onboarding: React.FC = () => {
               <div>
                 <label htmlFor="onboardName" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
                     id="onboardName"
                     type="text"
@@ -102,7 +102,7 @@ export const Onboarding: React.FC = () => {
               <div>
                 <label htmlFor="onboardPhone" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Phone Number</label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
                     id="onboardPhone"
                     type="tel"
@@ -122,7 +122,7 @@ export const Onboarding: React.FC = () => {
 
               <div>
                 <label htmlFor="onboardRole" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
-                  Requested Role <span className="font-normal normal-case tracking-normal text-slate-400">— confirmed by your facility during verification</span>
+                  Requested Role <span className="font-normal normal-case tracking-normal text-slate-500 dark:text-slate-400">— confirmed by your facility during verification</span>
                 </label>
                 <select
                   id="onboardRole"
@@ -149,7 +149,7 @@ export const Onboarding: React.FC = () => {
                 <div>
                   <label htmlFor="onboardFacility" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Hospital</label>
                   <div className="relative">
-                    <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                     <select
                       id="onboardFacility"
                       required
@@ -193,7 +193,7 @@ export const Onboarding: React.FC = () => {
                 </div>
               )}
 
-              <Button type="submit" disabled={submitting} className="w-full min-h-[56px] text-lg font-bold bg-blue-900 hover:bg-blue-800 disabled:opacity-60 shadow-md">
+              <Button type="submit" size="lg" disabled={submitting} className="w-full text-lg font-bold disabled:opacity-60">
                 {submitting ? 'Saving...' : 'Complete Onboarding'}
               </Button>
             </form>

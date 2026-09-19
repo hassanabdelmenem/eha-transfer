@@ -1,10 +1,11 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Facility } from '../../types';
 import { DirectAdmissionForm, DirectAdmissionFormData } from './DirectAdmissionForm';
 import { X, UserPlus } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { showToast, toastError } from '../../lib/toast';
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 
 export interface DirectAdmissionModalProps {
   isOpen: boolean;
@@ -29,27 +30,17 @@ export const DirectAdmissionModal: React.FC<DirectAdmissionModalProps> = ({
 }) => {
   const { user } = useAuth();
   const { addDirectAdmission } = useData();
-
-  // Escape key handler
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    },
-    [onClose]
-  );
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(isOpen, onClose, dialogRef);
 
   useEffect(() => {
     if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
     }
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, handleKeyDown]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -77,9 +68,11 @@ export const DirectAdmissionModal: React.FC<DirectAdmissionModalProps> = ({
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="direct-admit-title"
+      tabIndex={-1}
       className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -111,7 +104,7 @@ export const DirectAdmissionModal: React.FC<DirectAdmissionModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="h-10 w-10 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
+            className="h-10 w-10 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

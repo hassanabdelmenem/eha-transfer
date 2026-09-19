@@ -156,7 +156,7 @@ export const FacilityAnalyticsCharts: React.FC<FacilityAnalyticsChartsProps> = (
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Volume and Transfer Type Analytics */}
-      <Card className="flex flex-col border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+      <Card className="flex flex-col border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
         <CardHeader className="border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between py-4 px-5">
           <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200">
             Transfer Flow Analytics
@@ -239,7 +239,7 @@ export const FacilityAnalyticsCharts: React.FC<FacilityAnalyticsChartsProps> = (
       </Card>
 
       {/* Department Breakdown */}
-      <Card className="flex flex-col border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+      <Card className="flex flex-col border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
         <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-4 px-5">
           <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200">
             Departmental Referral Demand

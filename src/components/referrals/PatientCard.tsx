@@ -23,7 +23,7 @@ const show = (value: number | undefined, suffix = '') =>
 // color-only signaling is invisible to colorblind users and screen readers.
 const VitalStat: React.FC<{ label: string; value: React.ReactNode; unit?: string; abnormal: boolean }> = ({ label, value, unit, abnormal }) => (
   <div className={`p-2 rounded border ${abnormal ? 'bg-critical-50 dark:bg-critical-950/30 border-critical-200 dark:border-critical-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
-    <p className={`text-xs flex items-center gap-0.5 ${abnormal ? 'text-critical-500' : 'text-slate-400'}`}>
+    <p className={`text-xs flex items-center gap-0.5 ${abnormal ? 'text-critical-500' : 'text-slate-500 dark:text-slate-400'}`}>
       {label}
       {abnormal && <AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" />}
     </p>
@@ -60,12 +60,12 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
       </div>
       <div className="flex-1 p-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-white dark:bg-slate-900 rounded-b-lg md:rounded-r-lg md:rounded-bl-none">
         <div className="col-span-1 md:col-span-2">
-          <span className="text-xs text-slate-400 font-bold uppercase">Primary Diagnosis & Notes</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">Primary Diagnosis & Notes</span>
           <p className="text-sm mt-1 leading-relaxed font-medium">{patient.diagnosis}</p>
           <p className="text-xs mt-2 opacity-80 whitespace-pre-wrap">{patient.clinicalNotes}</p>
         </div>
         <div className="col-span-1 md:col-span-2">
-          <span className="text-xs text-slate-400 font-bold uppercase">Clinical Vitals</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">Clinical Vitals</span>
           <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 mt-2">
             <VitalStat label="HR" value={show(patient.vitalSigns?.hr)} unit="bpm" abnormal={isAbnormal(patient.vitalSigns?.hr, n => n > 100 || n < 60)} />
             <VitalStat label="BP" value={patient.vitalSigns?.bp || NOT_RECORDED} unit="mmHg" abnormal={isAbnormal(parseInt(String(patient.vitalSigns?.bp || '').split('/')[0] || ''), n => !Number.isNaN(n) && (n > 140 || n < 90))} />
@@ -79,7 +79,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
           </div>
         </div>
         <div className="col-span-1 md:col-span-2">
-          <span className="text-xs text-slate-400 font-bold uppercase">Investigations & Labs</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">Investigations & Labs</span>
           <p className="text-xs mt-1 leading-relaxed text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-950 p-3 rounded border border-slate-100 dark:border-slate-800 whitespace-pre-wrap">{patient.investigations || 'None recorded'}</p>
         </div>
       </div>

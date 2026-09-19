@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Bed, Minus, Plus, Settings, UserPlus, Users, Check } from 'lucide-react';
 import { Skeleton } from '../ui/Skeleton';
-import { toastError } from '../../lib/toast';
+import { showToast, toastError } from '../../lib/toast';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
 
 // Bed Stepper with instant UI update and debounced Firestore sync
@@ -37,7 +37,7 @@ const BedStepperWidget: React.FC<{
     <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-xs">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Bed className="w-4 h-4 text-slate-400" />
+          <Bed className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{bedType}</span>
         </div>
         <span className={`text-xs font-bold ${labelColor}`}>{label}</span>
@@ -131,6 +131,7 @@ export const NurseCockpit: React.FC = () => {
     setAdmittingId(referralId);
     try {
       await updateReferralStatus(referralId, 'admitted');
+      showToast('Patient admitted.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not admit this patient.');
     } finally {
@@ -216,7 +217,7 @@ export const NurseCockpit: React.FC = () => {
                 ))}
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
               No bed capacity configured for this facility yet.
             </div>
           )}
@@ -224,7 +225,7 @@ export const NurseCockpit: React.FC = () => {
       </div>
 
       {/* Ward Active Census Table */}
-      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
+      <Card className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -238,7 +239,7 @@ export const NurseCockpit: React.FC = () => {
         </CardHeader>
         <CardContent className="p-0 overflow-auto max-h-[350px]">
           {activeDirectAdmissions.length === 0 && activeReferralsAdmitted.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs">
               No patients currently admitted in the ward.
             </div>
           ) : (

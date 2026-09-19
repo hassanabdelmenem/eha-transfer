@@ -3,7 +3,10 @@ import { cn } from '../../lib/utils';
 
 export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-md", className)} {...props} />
+    // Resting card, no shadow -- DESIGN.md's Floating-Only Rule reserves shadow for
+    // modals/popovers/dropdowns/toasts; the border + canvas tonal contrast does the
+    // separation work here instead.
+    <div ref={ref} className={cn("rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100", className)} {...props} />
   )
 )
 Card.displayName = "Card"

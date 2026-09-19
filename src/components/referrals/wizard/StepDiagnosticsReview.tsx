@@ -109,7 +109,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
   const targetFacility = facilities.find(f => f.id === receivingFacilityId);
 
   return (
-    <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <Card className="border-slate-200 dark:border-slate-800 overflow-hidden">
       <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/80 pb-4">
         <div className="flex items-center gap-2.5">
           <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-sm">
@@ -147,7 +147,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
                 <button
                   type="button"
                   onClick={() => removeAttachment(att.id)}
-                  className="absolute top-1 right-1 z-10 bg-white/90 dark:bg-slate-900/90 rounded-full p-1 text-critical-500 shadow-xs hover:bg-white transition-colors"
+                  className="absolute top-0 right-0 z-10 min-h-[44px] min-w-[44px] flex items-center justify-center bg-white/90 dark:bg-slate-900/90 rounded-full text-critical-500 shadow-xs hover:bg-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
                   aria-label={`Remove attachment ${att.name}`}
                 >
                   <X className="w-3.5 h-3.5" />
@@ -166,7 +166,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
                     </button>
                   </>
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-2 text-slate-400 text-center">
+                  <div className="w-full h-full flex flex-col items-center justify-center p-2 text-slate-500 dark:text-slate-400 text-center">
                     <FileText className="w-7 h-7 mb-1 text-slate-500" />
                     <span className="text-[10px] font-medium truncate w-full text-slate-700 dark:text-slate-300">
                       {att.name}
@@ -181,9 +181,9 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
                 <div className="w-full h-full bg-slate-200 dark:bg-slate-700 animate-pulse rounded-xl" aria-hidden="true" />
               ) : (
                 <>
-                  <Upload className="w-6 h-6 mb-1 text-slate-400" />
+                  <Upload className="w-6 h-6 mb-1 text-slate-500 dark:text-slate-400" />
                   <span className="text-xs font-bold">Add File</span>
-                  <span className="text-[10px] text-slate-400">Image / PDF</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Image / PDF</span>
                 </>
               )}
               <input
@@ -208,19 +208,19 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
             {/* Patient & ID */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3">
               <div>
-                <span className="text-slate-400 uppercase font-semibold text-[10px] block">Patient</span>
+                <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] block">Patient</span>
                 <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
                   {patientData.name || '—'}, {patientData.age ?? '—'} yrs ({patientData.gender || '—'})
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 uppercase font-semibold text-[10px] block">Hospital MRN</span>
+                <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] block">Hospital MRN</span>
                 <span className="font-bold font-mono text-slate-900 dark:text-slate-100">
                   {patientData.hospitalId || '—'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 uppercase font-semibold text-[10px] block">National ID</span>
+                <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] block">National ID</span>
                 <span className="font-mono text-slate-700 dark:text-slate-300">
                   {patientData.nationalId || '—'}
                 </span>
@@ -230,19 +230,19 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
             {/* Destination & Routing */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3">
               <div>
-                <span className="text-slate-400 uppercase font-semibold text-[10px] block">Target Destination</span>
+                <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] block">Target Destination</span>
                 <span className="font-bold text-slate-900 dark:text-slate-100">
                   {isAutoRouting ? 'Auto-Route (Regional Network)' : targetFacility?.name || '—'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 uppercase font-semibold text-[10px] block">Specialty & Bed</span>
+                <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] block">Specialty & Bed</span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
                   {receivingDepartments.join(', ') || '—'} · {requiredBedType} Bed
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 uppercase font-semibold text-[10px] block">Priority & Escort</span>
+                <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] block">Priority & Escort</span>
                 <div className="flex items-center gap-1.5 font-bold">
                   <span className={priority === 'emergency' ? 'text-critical-600' : priority === 'urgent' ? 'text-amber-600' : 'text-blue-600'}>
                     {priority.toUpperCase()}
@@ -256,7 +256,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
 
             {/* Vitals Summary */}
             <div className="p-3">
-              <span className="text-slate-400 uppercase font-semibold text-[10px] block mb-1.5 flex items-center gap-1">
+              <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] block mb-1.5 flex items-center gap-1">
                 <HeartPulse className="w-3 h-3 text-rose-500" /> Current Vitals
               </span>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-slate-700 dark:text-slate-300 font-medium">
@@ -272,13 +272,13 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
             {/* Complaint & Diagnosis */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3">
               <div>
-                <span className="text-slate-400 uppercase font-semibold text-[10px] block">Chief Complaint</span>
+                <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] block">Chief Complaint</span>
                 <p className="text-slate-800 dark:text-slate-200 mt-0.5 line-clamp-2">
                   {patientData.complaint || '—'}
                 </p>
               </div>
               <div>
-                <span className="text-slate-400 uppercase font-semibold text-[10px] block">Provisional Diagnosis</span>
+                <span className="text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] block">Provisional Diagnosis</span>
                 <p className="font-semibold text-slate-900 dark:text-slate-100 mt-0.5 line-clamp-2">
                   {patientData.diagnosis || '—'}
                 </p>
