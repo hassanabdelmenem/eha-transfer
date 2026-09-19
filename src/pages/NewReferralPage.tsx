@@ -79,6 +79,9 @@ export const NewReferralPage: React.FC = () => {
   const [aiTriageRunning, setAiTriageRunning] = useState(false);
   const [aiRankedFacilities, setAiRankedFacilities] = useState<AiRankedFacility[] | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // State alone can't stop a second tap: two events can land before React
+  // re-renders the disabled button, so the real lock has to be a ref.
+  const submitLockRef = useRef(false);
   const [queuedOffline, setQueuedOffline] = useState<{ facilityName: string } | null>(null);
   const [step1FieldErrors, setStep1FieldErrors] = useState<{ departments?: string; facility?: string }>({});
   const [step2FieldErrors, setStep2FieldErrors] = useState<{ hospitalId?: string; name?: string }>({});
@@ -258,6 +261,7 @@ export const NewReferralPage: React.FC = () => {
   }
 
   const submitReferral = (fromWizard: boolean) => {
+    if (submitLockRef.current) return;
     setStep1FieldErrors({});
     setStep2FieldErrors({});
 
@@ -290,6 +294,7 @@ export const NewReferralPage: React.FC = () => {
     });
     const candidateIds = matching.map(f => f.id);
 
+    submitLockRef.current = true;
     setIsSubmitting(true);
 
     if (isAutoRouting && matching.length === 0) {
@@ -310,30 +315,41 @@ export const NewReferralPage: React.FC = () => {
       b.toString(16).padStart(2, '0')
     ).join('')}`;
 
-    addReferral(
-      {
-        patientId,
-        patientData: patientData as PatientData,
-        referringFacilityId: user.facilityId || '',
-        referringUserId: user.id,
-        receivingFacilityId: isAutoRouting ? 'auto' : receivingFacilityId,
-        candidateFacilityIds: isAutoRouting ? candidateIds : [],
-        receivingDepartments,
-        requiredBedType,
-        priority,
-        reasonForReferral,
-        transferType,
-        status: 'pending',
-        requiresAccompanyingDoctor,
-      },
-      sendCriticalAlert
-    );
+    try {
+      addReferral(
+        {
+          patientId,
+          patientData: patientData as PatientData,
+          referringFacilityId: user.facilityId || '',
+          referringUserId: user.id,
+          receivingFacilityId: isAutoRouting ? 'auto' : receivingFacilityId,
+          candidateFacilityIds: isAutoRouting ? candidateIds : [],
+          receivingDepartments,
+          requiredBedType,
+          priority,
+          reasonForReferral,
+          transferType,
+          status: 'pending',
+          requiresAccompanyingDoctor,
+        },
+        sendCriticalAlert
+      );
+    } catch (err) {
+      // Nothing was filed, so release the lock and let the clinician try again.
+      console.error('addReferral threw', err);
+      submitLockRef.current = false;
+      setIsSubmitting(false);
+      showToast('Could not submit the referral. Please try again.', 'error');
+      return;
+    }
 
     try {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
     } catch {}
 
-    setIsSubmitting(false);
+    // Stay locked from here on: the referral is filed, and the form is either
+    // replaced by the queued-offline screen or about to be navigated away from
+    // (the /referrals route is lazy, so the form can stay mounted for a moment).
 
     if (!isOnline) {
       const facilityName = !isAutoRouting

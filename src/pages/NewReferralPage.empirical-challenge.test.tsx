@@ -554,6 +554,79 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
   });
 
   describe("5. Data Context Integration & Offline Fallback", () => {
+    it("creates exactly one referral when Submit is activated again before the route change lands", async () => {
+      render(
+        <MemoryRouter>
+          <NewReferralPage />
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Cardiology" }));
+      fireEvent.change(document.querySelector("#reasonForReferral")!, {
+        target: { value: "Acute STEMI transfer for primary PCI" },
+      });
+      fireEvent.click(screen.getByText("Patient Identification"));
+      fireEvent.change(document.querySelector("#hospitalId")!, { target: { value: "ISM-33019" } });
+      fireEvent.change(document.querySelector("#patientName")!, { target: { value: "Mahmoud Al-Sayed" } });
+      fireEvent.change(document.querySelector("#patientAge")!, { target: { value: "52" } });
+      fireEvent.click(screen.getByText("Clinical & Vitals"));
+      fireEvent.change(document.querySelector("#complaint")!, { target: { value: "Crushing chest pain" } });
+      fireEvent.change(document.querySelector("#presentation")!, { target: { value: "Diaphoretic and hypotensive" } });
+      fireEvent.change(document.querySelector("#diagnosis")!, { target: { value: "Acute Inferior STEMI" } });
+      fireEvent.click(screen.getByText("Diagnostics & Review"));
+      fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
+
+      // Navigating to the lazy-loaded /referrals page suspends, so the form
+      // stays mounted and clickable until the chunk arrives. A second tap or
+      // Enter in that window must not file a second referral.
+      const submitBtn = screen.getByRole("button", { name: /Submit Referral/i });
+      fireEvent.click(submitBtn);
+      fireEvent.click(submitBtn);
+      fireEvent.submit(submitBtn.closest("form")!);
+
+      expect(mockAddReferral).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole("button", { name: /Submitting/i })).toBeDisabled();
+    });
+
+    it("releases the submit lock when addReferral throws, so the clinician can retry", async () => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      mockAddReferral.mockImplementationOnce(() => {
+        throw new Error("boom");
+      });
+
+      render(
+        <MemoryRouter>
+          <NewReferralPage />
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Cardiology" }));
+      fireEvent.change(document.querySelector("#reasonForReferral")!, {
+        target: { value: "Acute STEMI transfer for primary PCI" },
+      });
+      fireEvent.click(screen.getByText("Patient Identification"));
+      fireEvent.change(document.querySelector("#hospitalId")!, { target: { value: "ISM-33019" } });
+      fireEvent.change(document.querySelector("#patientName")!, { target: { value: "Mahmoud Al-Sayed" } });
+      fireEvent.change(document.querySelector("#patientAge")!, { target: { value: "52" } });
+      fireEvent.click(screen.getByText("Clinical & Vitals"));
+      fireEvent.change(document.querySelector("#complaint")!, { target: { value: "Crushing chest pain" } });
+      fireEvent.change(document.querySelector("#presentation")!, { target: { value: "Diaphoretic and hypotensive" } });
+      fireEvent.change(document.querySelector("#diagnosis")!, { target: { value: "Acute Inferior STEMI" } });
+      fireEvent.click(screen.getByText("Diagnostics & Review"));
+      fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
+
+      const submitBtn = screen.getByRole("button", { name: /Submit Referral/i });
+      fireEvent.click(submitBtn);
+      expect(mockAddReferral).toHaveBeenCalledTimes(1);
+
+      const retryBtn = screen.getByRole("button", { name: /Submit Referral/i });
+      expect(retryBtn).toBeEnabled();
+      fireEvent.click(retryBtn);
+      expect(mockAddReferral).toHaveBeenCalledTimes(2);
+
+      consoleError.mockRestore();
+    });
+
     it("passes complete patient data and critical alert flags to DataContext.addReferral", async () => {
       render(
         <MemoryRouter>
