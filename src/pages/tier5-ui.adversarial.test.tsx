@@ -954,7 +954,7 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
 
       fireEvent.click(screen.getByText('Patient Identification'));
       const nidInput = screen.getAllByLabelText(/National ID/i)[0];
-      const ageInputs = screen.getAllByLabelText(/^Age$/i);
+      const ageInputs = screen.getAllByLabelText(/^Age( \(required\))?$/i);
 
       // Case 1: Born in 1985 (Century 2, Male - 13th digit odd: 1)
       // NID: 28504121901234 -> 1985-04-12, Male
