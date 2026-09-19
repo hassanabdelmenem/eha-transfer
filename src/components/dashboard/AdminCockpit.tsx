@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -49,11 +49,11 @@ export const AdminCockpit: React.FC = () => {
   const [placingId, setPlacingId] = useState<string | null>(null);
   const [placementFacilityId, setPlacementFacilityId] = useState('');
 
-  if (!user || (user.role !== 'system_admin' && user.role !== 'owner')) {
-    return <div className="p-8 text-center text-slate-500">Access Denied. Admin privileges required.</div>;
-  }
-
-  const calculateTotalCapacity = () => {
+  // These recompute on every referral/facility change network-wide -- the largest
+  // `referrals` array any role sees -- so they're memoized like the equivalent
+  // derivations in ManagerCockpit/ClinicianCockpit, rather than re-running on every
+  // parent re-render regardless of whether referrals/facilities actually changed.
+  const globalTotals = useMemo(() => {
     const totals: Record<BedType, { total: number; occupied: number; available: number }> = {
       ICU: { total: 0, occupied: 0, available: 0 },
       CCU: { total: 0, occupied: 0, available: 0 },
@@ -75,18 +75,51 @@ export const AdminCockpit: React.FC = () => {
       });
 
     return totals;
-  };
+  }, [facilities]);
 
-  const globalTotals = calculateTotalCapacity();
-
-  const systemEscalations = sortByWorkflow(
-    referrals.filter(
-      r =>
-        r.isEscalated &&
-        r.escalationLevel === 'system' &&
-        !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status)
-    )
+  const systemEscalations = useMemo(
+    () =>
+      sortByWorkflow(
+        referrals.filter(
+          r =>
+            r.isEscalated &&
+            r.escalationLevel === 'system' &&
+            !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status)
+        )
+      ),
+    [referrals]
   );
+
+  const waitlistByFacility = useMemo(() => {
+    const active = referrals.filter(
+      r => !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status)
+    );
+    const counts = new Map<string, { emergency: number; urgent: number; routine: number }>();
+    for (const r of active) {
+      const facilityId = r.receivingFacilityId === 'auto' ? null : r.receivingFacilityId;
+      const ids = facilityId ? [facilityId] : r.candidateFacilityIds || [];
+      for (const fid of ids) {
+        const entry = counts.get(fid) || { emergency: 0, urgent: 0, routine: 0 };
+        entry[r.priority] += 1;
+        counts.set(fid, entry);
+      }
+    }
+    return [...counts.entries()]
+      .map(([facilityId, tally]) => ({
+        facilityId,
+        name: facilitiesById.get(facilityId)?.name || facilityId,
+        ...tally,
+      }))
+      .filter(f => f.emergency + f.urgent + f.routine > 0)
+      .sort(
+        (a, b) =>
+          b.emergency - a.emergency || b.urgent - a.urgent || b.routine - a.routine
+      );
+  }, [referrals, facilitiesById]);
+
+  if (!user || (user.role !== 'system_admin' && user.role !== 'owner')) {
+    return <div className="p-8 text-center text-slate-500">Access Denied. Admin privileges required.</div>;
+  }
 
   const escalationAge = (r: Referral) => {
     const mins = Math.max(
@@ -134,33 +167,6 @@ export const AdminCockpit: React.FC = () => {
       setBusyId(null);
     }
   };
-
-  const waitlistByFacility = (() => {
-    const active = referrals.filter(
-      r => !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status)
-    );
-    const counts = new Map<string, { emergency: number; urgent: number; routine: number }>();
-    for (const r of active) {
-      const facilityId = r.receivingFacilityId === 'auto' ? null : r.receivingFacilityId;
-      const ids = facilityId ? [facilityId] : r.candidateFacilityIds || [];
-      for (const fid of ids) {
-        const entry = counts.get(fid) || { emergency: 0, urgent: 0, routine: 0 };
-        entry[r.priority] += 1;
-        counts.set(fid, entry);
-      }
-    }
-    return [...counts.entries()]
-      .map(([facilityId, tally]) => ({
-        facilityId,
-        name: facilitiesById.get(facilityId)?.name || facilityId,
-        ...tally,
-      }))
-      .filter(f => f.emergency + f.urgent + f.routine > 0)
-      .sort(
-        (a, b) =>
-          b.emergency - a.emergency || b.urgent - a.urgent || b.routine - a.routine
-      );
-  })();
 
   return (
     <div className="space-y-6">

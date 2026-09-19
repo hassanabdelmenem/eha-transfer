@@ -1375,6 +1375,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * transaction attempt per facility per minute. The transaction is idempotent
    * regardless, so overlap is safe -- this is about contention, not correctness.
    */
+  // `referrals`/`facilitiesById` get a new array/Map reference on every Firestore
+  // snapshot -- if the interval effect below depended on them directly, the
+  // interval would be torn down and recreated on every snapshot, and under busy
+  // conditions (frequent referral updates network-wide) could be perpetually reset
+  // before it ever fires, delaying SLA/capacity escalation checks. Reading through
+  // a ref updated separately lets the interval's own effect depend only on the
+  // slow-changing identity values (verified/role/facilityId).
+  const sweepDataRef = useRef({ referrals, facilitiesById });
+  useEffect(() => {
+    sweepDataRef.current = { referrals, facilitiesById };
+  }, [referrals, facilitiesById]);
+
   useEffect(() => {
     if (!user?.verified) return;
     const isAdmin = checkIsAdmin(user);
@@ -1382,6 +1394,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const sweep = () => {
       const now = Date.now();
+      const { referrals, facilitiesById } = sweepDataRef.current;
       const mine = referrals.filter(r => isAdmin || r.referringFacilityId === user.facilityId);
 
       // Silence, measured by the clock.
@@ -1421,7 +1434,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // and costs a transaction attempt per tick.
     const id = setInterval(sweep, 30_000);
     return () => clearInterval(id);
-  }, [referrals, facilities, facilitiesById, user?.verified, user?.role, user?.facilityId, autoEscalateReferral, escalateForCapacity]);
+  }, [user?.verified, user?.role, user?.facilityId, autoEscalateReferral, escalateForCapacity]);
 
   const markNotificationRead = useCallback((id: string) => {
     updateDoc(doc(db, 'notifications', id), { read: true }).catch(writeFailed("Could not mark the notification as read."));

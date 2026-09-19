@@ -117,7 +117,7 @@ export const ArchivePage: React.FC = () => {
             <Archive className="w-5 h-5 text-white/60 hidden sm:block" />
             <h1 className="text-lg sm:text-xl font-heading font-semibold">Archive</h1>
           </div>
-          <button onClick={handleExportCSV} className="min-h-[40px] px-3 rounded-lg border border-white/25 text-xs font-semibold hover:bg-white/10 transition-colors flex items-center gap-1.5">
+          <button onClick={handleExportCSV} className="min-h-[44px] px-3 rounded-lg border border-white/25 text-xs font-semibold hover:bg-white/10 transition-colors flex items-center gap-1.5">
             <Download className="w-3.5 h-3.5" />
             Export CSV
           </button>

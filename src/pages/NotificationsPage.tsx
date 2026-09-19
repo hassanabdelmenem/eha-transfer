@@ -56,7 +56,7 @@ export const NotificationsPage: React.FC = () => {
         <div className="bg-slate-950 text-white px-4 py-4 sm:px-6 flex items-center justify-between">
           <h1 className="text-lg sm:text-xl font-heading font-semibold">Inbox</h1>
           {unreadCount > 0 && (
-            <button onClick={() => markAllNotificationsRead()} className="min-h-[40px] px-3 rounded-lg border border-white/25 text-xs font-semibold hover:bg-white/10 transition-colors">
+            <button onClick={() => markAllNotificationsRead()} className="min-h-[44px] px-3 rounded-lg border border-white/25 text-xs font-semibold hover:bg-white/10 transition-colors">
               Mark all read
             </button>
           )}

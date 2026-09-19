@@ -32,7 +32,7 @@ export const EscalationAlertBanner: React.FC<EscalationAlertBannerProps> = ({
     >
       <div className="bg-critical-600 text-white px-4 py-2 text-xs font-bold flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 animate-pulse shrink-0" />
+          <ShieldAlert className="w-4 h-4 motion-safe:animate-pulse shrink-0" />
           <span>CRITICAL ESCALATION · {reasonText.toUpperCase()} ({mins} MIN OVERDUE)</span>
         </div>
         <span className="font-mono text-[11px] bg-critical-700 px-2 py-0.5 rounded text-white/90">

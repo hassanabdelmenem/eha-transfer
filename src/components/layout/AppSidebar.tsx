@@ -184,7 +184,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 </span>
               ) : pendingSyncCount > 0 ? (
                 <span className="flex items-center gap-1.5 text-warning-600 dark:text-warning-400 font-medium">
-                  <Database className="w-3 h-3 animate-pulse" />
+                  <Database className="w-3 h-3 motion-safe:animate-pulse" />
                   <span>Syncing {pendingSyncCount}…</span>
                 </span>
               ) : (
@@ -295,7 +295,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               )}
               title={collapsed ? "Emergency Hotline" : undefined}
             >
-              <Phone className="w-5 h-5 shrink-0 animate-pulse" aria-hidden="true" />
+              <Phone className="w-5 h-5 shrink-0 motion-safe:animate-pulse" aria-hidden="true" />
               {(!collapsed || isMobile) && (
                 <>
                   <span className="flex-1 text-left truncate font-semibold">Emergency Hotline</span>

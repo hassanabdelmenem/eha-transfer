@@ -84,7 +84,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
             </div>
           </div>
           {isEmergency && (
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-critical-100 dark:bg-critical-950/60 border border-critical-300 dark:border-critical-800 text-critical-700 dark:text-critical-300 rounded-full text-xs font-bold animate-pulse">
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-critical-100 dark:bg-critical-950/60 border border-critical-300 dark:border-critical-800 text-critical-700 dark:text-critical-300 rounded-full text-xs font-bold motion-safe:animate-pulse">
               <ShieldAlert className="w-3.5 h-3.5" />
               EMERGENCY PROTOCOL ACTIVE
             </div>
@@ -229,7 +229,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
                 className="bg-command-blue hover:bg-command-blue-hover text-white shrink-0 font-semibold"
               >
                 {aiTriageRunning ? (
-                  <Activity className="w-4 h-4 mr-2 animate-pulse" />
+                  <Activity className="w-4 h-4 mr-2 motion-safe:animate-pulse" />
                 ) : (
                   <Sparkles className="w-4 h-4 mr-2" />
                 )}
@@ -274,7 +274,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
                           <div className="flex items-center gap-2">
                             <span
                               className={`text-[10px] font-bold px-1.5 py-0.5 rounded text-white ${
-                                idx === 0 ? 'bg-amber-500' : 'bg-slate-500'
+                                idx === 0 ? 'bg-slate-700' : 'bg-slate-500'
                               }`}
                             >
                               #{idx + 1}
@@ -287,7 +287,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
                         </div>
                         <div className="text-right shrink-0">
                           <div className="flex items-center justify-end gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                            <Zap className="w-3 h-3 text-amber-500" />
+                            <Zap className="w-3 h-3 text-slate-500" />
                             Match: {f.score}%
                           </div>
                           <div className="flex items-center justify-end gap-1.5 text-[11px] text-slate-500">
@@ -415,7 +415,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
               id="requires-accompanying-doctor"
               checked={requiresAccompanyingDoctor}
               onChange={e => setRequiresAccompanyingDoctor(e.target.checked)}
-              className="mt-0.5 w-4 h-4 text-blue-600 bg-white border-blue-300 rounded focus:ring-blue-500"
+              className="mt-0.5 w-4 h-4 text-blue-600 bg-white dark:bg-slate-900 border-blue-300 dark:border-blue-800 rounded focus:ring-blue-500"
             />
             <div className="min-w-0">
               <span className="text-xs sm:text-sm font-bold text-blue-950 dark:text-blue-200 flex items-center gap-1.5">
@@ -435,7 +435,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
               id="critical-alert"
               checked={sendCriticalAlert}
               onChange={e => setSendCriticalAlert(e.target.checked)}
-              className="mt-0.5 w-4 h-4 text-critical-600 bg-white border-critical-300 rounded focus:ring-critical-500"
+              className="mt-0.5 w-4 h-4 text-critical-600 bg-white dark:bg-slate-900 border-critical-300 dark:border-critical-800 rounded focus:ring-critical-500"
             />
             <div className="min-w-0">
               <span className="text-xs sm:text-sm font-bold text-critical-950 dark:text-critical-200 flex items-center gap-1.5">

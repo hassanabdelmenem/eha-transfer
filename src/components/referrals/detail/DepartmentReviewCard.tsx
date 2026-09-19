@@ -67,7 +67,7 @@ export const DepartmentReviewCard: React.FC<DepartmentReviewCardProps> = ({
           <div id="dept-review-section" className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4 space-y-3">
             <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400">Add Department Review</h4>
             <select
-              className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm"
+              className="w-full min-h-[44px] rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm"
               value={deptAction}
               onChange={e => setDeptAction(e.target.value as DeptApprovalStatus)}
             >
