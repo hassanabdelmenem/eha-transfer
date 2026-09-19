@@ -588,6 +588,40 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       expect(screen.getByRole("button", { name: /Submitting/i })).toBeDisabled();
     });
 
+    it("renders Submit as a different DOM node from Continue, so the Continue click cannot submit the form", async () => {
+      render(
+        <MemoryRouter>
+          <NewReferralPage />
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Cardiology" }));
+      fireEvent.change(document.querySelector("#reasonForReferral")!, {
+        target: { value: "Acute STEMI transfer for primary PCI" },
+      });
+      fireEvent.click(screen.getByText("Patient Identification"));
+      fireEvent.change(document.querySelector("#hospitalId")!, { target: { value: "ISM-33019" } });
+      fireEvent.change(document.querySelector("#patientName")!, { target: { value: "Mahmoud Al-Sayed" } });
+      fireEvent.change(document.querySelector("#patientAge")!, { target: { value: "52" } });
+      fireEvent.click(screen.getByText("Clinical & Vitals"));
+      fireEvent.change(document.querySelector("#complaint")!, { target: { value: "Crushing chest pain" } });
+      fireEvent.change(document.querySelector("#presentation")!, { target: { value: "Diaphoretic and hypotensive" } });
+      fireEvent.change(document.querySelector("#diagnosis")!, { target: { value: "Acute Inferior STEMI" } });
+      fireEvent.click(screen.getByText("Diagnostics & Review"));
+
+      // If React reuses this node and flips its type from "button" to "submit"
+      // while the click is still being dispatched, the browser treats that same
+      // click as activating a submit button and files the referral before the
+      // clinician has seen the review screen.
+      const continueBtn = screen.getByRole("button", { name: /Continue/i });
+      fireEvent.click(continueBtn);
+
+      const submitBtn = screen.getByRole("button", { name: /Submit Referral/i });
+      expect(submitBtn).not.toBe(continueBtn);
+      expect(continueBtn.isConnected).toBe(false);
+      expect(mockAddReferral).not.toHaveBeenCalled();
+    });
+
     it("releases the submit lock when addReferral throws, so the clinician can retry", async () => {
       const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
       mockAddReferral.mockImplementationOnce(() => {
