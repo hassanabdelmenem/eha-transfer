@@ -57,7 +57,7 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({
               {/* Title & Description */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 dark:text-slate-500">
                     Step {step.id}
                   </span>
                   {isCompleted && (

@@ -49,7 +49,7 @@ export const DepartmentReviewCard: React.FC<DepartmentReviewCardProps> = ({
                     <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                       {commentUser?.name || 'System'} {commentUser?.role ? `(${commentUser.role.replace(/_/g, ' ')})` : ''}
                     </span>
-                    <span className="text-xs text-slate-400 font-mono">{formatDateTime(c.timestamp)}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{formatDateTime(c.timestamp)}</span>
                   </div>
                   <div className="mb-2">
                     <Badge variant={c.status === 'direct_approval' || c.status === 'urgent_approval' ? 'success' : c.status === 'requirements_needed' ? 'warning' : 'default'}>

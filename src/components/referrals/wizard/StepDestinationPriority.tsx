@@ -29,6 +29,7 @@ interface StepDestinationPriorityProps {
   aiTriageRunning: boolean;
   aiRankedFacilities: AiRankedFacility[] | null;
   onRunAiTriage: () => void;
+  fieldErrors?: { departments?: string; facility?: string };
 }
 
 export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = ({
@@ -54,6 +55,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
   aiTriageRunning,
   aiRankedFacilities,
   onRunAiTriage,
+  fieldErrors,
 }) => {
   const toggleDepartment = (dept: string) => {
     setReceivingDepartments(prev =>
@@ -65,7 +67,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
   const isEmergency = priority === 'emergency';
 
   return (
-    <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <Card className="border-slate-200 dark:border-slate-800 overflow-hidden">
       <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/80 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
@@ -102,7 +104,13 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div
+            role="group"
+            aria-label="Target Departments"
+            aria-invalid={!!fieldErrors?.departments}
+            aria-describedby={fieldErrors?.departments ? 'departments-error' : undefined}
+            className={`flex flex-wrap gap-2 rounded-lg ${fieldErrors?.departments ? 'ring-2 ring-critical-500 ring-offset-2 dark:ring-offset-slate-900 p-1.5 -m-1.5' : ''}`}
+          >
             {NETWORK_DEPARTMENTS.map(dept => {
               const isSelected = receivingDepartments.includes(dept);
               return (
@@ -122,9 +130,15 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
               );
             })}
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-            Selecting target departments filters candidate facilities to hospitals with matching clinical departments and active beds.
-          </p>
+          {fieldErrors?.departments ? (
+            <p id="departments-error" className="text-xs text-critical-600 dark:text-critical-400 mt-2 font-semibold">
+              {fieldErrors.departments}
+            </p>
+          ) : (
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              Selecting target departments filters candidate facilities to hospitals with matching clinical departments and active beds.
+            </p>
+          )}
         </div>
 
         {/* Facility Routing Grid */}
@@ -152,7 +166,13 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
                   <select
                     id="receivingFacility"
                     required
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 p-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50"
+                    aria-invalid={!!fieldErrors?.facility}
+                    aria-describedby={fieldErrors?.facility ? 'receivingFacility-error' : undefined}
+                    className={`w-full rounded-lg border p-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 outline-none disabled:opacity-50 ${
+                      fieldErrors?.facility
+                        ? 'border-critical-500 focus:ring-critical-500'
+                        : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
+                    }`}
                     value={receivingFacilityId}
                     onChange={e => setReceivingFacilityId(e.target.value)}
                     disabled={receivingDepartments.length === 0 || aiTriageRunning}
@@ -206,7 +226,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
                 type="button"
                 onClick={onRunAiTriage}
                 disabled={receivingDepartments.length === 0 || aiTriageRunning}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 font-semibold shadow-sm"
+                className="bg-command-blue hover:bg-command-blue-hover text-white shrink-0 font-semibold"
               >
                 {aiTriageRunning ? (
                   <Activity className="w-4 h-4 mr-2 animate-pulse" />
@@ -216,28 +236,36 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
                 AI Triage
               </Button>
             </div>
+            {fieldErrors?.facility && (
+              <p id="receivingFacility-error" className="text-xs text-critical-600 dark:text-critical-400 font-semibold">
+                {fieldErrors.facility}
+              </p>
+            )}
 
             {/* AI Ranked Facilities Card */}
             {aiRankedFacilities && (
-              <div className="mt-3 space-y-2 p-3 bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-lg animate-in fade-in duration-300">
+              <div className="mt-3 space-y-2 p-3 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-lg animate-in fade-in duration-300">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <h4 className="text-xs font-bold text-indigo-950 dark:text-indigo-300 uppercase tracking-wider">
+                  <Sparkles className="w-4 h-4 text-command-blue dark:text-blue-400" />
+                  <h4 className="text-xs font-bold text-command-blue dark:text-blue-300 uppercase tracking-wider">
                     AI Ranked Destination Suggestions
                   </h4>
                 </div>
                 <div className="space-y-2">
                   {aiRankedFacilities.map((f, idx) => (
-                    <div
+                    <button
                       key={f.id}
-                      onClick={() => f.availableBeds > 0 && setReceivingFacilityId(f.id)}
-                      className={`p-2.5 rounded-lg border transition-all ${
+                      type="button"
+                      onClick={() => setReceivingFacilityId(f.id)}
+                      disabled={f.availableBeds <= 0}
+                      aria-pressed={receivingFacilityId === f.id}
+                      className={`w-full text-left p-2.5 rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 ${
                         f.availableBeds > 0
-                          ? 'cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-700'
+                          ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-700'
                           : 'opacity-60 cursor-not-allowed grayscale'
                       } ${
                         receivingFacilityId === f.id
-                          ? 'bg-indigo-100 dark:bg-indigo-900/50 border-indigo-400 ring-1 ring-indigo-500'
+                          ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-400 ring-1 ring-blue-500'
                           : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
                       }`}
                     >
@@ -271,7 +299,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>

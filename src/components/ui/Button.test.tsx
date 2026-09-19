@@ -13,7 +13,7 @@ describe('Button', () => {
   it('applies default classes (primary, md)', () => {
     render(<Button>Default</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-blue-900', 'min-h-[48px]'); // Checking one class for variant and size
+    expect(button).toHaveClass('bg-command-blue', 'min-h-[48px]'); // Checking one class for variant and size
   });
 
   it('applies destructive variant classes', () => {

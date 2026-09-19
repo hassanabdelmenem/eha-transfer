@@ -75,7 +75,7 @@ export const ArrivedTransfersQueue: React.FC<ArrivedTransfersQueueProps> = ({
 
                 <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400 flex-wrap pt-1">
                   <span className="flex items-center gap-1">
-                    <Hospital className="w-3.5 h-3.5 text-slate-400" />
+                    <Hospital className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                     From: <strong className="text-slate-700 dark:text-slate-200">{originFacility}</strong>
                   </span>
                   {r.patientData?.vitalSigns && (

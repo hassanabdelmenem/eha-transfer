@@ -39,7 +39,7 @@ export const ActiveInpatientCensus: React.FC<ActiveInpatientCensusProps> = ({
           <div className="flex flex-col items-center justify-center gap-2">
             <Users className="w-8 h-8 text-slate-300 dark:text-slate-700" />
             <p className="text-sm font-medium">No direct admissions currently active.</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">
               Patients admitted directly to units without multi-facility transfers will appear here.
             </p>
           </div>
@@ -74,15 +74,15 @@ export const ActiveInpatientCensus: React.FC<ActiveInpatientCensusProps> = ({
 
                     <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
                       <span className="font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded flex items-center gap-1">
-                        <Hash className="w-3 h-3 text-slate-400" />
+                        <Hash className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                         HID: {admission.hospitalId}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Building className="w-3 h-3 text-slate-400" />
+                        <Building className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                         {admission.department}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-slate-400" />
+                        <Calendar className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                         {formattedDate}
                       </span>
                     </div>
@@ -91,8 +91,9 @@ export const ActiveInpatientCensus: React.FC<ActiveInpatientCensusProps> = ({
                   <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
                     <Button
                       variant="outline"
+                      size="sm"
                       disabled={isDischarging}
-                      className="border-critical-200 dark:border-critical-900 text-critical-600 dark:text-critical-400 hover:bg-critical-50 dark:hover:bg-critical-950/30 min-h-[44px] px-4 font-semibold"
+                      className="border-critical-200 dark:border-critical-900 text-critical-600 dark:text-critical-400 hover:bg-critical-50 dark:hover:bg-critical-950/30 px-4 font-semibold"
                       onClick={() => onDischarge(admission.id)}
                     >
                       <UserMinus className="w-4 h-4 mr-2" />

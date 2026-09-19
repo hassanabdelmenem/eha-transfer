@@ -83,7 +83,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Total Beds
             </span>
-            <Building2 className="w-4 h-4 text-slate-400" />
+            <Building2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           </div>
           <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 mt-2">
             {totalBeds}
@@ -134,7 +134,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
                   ? 'text-critical-500'
                   : overallOccupancyRate >= 75
                   ? 'text-warning-500'
-                  : 'text-slate-400'
+                  : 'text-slate-500 dark:text-slate-400'
               }`}
             />
           </div>

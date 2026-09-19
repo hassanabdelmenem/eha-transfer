@@ -4,6 +4,7 @@ import { useData } from '../contexts/DataContext';
 import { Search, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Skeleton } from '../components/ui/Skeleton';
 import { BedType, Facility } from '../types';
+import { isAdmin as checkIsAdmin } from '../lib/permissions';
 
 const BED_TYPES: BedType[] = ['ICU', 'CCU', 'PICU', 'Ward'];
 // 2e network list: a capacity hint per facility -- the first configured bed
@@ -48,7 +49,7 @@ export const NetworkDirectoryPage: React.FC = () => {
     return map;
   }, [shiftAssignments]);
 
-  const isAdmin = user.role === 'owner' || user.role === 'system_admin';
+  const isAdmin = checkIsAdmin(user);
   const isLeadership = ['hospital_manager', 'deputy_manager', 'medical_director', 'owner'].includes(user.role);
   const canViewNetwork = isAdmin || isLeadership;
 
@@ -197,7 +198,7 @@ export const NetworkDirectoryPage: React.FC = () => {
                           <Phone className="w-5 h-5" />
                         </a>
                       ) : (
-                        <span className="text-xs text-slate-400 shrink-0">No number</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">No number</span>
                       )}
                     </div>
                   ))}

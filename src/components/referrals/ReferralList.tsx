@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Referral } from '../../types';
 import { Card } from '../ui/Card';
 import { isSlaTracked, secondsUntilSlaBreach } from '../../lib/sla';
+import { isAdmin } from '../../lib/permissions';
 import { sortByWorkflow, priorityRailClass } from '../../lib/referralPriority';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Timer, AlertTriangle } from 'lucide-react';
@@ -134,16 +135,13 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
 
   let filtered = referrals;
 
-  // If user is admin/owner and no facilityId passed (or explicitly showing all), show all
-  const isAdmin = user?.role === 'system_admin' || user?.role === 'owner';
-  
   if (facilityId) {
     filtered = referrals.filter(
-      r => r.referringFacilityId === facilityId || 
-           r.receivingFacilityId === facilityId || 
+      r => r.referringFacilityId === facilityId ||
+           r.receivingFacilityId === facilityId ||
            (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(facilityId))
     );
-  } else if (!isAdmin && user?.facilityId) {
+  } else if (!isAdmin(user) && user?.facilityId) {
      filtered = referrals.filter(
       r => r.referringFacilityId === user.facilityId || 
            r.receivingFacilityId === user.facilityId || 
@@ -265,7 +263,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               <div className="flex justify-between items-start gap-3 mb-2">
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm truncate">{referral.patientData.name || 'Unknown Patient'}</div>
-                  <div className="text-xs text-slate-400 font-mono mt-0.5 truncate">HID: {referral.patientData.hospitalId}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5 truncate">HID: {referral.patientData.hospitalId}</div>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   {referral.priority === 'emergency' && <span className="px-2 py-0.5 bg-critical-700 text-white dark:bg-critical-600 rounded text-xs font-sans font-semibold whitespace-nowrap">Emergency</span>}
@@ -285,11 +283,11 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               </div>
               <div className="flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-400 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <div className="min-w-0">
-                  <span className="block text-xs font-semibold text-slate-400">From</span>
+                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">From</span>
                   <span className="block truncate">{fromFacility?.name || '—'}</span>
                 </div>
                 <div className="min-w-0">
-                  <span className="block text-xs font-semibold text-slate-400">Target</span>
+                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Target</span>
                   <span className="block truncate">{referral.receivingDepartments?.join(', ') || 'N/A'}</span>
                 </div>
               </div>
@@ -329,7 +327,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                 <tr key={referral.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-blue-50/50 dark:hover:bg-slate-800 cursor-pointer transition-colors" onClick={() => navigate(`/referrals/${referral.id}`)}>
                   <td className="px-6 py-4 max-w-[220px]">
                     <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{referral.patientData.name || 'Unknown Patient'}</div>
-                    <div className="text-xs text-slate-400 font-mono mt-1 truncate">HID: {referral.patientData.hospitalId}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1 truncate">HID: {referral.patientData.hospitalId}</div>
                   </td>
                   <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium max-w-[200px] truncate">{fromFacility?.name || '—'}</td>
                   <td className="px-6 py-4 text-slate-700 dark:text-slate-300 max-w-[180px] truncate">{referral.receivingDepartments?.join(', ') || 'N/A'}</td>
@@ -345,7 +343,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                         {['pending'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-warning-500 rounded-full shrink-0"></div>}
                         {['admitted', 'discharged'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-success-500 rounded-full shrink-0"></div>}
                         {['rejected', 'cancelled'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-critical-500 rounded-full shrink-0"></div>}
-                        {['postponed'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-purple-500 rounded-full shrink-0"></div>}
+                        {['postponed'].includes(referral.status) && <div className="w-1.5 h-1.5 bg-warning-500 rounded-full shrink-0"></div>}
                         <span className="capitalize">{referral.status?.replace(/_/g, ' ') || 'UNKNOWN'}</span>
                       </div>
                       {referral.isEscalated && (

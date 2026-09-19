@@ -143,7 +143,7 @@ export const ArchivePage: React.FC = () => {
           </div>
 
           <div className="relative sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
             <input
               className="w-full min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10 pr-3 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="Patient name, hospital ID or department"

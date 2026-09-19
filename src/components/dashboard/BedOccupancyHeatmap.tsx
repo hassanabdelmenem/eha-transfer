@@ -10,7 +10,7 @@ const BED_TYPES: BedType[] = ['ICU', 'CCU', 'PICU', 'Ward'];
 
 export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facilities }) => {
   const getOccupancyColor = (total: number, occupied: number) => {
-    if (total === 0) return 'bg-slate-100 dark:bg-slate-800 text-slate-400';
+    if (total === 0) return 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
     const pct = occupied / total;
     // Three occupancy tiers need three distinct colors — red and amber used
     // to render as the same brand orange, so a 95%-full facility and a
@@ -27,7 +27,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
   );
 
   return (
-    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col mt-6">
+    <Card className="border border-slate-200 dark:border-slate-800 flex flex-col mt-6">
       <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-4">
         <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-300">
           Network Bed Occupancy Heatmap
@@ -35,7 +35,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
       </CardHeader>
       <CardContent className="p-0 overflow-auto">
         {displayFacilities.length === 0 ? (
-          <p className="p-6 text-center text-sm text-slate-400 dark:text-slate-500 italic">
+          <p className="p-6 text-center text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 italic">
             No facilities have bed capacity configured yet.
           </p>
         ) : (
@@ -53,7 +53,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
               <tr key={facility.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
                 <td className="p-3 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
                   {facility.name}
-                  <div className="text-xs text-slate-400 font-normal capitalize">{(facility.type || "").replace('_', ' ')}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-normal capitalize">{(facility.type || "").replace('_', ' ')}</div>
                 </td>
                 {BED_TYPES.map(bed => {
                   const cap = facility.capacity[bed];

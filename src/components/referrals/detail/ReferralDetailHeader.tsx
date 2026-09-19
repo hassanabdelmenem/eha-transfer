@@ -97,7 +97,7 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({
                     type="button"
                     onClick={onCopyId}
                     aria-label="Copy referral ID"
-                    className="inline-flex items-center justify-center h-8 w-8 shrink-0 rounded text-white/60 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                    className="inline-flex items-center justify-center h-11 w-11 shrink-0 rounded text-white/60 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-success-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
                   </button>

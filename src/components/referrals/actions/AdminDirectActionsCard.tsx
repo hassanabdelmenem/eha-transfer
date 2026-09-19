@@ -41,7 +41,7 @@ export const AdminDirectActionsCard: React.FC<AdminDirectActionsCardProps> = ({
           Force Move/Transfer to Facility (Bypass Bed Check)
         </label>
         <select
-          className="w-full rounded border border-slate-300 dark:border-slate-700 p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+          className="w-full min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-700 p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
           value={contractedFacilityId}
           onChange={(e) => setContractedFacilityId(e.target.value)}
         >
@@ -62,7 +62,7 @@ export const AdminDirectActionsCard: React.FC<AdminDirectActionsCardProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
         <Button
           onClick={onDirectApprove}
-          className="bg-success-600 hover:bg-success-700 text-xs py-1.5 min-h-[40px] h-auto"
+          className="bg-success-600 hover:bg-success-700 text-xs py-1.5"
           title="Direct Approve Referral"
         >
           <CheckCircle className="h-3.5 w-3.5 mr-1 shrink-0" /> Approve
@@ -70,14 +70,14 @@ export const AdminDirectActionsCard: React.FC<AdminDirectActionsCardProps> = ({
         <Button
           onClick={onDirectDecline}
           variant="destructive"
-          className="text-xs py-1.5 min-h-[40px] h-auto"
+          className="text-xs py-1.5"
           title="Direct Decline Referral"
         >
           <X className="h-3.5 w-3.5 mr-1 shrink-0" /> Decline
         </Button>
         <Button
           onClick={onDirectPostpone}
-          className="bg-warning-600 hover:bg-warning-700 text-white text-xs py-1.5 min-h-[40px] h-auto"
+          className="bg-warning-600 hover:bg-warning-700 text-white text-xs py-1.5"
           title="Direct Postpone Referral"
         >
           <Clock className="h-3.5 w-3.5 mr-1 shrink-0" /> Postpone

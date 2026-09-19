@@ -42,7 +42,7 @@ export const PatientConsentCard: React.FC<PatientConsentCardProps> = ({
           <Button
             onClick={onConsent}
             disabled={consentBusy}
-            className="bg-success-600 hover:bg-success-700 text-xs py-1.5 min-h-[40px]"
+            className="bg-success-600 hover:bg-success-700 text-xs py-1.5"
           >
             <UserCheck className="h-3.5 w-3.5 mr-1 shrink-0" /> Accepted Transfer
           </Button>
@@ -50,7 +50,7 @@ export const PatientConsentCard: React.FC<PatientConsentCardProps> = ({
             onClick={() => setShowDeclineForm(true)}
             disabled={consentBusy}
             variant="destructive"
-            className="text-xs py-1.5 min-h-[40px]"
+            className="text-xs py-1.5"
           >
             <UserX className="h-3.5 w-3.5 mr-1 shrink-0" /> Declined This Facility
           </Button>
@@ -71,7 +71,7 @@ export const PatientConsentCard: React.FC<PatientConsentCardProps> = ({
                 setDeclineReason('');
               }}
               variant="ghost"
-              className="text-xs min-h-[40px]"
+              className="text-xs"
             >
               Cancel
             </Button>
@@ -80,7 +80,7 @@ export const PatientConsentCard: React.FC<PatientConsentCardProps> = ({
               onClick={onDecline}
               disabled={consentBusy}
               variant="destructive"
-              className="text-xs min-h-[40px]"
+              className="text-xs"
             >
               Confirm Decline & Re-route
             </Button>

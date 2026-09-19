@@ -16,6 +16,7 @@ import {
   Send,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 
 export const AppLayout: React.FC = () => {
   const { user, logout, updateUserProfile } = useAuth();
@@ -42,10 +43,14 @@ export const AppLayout: React.FC = () => {
   const [profilePhone, setProfilePhone] = useState(user?.phoneNumber || '');
   const [profileSchedule, setProfileSchedule] = useState(user?.monthlySchedule || '');
   const [savingProfile, setSavingProfile] = useState(false);
+  const profileModalRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(showProfile, () => setShowProfile(false), profileModalRef);
 
   const [showHotline, setShowHotline] = useState(false);
   const [showEndOfShift, setShowEndOfShift] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const endOfShiftModalRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(showEndOfShift, () => setShowEndOfShift(false), endOfShiftModalRef);
 
   const [signedInSince] = useState(() => {
     try {
@@ -181,13 +186,12 @@ export const AppLayout: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (showHotline) setShowHotline(false);
-        if (showProfile) setShowProfile(false);
         if (mobileMenuOpen) setMobileMenuOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showHotline, showProfile, mobileMenuOpen]);
+  }, [showHotline, mobileMenuOpen]);
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -268,10 +272,12 @@ export const AppLayout: React.FC = () => {
       {/* Profile Settings Dialog */}
       {showProfile && (
         <div
+          ref={profileModalRef}
           className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-labelledby="profile-title"
+          tabIndex={-1}
         >
           <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
@@ -282,7 +288,7 @@ export const AppLayout: React.FC = () => {
               </div>
               <button
                 onClick={() => setShowProfile(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg"
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
                 aria-label="Close profile settings"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
@@ -316,7 +322,7 @@ export const AppLayout: React.FC = () => {
                   rows={4}
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none text-slate-900 dark:text-white transition-all"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                   This schedule is published to the regional Network Directory to assist triage coordination.
                 </p>
               </div>
@@ -334,10 +340,12 @@ export const AppLayout: React.FC = () => {
         const handover = buildHandover();
         return (
           <div
+            ref={endOfShiftModalRef}
             className="fixed inset-0 bg-slate-950 z-[100] flex flex-col text-white overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="eos-title"
+            tabIndex={-1}
           >
             <div className="px-4 sm:px-6 pt-5 pb-4 flex items-start justify-between shrink-0 border-b border-white/10">
               <div>
@@ -351,7 +359,7 @@ export const AppLayout: React.FC = () => {
               <button
                 onClick={() => setShowEndOfShift(false)}
                 aria-label="Cancel, stay signed in"
-                className="h-10 w-10 -mr-2 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                className="min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>

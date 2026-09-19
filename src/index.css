@@ -53,6 +53,13 @@
   --color-info-800: var(--color-blue-800);
   --color-info-900: var(--color-blue-900);
   --color-info-950: var(--color-blue-950);
+
+  /* The one brand accent (DESIGN.md's "One Accent Rule"). A distinct token, not an
+     alias into the blue-* scale, so it can't be confused with -- or silently drift
+     to match -- info-600, which shares the same hue family at a different shade. */
+  --color-command-blue: #1e3a8a;
+  --color-command-blue-hover: #1e40af;
+  --color-command-blue-soft: #dbeafe;
 }
 
 body {

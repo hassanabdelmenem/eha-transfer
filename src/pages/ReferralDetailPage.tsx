@@ -23,7 +23,8 @@ import { ReferralActionConsole } from '../components/referrals/actions/ReferralA
 import { RejectionModal } from '../components/referrals/actions/RejectionModal';
 import { ReferralStatus, DeptApprovalStatus } from '../types';
 import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataContext';
-import { toastError } from '../lib/toast';
+import { showToast, toastError } from '../lib/toast';
+import { isAdmin as checkIsAdmin } from '../lib/permissions';
 
 export const ReferralDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -99,7 +100,7 @@ export const ReferralDetailPage: React.FC = () => {
     return (
       <div className="p-12 text-center max-w-md mx-auto">
         <div className="w-14 h-14 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-          <FileText className="w-6 h-6 text-slate-400" />
+          <FileText className="w-6 h-6 text-slate-500 dark:text-slate-400" />
         </div>
         <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Referral not found</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -119,7 +120,7 @@ export const ReferralDetailPage: React.FC = () => {
   const referringUser = usersById.get(referral.referringUserId);
 
   // Role checks
-  const isAdmin = user.role === 'system_admin' || user.role === 'owner';
+  const isAdmin = checkIsAdmin(user);
   const isReceiving = user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && (referral.candidateFacilityIds?.includes(user.facilityId || '') ?? false)) || isAdmin;
   const isReferring = user.facilityId === referral.referringFacilityId || isAdmin;
 
@@ -181,6 +182,7 @@ export const ReferralDetailPage: React.FC = () => {
     try {
       await updateReferralStatus(referral.id, status, overrideNotes || notes);
       setNotes('');
+      showToast('Referral updated.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not update the referral status.');
     }
@@ -198,6 +200,7 @@ export const ReferralDetailPage: React.FC = () => {
     try {
       await overrideReferralDestination(referral.id, overrideFacilityId);
       setOverrideFacilityId('');
+      showToast('Destination updated.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not override the destination.');
     }
@@ -206,6 +209,7 @@ export const ReferralDetailPage: React.FC = () => {
   const handleToggleEscalation = async () => {
     try {
       await toggleReferralEscalation(referral.id, !referral.isEscalated);
+      showToast(referral.isEscalated ? 'Escalation cleared.' : 'Referral escalated.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not update the escalation flag.');
     }
@@ -215,6 +219,7 @@ export const ReferralDetailPage: React.FC = () => {
     setConsentBusy(true);
     try {
       await recordPatientConsent(referral.id);
+      showToast('Patient consent recorded.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not record patient consent.');
     } finally {
@@ -228,6 +233,7 @@ export const ReferralDetailPage: React.FC = () => {
       await setAccompanyingDoctor(referral.id, escortName, escortPhone);
       setEscortName('');
       setEscortPhone('');
+      showToast('Escort details saved.', 'success');
     } catch (e: any) {
       toastError(e, "Could not save the accompanying doctor's details.");
     } finally {
@@ -241,6 +247,7 @@ export const ReferralDetailPage: React.FC = () => {
       await recordPatientDecline(referral.id, declineReason);
       setShowDeclineForm(false);
       setDeclineReason('');
+      showToast('Patient decline recorded.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not record patient decline.');
     } finally {

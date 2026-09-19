@@ -37,7 +37,7 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
           </div>
 
           <div className="relative flex gap-4">
-            <div className="z-10 rounded p-1.5 bg-slate-100 text-slate-400 ring-2 ring-white dark:ring-slate-900">
+            <div className="z-10 rounded p-1.5 bg-slate-100 text-slate-500 dark:text-slate-400 ring-2 ring-white dark:ring-slate-900">
               <Truck className="h-4 w-4" />
             </div>
             <div>
@@ -70,7 +70,7 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
           {referral.transferType && referral.transferType !== 'one_way' && (
             <>
               <div className="relative flex gap-4">
-                <div className="z-10 rounded p-1.5 bg-slate-100 text-slate-400 ring-2 ring-white dark:ring-slate-900">
+                <div className="z-10 rounded p-1.5 bg-slate-100 text-slate-500 dark:text-slate-400 ring-2 ring-white dark:ring-slate-900">
                   <Truck className="h-4 w-4" />
                 </div>
                 <div>

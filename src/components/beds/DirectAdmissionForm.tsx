@@ -146,7 +146,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
       )}
 
       <form onSubmit={handleSubmit} noValidate>
-        <Card className="border border-slate-200 dark:border-slate-800 shadow-xs">
+        <Card className="border border-slate-200 dark:border-slate-800 ">
           <CardHeader className="pb-3">
             <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -483,7 +483,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   variant="outline"
                   onClick={onCancel}
                   disabled={isSubmitting}
-                  className="w-full sm:w-auto min-h-[44px]"
+                  className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>

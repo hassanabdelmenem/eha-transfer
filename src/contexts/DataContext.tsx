@@ -9,6 +9,7 @@ import { formatDateTime } from '../lib/utils';
 import { SLA_MINUTES, needsAutoEscalation } from '../lib/sla';
 import { capacityEscalationReason, describeCapacityEscalation } from '../lib/routing';
 import { isNotificationRecipient } from '../lib/notificationRecipients';
+import { isAdmin as checkIsAdmin } from '../lib/permissions';
 // Type-only: `isolatedModules` is on, so esbuild transpiles this file without
 // cross-file type information and would emit a runtime import for a binding that
 // only exists at compile time.
@@ -254,7 +255,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loadOlderReferrals = useCallback(async () => {
-    const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+    const isAdmin = checkIsAdmin(user);
     const shapes = referralQueryShapes(user?.facilityId, isAdmin);
     try {
       const results = await Promise.all(
@@ -281,7 +282,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user) return;
     const unsubs: (() => void)[] = [];
-    const isAdmin = user.role === 'owner' || user.role === 'system_admin';
+    const isAdmin = checkIsAdmin(user);
 
     // Facilities: readable by any signed-in user — the onboarding hospital picker
     // needs them before the account is verified.
@@ -1376,7 +1377,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   useEffect(() => {
     if (!user?.verified) return;
-    const isAdmin = user.role === 'owner' || user.role === 'system_admin';
+    const isAdmin = checkIsAdmin(user);
     if (!isAdmin && !user.facilityId) return;
 
     const sweep = () => {

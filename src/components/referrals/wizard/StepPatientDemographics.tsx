@@ -7,11 +7,13 @@ import { User, CreditCard, Sparkles } from 'lucide-react';
 interface StepPatientDemographicsProps {
   patientData: Partial<PatientData>;
   setPatientData: React.Dispatch<React.SetStateAction<Partial<PatientData>>>;
+  fieldErrors?: { hospitalId?: string; name?: string };
 }
 
 export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = ({
   patientData,
   setPatientData,
+  fieldErrors,
 }) => {
   const handleNationalIdChange = (nid: string) => {
     setPatientData(prev => {
@@ -49,7 +51,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
   };
 
   return (
-    <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <Card className="border-slate-200 dark:border-slate-800 overflow-hidden">
       <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/80 pb-4">
         <div className="flex items-center gap-2.5">
           <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-sm">
@@ -83,11 +85,20 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
                 placeholder="ISM-XXXXX"
                 value={patientData.hospitalId || ''}
                 onChange={e => setPatientData({ ...patientData, hospitalId: e.target.value })}
+                aria-invalid={!!fieldErrors?.hospitalId}
+                aria-describedby={fieldErrors?.hospitalId ? 'hospitalId-error' : 'hospitalId-hint'}
+                className={fieldErrors?.hospitalId ? 'border-critical-500 focus:ring-critical-500' : undefined}
               />
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              Required medical record number / unique patient identifier.
-            </p>
+            {fieldErrors?.hospitalId ? (
+              <p id="hospitalId-error" className="text-[11px] text-critical-600 dark:text-critical-400 mt-1 font-semibold">
+                {fieldErrors.hospitalId}
+              </p>
+            ) : (
+              <p id="hospitalId-hint" className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Required medical record number / unique patient identifier.
+              </p>
+            )}
           </div>
 
           <div>
@@ -134,8 +145,16 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
                 placeholder="e.g. Sayed Abdel-Rahman"
                 value={patientData.name || ''}
                 onChange={e => setPatientData({ ...patientData, name: e.target.value })}
+                aria-invalid={!!fieldErrors?.name}
+                aria-describedby={fieldErrors?.name ? 'patientName-error' : undefined}
+                className={fieldErrors?.name ? 'border-critical-500 focus:ring-critical-500' : undefined}
               />
             </div>
+            {fieldErrors?.name && (
+              <p id="patientName-error" className="text-[11px] text-critical-600 dark:text-critical-400 mt-1 font-semibold">
+                {fieldErrors.name}
+              </p>
+            )}
           </div>
 
           <div className="md:col-span-2">

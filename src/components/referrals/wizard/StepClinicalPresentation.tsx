@@ -49,7 +49,7 @@ export const StepClinicalPresentation: React.FC<StepClinicalPresentationProps> =
   const gcsEval = evaluateVital('gcs', vitals.gcs);
 
   return (
-    <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <Card className="border-slate-200 dark:border-slate-800 overflow-hidden">
       <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/80 pb-4">
         <div className="flex items-center gap-2.5">
           <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-sm">

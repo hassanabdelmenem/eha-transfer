@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, ChevronRight, AlertTriangle } from 'lucide-react';
 import { Referral } from '../../types';
 import { Button } from '../ui/Button';
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 
 const NOT_RECORDED = '—';
 const isAbnormal = (value: number | undefined, outOfRange: (n: number) => boolean) =>
@@ -32,21 +33,17 @@ const VitalCell: React.FC<{ label: string; value: React.ReactNode; abnormal: boo
 export const ReferralSummarySheet: React.FC<{ referral: Referral; onClose: () => void }> = ({ referral, onClose }) => {
   const navigate = useNavigate();
   const vitals = referral.patientData.vitalSigns;
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(true, onClose, dialogRef);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/50 backdrop-blur-sm" onClick={onClose}>
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="summary-sheet-title"
+        tabIndex={-1}
         className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-2xl shadow-xl max-h-[85vh] flex flex-col motion-safe:animate-in motion-safe:slide-in-from-bottom motion-safe:duration-200"
         onClick={(e) => e.stopPropagation()}
       >
@@ -63,7 +60,7 @@ export const ReferralSummarySheet: React.FC<{ referral: Referral; onClose: () =>
           <button
             onClick={onClose}
             aria-label="Close summary"
-            className="h-11 w-11 -mr-2 -mt-1 shrink-0 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            className="h-11 w-11 -mr-2 -mt-1 shrink-0 flex items-center justify-center rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
           >
             <X className="w-5 h-5" aria-hidden="true" />
           </button>

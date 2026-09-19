@@ -95,34 +95,15 @@ service cloud.firestore {
       // Cloud Function would let this be narrowed to one facility.
       allow list: if isVerifiedCaller();
 
-      // Self-signup is always an unverified resident, except for a single exact-match
-      // bootstrap hatch that lets the initial owner account promote itself once. It
-      // must stay an exact email comparison, not a substring/regex match — a substring
-      // check lets any attacker-controlled mailbox containing that text as part of a
-      // larger address (e.g. registering "x<owner>x@attacker.com") pass the match and
-      // self-grant role: 'owner'. Revoke by removing this clause once the owner
-      // document exists and admin tooling can promote further owners server-side.
+      // Self-signup is always an unverified resident. The owner account is promoted
+      // server-side (admin tooling / emulator seeding), never via a client-writable
+      // rule — the prior bootstrap hatch was revoked once that tooling shipped.
       allow create: if signedIn() && request.auth.uid == userId
-                    && (
-                      (request.resource.data.verified == false && request.resource.data.role == 'resident')
-                      ||
-                      (
-                        request.auth.token.email == 'hassan.abdelmenem@gmail.com'
-                        && request.auth.token.email_verified == true
-                        && request.resource.data.verified == true
-                        && request.resource.data.role == 'owner'
-                      )
-                    );
+                    && request.resource.data.verified == false
+                    && request.resource.data.role == 'resident';
 
       allow update: if isPrivileged()
-                    || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged())
-                    || (
-                         signedIn() && request.auth.uid == userId
-                         && request.auth.token.email == 'hassan.abdelmenem@gmail.com'
-                         && request.auth.token.email_verified == true
-                         && request.resource.data.role == 'owner'
-                         && request.resource.data.verified == true
-                       );
+                    || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged());
       allow delete: if isPrivileged();
     }
 

@@ -7,6 +7,7 @@ import { DirectAdmissionForm, DirectAdmissionFormData } from '../components/beds
 import { ActiveInpatientCensus } from '../components/beds/ActiveInpatientCensus';
 import { showToast, toastError } from '../lib/toast';
 import { ArrowLeft, BedDouble } from 'lucide-react';
+import { isAdmin as checkIsAdmin } from '../lib/permissions';
 
 export const AdmitPatientPage: React.FC = () => {
   // 1. All hooks called unconditionally at top
@@ -22,7 +23,7 @@ export const AdmitPatientPage: React.FC = () => {
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
   const [dischargingId, setDischargingId] = useState<string | null>(null);
 
-  const isAdmin = user?.role === 'owner' || user?.role === 'system_admin';
+  const isAdmin = checkIsAdmin(user);
 
   useEffect(() => {
     if (!selectedFacilityId && user?.facilityId) {

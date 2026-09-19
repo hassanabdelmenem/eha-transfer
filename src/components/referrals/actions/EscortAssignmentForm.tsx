@@ -44,7 +44,7 @@ export const EscortAssignmentForm: React.FC<EscortAssignmentFormProps> = ({
       <Button
         onClick={onSave}
         disabled={escortBusy || !escortName.trim() || !escortPhone.trim()}
-        className="w-full text-xs py-1.5 min-h-[40px]"
+        className="w-full text-xs py-1.5"
       >
         Save Accompanying Doctor
       </Button>

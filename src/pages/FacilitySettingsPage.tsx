@@ -211,7 +211,7 @@ export const FacilitySettingsPage: React.FC = () => {
                   {facility.departments.map(dept => (
                     <span key={dept} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 pl-3 pr-1.5 py-1 text-sm text-slate-700 dark:text-slate-300">
                       {dept}
-                      <button onClick={() => removeFacilityDepartment(facility.id, dept)} aria-label={`Remove ${dept}`} className="rounded-full p-1 text-slate-400 hover:text-critical-600">
+                      <button onClick={() => removeFacilityDepartment(facility.id, dept)} aria-label={`Remove ${dept}`} className="rounded-full p-1 text-slate-500 dark:text-slate-400 hover:text-critical-600">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </span>
@@ -257,7 +257,7 @@ export const FacilitySettingsPage: React.FC = () => {
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
           <div className="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
-              <Building className="w-4 h-4 text-slate-400" />
+              <Building className="w-4 h-4 text-slate-500 dark:text-slate-400" />
               Network facilities · {facilities.length}
             </p>
             <button
@@ -519,7 +519,7 @@ export const FacilitySettingsPage: React.FC = () => {
                            ))}
                          </select>
                        ) : (
-                         <span className="text-slate-400 text-xs italic">N/A</span>
+                         <span className="text-slate-500 dark:text-slate-400 text-xs italic">N/A</span>
                        )}
                     </td>
                     <td className="px-4 py-3 text-right">

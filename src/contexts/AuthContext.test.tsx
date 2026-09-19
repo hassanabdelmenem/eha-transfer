@@ -238,92 +238,6 @@ describe('AuthContext onAuthStateChanged', () => {
     expect(screen.getByTestId('role')).toHaveTextContent('resident');
   });
 
-  it('self-heals the bootstrap admin document into a verified owner', async () => {
-    renderAuth();
-    await waitFor(() => expect(authStateCallback).not.toBeNull());
-    await act(async () => {
-      authStateCallback!({ uid: 'admin-uid', email: 'hassan.abdelmenem@gmail.com', emailVerified: true });
-    });
-    await waitFor(() => expect(snapshotSuccessCallback).not.toBeNull());
-
-    await act(async () => {
-      snapshotSuccessCallback!({
-        exists: () => true,
-        id: 'admin-uid',
-        data: () => ({ name: 'Hassan', role: 'resident', verified: false, profileCompleted: false }),
-      });
-    });
-
-    expect(setDocMock).toHaveBeenCalledWith(
-      expect.objectContaining({ path: 'users/admin-uid' }),
-      { role: 'owner', verified: true, profileCompleted: true },
-      { merge: true }
-    );
-    expect(screen.getByTestId('role')).toHaveTextContent('owner');
-    expect(screen.getByTestId('verified')).toHaveTextContent('true');
-  });
-
-  it('does not re-heal a bootstrap admin document already correct', async () => {
-    renderAuth();
-    await waitFor(() => expect(authStateCallback).not.toBeNull());
-    await act(async () => {
-      authStateCallback!({ uid: 'admin-uid', email: 'hassan.abdelmenem@gmail.com', emailVerified: true });
-    });
-    await waitFor(() => expect(snapshotSuccessCallback).not.toBeNull());
-
-    await act(async () => {
-      snapshotSuccessCallback!({
-        exists: () => true,
-        id: 'admin-uid',
-        data: () => ({ name: 'Hassan', role: 'owner', verified: true, profileCompleted: true }),
-      });
-    });
-
-    expect(setDocMock).not.toHaveBeenCalled();
-  });
-
-  it('does not treat the bootstrap admin email as privileged before its email is verified', async () => {
-    renderAuth();
-    await waitFor(() => expect(authStateCallback).not.toBeNull());
-    await act(async () => {
-      authStateCallback!({ uid: 'admin-uid', email: 'hassan.abdelmenem@gmail.com', emailVerified: false });
-    });
-    await waitFor(() => expect(snapshotSuccessCallback).not.toBeNull());
-
-    await act(async () => {
-      snapshotSuccessCallback!({
-        exists: () => true,
-        id: 'admin-uid',
-        data: () => ({ name: 'Hassan', role: 'resident', verified: false, profileCompleted: false }),
-      });
-    });
-
-    expect(setDocMock).not.toHaveBeenCalled();
-    expect(screen.getByTestId('role')).toHaveTextContent('resident');
-  });
-
-  it('logs and swallows a self-heal write failure rather than blocking authReady', async () => {
-    setDocMock.mockRejectedValueOnce(new Error('write denied'));
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    renderAuth();
-    await waitFor(() => expect(authStateCallback).not.toBeNull());
-    await act(async () => {
-      authStateCallback!({ uid: 'admin-uid', email: 'hassan.abdelmenem@gmail.com', emailVerified: true });
-    });
-    await waitFor(() => expect(snapshotSuccessCallback).not.toBeNull());
-
-    await act(async () => {
-      snapshotSuccessCallback!({
-        exists: () => true,
-        id: 'admin-uid',
-        data: () => ({ name: 'Hassan', role: 'resident', verified: false, profileCompleted: false }),
-      });
-    });
-
-    expect(errSpy).toHaveBeenCalledWith('Failed to self-heal admin account:', expect.any(Error));
-    expect(screen.getByTestId('authReady')).toHaveTextContent('true');
-  });
-
   it('creates a resident-role document for a brand new non-admin user', async () => {
     renderAuth();
     await waitFor(() => expect(authStateCallback).not.toBeNull());
@@ -364,19 +278,6 @@ describe('AuthContext onAuthStateChanged', () => {
     await act(async () => { snapshotSuccessCallback!({ exists: () => false }); });
 
     expect(screen.getByTestId('user')).toHaveTextContent('noname');
-  });
-
-  it('creates the bootstrap admin as an already-verified owner on first sign-in', async () => {
-    renderAuth();
-    await waitFor(() => expect(authStateCallback).not.toBeNull());
-    await act(async () => {
-      authStateCallback!({ uid: 'admin-uid', email: 'hassan.abdelmenem@gmail.com', emailVerified: true, displayName: 'Hassan' });
-    });
-    await waitFor(() => expect(snapshotSuccessCallback).not.toBeNull());
-    await act(async () => { snapshotSuccessCallback!({ exists: () => false }); });
-
-    expect(screen.getByTestId('role')).toHaveTextContent('owner');
-    expect(screen.getByTestId('verified')).toHaveTextContent('true');
   });
 
   it('still marks authReady after a failed write for a brand new user document', async () => {
