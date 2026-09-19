@@ -595,8 +595,13 @@ export const NewReferralPage: React.FC = () => {
             >
               Back
             </button>
+            {/* Distinct keys keep these as two separate DOM nodes. Without them React
+                reuses one <button> and flips its type from "button" to "submit"
+                mid-click, and the browser then treats the Continue click as a
+                Submit -- filing the referral before the review screen is seen. */}
             {currentStep < 5 ? (
               <button
+                key="continue"
                 type="button"
                 onClick={goNextMobileStep}
                 className="flex-1 min-h-[48px] rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold"
@@ -605,6 +610,7 @@ export const NewReferralPage: React.FC = () => {
               </button>
             ) : (
               <button
+                key="submit"
                 type="submit"
                 disabled={isSubmitting}
                 className="flex-1 min-h-[56px] rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-bold shadow-md transition-colors disabled:opacity-50"
