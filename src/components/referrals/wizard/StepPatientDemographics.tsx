@@ -77,6 +77,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
               className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 after:content-['_*'] after:text-critical-500"
             >
               Unified Hospital ID
+              <span className="sr-only"> (required)</span>
             </label>
             <div className="relative">
               <Input
@@ -137,6 +138,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
               className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 after:content-['_*'] after:text-critical-500"
             >
               Full Name
+              <span className="sr-only"> (required)</span>
             </label>
             <div className="relative">
               <Input
@@ -163,6 +165,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
               className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 after:content-['_*'] after:text-critical-500"
             >
               Age
+              <span className="sr-only"> (required)</span>
             </label>
             <Input
               id="patientAge"
@@ -181,6 +184,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
               className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-3 after:content-['_*'] after:text-critical-500"
             >
               Gender
+              <span className="sr-only"> (required)</span>
             </label>
             <div className="flex gap-6 items-center min-h-[48px]">
               <label className="flex items-center gap-2 cursor-pointer">
