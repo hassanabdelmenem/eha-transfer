@@ -125,7 +125,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
           {/* Viewer area */}
           <div className="flex-1 overflow-hidden relative flex items-center justify-center p-4 touch-none">
             {!hasValidUrl ? (
-              <div role="alert" aria-live="assertive" className="p-6 rounded-lg bg-slate-900 border border-slate-800 text-center max-w-md text-slate-300 space-y-3">
+              <div role="alert" aria-live="assertive" className="p-6 rounded-2xl bg-slate-900 border border-slate-800 text-center max-w-md text-slate-300 space-y-3">
                 <h3 className="text-base font-semibold text-critical-400">ECG Image Unavailable</h3>
                 <p className="text-sm text-slate-400">
                   No valid image URL was provided for this clinical attachment.
@@ -141,7 +141,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
                 </div>
               </div>
             ) : loadError ? (
-              <div role="alert" aria-live="assertive" className="p-6 rounded-lg bg-slate-900 border border-slate-800 text-center max-w-md text-slate-300 space-y-3">
+              <div role="alert" aria-live="assertive" className="p-6 rounded-2xl bg-slate-900 border border-slate-800 text-center max-w-md text-slate-300 space-y-3">
                 <h3 className="text-base font-semibold text-critical-400">Image Load Failed</h3>
                 <p className="text-sm text-slate-400">
                   The ECG / diagnostic image could not be loaded.

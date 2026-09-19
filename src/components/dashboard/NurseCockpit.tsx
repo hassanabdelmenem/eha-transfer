@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -107,6 +107,23 @@ export const NurseCockpit: React.FC = () => {
     }
   }, [facility]);
 
+  // Memoized like the equivalent derivations in ManagerCockpit/ClinicianCockpit --
+  // these re-ran on every re-render regardless of whether referrals/admissions
+  // actually changed.
+  const arrivedReferrals = useMemo(
+    () => (facility ? referrals.filter(r => r.status === 'arrived' && r.receivingFacilityId === facility.id) : []),
+    [referrals, facility]
+  );
+
+  const activeReferralsAdmitted = useMemo(
+    () => referrals.filter(r => r.status === 'admitted' && r.receivingFacilityId === user?.facilityId),
+    [referrals, user?.facilityId]
+  );
+  const activeDirectAdmissions = useMemo(
+    () => directAdmissions.filter(a => a.facilityId === user?.facilityId && a.status !== 'discharged'),
+    [directAdmissions, user?.facilityId]
+  );
+
   if (!user) return null;
 
   const handleStepperChange = (bedType: BedType, occupied: number) => {
@@ -123,10 +140,6 @@ export const NurseCockpit: React.FC = () => {
     }, 500);
   };
 
-  const arrivedReferrals = facility
-    ? referrals.filter(r => r.status === 'arrived' && r.receivingFacilityId === facility.id)
-    : [];
-
   const handleAdmit = async (referralId: string) => {
     setAdmittingId(referralId);
     try {
@@ -138,13 +151,6 @@ export const NurseCockpit: React.FC = () => {
       setAdmittingId(null);
     }
   };
-
-  const activeReferralsAdmitted = referrals.filter(
-    r => r.status === 'admitted' && r.receivingFacilityId === user.facilityId
-  );
-  const activeDirectAdmissions = directAdmissions.filter(
-    a => a.facilityId === user.facilityId && a.status !== 'discharged'
-  );
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">

@@ -82,7 +82,7 @@ export const Dashboard: React.FC = () => {
             Overview
           </h1>
           <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-3.5 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800/60 text-xs font-bold shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
             Live Updates
           </div>
         </div>
@@ -90,7 +90,7 @@ export const Dashboard: React.FC = () => {
         {/* Emergency Alert Banner if emergencies are pending */}
         {pendingEmergencies.length > 0 && (
           <div className="bg-critical-50 dark:bg-critical-950/40 border border-critical-200 dark:border-critical-900/60 p-4 rounded-2xl flex items-start sm:items-center gap-3 animate-in fade-in slide-in-from-top-2">
-            <AlertTriangle className="h-5 w-5 text-critical-600 dark:text-critical-400 shrink-0 mt-0.5 sm:mt-0 animate-pulse" />
+            <AlertTriangle className="h-5 w-5 text-critical-600 dark:text-critical-400 shrink-0 mt-0.5 sm:mt-0 motion-safe:animate-pulse" />
             <div className="flex-1">
               <h3 className="text-xs sm:text-sm font-bold text-critical-900 dark:text-critical-200">
                 Critical Emergency Alerts Active

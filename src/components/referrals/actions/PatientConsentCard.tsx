@@ -28,7 +28,7 @@ export const PatientConsentCard: React.FC<PatientConsentCardProps> = ({
   return (
     <div className="relative p-3 bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-400 dark:border-blue-500 rounded-lg space-y-3 shadow-sm">
       <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+        <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
         <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
       </span>
       <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">

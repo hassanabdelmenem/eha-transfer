@@ -97,6 +97,122 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
     return () => clearInterval(id);
   }, [referrals]);
 
+  // Memoized independently of `now`: the 1s SLA tick above used to force this
+  // whole filter/sort/enrich pipeline to re-run every second across the full
+  // unfiltered `referrals` array for as long as any tracked referral was on
+  // screen, even though none of it actually reads `now` (UrgencyTimer does, but
+  // it's applied per-row after this).
+  const sortedAndFiltered = useMemo(() => {
+    let filtered = referrals;
+
+    if (facilityId) {
+      filtered = referrals.filter(
+        r => r.referringFacilityId === facilityId ||
+             r.receivingFacilityId === facilityId ||
+             (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(facilityId))
+      );
+    } else if (!isAdmin(user) && user?.facilityId) {
+       filtered = referrals.filter(
+        r => r.referringFacilityId === user.facilityId ||
+             r.receivingFacilityId === user.facilityId ||
+             (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user?.facilityId || ''))
+      );
+    }
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(r =>
+        r.patientData.name.toLowerCase().includes(q) ||
+        r.patientData.hospitalId.toLowerCase().includes(q) ||
+        r.receivingDepartments.some(d => d.toLowerCase().includes(q))
+      );
+    }
+
+    // Apply priority filter
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter(r => r.priority === priorityFilter);
+    }
+
+    // Apply dept filter
+    if (deptFilter !== 'all') {
+      filtered = filtered.filter(r => r.receivingDepartments.includes(deptFilter));
+    }
+
+    // Apply bed filter
+    if (bedFilter !== 'all') {
+      filtered = filtered.filter(r => r.requiredBedType === bedFilter);
+    }
+
+    // Apply status filter. Cancelled referrals are archived out of every view except the
+    // explicit "cancelled" filter, so they don't clutter day-to-day lists/KPIs.
+    if (statusFilter === 'cancelled') {
+      filtered = filtered.filter(r => r.status === 'cancelled');
+    } else if (statusFilter === 'archived') {
+      // The Archive: referrals that have ended, one way or the other -- the
+      // patient was admitted, or the referral was cancelled. Discharged and
+      // rejected referrals stay out of this bucket deliberately; only admitted
+      // and cancelled were asked for.
+      filtered = filtered.filter(r => ['admitted', 'cancelled'].includes(r.status));
+    } else if (statusFilter !== 'all') {
+      if (statusFilter === 'active') {
+        filtered = filtered.filter(r => !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status));
+      } else if (statusFilter === 'completed') {
+        filtered = filtered.filter(r => ['admitted', 'discharged', 'rejected'].includes(r.status));
+      } else if (statusFilter === 'accepted') {
+        filtered = filtered.filter(r => ['accepted', 'patient_consented', 'in_transit', 'arrived'].includes(r.status));
+      } else {
+        filtered = filtered.filter(r => r.status === statusFilter);
+      }
+    } else {
+      filtered = filtered.filter(r => r.status !== 'cancelled' && r.status !== 'admitted');
+    }
+
+    // Pre-parse timestamps once per referral to avoid repeated Date parsing during sort
+    const enriched = filtered.map(r => ({ r, createdAtMs: Date.parse(r.createdAt) }));
+
+    if (prioritySort) {
+      const getPriorityWeight = (priority: string) => {
+        if (priority === 'emergency') return 3000;
+        if (priority === 'urgent') return 2000;
+        return 1000;
+      };
+      const getSeverityWeight = (bedType: string) => {
+        if (bedType === 'ICU' || bedType === 'CCU' || bedType === 'PICU') return 500;
+        return 0;
+      };
+
+      const nowMs = Date.now();
+      enriched.sort((A, B) => {
+        const a = A.r;
+        const b = B.r;
+        const aTime = nowMs - A.createdAtMs;
+        const bTime = nowMs - B.createdAtMs;
+
+        const aTimeScore = Math.floor(aTime / 60000) * 10;
+        const bTimeScore = Math.floor(bTime / 60000) * 10;
+
+        const aScore = getPriorityWeight(a.priority) + getSeverityWeight(a.requiredBedType) + (a.status === 'pending' ? aTimeScore : 0);
+        const bScore = getPriorityWeight(b.priority) + getSeverityWeight(b.requiredBedType) + (b.status === 'pending' ? bTimeScore : 0);
+
+        if (aScore !== bScore) return bScore - aScore;
+        return B.createdAtMs - A.createdAtMs;
+      });
+    }
+
+    // Restore filtered array to original referral objects, now sorted.
+    // Workflow order, not newest-first, when the "Priority Sort" toggle above is
+    // off: escalated cases pinned on top, then emergency -> urgent -> routine,
+    // then longest-waiting first.
+    filtered = prioritySort ? enriched.map(e => e.r) : sortByWorkflow(enriched.map(e => e.r));
+
+    if (limit) {
+      filtered = filtered.slice(0, limit);
+    }
+
+    return filtered;
+  }, [referrals, facilityId, searchQuery, priorityFilter, deptFilter, bedFilter, statusFilter, prioritySort, user, limit]);
+
   // Referrals hasn't loaded yet -- show placeholders, not "No referrals found."
   // Firestore's onSnapshot starts every subscriber from an empty array, so
   // without this a clinician opening the app mid-shift briefly sees the same
@@ -133,112 +249,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
     );
   }
 
-  let filtered = referrals;
-
-  if (facilityId) {
-    filtered = referrals.filter(
-      r => r.referringFacilityId === facilityId ||
-           r.receivingFacilityId === facilityId ||
-           (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(facilityId))
-    );
-  } else if (!isAdmin(user) && user?.facilityId) {
-     filtered = referrals.filter(
-      r => r.referringFacilityId === user.facilityId || 
-           r.receivingFacilityId === user.facilityId || 
-           (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user?.facilityId || ''))
-    );
-  }
-
-  // Apply search query
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase();
-    filtered = filtered.filter(r => 
-      r.patientData.name.toLowerCase().includes(q) ||
-      r.patientData.hospitalId.toLowerCase().includes(q) ||
-      r.receivingDepartments.some(d => d.toLowerCase().includes(q))
-    );
-  }
-
-  // Apply priority filter
-  if (priorityFilter !== 'all') {
-    filtered = filtered.filter(r => r.priority === priorityFilter);
-  }
-
-  // Apply dept filter
-  if (deptFilter !== 'all') {
-    filtered = filtered.filter(r => r.receivingDepartments.includes(deptFilter));
-  }
-
-  // Apply bed filter
-  if (bedFilter !== 'all') {
-    filtered = filtered.filter(r => r.requiredBedType === bedFilter);
-  }
-
-  // Apply status filter. Cancelled referrals are archived out of every view except the
-  // explicit "cancelled" filter, so they don't clutter day-to-day lists/KPIs.
-  if (statusFilter === 'cancelled') {
-    filtered = filtered.filter(r => r.status === 'cancelled');
-  } else if (statusFilter === 'archived') {
-    // The Archive: referrals that have ended, one way or the other -- the
-    // patient was admitted, or the referral was cancelled. Discharged and
-    // rejected referrals stay out of this bucket deliberately; only admitted
-    // and cancelled were asked for.
-    filtered = filtered.filter(r => ['admitted', 'cancelled'].includes(r.status));
-  } else if (statusFilter !== 'all') {
-    if (statusFilter === 'active') {
-      filtered = filtered.filter(r => !['admitted', 'discharged', 'rejected', 'cancelled'].includes(r.status));
-    } else if (statusFilter === 'completed') {
-      filtered = filtered.filter(r => ['admitted', 'discharged', 'rejected'].includes(r.status));
-    } else if (statusFilter === 'accepted') {
-      filtered = filtered.filter(r => ['accepted', 'patient_consented', 'in_transit', 'arrived'].includes(r.status));
-    } else {
-      filtered = filtered.filter(r => r.status === statusFilter);
-    }
-  } else {
-    filtered = filtered.filter(r => r.status !== 'cancelled' && r.status !== 'admitted');
-  }
-
-  // Pre-parse timestamps once per referral to avoid repeated Date parsing during sort
-  const enriched = filtered.map(r => ({ r, createdAtMs: Date.parse(r.createdAt) }));
-
-  if (prioritySort) {
-    const getPriorityWeight = (priority: string) => {
-      if (priority === 'emergency') return 3000;
-      if (priority === 'urgent') return 2000;
-      return 1000;
-    };
-    const getSeverityWeight = (bedType: string) => {
-      if (bedType === 'ICU' || bedType === 'CCU' || bedType === 'PICU') return 500;
-      return 0;
-    };
-
-    const now = Date.now();
-    enriched.sort((A, B) => {
-      const a = A.r;
-      const b = B.r;
-      const aTime = now - A.createdAtMs;
-      const bTime = now - B.createdAtMs;
-
-      const aTimeScore = Math.floor(aTime / 60000) * 10;
-      const bTimeScore = Math.floor(bTime / 60000) * 10;
-
-      const aScore = getPriorityWeight(a.priority) + getSeverityWeight(a.requiredBedType) + (a.status === 'pending' ? aTimeScore : 0);
-      const bScore = getPriorityWeight(b.priority) + getSeverityWeight(b.requiredBedType) + (b.status === 'pending' ? bTimeScore : 0);
-
-      if (aScore !== bScore) return bScore - aScore;
-      return B.createdAtMs - A.createdAtMs;
-    });
-  }
-
-  // Restore filtered array to original referral objects, now sorted.
-  // Workflow order, not newest-first, when the "Priority Sort" toggle above is
-  // off: escalated cases pinned on top, then emergency -> urgent -> routine,
-  // then longest-waiting first.
-  filtered = prioritySort ? enriched.map(e => e.r) : sortByWorkflow(enriched.map(e => e.r));
-
-  if (limit) {
-    filtered = filtered.slice(0, limit);
-  }
+  const filtered = sortedAndFiltered;
 
   if (filtered.length === 0) {
     return (
@@ -294,7 +305,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                 <Link
                   to={`/referrals/${referral.id}`}
-                  className="inline-flex items-center justify-center gap-1 min-h-[40px] px-3 rounded text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs font-semibold transition-colors"
+                  className="inline-flex items-center justify-center gap-1 min-h-[44px] px-3 rounded text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs font-semibold transition-colors"
                 >
                   View Card
                   <ChevronRight className="w-3.5 h-3.5" />

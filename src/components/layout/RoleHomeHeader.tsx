@@ -16,7 +16,7 @@ export const RoleHomeHeader: React.FC<RoleHomeHeaderProps> = ({ identity, dark }
   return (
     <div className="flex items-center justify-between gap-3 py-1 mb-2">
       <div className="flex items-center gap-2 min-w-0">
-        <div className={`w-2 h-2 rounded-full ${dark ? 'bg-purple-400' : 'bg-blue-500'} animate-pulse shrink-0`} />
+        <div className={`w-2 h-2 rounded-full ${dark ? 'bg-purple-400' : 'bg-blue-500'} motion-safe:animate-pulse shrink-0`} />
         <p className={`text-xs font-medium truncate ${dark ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'}`}>
           {identity}
         </p>

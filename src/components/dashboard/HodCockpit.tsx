@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -60,14 +60,6 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
   const [assignedDoctorId, setAssignedDoctorId] = useState('');
   const [shiftSaving, setShiftSaving] = useState(false);
 
-  if (!user || (user.role !== 'head_of_department' && !isAdmin)) {
-    return (
-      <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-        Access Denied. Head of Department privileges required.
-      </div>
-    );
-  }
-
   const facilityId = selectedFacilityId;
   const department = selectedDepartment;
 
@@ -79,52 +71,79 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
     ? usersById.get(currentAssignment.assignedUserId)?.name || 'Assigned'
     : 'None assigned (Default: HoD)';
 
-  const deptAdmissions = directAdmissions.filter(
-    a => a.facilityId === facilityId && a.department === department && a.status !== 'discharged'
+  // Memoized like the equivalent derivations in ManagerCockpit/ClinicianCockpit --
+  // these re-ran on every re-render regardless of whether referrals/admissions
+  // actually changed.
+  const deptAdmissions = useMemo(
+    () =>
+      directAdmissions.filter(
+        a => a.facilityId === facilityId && a.department === department && a.status !== 'discharged'
+      ),
+    [directAdmissions, facilityId, department]
   );
-  const deptReferrals = referrals.filter(
-    r =>
-      r.receivingFacilityId === facilityId &&
-      r.receivingDepartments?.includes(department) &&
-      r.status === 'admitted'
+  const deptReferrals = useMemo(
+    () =>
+      referrals.filter(
+        r =>
+          r.receivingFacilityId === facilityId &&
+          r.receivingDepartments?.includes(department) &&
+          r.status === 'admitted'
+      ),
+    [referrals, facilityId, department]
   );
 
-  const patientsInDept: PatientListItem[] = [
-    ...deptAdmissions.map(a => ({
-      id: a.id,
-      name: a.patientName,
-      hospitalId: a.hospitalId,
-      type: 'admission' as const,
-      admittedAt: a.admittedAt,
-      bedType: a.bedType,
-    })),
-    ...deptReferrals.map(r => ({
-      id: r.id,
-      name: r.patientData.name,
-      hospitalId: r.patientData.hospitalId,
-      type: 'referral' as const,
-      admittedAt:
-        (Array.isArray(r.statusHistory) ? r.statusHistory : []).find(h => h.status === 'admitted')
-          ?.timestamp || r.updatedAt,
-      bedType: r.requiredBedType,
-    })),
-  ].sort((a, b) => (b.admittedAt || '').localeCompare(a.admittedAt || ''));
+  const patientsInDept: PatientListItem[] = useMemo(
+    () =>
+      [
+        ...deptAdmissions.map(a => ({
+          id: a.id,
+          name: a.patientName,
+          hospitalId: a.hospitalId,
+          type: 'admission' as const,
+          admittedAt: a.admittedAt,
+          bedType: a.bedType,
+        })),
+        ...deptReferrals.map(r => ({
+          id: r.id,
+          name: r.patientData.name,
+          hospitalId: r.patientData.hospitalId,
+          type: 'referral' as const,
+          admittedAt:
+            (Array.isArray(r.statusHistory) ? r.statusHistory : []).find(h => h.status === 'admitted')
+              ?.timestamp || r.updatedAt,
+          bedType: r.requiredBedType,
+        })),
+      ].sort((a, b) => (b.admittedAt || '').localeCompare(a.admittedAt || '')),
+    [deptAdmissions, deptReferrals]
+  );
 
   const myFacility = facilitiesById.get(facilityId || '');
   const otherDepartments = myFacility?.departments?.filter(d => d !== department) || [];
 
   // Cases pending this department's review
-  const pendingReview = sortByWorkflow(
-    referrals.filter(
-      r =>
-        r.status === 'pending' &&
-        r.receivingDepartments?.includes(department) &&
-        (r.receivingFacilityId === facilityId ||
-          (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(facilityId)))
-    )
+  const pendingReview = useMemo(
+    () =>
+      sortByWorkflow(
+        referrals.filter(
+          r =>
+            r.status === 'pending' &&
+            r.receivingDepartments?.includes(department) &&
+            (r.receivingFacilityId === facilityId ||
+              (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(facilityId)))
+        )
+      ),
+    [referrals, department, facilityId]
   );
 
-  const escalatedReview = pendingReview.filter(r => r.isEscalated);
+  const escalatedReview = useMemo(() => pendingReview.filter(r => r.isEscalated), [pendingReview]);
+
+  if (!user || (user.role !== 'head_of_department' && !isAdmin)) {
+    return (
+      <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+        Access Denied. Head of Department privileges required.
+      </div>
+    );
+  }
 
   const handleQuickApprove = async (id: string) => {
     setApprovingId(id);

@@ -106,7 +106,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
         {referral.status === 'pending' && (
           <div className="relative bg-warning-50 border-2 border-warning-400 p-3 rounded-lg text-warning-900 text-sm flex items-start gap-3 mb-4 shadow-sm">
             <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-400 opacity-75"></span>
+              <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-warning-500"></span>
             </span>
             <AlertCircle className="w-5 h-5 shrink-0 text-warning-600 mt-0.5" />
@@ -223,7 +223,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
                 </p>
               </div>
             ) : isErRoom ? (
-              <div className="relative p-1 rounded-xl ring-2 ring-warning-400 ring-offset-2 animate-[pulse_2s_ease-in-out_infinite]">
+              <div className="relative p-1 rounded-xl ring-2 ring-warning-400 ring-offset-2 motion-safe:animate-[pulse_2s_ease-in-out_infinite]">
                 <EscortAssignmentForm
                   escortName={escortName}
                   setEscortName={setEscortName}
@@ -236,7 +236,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
             ) : (
               <div className="relative p-3 bg-warning-50 dark:bg-warning-950/30 border-2 border-warning-400 rounded-lg shadow-sm mt-2">
                 <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-400 opacity-75"></span>
+                  <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-warning-500"></span>
                 </span>
                 <div className="flex items-start gap-2">

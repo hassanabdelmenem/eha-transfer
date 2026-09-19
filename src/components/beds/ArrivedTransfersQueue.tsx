@@ -24,7 +24,7 @@ export const ArrivedTransfersQueue: React.FC<ArrivedTransfersQueueProps> = ({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-warning-500 animate-pulse" />
+          <span className="inline-block w-2 h-2 rounded-full bg-warning-500 motion-safe:animate-pulse" />
           Arrived · waiting to be admitted ({referrals.length})
         </h2>
       </div>

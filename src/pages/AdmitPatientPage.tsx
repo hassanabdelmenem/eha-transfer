@@ -101,7 +101,7 @@ export const AdmitPatientPage: React.FC = () => {
           <div className="hidden sm:flex items-center gap-2">
             <Link
               to="/bed-management"
-              className="inline-flex items-center gap-2 min-h-[40px] px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-2 min-h-[44px] px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               <BedDouble className="w-4 h-4" />
               View Bed Census

@@ -211,7 +211,7 @@ export const FacilitySettingsPage: React.FC = () => {
                   {facility.departments.map(dept => (
                     <span key={dept} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 pl-3 pr-1.5 py-1 text-sm text-slate-700 dark:text-slate-300">
                       {dept}
-                      <button onClick={() => removeFacilityDepartment(facility.id, dept)} aria-label={`Remove ${dept}`} className="rounded-full p-1 text-slate-500 dark:text-slate-400 hover:text-critical-600">
+                      <button onClick={() => removeFacilityDepartment(facility.id, dept)} aria-label={`Remove ${dept}`} className="rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-critical-600">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </span>
@@ -270,7 +270,7 @@ export const FacilitySettingsPage: React.FC = () => {
                   setShowAddFacility(true);
                 }
               }}
-              className="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold"
+              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold"
             >
               <Plus className="w-4 h-4" />
               {showAddFacility ? 'Cancel' : 'Add a contracted facility'}
@@ -414,14 +414,14 @@ export const FacilitySettingsPage: React.FC = () => {
                     <div className="flex gap-1 shrink-0">
                       <button
                         aria-label={`Edit ${f.name}`}
-                        className="h-10 w-10 rounded-lg flex items-center justify-center text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                        className="h-11 w-11 rounded-lg flex items-center justify-center text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                         onClick={() => handleEditFacilityClick(f)}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         aria-label={`Remove ${f.name}`}
-                        className="h-10 w-10 rounded-lg flex items-center justify-center text-critical-500 hover:bg-critical-50 dark:hover:bg-critical-900/30"
+                        className="h-11 w-11 rounded-lg flex items-center justify-center text-critical-500 hover:bg-critical-50 dark:hover:bg-critical-900/30"
                         onClick={() => handleRemoveFacility(f.id, f.name)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -464,7 +464,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">
                       <select
-                        className="text-xs min-h-[40px] border border-slate-300 dark:border-slate-700 rounded-lg px-2 bg-white dark:bg-slate-900 outline-none max-w-[180px]"
+                        className="text-xs min-h-[44px] border border-slate-300 dark:border-slate-700 rounded-lg px-2 bg-white dark:bg-slate-900 outline-none max-w-[180px]"
                         value={u.facilityId || ''}
                         onChange={(e) => {
                           const newFacId = e.target.value;
@@ -479,7 +479,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">
                        <select
-                         className="text-xs min-h-[40px] border border-slate-300 dark:border-slate-700 rounded-lg px-2 bg-white dark:bg-slate-900 outline-none"
+                         className="text-xs min-h-[44px] border border-slate-300 dark:border-slate-700 rounded-lg px-2 bg-white dark:bg-slate-900 outline-none"
                          value={u.role}
                          disabled={user.role !== 'owner' && u.role === 'owner'}
                          onChange={(e) => updateUserRole(u.id, e.target.value as Role, u.department)}
@@ -509,7 +509,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     <td className="px-4 py-3">
                        {['consultant', 'specialist', 'resident', 'head_of_department', 'nurse', 'nursing_supervisor'].includes(u.role) ? (
                          <select
-                           className="text-xs min-h-[40px] border border-slate-300 dark:border-slate-700 rounded-lg px-2 bg-white dark:bg-slate-900 outline-none"
+                           className="text-xs min-h-[44px] border border-slate-300 dark:border-slate-700 rounded-lg px-2 bg-white dark:bg-slate-900 outline-none"
                            value={u.department || ''}
                            onChange={(e) => updateUserRole(u.id, u.role, e.target.value)}
                          >
@@ -526,7 +526,7 @@ export const FacilitySettingsPage: React.FC = () => {
                        <button
                          aria-label={`Remove ${u.name}`}
                          title="Remove User Completely"
-                         className="h-10 w-10 rounded-lg inline-flex items-center justify-center text-critical-500 hover:bg-critical-50 dark:hover:bg-critical-900/30"
+                         className="h-11 w-11 rounded-lg inline-flex items-center justify-center text-critical-500 hover:bg-critical-50 dark:hover:bg-critical-900/30"
                          onClick={() => handleRemoveUser(u)}
                        >
                          <Trash2 className="w-4 h-4" />

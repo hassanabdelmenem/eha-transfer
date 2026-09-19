@@ -33,6 +33,7 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({
               key={step.id}
               type="button"
               onClick={() => onStepClick(step.id)}
+              aria-current={isCurrent ? 'step' : undefined}
               className={`flex items-center gap-2.5 p-2 sm:p-3 rounded-lg text-left transition-all relative overflow-hidden ${
                 isCurrent
                   ? 'bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 shadow-sm ring-1 ring-blue-500/20'

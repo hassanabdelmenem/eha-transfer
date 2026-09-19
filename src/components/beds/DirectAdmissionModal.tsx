@@ -104,7 +104,7 @@ export const DirectAdmissionModal: React.FC<DirectAdmissionModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="h-10 w-10 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
+            className="h-11 w-11 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
