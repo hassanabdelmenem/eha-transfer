@@ -158,6 +158,14 @@ describe('admin verification alone is not enough: the email must be confirmed', 
     await assertFails(setDoc(doc(emailUnconfirmed(), 'referrals', 'ref-new'), referral({ id: 'ref-new', referringUserId: F1_EMAIL_UNCONFIRMED })));
   });
 
+  it('blocks reading their own notifications (bodies name patients)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'notifications', 'n-unconfirmed'), { id: 'n-unconfirmed', userId: F1_EMAIL_UNCONFIRMED, title: 'T', message: 'Referral for Patient A', type: 'info', read: false, createdAt: '2026-01-01T00:00:00.000Z' });
+    });
+    await assertFails(getDoc(doc(emailUnconfirmed(), 'notifications', 'n-unconfirmed')));
+    await assertFails(getDocs(query(collection(emailUnconfirmed(), 'notifications'), where('userId', '==', F1_EMAIL_UNCONFIRMED))));
+  });
+
   it('still lets them read their own user document, so the app can show the verify-email screen', async () => {
     await assertSucceeds(getDoc(doc(emailUnconfirmed(), 'users', F1_EMAIL_UNCONFIRMED)));
   });
