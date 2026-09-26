@@ -1,5 +1,6 @@
 import React from 'react';
-import { ShieldAlert } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { differenceInMinutes } from 'date-fns';
 import { Referral } from '../../../types';
 import { SLA_MINUTES } from '../../../lib/sla';
 import { formatDateTime } from '../../../lib/utils';
@@ -26,34 +27,49 @@ export interface EscalationAlertBannerProps {
   referral: Referral;
 }
 
+const ESCALATION_STRIP: Record<EscalationKey, string> = {
+  sla_breach: 'Escalated · no response',
+  no_matching_facility: 'System level · no matching facility',
+  no_beds_available: 'System level · no beds in network',
+  manual: 'Escalated manually',
+  requirements_needed: 'Sent back with requirements',
+};
+
+/** Minutes since the escalation, spoken the way the strip reads ("34 min"). */
+function ageOf(iso?: string | null): string | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  const m = Math.max(0, differenceInMinutes(Date.now(), t));
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`;
+}
+
 export const EscalationAlertBanner: React.FC<EscalationAlertBannerProps> = ({ referral }) => {
+  const key = referral.escalationReason || 'manual';
+  const age = ageOf(referral.escalatedAt);
   return (
     <>
       {referral.isEscalated && (
-        <div className="p-4 bg-critical-700 text-white rounded-lg shadow-md flex items-center justify-between border-2 border-critical-800">
-          <div className="flex items-center gap-3">
-            <ShieldAlert className="w-6 h-6 shrink-0" aria-hidden="true" />
-            <div>
-              <h3 className="font-semibold text-sm">
-                {ESCALATION_HEADLINE[referral.escalationReason || 'manual']}
-              </h3>
-              <p className="text-sm text-white">
-                {ESCALATION_DETAIL[referral.escalationReason || 'manual']}
-                {referral.escalatedAt ? ` Escalated ${formatDateTime(referral.escalatedAt)}.` : ''}
-              </p>
-            </div>
+        <section aria-label="Escalation" className="overflow-hidden rounded-xl border-2 border-critical-700 bg-critical-50 dark:bg-critical-950/60">
+          <p className="flex items-center gap-2 bg-critical-700 px-[14px] py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-white">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {ESCALATION_STRIP[key]}{age ? ` · ${age}` : ''}
+          </p>
+          <div className="p-[14px]">
+            <h3 className="font-sans text-[15px] font-semibold leading-[1.35] tracking-normal text-ink dark:text-paper">{ESCALATION_HEADLINE[key]}</h3>
+            <p className="mt-1 text-[14px] leading-[1.45] text-slate-700 dark:text-white/70">
+              {ESCALATION_DETAIL[key]}
+              {referral.escalatedAt ? ` Escalated ${formatDateTime(referral.escalatedAt)}.` : ''}
+            </p>
           </div>
-          <span className="text-xs bg-critical-900 text-white font-semibold px-2 py-1 rounded whitespace-nowrap">
-            Admin can act now
-          </span>
-        </div>
+        </section>
       )}
 
       {referral.status === 'rejected' && (
-        <div className="p-4 bg-critical-50 dark:bg-critical-950/30 border border-critical-200 dark:border-critical-900 rounded-lg text-critical-800 dark:text-critical-200">
-          <h3 className="font-semibold text-sm mb-1">Rejection Reason:</h3>
-          <p className="text-sm">{referral.rejectionReason || 'No rejection reason specified.'}</p>
-        </div>
+        <section className="rounded-[11px] border border-critical-200 bg-critical-50 p-[13px] dark:border-critical-800 dark:bg-critical-950/60">
+          <h3 className="font-sans text-[11px] font-bold uppercase tracking-[0.08em] text-critical-700 dark:text-critical-300">Rejection Reason:</h3>
+          <p className="mt-[5px] text-[15px] font-medium leading-[1.4] text-ink dark:text-paper">{referral.rejectionReason || 'No rejection reason specified.'}</p>
+        </section>
       )}
     </>
   );
