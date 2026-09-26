@@ -81,6 +81,20 @@ The full list is in `PROJECT.md` → "Interface & DOM Test Contracts". Examples:
 `#patientName`, `#vital*`, `#receivingFacility`, `#dept-review-section`, `#escort-form-section`,
 `#rejectionReasonInput`, button `/Submit Referral/i`.
 
+## Library docs (context7)
+
+Most of the stack is on majors newer than most training data. Before writing code against
+an API you're not certain of, look it up with the context7 tools (`query-docs`) instead of
+relying on memory. Library IDs, already resolved:
+
+| Library (installed) | context7 ID |
+| --- | --- |
+| React 19.2 | `/reactjs/react.dev` (versioned: `/react/react/v19.2.7`) |
+| React Router 7.18 (`react-router-dom`) | `/remix-run/react-router` or `/websites/reactrouter` |
+| Vite 8.2 | `/vitejs/vite/v8.0.10` |
+| Tailwind 4.3 | `/websites/tailwindcss` (v4 docs; `/websites/v3_tailwindcss` is the old one) |
+| Firebase JS SDK 12 | `/firebase/firebase-js-sdk` |
+
 ## Reference docs
 
 `docs/DEPLOYMENT.md` (pipeline, rules, CSP and Google sign-in), `PROJECT.md` (architecture,
