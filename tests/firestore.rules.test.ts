@@ -30,6 +30,13 @@ const F2_DOCTOR = 'f2-doctor-uid';
 const F3_CANDIDATE = 'f3-candidate-uid';
 const NEWCOMER = 'newcomer-uid';
 const F2_ER_OFFICIAL = 'f2-er-official-uid';
+// Admin-verified staff whose email/password address was never confirmed. The
+// fixtures above tie "email unverified" to "admin-unverified" (NEWCOMER), which
+// is how the email_verified check in isVerifiedCaller() was removed without a
+// test failing.
+const F1_EMAIL_UNCONFIRMED = 'f1-email-unconfirmed-uid';
+const emailUnconfirmed = () =>
+  testEnv.authenticatedContext(F1_EMAIL_UNCONFIRMED, { email_verified: false }).firestore();
 
 // All seeded test users except NEWCOMER are treated as having a verified email
 // address (Google sign-in sets this automatically; email/password accounts must
@@ -88,6 +95,7 @@ beforeEach(async () => {
     await setDoc(doc(db, 'users', F2_DOCTOR), { id: F2_DOCTOR, name: 'F2 Doc', email: 'd2@x.gov', role: 'consultant', verified: true, facilityId: 'f2' });
     await setDoc(doc(db, 'users', F3_CANDIDATE), { id: F3_CANDIDATE, name: 'F3 Doc', email: 'd3@x.gov', role: 'consultant', verified: true, facilityId: 'f3' });
     await setDoc(doc(db, 'users', NEWCOMER), { id: NEWCOMER, name: 'New', email: 'n@x.gov', role: 'resident', verified: false });
+    await setDoc(doc(db, 'users', F1_EMAIL_UNCONFIRMED), { id: F1_EMAIL_UNCONFIRMED, name: 'F1 Unconfirmed', email: 'u@x.gov', role: 'resident', verified: true, facilityId: 'f1', department: 'ICU' });
     await setDoc(doc(db, 'users', F2_ER_OFFICIAL), { id: F2_ER_OFFICIAL, name: 'F2 ER Official', email: 'er2@x.gov', role: 'er_official', verified: true, facilityId: 'f2' });
     await setDoc(doc(db, 'referrals', 'ref1'), referral());
     // Intra-facility (f1 only) -- unlike ref1, F2_DOCTOR/F3_CANDIDATE are not
@@ -128,6 +136,34 @@ describe('privilege escalation (security review #1)', () => {
 
   it('allows an admin to grant a role', async () => {
     await assertSucceeds(updateDoc(doc(authed(OWNER), 'users', F1_DOCTOR), { role: 'head_of_department', verified: true }));
+  });
+});
+
+describe('admin verification alone is not enough: the email must be confirmed', () => {
+  // Without email_verified, anyone can sign up with a colleague's address and,
+  // once an admin verifies the account by mistake, act under that identity.
+  it('blocks listing the staff roster', async () => {
+    await assertFails(getDocs(collection(emailUnconfirmed(), 'users')));
+  });
+
+  it('blocks listing same-facility direct admissions', async () => {
+    await assertFails(getDocs(query(collection(emailUnconfirmed(), 'directAdmissions'), where('facilityId', '==', 'f1'))));
+  });
+
+  it('blocks reading a same-facility referral', async () => {
+    await assertFails(getDoc(doc(emailUnconfirmed(), 'referrals', 'ref2')));
+  });
+
+  it('blocks creating a referral', async () => {
+    await assertFails(setDoc(doc(emailUnconfirmed(), 'referrals', 'ref-new'), referral({ id: 'ref-new', referringUserId: F1_EMAIL_UNCONFIRMED })));
+  });
+
+  it('still lets them read their own user document, so the app can show the verify-email screen', async () => {
+    await assertSucceeds(getDoc(doc(emailUnconfirmed(), 'users', F1_EMAIL_UNCONFIRMED)));
+  });
+
+  it('confirmed same-facility staff keep access (control)', async () => {
+    await assertSucceeds(getDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref2')));
   });
 });
 
