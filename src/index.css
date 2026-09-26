@@ -1,73 +1,291 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ==========================================================================
+   Ink & paper — the world from the mobile workflow redesign handoff
+   (design_handoff_mobile_workflow_redesign). DESIGN.md documents it.
+
+   Tailwind's own colour scales are remapped here rather than replaced call site
+   by call site, so every existing utility lands in the palette at once:
+     slate / gray / zinc / neutral / stone  -> warm neutrals (paper to ink)
+     red / rose                             -> the critical scale
+     amber / yellow / orange                -> the warning scale
+     green / emerald / lime                 -> the success scale (olive)
+     blue / indigo / sky / cyan             -> the info scale (dusty blue)
+     purple / violet                        -> an independent violet
+   Each raw hue maps onto the status colour it already meant, so red and amber
+   stay distinguishable: a rejected referral and a pending one never share a
+   colour. New code uses the semantic names (critical / warning / success /
+   info), never a raw hue.
+   ========================================================================== */
 @theme {
-  --font-sans: 'Inter', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-heading: 'Manrope', sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-body: var(--font-sans);
+  --font-heading: "Poppins", var(--font-sans);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --color-critical-50: var(--color-red-50);
-  --color-critical-100: var(--color-red-100);
-  --color-critical-200: var(--color-red-200);
-  --color-critical-300: var(--color-red-300);
-  --color-critical-400: var(--color-red-400);
-  --color-critical-500: var(--color-red-500);
-  --color-critical-600: var(--color-red-600);
-  --color-critical-700: var(--color-red-700);
-  --color-critical-800: var(--color-red-800);
-  --color-critical-900: var(--color-red-900);
-  --color-critical-950: var(--color-red-950);
+  --color-white: #ffffff;
+  --color-black: #141413;
+  /* Paper is the page; white is a card resting on it. */
+  --color-paper: #faf9f5;
+  /* The desktop detail pane sits one step darker than the queue column. */
+  --color-desk: #f4f2ed;
+  --color-ink: #141413;
 
-  --color-warning-50: var(--color-amber-50);
-  --color-warning-100: var(--color-amber-100);
-  --color-warning-200: var(--color-amber-200);
-  --color-warning-300: var(--color-amber-300);
-  --color-warning-400: var(--color-amber-400);
-  --color-warning-500: var(--color-amber-500);
-  --color-warning-600: var(--color-amber-600);
-  --color-warning-700: var(--color-amber-700);
-  --color-warning-800: var(--color-amber-800);
-  --color-warning-900: var(--color-amber-900);
-  --color-warning-950: var(--color-amber-950);
+  /* Warm neutrals. 400 is decorative only (icons, borders: ~3.4:1 on white);
+     informational text is 500 (~4.6:1) or 700. The scale is monotonic, so
+     `text-slate-600` is never lighter than `text-slate-500`. */
+  --color-slate-50: #faf9f5;
+  --color-slate-100: #f0eee6;
+  --color-slate-200: #e8e6dc;
+  --color-slate-300: #b0aea5;
+  --color-slate-400: #8a8779;
+  --color-slate-500: #78766d;
+  --color-slate-600: #6b695f;
+  --color-slate-700: #5f5d54;
+  --color-slate-800: #3a392f;
+  --color-slate-900: #221f1a;
+  --color-slate-950: #141413;
 
-  --color-success-50: var(--color-green-50);
-  --color-success-100: var(--color-green-100);
-  --color-success-200: var(--color-green-200);
-  --color-success-300: var(--color-green-300);
-  --color-success-400: var(--color-green-400);
-  --color-success-500: var(--color-green-500);
-  --color-success-600: var(--color-green-600);
-  --color-success-700: var(--color-green-700);
-  --color-success-800: var(--color-green-800);
-  --color-success-900: var(--color-green-900);
-  --color-success-950: var(--color-green-950);
+  --color-gray-50: var(--color-slate-50);
+  --color-gray-100: var(--color-slate-100);
+  --color-gray-200: var(--color-slate-200);
+  --color-gray-300: var(--color-slate-300);
+  --color-gray-400: var(--color-slate-400);
+  --color-gray-500: var(--color-slate-500);
+  --color-gray-600: var(--color-slate-600);
+  --color-gray-700: var(--color-slate-700);
+  --color-gray-800: var(--color-slate-800);
+  --color-gray-900: var(--color-slate-900);
+  --color-gray-950: var(--color-slate-950);
 
-  --color-info-50: var(--color-blue-50);
-  --color-info-100: var(--color-blue-100);
-  --color-info-200: var(--color-blue-200);
-  --color-info-300: var(--color-blue-300);
-  --color-info-400: var(--color-blue-400);
-  --color-info-500: var(--color-blue-500);
-  --color-info-600: var(--color-blue-600);
-  --color-info-700: var(--color-blue-700);
-  --color-info-800: var(--color-blue-800);
-  --color-info-900: var(--color-blue-900);
-  --color-info-950: var(--color-blue-950);
+  /* Critical: emergency, escalated, rejected, errors, zero beds. */
+  --color-critical-50: #fef2f2;
+  --color-critical-100: #fee2e2;
+  --color-critical-200: #fecaca;
+  --color-critical-300: #fca5a5;
+  --color-critical-400: #f87171;
+  --color-critical-500: #ef4444;
+  --color-critical-600: #dc2626;
+  --color-critical-700: #b91c1c;
+  --color-critical-800: #991b1b;
+  --color-critical-900: #7f1d1d;
+  --color-critical-950: #450a0a;
 
-  /* The one brand accent (DESIGN.md's "One Accent Rule"). A distinct token, not an
-     alias into the blue-* scale, so it can't be confused with -- or silently drift
-     to match -- info-600, which shares the same hue family at a different shade. */
-  --color-command-blue: #1e3a8a;
-  --color-command-blue-hover: #1e40af;
-  --color-command-blue-soft: #dbeafe;
+  /* Warning: urgent, pending review, low beds, "send back with requirements".
+     Text is 800 on 100; a filled warning control is 700 (white on 500 is 2.15:1). */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #a16207;
+  --color-warning-800: #854d0e;
+  --color-warning-900: #713f12;
+  --color-warning-950: #451a03;
+
+  /* Success: approved, accepted, arrived, admitted. Olive, not traffic-light green. */
+  --color-success-50: #edeee6;
+  --color-success-100: #e0e3d7;
+  --color-success-200: #c6cdb8;
+  --color-success-300: #acb89a;
+  --color-success-400: #92a27b;
+  --color-success-500: #788c5d;
+  --color-success-600: #62714d;
+  --color-success-700: #4c573c;
+  --color-success-800: #353c2c;
+  --color-success-900: #1f211b;
+  --color-success-950: #141413;
+
+  /* Info: in transit, informational, and the action blue (700) for links. */
+  --color-info-50: #ecf0f1;
+  --color-info-100: #dde6ed;
+  --color-info-200: #c0d3e5;
+  --color-info-300: #a4c1dc;
+  --color-info-400: #87aed4;
+  --color-info-500: #6a9bcc;
+  --color-info-600: #577da3;
+  --color-info-700: #445f7a;
+  --color-info-800: #314151;
+  --color-info-900: #1e2328;
+  --color-info-950: #141413;
+
+  /* Violet: department notes, postponed, external facilities. Independent of
+     blue because both appear side by side (an action note next to a dept note). */
+  --color-purple-50: #f2eef6;
+  --color-purple-100: #e4dcee;
+  --color-purple-200: #cabddb;
+  --color-purple-300: #b09ec8;
+  --color-purple-400: #967fb5;
+  --color-purple-500: #7c66a0;
+  --color-purple-600: #654f85;
+  --color-purple-700: #4e3c68;
+  --color-purple-800: #37294a;
+  --color-purple-900: #211a2e;
+  --color-purple-950: #141413;
+
+  --color-red-50: var(--color-critical-50);
+  --color-red-100: var(--color-critical-100);
+  --color-red-200: var(--color-critical-200);
+  --color-red-300: var(--color-critical-300);
+  --color-red-400: var(--color-critical-400);
+  --color-red-500: var(--color-critical-500);
+  --color-red-600: var(--color-critical-600);
+  --color-red-700: var(--color-critical-700);
+  --color-red-800: var(--color-critical-800);
+  --color-red-900: var(--color-critical-900);
+  --color-red-950: var(--color-critical-950);
+  --color-rose-50: var(--color-critical-50);
+  --color-rose-100: var(--color-critical-100);
+  --color-rose-200: var(--color-critical-200);
+  --color-rose-300: var(--color-critical-300);
+  --color-rose-400: var(--color-critical-400);
+  --color-rose-500: var(--color-critical-500);
+  --color-rose-600: var(--color-critical-600);
+  --color-rose-700: var(--color-critical-700);
+  --color-rose-800: var(--color-critical-800);
+  --color-rose-900: var(--color-critical-900);
+  --color-rose-950: var(--color-critical-950);
+
+  --color-amber-50: var(--color-warning-50);
+  --color-amber-100: var(--color-warning-100);
+  --color-amber-200: var(--color-warning-200);
+  --color-amber-300: var(--color-warning-300);
+  --color-amber-400: var(--color-warning-400);
+  --color-amber-500: var(--color-warning-500);
+  --color-amber-600: var(--color-warning-600);
+  --color-amber-700: var(--color-warning-700);
+  --color-amber-800: var(--color-warning-800);
+  --color-amber-900: var(--color-warning-900);
+  --color-amber-950: var(--color-warning-950);
+  --color-yellow-50: var(--color-warning-50);
+  --color-yellow-100: var(--color-warning-100);
+  --color-yellow-200: var(--color-warning-200);
+  --color-yellow-300: var(--color-warning-300);
+  --color-yellow-400: var(--color-warning-400);
+  --color-yellow-500: var(--color-warning-500);
+  --color-yellow-600: var(--color-warning-600);
+  --color-yellow-700: var(--color-warning-700);
+  --color-yellow-800: var(--color-warning-800);
+  --color-yellow-900: var(--color-warning-900);
+  --color-yellow-950: var(--color-warning-950);
+
+  --color-green-50: var(--color-success-50);
+  --color-green-100: var(--color-success-100);
+  --color-green-200: var(--color-success-200);
+  --color-green-300: var(--color-success-300);
+  --color-green-400: var(--color-success-400);
+  --color-green-500: var(--color-success-500);
+  --color-green-600: var(--color-success-600);
+  --color-green-700: var(--color-success-700);
+  --color-green-800: var(--color-success-800);
+  --color-green-900: var(--color-success-900);
+  --color-green-950: var(--color-success-950);
+  --color-emerald-50: var(--color-success-50);
+  --color-emerald-100: var(--color-success-100);
+  --color-emerald-200: var(--color-success-200);
+  --color-emerald-300: var(--color-success-300);
+  --color-emerald-400: var(--color-success-400);
+  --color-emerald-500: var(--color-success-500);
+  --color-emerald-600: var(--color-success-600);
+  --color-emerald-700: var(--color-success-700);
+  --color-emerald-800: var(--color-success-800);
+  --color-emerald-900: var(--color-success-900);
+  --color-emerald-950: var(--color-success-950);
+
+  --color-blue-50: var(--color-info-50);
+  --color-blue-100: var(--color-info-100);
+  --color-blue-200: var(--color-info-200);
+  --color-blue-300: var(--color-info-300);
+  --color-blue-400: var(--color-info-400);
+  --color-blue-500: var(--color-info-500);
+  --color-blue-600: var(--color-info-600);
+  --color-blue-700: var(--color-info-700);
+  --color-blue-800: var(--color-info-800);
+  --color-blue-900: var(--color-info-900);
+  --color-blue-950: var(--color-info-950);
+  --color-indigo-50: var(--color-info-50);
+  --color-indigo-100: var(--color-info-100);
+  --color-indigo-200: var(--color-info-200);
+  --color-indigo-300: var(--color-info-300);
+  --color-indigo-400: var(--color-info-400);
+  --color-indigo-500: var(--color-info-500);
+  --color-indigo-600: var(--color-info-600);
+  --color-indigo-700: var(--color-info-700);
+  --color-indigo-800: var(--color-info-800);
+  --color-indigo-900: var(--color-info-900);
+  --color-indigo-950: var(--color-info-950);
+
+  /* Sheet slides up 220ms ease-out; state changes are instant. */
+  --animate-sheet-up: sheet-up 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  @keyframes sheet-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+}
+
+html {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
+}
+html.dark {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  color-scheme: dark;
 }
 
 body {
   font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* The parts the browser draws still belong to the world. */
+::selection {
+  background-color: var(--color-info-200);
+  color: var(--color-ink);
+}
+.dark ::selection {
+  background-color: rgb(250 249 245 / 0.28);
+  color: var(--color-paper);
+}
+:root {
+  caret-color: var(--color-ink);
+  accent-color: var(--color-ink);
+  scrollbar-color: var(--color-slate-300) transparent;
+}
+.dark {
+  caret-color: var(--color-paper);
+  accent-color: var(--color-paper);
+  scrollbar-color: rgb(250 249 245 / 0.22) transparent;
+}
+:focus-visible {
+  outline: 2px solid var(--color-info-700);
+  outline-offset: 2px;
+}
+.dark :focus-visible {
+  outline-color: var(--color-info-300);
+}
+a {
+  text-underline-offset: 3px;
+}
+/* Clinical numbers line up: vitals, bed counts, timers. */
+.tabular,
+time,
+[data-tabular] {
+  font-variant-numeric: tabular-nums;
 }
 
 @media print {
@@ -90,5 +308,5 @@ h1, h2, h3, h4, h5, h6 {
 
 .night-shift-mode {
   filter: sepia(0.4) hue-rotate(-10deg) contrast(1.05) brightness(0.85);
-  background-color: #0f172a;
+  background-color: var(--color-ink);
 }

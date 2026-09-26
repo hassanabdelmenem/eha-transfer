@@ -130,7 +130,7 @@ const AppRoutes = () => {
 
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="app-theme">
+    <ThemeProvider defaultTheme="system" storageKey="app-theme">
       <AuthProvider>
         <DataProvider>
           <Router>

@@ -21,7 +21,7 @@ export const ClinicalAttachmentsCard: React.FC<ClinicalAttachmentsCardProps> = (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-command-blue" />
+          <FileText className="h-5 w-5 text-slate-700 dark:text-slate-300" />
           Clinical Attachments
         </CardTitle>
       </CardHeader>

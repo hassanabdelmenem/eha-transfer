@@ -6,35 +6,35 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
     // Resting card, no shadow -- DESIGN.md's Floating-Only Rule reserves shadow for
     // modals/popovers/dropdowns/toasts; the border + canvas tonal contrast does the
     // separation work here instead.
-    <div ref={ref} className={cn("rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100", className)} {...props} />
+    <div ref={ref} className={cn("rounded-xl border border-slate-200 bg-white text-ink dark:border-white/12 dark:bg-white/[0.05] dark:text-paper", className)} {...props} />
   )
 )
 Card.displayName = "Card"
 
 export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6 border-b border-slate-100 dark:border-slate-800", className)} {...props} />
+    <div ref={ref} className={cn("flex flex-col space-y-1.5 p-[14px] border-b border-slate-200 dark:border-white/10", className)} {...props} />
   )
 )
 CardHeader.displayName = "CardHeader"
 
 export const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("font-bold  text-xs text-slate-700 dark:text-slate-300 ", className)} {...props} />
+    <h3 ref={ref} className={cn("text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60", className)} {...props} />
   )
 )
 CardTitle.displayName = "CardTitle"
 
 export const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("p-6", className)} {...props} />
+    <div ref={ref} className={cn("p-[14px]", className)} {...props} />
   )
 )
 CardContent.displayName = "CardContent"
 
 export const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex items-center p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950", className)} {...props} />
+    <div ref={ref} className={cn("flex items-center p-[14px] border-t border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-transparent", className)} {...props} />
   )
 )
 CardFooter.displayName = "CardFooter"
