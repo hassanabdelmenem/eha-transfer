@@ -18,10 +18,11 @@ vi.mock('react-router-dom', async (importOriginal) => {
   };
 });
 
-let mockAuthState: { user: User | null; authReady: boolean } = { user: null, authReady: false };
+let mockAuthState: { user: User | null; authReady: boolean; emailVerified?: boolean } = { user: null, authReady: false };
 vi.mock('./contexts/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useAuth: () => mockAuthState,
+  // Confirmed email unless a test says otherwise.
+  useAuth: () => ({ emailVerified: true, ...mockAuthState }),
 }));
 vi.mock('./contexts/DataContext', () => ({
   DataProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -94,6 +95,14 @@ describe('App routing', () => {
     mockAuthState = { user: makeUser({ verified: false }), authReady: true };
     render(<App />);
     await waitFor(() => expect(screen.getByText('Pending Verification Page')).toBeInTheDocument());
+  });
+
+  it('sends an admin-verified user whose email is unconfirmed to the pending-verification screen', async () => {
+    // Mirrors isVerifiedCaller() in firestore.rules, which requires both.
+    mockAuthState = { user: makeUser({ verified: true }), authReady: true, emailVerified: false };
+    render(<App />);
+    await waitFor(() => expect(screen.getByText('Pending Verification Page')).toBeInTheDocument());
+    expect(screen.queryByText('Referrals Page')).not.toBeInTheDocument();
   });
 
   it('lands a fully cleared user on the referrals queue via the index redirect', async () => {
