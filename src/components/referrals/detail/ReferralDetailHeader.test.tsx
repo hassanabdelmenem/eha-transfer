@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { ReferralDetailHeader, StageRail } from './ReferralDetailHeader';
+import { ReferralDetailHeader, ReferralUtilityBar, StageRail } from './ReferralDetailHeader';
 import { Referral } from '../../../types';
 
 function createMockReferral(overrides: Partial<Referral> = {}): Referral {
@@ -55,43 +55,30 @@ describe('ReferralDetailHeader & StageRail', () => {
     expect(screen.getByRole('img', { name: /Stage: rejected/i })).toBeInTheDocument();
   });
 
-  it('renders patient info, copy ID button, escalation and PDF print actions', () => {
+  it('renders the patient and a back button, on the phone header and on desktop', () => {
+    const onBack = vi.fn();
+    const { rerender } = render(<ReferralDetailHeader referral={createMockReferral()} onBack={onBack} isDesktop={false} />);
+    expect(screen.getByText(/Nadia Ibrahim, 40/i)).toBeInTheDocument();
+    expect(screen.getByText('H-555 · ICU · emergency')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/go back/i));
+    expect(onBack).toHaveBeenCalledTimes(1);
+
+    rerender(<ReferralDetailHeader referral={createMockReferral()} onBack={onBack} isDesktop actions={<button>Accept the transfer</button>} />);
+    expect(screen.getByRole('heading', { name: /Nadia Ibrahim, 40/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accept the transfer' })).toBeInTheDocument();
+  });
+
+  it('puts copy ID, escalation and PDF summary in the utility bar', () => {
     const onCopyId = vi.fn();
     const onToggleEscalation = vi.fn();
     const onPrint = vi.fn();
-    const onBack = vi.fn();
+    render(<ReferralUtilityBar referral={createMockReferral()} copied={false} onCopyId={onCopyId} onToggleEscalation={onToggleEscalation} onPrint={onPrint} />);
 
-    render(
-      <ReferralDetailHeader
-        referral={createMockReferral()}
-        copied={false}
-        onCopyId={onCopyId}
-        onToggleEscalation={onToggleEscalation}
-        onPrint={onPrint}
-        onBack={onBack}
-        mobileBanner={{ label: 'Waiting on you', tint: 'info' }}
-        roleVariant="clinician"
-        roleVariantLabel="Referring Clinician"
-      />
-    );
-
-    expect(screen.getByText(/Nadia Ibrahim, 40/i)).toBeInTheDocument();
-    expect(screen.getByText(/H-555 · ICU · emergency · ID: ref-hdr-1/i)).toBeInTheDocument();
-
-    const copyBtn = screen.getByLabelText(/copy referral id/i);
-    fireEvent.click(copyBtn);
+    fireEvent.click(screen.getByLabelText(/copy referral id/i));
     expect(onCopyId).toHaveBeenCalledTimes(1);
-
-    const backBtn = screen.getByLabelText(/go back/i);
-    fireEvent.click(backBtn);
-    expect(onBack).toHaveBeenCalledTimes(1);
-
-    const escalateBtn = screen.getAllByRole('button', { name: /mark escalated/i })[0];
-    fireEvent.click(escalateBtn);
+    fireEvent.click(screen.getByRole('button', { name: /mark escalated/i }));
     expect(onToggleEscalation).toHaveBeenCalledTimes(1);
-
-    const printBtn = screen.getAllByRole('button', { name: /pdf summary/i })[0];
-    fireEvent.click(printBtn);
+    fireEvent.click(screen.getByRole('button', { name: /pdf summary/i }));
     expect(onPrint).toHaveBeenCalledTimes(1);
   });
 });

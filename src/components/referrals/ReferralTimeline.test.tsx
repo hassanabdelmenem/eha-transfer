@@ -59,10 +59,10 @@ describe('ReferralTimeline', () => {
 
     render(<ReferralTimeline referral={referral} usersById={usersById} />);
 
-    expect(screen.getByText('Status: PENDING')).toBeInTheDocument();
-    expect(screen.getByText('Status: DEPT APPROVED')).toBeInTheDocument();
-    expect(screen.getByText('Status: IN TRANSIT')).toBeInTheDocument();
-    expect(screen.getByText('Dept Review: DIRECT APPROVAL')).toBeInTheDocument();
+    expect(screen.getByText('Referral sent')).toBeInTheDocument();
+    expect(screen.getByText('Department approved')).toBeInTheDocument();
+    expect(screen.getByText('Dispatched')).toBeInTheDocument();
+    expect(screen.getByText('Approved by Cardiology')).toBeInTheDocument();
 
     expect(screen.getByText(/Dr\. Referring/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Dr\. HoD/i).length).toBe(2);
@@ -84,7 +84,7 @@ describe('ReferralTimeline', () => {
 
     render(<ReferralTimeline referral={referral} />);
 
-    expect(screen.getByText('Status: REJECTED')).toBeInTheDocument();
+    expect(screen.getByText('Declined')).toBeInTheDocument();
     expect(screen.getByText('No bed capacity')).toBeInTheDocument();
   });
 });

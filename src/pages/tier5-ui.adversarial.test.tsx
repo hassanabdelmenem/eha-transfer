@@ -411,6 +411,18 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
       const { unmount: u6 } = renderDetailPage();
       expect(screen.getByText(/Prepare a bed/i)).toBeInTheDocument();
       u6();
+
+      // 7. Referring clinician, sent back with requirements: waiting on them, quoting the ask
+      mockUser = { id: 'u6', name: 'Dr. Referrer', role: 'resident', facilityId: 'f1', verified: true, email: 'ref@eha.eg' };
+      mockReferrals = [createReferral({
+        status: 'postponed',
+        deptComments: [{ id: 'c2', userId: 'u2', status: 'requirements_needed', comment: 'Send the last 6 hours of urine output.', timestamp: '2026-08-23T14:40:00Z' }],
+      })];
+      const { unmount: u7 } = renderDetailPage();
+      expect(screen.getByText(/Waiting on you — .* needs requirements/i)).toBeInTheDocument();
+      expect(screen.getAllByText('Send the last 6 hours of urine output.').length).toBeGreaterThan(0);
+      expect(screen.queryByText(/Nothing is needed from you/i)).not.toBeInTheDocument();
+      u7();
     });
   });
 

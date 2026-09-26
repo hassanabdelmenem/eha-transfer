@@ -1,40 +1,49 @@
 import React from 'react';
-import { ArrowLeft, Check, Copy, Printer, ShieldAlert } from 'lucide-react';
-import { Button } from '../../ui/Button';
+import { ChevronLeft, Check, Copy, Printer, ShieldAlert } from 'lucide-react';
 import { Referral } from '../../../types';
 import { STAGE_LABELS, stageIndexForStatus } from '../../../lib/referralStage';
+import { cn } from '../../../lib/utils';
 
 export type BannerTint = 'info' | 'success' | 'critical' | 'warning';
 
-export const BANNER_TINT_CLASSES: Record<BannerTint, string> = {
-  info: 'bg-info-100 text-info-800 border-info-300 dark:bg-info-900/30 dark:text-info-300 dark:border-info-800',
-  success: 'bg-success-100 text-success-800 border-success-300 dark:bg-success-900/30 dark:text-success-300 dark:border-success-800',
-  critical: 'bg-critical-100 text-critical-800 border-critical-300 dark:bg-critical-900/30 dark:text-critical-300 dark:border-critical-800',
-  warning: 'bg-warning-100 text-warning-800 border-warning-300 dark:bg-warning-900/30 dark:text-warning-300 dark:border-warning-800',
-};
-
-export const StageRail: React.FC<{ status: Referral['status'] }> = ({ status }) => {
+/**
+ * Six segments: done in olive, the stage the referral is waiting on in full
+ * contrast, the rest faint. On ink (the phone header) or on paper (desktop).
+ * Rejected/cancelled show every segment in critical: the journey stopped.
+ */
+export const StageRail: React.FC<{ status: Referral['status']; tone?: 'ink' | 'paper' }> = ({ status, tone = 'ink' }) => {
   const currentIndex = stageIndexForStatus(status);
   const isException = currentIndex === null;
+  const onInk = tone === 'ink';
   return (
-    <div className="flex items-stretch gap-1" role="img" aria-label={`Stage: ${status.replace(/_/g, ' ')}`}>
+    <div className="flex items-stretch gap-[5px]" role="img" aria-label={`Stage: ${status.replace(/_/g, ' ')}`}>
       {STAGE_LABELS.map((label, i) => {
         const done = !isException && i < (currentIndex as number);
         const current = !isException && i === currentIndex;
         return (
-          <div key={label} className="flex-1 min-w-0">
+          <div key={label} className="flex min-w-0 flex-1 flex-col items-center gap-[5px] lg:items-start">
             <div
-              className={`h-1.5 rounded-full ${
-                current ? 'bg-white' : done ? 'bg-success-400' : isException ? 'bg-critical-500/60' : 'bg-white/22'
-              }`}
+              className={cn(
+                'h-[5px] w-full rounded-full',
+                isException
+                  ? 'bg-critical-500/70'
+                  : done
+                  ? onInk ? 'bg-success-400' : 'bg-success-500'
+                  : current
+                  ? onInk ? 'bg-paper' : 'bg-ink dark:bg-paper'
+                  : onInk ? 'bg-white/22' : 'bg-slate-200 dark:bg-white/15'
+              )}
             />
-            <p
-              className={`mt-1 text-[10px] font-bold truncate ${
-                current ? 'text-white' : 'text-white/62'
-              }`}
+            <span
+              className={cn(
+                'truncate text-[9px] font-semibold uppercase tracking-[0.03em] lg:text-[11px] lg:tracking-[0.06em]',
+                onInk
+                  ? current ? 'text-paper' : 'text-white/62'
+                  : current ? 'text-ink dark:text-paper' : 'text-slate-500 dark:text-white/60'
+              )}
             >
               {label}
-            </p>
+            </span>
           </div>
         );
       })}
@@ -44,119 +53,95 @@ export const StageRail: React.FC<{ status: Referral['status'] }> = ({ status }) 
 
 export interface ReferralDetailHeaderProps {
   referral: Referral;
+  onBack: () => void;
+  /** Desktop only: the viewer's actions, inline at the top right. */
+  actions?: React.ReactNode;
+  isDesktop: boolean;
+}
+
+export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ referral, onBack, actions, isDesktop }) => {
+  const name = `${referral.patientData.name || 'Unknown patient'}, ${referral.patientData.age}`;
+  const facts = [referral.patientData.hospitalId, `${referral.requiredBedType}`, referral.priority].filter(Boolean).join(' · ');
+
+  return (
+    <>
+      <div className="hidden print:block">
+        <h1 className="text-2xl font-bold text-ink">Referral details</h1>
+        <p className="font-mono text-sm text-slate-700">ID: {referral.id}</p>
+      </div>
+
+      {isDesktop ? (
+        <header className="print:hidden border-b border-slate-200 pb-5 dark:border-white/10">
+          <div className="flex items-start justify-between gap-6">
+            <div className="flex min-w-0 items-start gap-3">
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label="Go back"
+                className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-slate-300 text-ink hover:bg-slate-100 dark:border-white/25 dark:text-paper dark:hover:bg-white/10"
+              >
+                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+              </button>
+              <div className="min-w-0">
+                <h1 className="text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h1>
+                <p className="mt-1 text-[13.5px] text-slate-700 dark:text-white/65">{facts}</p>
+              </div>
+            </div>
+            {actions && <div className="flex shrink-0 flex-wrap items-center justify-end gap-2.5">{actions}</div>}
+          </div>
+          <div className="mt-5">
+            <StageRail status={referral.status} tone="paper" />
+          </div>
+        </header>
+      ) : (
+        <header className="print:hidden sticky top-0 z-30 -mx-[18px] mb-4 bg-ink px-[18px] pt-[max(12px,env(safe-area-inset-top))] pb-[14px] text-paper">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Go back"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-white/25 hover:bg-white/10"
+            >
+              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <div className="min-w-0">
+              <h1 className="truncate font-sans text-[15px] font-semibold leading-[1.25] tracking-normal">{name}</h1>
+              <p className="mt-0.5 truncate text-[12.5px] leading-[1.3] text-white/60">{facts}</p>
+            </div>
+          </div>
+          <div className="mt-[13px]">
+            <StageRail status={referral.status} tone="ink" />
+          </div>
+        </header>
+      )}
+    </>
+  );
+};
+
+export interface ReferralUtilityBarProps {
+  referral: Referral;
   copied: boolean;
   onCopyId: () => void;
   onToggleEscalation: () => void;
   onPrint: () => void;
-  onBack: () => void;
-  mobileBanner: { label: string; tint: BannerTint };
-  roleVariant: 'dept-head' | 'manager' | 'er-room' | 'nurse' | 'clinician' | null;
-  roleVariantLabel?: string;
 }
 
-export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({
-  referral,
-  copied,
-  onCopyId,
-  onToggleEscalation,
-  onPrint,
-  onBack,
-  mobileBanner,
-  roleVariant,
-  roleVariantLabel,
-}) => {
+/** The actions every viewer has but nobody's job depends on: at the foot of the page. */
+export const ReferralUtilityBar: React.FC<ReferralUtilityBarProps> = ({ referral, copied, onCopyId, onToggleEscalation, onPrint }) => {
+  const btn = 'inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-slate-300 bg-white px-3.5 text-[13.5px] font-semibold text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10';
   return (
-    <>
-      {/* Print-only header */}
-      <div className="hidden print:block">
-        <h1 className="text-2xl font-bold text-gray-900">Referral Details</h1>
-        <p className="text-sm text-gray-500 font-mono">ID: {referral.id}</p>
-      </div>
-
-      {/* Modern interactive executive header card */}
-      <div className="-mt-4 sm:mt-0 rounded-2xl overflow-hidden print:hidden">
-        <div className="bg-slate-950 text-white px-4 pt-4 pb-4 sm:px-6 space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <button
-                onClick={onBack}
-                aria-label="Go back"
-                className="h-11 w-11 -ml-2 shrink-0 flex items-center justify-center rounded text-white/80 hover:text-white transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" aria-hidden="true" />
-              </button>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-xl font-heading font-semibold truncate">
-                  {referral.patientData.name || 'Unknown patient'}, {referral.patientData.age}
-                </h1>
-                <div className="flex items-center gap-1 min-w-0">
-                  <p className="text-xs text-white/60 truncate">
-                    {referral.patientData.hospitalId} · {referral.requiredBedType} · {referral.priority} · ID: {referral.id}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onCopyId}
-                    aria-label="Copy referral ID"
-                    className="inline-flex items-center justify-center h-11 w-11 shrink-0 rounded text-white/60 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-success-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
-                  </button>
-                  <span className="sr-only" role="status">{copied ? 'Referral ID copied to clipboard' : ''}</span>
-                </div>
-              </div>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 shrink-0">
-              <Button
-                size="sm"
-                variant={referral.isEscalated ? "destructive" : "outline"}
-                className={referral.isEscalated ? "bg-critical-600 text-white hover:bg-critical-700" : "bg-white/10 border-white/25 text-white hover:bg-white/20"}
-                onClick={onToggleEscalation}
-              >
-                <ShieldAlert className="h-4 w-4 mr-2" />
-                {referral.isEscalated ? 'De-escalate' : 'Mark Escalated'}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="bg-white/10 border-white/25 text-white hover:bg-white/20"
-                onClick={onPrint}
-              >
-                <Printer className="h-4 w-4 mr-2" />
-                Generate PDF Summary
-              </Button>
-            </div>
-          </div>
-          <StageRail status={referral.status} />
-          <div className="flex sm:hidden items-center gap-2">
-            <button
-              onClick={onToggleEscalation}
-              className={`flex-1 min-h-[44px] rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 ${
-                referral.isEscalated ? 'bg-critical-600 text-white' : 'border border-white/25 text-white'
-              }`}
-            >
-              <ShieldAlert className="h-3.5 w-3.5" />
-              {referral.isEscalated ? 'De-escalate' : 'Mark Escalated'}
-            </button>
-            <button
-              onClick={onPrint}
-              className="flex-1 min-h-[44px] rounded-lg border border-white/25 text-white text-xs font-semibold flex items-center justify-center gap-1.5"
-            >
-              <Printer className="h-3.5 w-3.5" />
-              PDF Summary
-            </button>
-          </div>
-        </div>
-        <div className={`px-4 sm:px-6 py-3 border-b text-xs font-bold ${BANNER_TINT_CLASSES[mobileBanner.tint]}`}>
-          {mobileBanner.label}
-        </div>
-        {roleVariant && roleVariantLabel && (
-          <div className="sm:hidden px-4 py-2 bg-slate-900 border-t border-white/10">
-            <span className="inline-flex items-center rounded-full px-2.5 py-1 bg-white/10 text-white/80 text-[11px] font-bold">
-              Viewing as {roleVariantLabel}
-            </span>
-          </div>
-        )}
-      </div>
-    </>
+    <div className="print:hidden flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4 dark:border-white/10">
+      <button type="button" onClick={onPrint} className={btn}>
+        <Printer className="h-4 w-4" aria-hidden="true" /> PDF summary
+      </button>
+      <button type="button" onClick={onToggleEscalation} className={cn(btn, referral.isEscalated && 'border-critical-700 text-critical-700 dark:border-critical-400 dark:text-critical-300')}>
+        <ShieldAlert className="h-4 w-4" aria-hidden="true" /> {referral.isEscalated ? 'De-escalate' : 'Mark escalated'}
+      </button>
+      <button type="button" onClick={onCopyId} aria-label="Copy referral ID" className={btn}>
+        {copied ? <Check className="h-4 w-4 text-success-700" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
+        <span className="font-mono text-[12px] font-medium">{referral.id}</span>
+      </button>
+      <span className="sr-only" role="status">{copied ? 'Referral ID copied to clipboard' : ''}</span>
+    </div>
   );
 };
