@@ -36,16 +36,22 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove('night-shift-mode', 'light', 'dark');
+    const apply = (resolved: 'light' | 'dark') => {
+      root.classList.remove('night-shift-mode', 'light', 'dark');
+      root.classList.add(resolved);
+    };
 
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
+    if (theme !== 'system') {
+      apply(theme);
+      return;
     }
+    // Follow the device, live: a phone that switches to dark at sunset takes the
+    // whole shell with it, without a reload.
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    apply(query.matches ? 'dark' : 'light');
+    const onChange = (e: MediaQueryListEvent) => apply(e.matches ? 'dark' : 'light');
+    query.addEventListener?.('change', onChange);
+    return () => query.removeEventListener?.('change', onChange);
   }, [theme]);
 
   const value = {

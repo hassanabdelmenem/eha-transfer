@@ -508,7 +508,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
       );
 
       // Click Direct Approve
-      const approveBtn = screen.getByRole('button', { name: /Direct Approve/i });
+      const approveBtn = screen.getByRole('button', { name: /^Approve$/i });
       fireEvent.click(approveBtn);
 
       expect(onApprove).toHaveBeenCalledWith('ref-adv-1');

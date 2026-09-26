@@ -11,18 +11,15 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       <div
         ref={ref}
         className={cn(
-          "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold  transition-colors focus:outline-none focus:ring-1 focus:ring-slate-400 focus:ring-offset-1",
+          "inline-flex items-center rounded-[6px] px-2 py-1 text-[11px] font-bold leading-none tracking-[0.04em] focus:outline-none focus-visible:ring-2 focus-visible:ring-info-700",
           {
-            'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200': variant === 'default',
-            // success/warning/danger use the dedicated status scale, not raw
-            // green-/amber-/red- utilities: warning and danger both render
-            // from the same brand orange ramp, so `variant="warning"` and
-            // `variant="danger"` used to be pixel-identical everywhere this
-            // component is used.
-            'border-transparent bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300': variant === 'success',
-            'border-transparent bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-300': variant === 'warning',
-            'border-transparent bg-critical-100 text-critical-700 dark:bg-critical-900/40 dark:text-critical-300': variant === 'danger',
-            'border-transparent bg-info-100 text-info-700 dark:bg-info-900/40 dark:text-info-300': variant === 'info',
+            'bg-slate-200 text-slate-700 dark:bg-white/10 dark:text-slate-200': variant === 'default' || variant === 'secondary',
+            // The four status tints. Text is the darkest step of the same hue, never
+            // grey, so a chip reads its meaning even when colour is lost.
+            'bg-success-100 text-success-700 dark:bg-success-900/60 dark:text-success-300': variant === 'success',
+            'bg-warning-100 text-warning-800 dark:bg-warning-900/50 dark:text-warning-300': variant === 'warning',
+            'bg-critical-100 text-critical-700 dark:bg-critical-900/50 dark:text-critical-300': variant === 'danger',
+            'bg-info-100 text-info-800 dark:bg-info-900/60 dark:text-info-300': variant === 'info',
           },
           className
         )}

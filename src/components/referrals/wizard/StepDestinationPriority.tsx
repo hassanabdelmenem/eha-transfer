@@ -226,7 +226,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
                 type="button"
                 onClick={onRunAiTriage}
                 disabled={receivingDepartments.length === 0 || aiTriageRunning}
-                className="bg-command-blue hover:bg-command-blue-hover text-white shrink-0 font-semibold"
+                className="bg-ink hover:bg-slate-800 text-paper dark:bg-paper dark:text-ink dark:hover:bg-slate-100 shrink-0 font-semibold"
               >
                 {aiTriageRunning ? (
                   <Activity className="w-4 h-4 mr-2 motion-safe:animate-pulse" />
@@ -246,8 +246,8 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
             {aiRankedFacilities && (
               <div className="mt-3 space-y-2 p-3 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-lg animate-in fade-in duration-300">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-command-blue dark:text-blue-400" />
-                  <h4 className="text-xs font-bold text-command-blue dark:text-blue-300 uppercase tracking-wider">
+                  <Sparkles className="w-4 h-4 text-ink dark:text-paper" />
+                  <h4 className="text-xs font-bold text-ink dark:text-paper uppercase tracking-wider">
                     AI Ranked Destination Suggestions
                   </h4>
                 </div>

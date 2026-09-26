@@ -12,7 +12,7 @@ describe('Badge', () => {
   it('applies default classes', () => {
     render(<Badge data-testid="badge">Default</Badge>);
     const badge = screen.getByTestId('badge');
-    expect(badge).toHaveClass('bg-slate-100');
+    expect(badge).toHaveClass('bg-slate-200');
   });
 
   it('applies success variant classes', () => {

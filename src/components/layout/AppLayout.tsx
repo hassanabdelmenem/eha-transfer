@@ -4,12 +4,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { AppSidebar } from './AppSidebar';
+import { ROLE_CONFIGS } from './RoleBadge';
 import { Button } from '../ui/Button';
 import { toastError } from '../../lib/toast';
 import { isDoctorRole, isNurseRole } from '../../types';
 import {
   X,
   Menu,
+  Bell,
+  WifiOff,
   CheckCircle2,
   AlertTriangle,
   Clock,
@@ -17,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 export const AppLayout: React.FC = () => {
   const { user, logout, updateUserProfile } = useAuth();
@@ -35,6 +39,8 @@ export const AppLayout: React.FC = () => {
   } = useData();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
+  // One sidebar in the DOM at a time: the rail on desktop, the drawer on phones.
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
@@ -198,44 +204,47 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-full flex bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+    <div className="h-dvh w-full flex bg-paper dark:bg-ink font-sans text-ink dark:text-paper overflow-hidden">
       {/* Accessibility Skip Link */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2.5 focus:rounded-xl focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400 font-semibold text-sm"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:bg-paper focus:text-ink focus:px-4 focus:py-3 focus:rounded-[10px] focus:shadow-xl font-semibold text-sm"
       >
         Skip to main content
       </a>
 
-      {/* FLOATING BUTTON (The only way to open the drawer now) */}
-      <button
-        ref={mobileMenuTriggerRef}
-        type="button"
-        onClick={() => setMobileMenuOpen(true)}
-        aria-label="Open menu"
-        className="fixed top-3 right-3 sm:top-5 sm:right-5 z-50 flex items-center justify-center w-12 h-12 rounded-full shadow-2xl bg-blue-600 hover:bg-blue-700 text-white transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
-      >
-        <Menu className="w-6 h-6" />
-        {unreadNotifs > 0 && (
-          <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-critical-500 border-2 border-blue-600 rounded-full"></span>
-        )}
-      </button>
+      {/* Desktop: the ink rail is always there. */}
+      {isDesktop && <div className="flex shrink-0">
+        <AppSidebar
+          user={user}
+          facility={facility}
+          referrals={referrals}
+          isOnline={isOnline}
+          pendingSyncCount={pendingSyncCount}
+          unreadNotifsCount={unreadNotifs}
+          onOpenProfile={openProfile}
+          onOpenHotline={openHotline}
+          onLogoutClick={handleLogoutClick}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+      </div>}
 
-      {/* Off-Canvas Drawer Backdrop */}
-      {mobileMenuOpen && (
+      {/* Phone: the same rail, in a drawer opened from the header. */}
+      {!isDesktop && mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[80] motion-safe:animate-[fadeIn_150ms_ease-out]"
+          data-testid="drawer-backdrop"
+          className="fixed inset-0 z-[80] bg-ink/60"
           onClick={() => setMobileMenuOpen(false)}
           aria-hidden="true"
         />
       )}
-
-      {/* Off-Canvas Drawer (Now used for Desktop AND Mobile) */}
-      <div
+      {!isDesktop && <div
         className={cn(
-          'fixed inset-y-0 left-0 z-[90] w-[85vw] max-w-xs shadow-2xl transition-transform duration-300 ease-out will-change-transform bg-white dark:bg-slate-900',
+          'fixed inset-y-0 left-0 z-[90] w-[85vw] max-w-[320px] shadow-2xl transition-transform duration-200 ease-out motion-reduce:transition-none',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
+        inert={!mobileMenuOpen}
       >
         <AppSidebar
           user={user}
@@ -244,7 +253,6 @@ export const AppLayout: React.FC = () => {
           isOnline={isOnline}
           pendingSyncCount={pendingSyncCount}
           unreadNotifsCount={unreadNotifs}
-          collapsed={false}
           isMobile={true}
           onCloseMobile={() => setMobileMenuOpen(false)}
           onOpenProfile={openProfile}
@@ -253,17 +261,57 @@ export const AppLayout: React.FC = () => {
           theme={theme}
           onToggleTheme={toggleTheme}
         />
-      </div>
+      </div>}
 
-      {/* Primary Content Column */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Scrollable Main Workspace */}
+        {/* Phone identity header: who you are and where, in ink. */}
+        {!isDesktop && <header className="shrink-0 bg-ink text-paper px-[18px] pt-[max(14px,env(safe-area-inset-top))] pb-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-semibold leading-[1.3]">{user.name}</p>
+              <p className="mt-0.5 truncate text-[12.5px] leading-[1.3] text-white/60">
+                {ROLE_CONFIGS[user.role]?.label ?? user.role}{facility ? ` · ${facility.name}` : ''}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link
+                to="/notifications"
+                aria-label={unreadNotifs > 0 ? `Inbox, ${unreadNotifs} unread` : 'Inbox'}
+                className="relative flex h-12 w-12 items-center justify-center rounded-[10px] border border-white/25 hover:bg-white/10"
+              >
+                <Bell className="h-5 w-5" aria-hidden="true" />
+                {unreadNotifs > 0 && (
+                  <span className="absolute top-1.5 right-1.5 h-[9px] w-[9px] rounded-full border-2 border-ink bg-critical-500" aria-hidden="true" />
+                )}
+              </Link>
+              <button
+                ref={mobileMenuTriggerRef}
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Open menu"
+                aria-expanded={mobileMenuOpen}
+                className="flex h-12 w-12 items-center justify-center rounded-[10px] border border-white/25 hover:bg-white/10"
+              >
+                <Menu className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+          {(!isOnline || pendingSyncCount > 0) && (
+            <p role="status" className="mt-3.5 flex items-center gap-2 rounded-lg border border-warning-700 bg-warning-800/30 px-[11px] py-[9px] text-[12.5px] font-semibold text-warning-300">
+              <WifiOff className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {!isOnline
+                ? `Offline · ${pendingSyncCount} action${pendingSyncCount === 1 ? '' : 's'} queued, will send automatically`
+                : `Back online · sending ${pendingSyncCount} queued action${pendingSyncCount === 1 ? '' : 's'}`}
+            </p>
+          )}
+        </header>}
+
         <main
           id="main-content"
           tabIndex={-1}
-          className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 focus:outline-none"
+          className="flex-1 overflow-y-auto overflow-x-hidden px-[18px] pt-5 pb-10 lg:px-8 lg:py-8 focus:outline-none"
         >
-          <div className="max-w-7xl mx-auto w-full pt-16">
+          <div className="max-w-7xl mx-auto w-full">
             <Outlet />
           </div>
         </main>

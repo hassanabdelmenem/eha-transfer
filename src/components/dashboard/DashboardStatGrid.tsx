@@ -48,9 +48,9 @@ export const DashboardStatGrid: React.FC<DashboardStatGridProps> = ({
         label: 'Completed',
         value: completed,
         valueColor: 'text-white',
-        bg: 'bg-command-blue',
+        bg: 'bg-ink',
         labelColor: 'text-blue-200',
-        badgeBg: 'bg-command-blue-hover',
+        badgeBg: 'bg-slate-800',
         badgeText: 'text-blue-300',
         badgeLabel: 'Optimal',
       },
@@ -75,12 +75,12 @@ export const DashboardStatGrid: React.FC<DashboardStatGridProps> = ({
             <div
               key={i}
               className={`p-5 flex flex-col justify-between transition-colors ${
-                stat.bg === 'bg-command-blue' ? stat.bg : 'bg-transparent'
+                stat.bg === 'bg-ink' ? stat.bg : 'bg-transparent'
               }`}
             >
               <span
                 className={`text-xs font-bold ${
-                  stat.bg === 'bg-command-blue' ? 'text-blue-100' : stat.labelColor
+                  stat.bg === 'bg-ink' ? 'text-slate-300' : stat.labelColor
                 }`}
               >
                 {stat.label}
@@ -88,14 +88,14 @@ export const DashboardStatGrid: React.FC<DashboardStatGridProps> = ({
               <div className="flex items-baseline justify-between gap-2 mt-3">
                 <span
                   className={`text-4xl font-light tracking-tight ${
-                    stat.bg === 'bg-command-blue' ? 'text-white' : stat.valueColor
+                    stat.bg === 'bg-ink' ? 'text-white' : stat.valueColor
                   }`}
                 >
                   {stat.value}
                 </span>
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    stat.bg === 'bg-command-blue'
+                    stat.bg === 'bg-ink'
                       ? 'bg-blue-500 text-blue-50'
                       : `${stat.badgeBg} ${stat.badgeText}`
                   }`}

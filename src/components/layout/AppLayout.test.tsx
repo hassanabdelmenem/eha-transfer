@@ -118,8 +118,9 @@ describe('AppLayout', () => {
       { id: 'n3', userId: 'u1', title: 't', message: 'm', type: 'info', read: true, createdAt: '', createdAtMs: 0, referralId: 'r1' },
     ];
     const { container } = renderLayout();
-    const trigger = screen.getByLabelText('Open menu');
-    expect(within(trigger).getByText('', { selector: 'span' })).toBeInTheDocument();
+    // The unread dot lives on the header's inbox square, which names the count.
+    const inbox = screen.getByRole('link', { name: 'Inbox, 1 unread' });
+    expect(within(inbox).getByText('', { selector: 'span' })).toBeInTheDocument();
   });
 
   it('opens the mobile drawer from the floating trigger and closes it via the backdrop', () => {
@@ -127,20 +128,20 @@ describe('AppLayout', () => {
     const trigger = screen.getByLabelText('Open menu');
 
     act(() => { trigger.click(); });
-    const backdrop = container.querySelector('.backdrop-blur-sm.z-\\[80\\]') as HTMLElement;
+    const backdrop = container.querySelector('[data-testid="drawer-backdrop"]') as HTMLElement;
     expect(backdrop).toBeInTheDocument();
 
     act(() => { backdrop.click(); });
-    expect(container.querySelector('.backdrop-blur-sm.z-\\[80\\]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-testid="drawer-backdrop"]')).not.toBeInTheDocument();
   });
 
   it('closes the mobile drawer on Escape', () => {
     const { container } = renderLayout();
     act(() => { screen.getByLabelText('Open menu').click(); });
-    expect(container.querySelector('.backdrop-blur-sm.z-\\[80\\]')).toBeInTheDocument();
+    expect(container.querySelector('[data-testid="drawer-backdrop"]')).toBeInTheDocument();
 
     act(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
-    expect(container.querySelector('.backdrop-blur-sm.z-\\[80\\]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-testid="drawer-backdrop"]')).not.toBeInTheDocument();
   });
 
   it('opens the Emergency Hotline flow from the sidebar and closes the mobile menu, and Escape does not error while it is open', () => {
@@ -158,7 +159,7 @@ describe('AppLayout', () => {
     const { container } = renderLayout();
     act(() => { screen.getByLabelText('Open menu').click(); });
     act(() => { screen.getByLabelText('Close menu').click(); });
-    expect(container.querySelector('.backdrop-blur-sm.z-\\[80\\]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-testid="drawer-backdrop"]')).not.toBeInTheDocument();
   });
 
   describe('profile dialog', () => {
