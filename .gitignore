@@ -32,12 +32,13 @@ firestore-export/
 .stryker-tmp/
 
 # AI tool configuration and state
-# Claude Code: share the team config (settings, hooks, skills); keep personal
+# Claude Code: share the team config (settings, hooks, skills, agents); keep personal
 # state (settings.local.json, worktrees, launch.json) local.
 .claude/*
 !.claude/settings.json
 !.claude/hooks/
 !.claude/skills/
+!.claude/agents/
 .copilot/
 _to_delete/
 
