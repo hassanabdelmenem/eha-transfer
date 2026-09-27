@@ -264,6 +264,7 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
         <Routes>
           <Route path="/referrals/:id" element={<ReferralDetailPage />} />
           <Route path="/referrals" element={<div data-testid="referrals-list">Referrals List Page</div>} />
+          <Route path="/dashboard" element={<div data-testid="role-home">Role home</div>} />
           <Route path="/bed-management" element={<div data-testid="bed-management">Bed Management</div>} />
         </Routes>
       </MemoryRouter>
@@ -276,6 +277,7 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
         <Routes>
           <Route path="/referrals/new" element={<NewReferralPage />} />
           <Route path="/referrals" element={<div data-testid="referrals-list">Referrals List Page</div>} />
+          <Route path="/dashboard" element={<div data-testid="role-home">Role home</div>} />
         </Routes>
       </MemoryRouter>
     );
@@ -958,13 +960,13 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
     it('recovers gracefully from corrupted JSON draft in localStorage without throwing', () => {
       localStorage.setItem('newReferralDraft', '{ corrupted json --- !!!');
       expect(() => renderNewReferralPage()).not.toThrow();
-      expect(screen.getByText(/New Referral Request/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /step \d of 5/i })).toBeInTheDocument();
     });
 
     it('parses Egyptian 14-digit National ID and calculates century, birthdate, age and gender', () => {
       renderNewReferralPage();
 
-      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
       const nidInput = screen.getAllByLabelText(/National ID/i)[0];
       const ageInputs = screen.getAllByLabelText(/^Age( \(required\))?$/i);
 
@@ -988,7 +990,7 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
     it('clamps GCS vital sign input between 3 and 15', () => {
       renderNewReferralPage();
 
-      fireEvent.click(screen.getByText('Clinical & Vitals'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
       const gcsInput = screen.getAllByLabelText(/GCS/i)[0];
 
       // Enter value below minimum: 1 -> clamped to 3
@@ -1000,24 +1002,28 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
       expect(gcsInput).toHaveValue(15);
     });
 
+    /** Identity plus the clinical minimum, then Step 5, where the referral is sent from. */
+    const fillToDestination = () => {
+      fireEvent.change(screen.getAllByLabelText(/^Hospital ID/i)[0], { target: { value: 'ISM-99999' } });
+      fireEvent.change(screen.getAllByLabelText(/Full Name/i)[0], { target: { value: 'Adel Sameh' } });
+      fireEvent.change(screen.getAllByLabelText(/^Age/i)[0], { target: { value: '47' } });
+      fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
+      fireEvent.change(document.querySelector('#complaint')!, { target: { value: 'Sudden weakness' } });
+      fireEvent.change(document.querySelector('#presentation')!, { target: { value: 'Left hemiparesis' } });
+      fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
+      fireEvent.change(document.querySelector('#diagnosis')!, { target: { value: 'Acute ischaemic stroke' } });
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
+    };
+
     it('validates mandatory department selection on submit and shows toast error', () => {
-      const { container } = renderNewReferralPage();
+      renderNewReferralPage();
+      fillToDestination();
+      fireEvent.change(screen.getAllByLabelText(/Why this transfer/i)[0], { target: { value: 'Thrombectomy' } });
 
-      fireEvent.click(screen.getByText('Patient Identification'));
-      const hospitalIdInput = screen.getAllByLabelText(/Unified Hospital ID/i)[0];
-      const nameInput = screen.getAllByLabelText(/Full Name/i)[0];
+      fireEvent.click(screen.getByRole('button', { name: /submit referral/i }));
 
-      fireEvent.change(hospitalIdInput, { target: { value: 'ISM-10101' } });
-      fireEvent.change(nameInput, { target: { value: 'Karim Nader' } });
-
-      const form = container.querySelector('form');
-      expect(form).not.toBeNull();
-      fireEvent.submit(form!);
-
-      expect(toastShowSpy).toHaveBeenCalledWith(
-        'Select at least one target department before submitting.',
-        'error'
-      );
+      expect(toastShowSpy).toHaveBeenCalledWith('Pick at least one receiving department.', 'error');
+      expect(screen.getByText('Pick at least one receiving department.')).toBeInTheDocument();
       expect(mockAddReferral).not.toHaveBeenCalled();
     });
 
@@ -1027,24 +1033,12 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
         departments: ['General'], capacity: { Ward: { total: 0, occupied: 0 }, ICU: { total: 0, occupied: 0 }, CCU: { total: 0, occupied: 0 }, PICU: { total: 0, occupied: 0 } },
       }];
 
-      const { container } = renderNewReferralPage();
+      renderNewReferralPage();
+      fillToDestination();
+      fireEvent.click(screen.getAllByRole('button', { name: /^Surgery$/i })[0]);
+      fireEvent.change(screen.getAllByLabelText(/Why this transfer/i)[0], { target: { value: 'Specialized neuro-vascular intervention' } });
 
-      const deptButtons = screen.getAllByRole('button', { name: /^Surgery$/i });
-      fireEvent.click(deptButtons[0]);
-
-      const reasonInput = screen.getAllByLabelText(/Main Reason for Transfer/i)[0];
-      fireEvent.change(reasonInput, { target: { value: 'Specialized neuro-vascular intervention' } });
-
-      fireEvent.click(screen.getByText('Patient Identification'));
-      const hospitalIdInput = screen.getAllByLabelText(/Unified Hospital ID/i)[0];
-      const nameInput = screen.getAllByLabelText(/Full Name/i)[0];
-
-      fireEvent.change(hospitalIdInput, { target: { value: 'ISM-99999' } });
-      fireEvent.change(nameInput, { target: { value: 'Adel Sameh' } });
-
-      const form = container.querySelector('form');
-      expect(form).not.toBeNull();
-      fireEvent.submit(form!);
+      fireEvent.click(screen.getByRole('button', { name: /submit referral/i }));
 
       expect(toastShowSpy).toHaveBeenCalledWith(
         expect.stringMatching(/No hospital in the network can take this patient/i),
@@ -1053,27 +1047,29 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
       expect(mockAddReferral).toHaveBeenCalled();
     });
 
-    it('handles mobile wizard step validation preventing progression until required fields are filled', () => {
+    it('handles wizard step validation preventing progression until required fields are filled', () => {
       renderNewReferralPage();
 
-      // Mobile wizard is present in DOM
-      expect(screen.getByText(/step 1 of 5/i)).toBeInTheDocument();
-      expect(screen.getByText('Patient & routing')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /step 1 of 5/i })).toBeInTheDocument();
+      expect(screen.getByText('Patient identity')).toBeInTheDocument();
 
-      const continueBtn = screen.getByRole('button', { name: /continue/i });
-      fireEvent.click(continueBtn);
+      fireEvent.click(screen.getByRole('button', { name: /continue/i }));
 
-      expect(toastShowSpy).toHaveBeenCalledWith(
-        'Fill in the required fields before continuing.',
-        'error'
-      );
-      expect(screen.getByText(/step 1 of 5/i)).toBeInTheDocument();
+      expect(toastShowSpy).toHaveBeenCalledWith('Fill in the required fields before continuing.', 'error');
+      expect(screen.getByRole('heading', { level: 1, name: /step 1 of 5/i })).toBeInTheDocument();
+    });
+
+    it('does not file the referral when Enter submits the form from an earlier step', () => {
+      const { container } = renderNewReferralPage();
+      fireEvent.submit(container.querySelector('form')!);
+      expect(mockAddReferral).not.toHaveBeenCalled();
+      expect(screen.getByRole('heading', { level: 1, name: /step 1 of 5/i })).toBeInTheDocument();
     });
 
     it('renders offline queued confirmation panel when wizard is submitted while offline', async () => {
       mockIsOnline = false;
 
-      // Seed draft with step 5
+      // Seed a complete draft saved on the last step
       const completeDraft = {
         step: 5,
         patientData: {
@@ -1099,23 +1095,20 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
 
       renderNewReferralPage();
 
-      expect(screen.getByText(/step 5 of 5/i)).toBeInTheDocument();
-      expect(screen.getAllByText(/Review/i)[0]).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /step 5 of 5/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Ready to send/i })).toBeInTheDocument();
+      expect(screen.getByText(/You are offline/i)).toBeInTheDocument();
 
-      // Mobile wizard submit button is the first submit button
-      const submitWizardBtns = screen.getAllByRole('button', { name: /submit referral/i });
-      fireEvent.click(submitWizardBtns[0]);
+      fireEvent.click(screen.getByRole('button', { name: /submit referral/i }));
 
-      // Should transition to Queued Offline screen
       await waitFor(() => {
         expect(screen.getByText(/Queued for/i)).toBeInTheDocument();
-        expect(screen.getByText(/Offline · will send automatically when the connection is back/i)).toBeInTheDocument();
+        expect(screen.getByText(/Offline · it sends automatically when the connection is back/i)).toBeInTheDocument();
         expect(screen.getByText(/If nobody responds in 30 minutes it escalates itself/i)).toBeInTheDocument();
       });
 
-      const doneBtn = screen.getByRole('button', { name: /done/i });
-      fireEvent.click(doneBtn);
-      expect(screen.getByTestId('referrals-list')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /done/i }));
+      expect(screen.getByTestId('role-home')).toBeInTheDocument();
     });
   });
 });

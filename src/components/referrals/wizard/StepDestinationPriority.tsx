@@ -1,10 +1,10 @@
 import React from 'react';
-import { BedType, ReferralPriority, ReferralTransferType, Facility } from '../../../types';
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/Card';
-import { Input } from '../../ui/Input';
-import { Button } from '../../ui/Button';
-import { Sparkles, Activity, Bed, Zap, AlertCircle, ShieldAlert, UserPlus, CheckCircle2 } from 'lucide-react';
-import { NETWORK_DEPARTMENTS, BED_TYPES, PRIORITY_OPTIONS, TRANSFER_TYPES, AiRankedFacility } from './types';
+import { Check, WifiOff } from 'lucide-react';
+import { BedType, Facility, PatientData, ReferralPriority, ReferralTransferType } from '../../../types';
+import { NETWORK_DEPARTMENTS, BED_TYPES } from './types';
+import { ChoicePill, FieldError, FieldHint, FieldLabel, StepHeading, inputClass } from './fields';
+import { cn } from '../../../lib/utils';
+import { isSlaTracked, SLA_MINUTES } from '../../../lib/sla';
 
 interface StepDestinationPriorityProps {
   receivingDepartments: string[];
@@ -26,12 +26,52 @@ interface StepDestinationPriorityProps {
   setSendCriticalAlert: (value: boolean) => void;
   requiresAccompanyingDoctor: boolean;
   setRequiresAccompanyingDoctor: (value: boolean) => void;
-  aiTriageRunning: boolean;
-  aiRankedFacilities: AiRankedFacility[] | null;
-  onRunAiTriage: () => void;
-  fieldErrors?: { departments?: string; facility?: string };
+  patientData: Partial<PatientData>;
+  onEditStep: (step: number) => void;
+  isOnline: boolean;
+  fieldErrors?: { departments?: string; facility?: string; reason?: string };
 }
 
+const PRIORITIES: { value: ReferralPriority; label: string; sub: string; tone: 'critical' | 'warning' | 'ink' }[] = [
+  { value: 'emergency', label: 'Emergency', sub: 'Immediate', tone: 'critical' },
+  { value: 'urgent', label: 'Urgent', sub: '2–6 hours', tone: 'warning' },
+  { value: 'routine', label: 'Routine', sub: '24–48 hours', tone: 'ink' },
+];
+
+const TRANSFER: { value: ReferralTransferType; label: string }[] = [
+  { value: 'one_way', label: 'One way' },
+  { value: 'service_and_return', label: 'Service and return' },
+  { value: 'assessment_with_return', label: 'Assessment' },
+];
+
+const freeBeds = (f: Facility, bed: BedType) => {
+  const cap = f.capacity?.[bed];
+  return cap ? Math.max(0, cap.total - cap.occupied) : 0;
+};
+
+/** A checkbox drawn as a full-width row: box, title, one line of consequence. */
+const ToggleRow: React.FC<{ id: string; checked: boolean; onChange: (v: boolean) => void; title: string; sub: string }> = ({ id, checked, onChange, title, sub }) => (
+  <label htmlFor={id} className={cn(
+    'relative flex min-h-[56px] cursor-pointer items-start gap-3 rounded-[10px] border px-3.5 py-3 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-info-700',
+    checked ? 'border-ink bg-white dark:border-paper dark:bg-white/10' : 'border-slate-300 bg-white hover:bg-slate-50 dark:border-white/25 dark:bg-white/5'
+  )}>
+    <input id={id} type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="absolute inset-0 m-0 h-full w-full cursor-pointer appearance-none rounded-[10px] opacity-0" />
+    <span aria-hidden="true" className={cn(
+      'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] border',
+      checked ? 'border-ink bg-ink text-paper dark:border-paper dark:bg-paper dark:text-ink' : 'border-slate-400 dark:border-white/40'
+    )}>
+      {checked && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+    </span>
+    <span>
+      <span className="block text-[15px] font-semibold leading-tight text-ink dark:text-paper">{title}</span>
+      <span className="mt-0.5 block text-[13px] leading-[1.4] text-slate-700 dark:text-white/65">{sub}</span>
+    </span>
+  </label>
+);
+
+// Step 5 of 5: decided last, with the whole clinical picture already written.
+// Priority leads because it sets the clock; the review underneath is what the
+// receiving team will see, each row one tap from its step.
 export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = ({
   receivingDepartments,
   setReceivingDepartments,
@@ -52,403 +92,247 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
   setSendCriticalAlert,
   requiresAccompanyingDoctor,
   setRequiresAccompanyingDoctor,
-  aiTriageRunning,
-  aiRankedFacilities,
-  onRunAiTriage,
+  patientData,
+  onEditStep,
+  isOnline,
   fieldErrors,
 }) => {
   const toggleDepartment = (dept: string) => {
-    setReceivingDepartments(prev =>
-      prev.includes(dept) ? prev.filter(d => d !== dept) : [...prev, dept]
-    );
+    setReceivingDepartments(prev => (prev.includes(dept) ? prev.filter(d => d !== dept) : [...prev, dept]));
     setReceivingFacilityId('');
   };
 
-  const isEmergency = priority === 'emergency';
+  // Ranked by real free beds of the required type, most first.
+  const ranked = [...availableFacilities].sort((a, b) => freeBeds(b, requiredBedType) - freeBeds(a, requiredBedType));
+  const withBeds = ranked.filter(f => freeBeds(f, requiredBedType) > 0).length;
+
+  const v = patientData.vitalSigns;
+  const vitalsLine = [
+    v?.hr !== undefined && `HR ${v.hr}`,
+    v?.bp && `BP ${v.bp}`,
+    v?.spo2 !== undefined && `SpO₂ ${v.spo2}%`,
+    v?.temp !== undefined && `T ${v.temp}°`,
+    v?.rr !== undefined && `RR ${v.rr}`,
+    v?.gcs !== undefined && `GCS ${v.gcs}`,
+  ].filter(Boolean).join(' · ');
+  const review: { label: string; value: string; step: number }[] = [
+    { label: 'Patient', value: patientData.name ? `${patientData.name}${patientData.age !== undefined ? `, ${patientData.age}` : ''}, ${patientData.gender || 'male'} · ${patientData.hospitalId || 'no hospital ID'}` : 'Not entered', step: 1 },
+    { label: 'Vitals', value: vitalsLine || 'None recorded', step: 2 },
+    { label: 'Complaint', value: patientData.complaint || 'Not entered', step: 3 },
+    { label: 'Diagnosis', value: [patientData.diagnosis, (patientData.attachments?.length ?? 0) > 0 && `${patientData.attachments!.length} attachment${patientData.attachments!.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ') || 'Not entered', step: 4 },
+  ];
 
   return (
-    <Card className="border-slate-200 dark:border-slate-800 overflow-hidden">
-      <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/80 pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-sm">
-              1
-            </span>
-            <div>
-              <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
-                Target Destination & Routing
-              </CardTitle>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Define the required clinical specialty, facility placement, and urgency.
-              </p>
-            </div>
-          </div>
-          {isEmergency && (
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-critical-100 dark:bg-critical-950/60 border border-critical-300 dark:border-critical-800 text-critical-700 dark:text-critical-300 rounded-full text-xs font-bold motion-safe:animate-pulse">
-              <ShieldAlert className="w-3.5 h-3.5" />
-              EMERGENCY PROTOCOL ACTIVE
-            </div>
-          )}
+    <div className="space-y-6">
+      <StepHeading>Where it goes</StepHeading>
+
+      <fieldset>
+        <legend className="mb-1.5 text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
+          Priority<span className="sr-only"> (required)</span>
+        </legend>
+        <div className="grid grid-cols-3 gap-2">
+          {PRIORITIES.map(p => (
+            <ChoicePill key={p.value} type="radio" name="priority" checked={priority === p.value} onChange={() => setPriority(p.value)} sub={p.sub} tone={p.tone} className="min-h-[60px]">
+              {p.label}
+            </ChoicePill>
+          ))}
         </div>
-      </CardHeader>
+        <FieldHint>
+          {isSlaTracked({ status: 'pending', priority, requiredBedType })
+            ? `If nobody responds in ${SLA_MINUTES} minutes it escalates itself — the clock starts when it reaches the server.`
+            : 'No response clock for this priority and bed type.'}
+        </FieldHint>
+      </fieldset>
 
-      <CardContent className="p-4 sm:p-6 space-y-6">
-        {/* Target Departments Selector */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-              Target Departments <span className="text-critical-500">*</span>
-            </label>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {receivingDepartments.length === 0 ? 'Select at least one' : `${receivingDepartments.length} selected`}
-            </span>
-          </div>
-
-          <div
-            role="group"
-            aria-label="Target Departments"
-            aria-invalid={!!fieldErrors?.departments}
-            aria-describedby={fieldErrors?.departments ? 'departments-error' : undefined}
-            className={`flex flex-wrap gap-2 rounded-lg ${fieldErrors?.departments ? 'ring-2 ring-critical-500 ring-offset-2 dark:ring-offset-slate-900 p-1.5 -m-1.5' : ''}`}
-          >
-            {NETWORK_DEPARTMENTS.map(dept => {
-              const isSelected = receivingDepartments.includes(dept);
-              return (
-                <button
-                  key={dept}
-                  type="button"
-                  onClick={() => toggleDepartment(dept)}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    isSelected
-                      ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/30'
-                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {isSelected && <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
-                  {dept}
-                </button>
-              );
-            })}
-          </div>
-          {fieldErrors?.departments ? (
-            <p id="departments-error" className="text-xs text-critical-600 dark:text-critical-400 mt-2 font-semibold">
-              {fieldErrors.departments}
-            </p>
-          ) : (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-              Selecting target departments filters candidate facilities to hospitals with matching clinical departments and active beds.
-            </p>
-          )}
-        </div>
-
-        {/* Facility Routing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-          {/* Destination Facility Selection */}
-          <div className="md:col-span-2 space-y-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="receivingFacility" className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                Receiving Facility <span className="text-critical-500">*</span>
-              </label>
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isAutoRouting}
-                  onChange={e => setIsAutoRouting(e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700"
-                />
-                Auto-Route
-              </label>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1">
-                {!isAutoRouting ? (
-                  <select
-                    id="receivingFacility"
-                    required
-                    aria-invalid={!!fieldErrors?.facility}
-                    aria-describedby={fieldErrors?.facility ? 'receivingFacility-error' : undefined}
-                    className={`w-full rounded-lg border p-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 outline-none disabled:opacity-50 ${
-                      fieldErrors?.facility
-                        ? 'border-critical-500 focus:ring-critical-500'
-                        : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
-                    }`}
-                    value={receivingFacilityId}
-                    onChange={e => setReceivingFacilityId(e.target.value)}
-                    disabled={receivingDepartments.length === 0 || aiTriageRunning}
-                  >
-                    <option value="">Select Facility...</option>
-                    {availableFacilities.map(f => {
-                      let bedInfo = '';
-                      if (requiredBedType && f.capacity[requiredBedType]) {
-                        const cap = f.capacity[requiredBedType];
-                        const avail = cap.total - cap.occupied;
-                        bedInfo = `(${avail} ${requiredBedType} free)`;
-                      }
-                      return (
-                        <option key={f.id} value={f.id}>
-                          {f.name} {bedInfo}
-                        </option>
-                      );
-                    })}
-                  </select>
-                ) : (
-                  <div className="flex items-center justify-between rounded-lg border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-950/30 p-2.5 text-sm text-blue-800 dark:text-blue-300 font-medium">
-                    <div className="flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-blue-600 shrink-0" />
-                      <span>Will notify {availableFacilities.length} matching facilities automatically.</span>
-                    </div>
-                    <select
-                      id="receivingFacility"
-                      aria-hidden="true"
-                      tabIndex={-1}
-                      className="sr-only"
-                      value="auto"
-                      onChange={e => {
-                        if (e.target.value !== 'auto') {
-                          setIsAutoRouting(false);
-                          setReceivingFacilityId(e.target.value);
-                        }
-                      }}
-                    >
-                      <option value="auto">Auto-Route</option>
-                      {availableFacilities.map(f => (
-                        <option key={f.id} value={f.id}>
-                          {f.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              <Button
+      <div>
+        <FieldLabel id="departments-label" required aside={
+          <span className="text-[12.5px] text-slate-500 dark:text-white/60">
+            {receivingDepartments.length === 0 ? 'Pick at least one' : `${receivingDepartments.length} selected`}
+          </span>
+        }>
+          Receiving departments
+        </FieldLabel>
+        <div
+          role="group"
+          aria-labelledby="departments-label"
+          aria-describedby={fieldErrors?.departments ? 'departments-error' : undefined}
+          className="flex flex-wrap gap-2"
+        >
+          {NETWORK_DEPARTMENTS.map(dept => {
+            const on = receivingDepartments.includes(dept);
+            return (
+              <button
+                key={dept}
                 type="button"
-                onClick={onRunAiTriage}
-                disabled={receivingDepartments.length === 0 || aiTriageRunning}
-                className="bg-ink hover:bg-slate-800 text-paper dark:bg-paper dark:text-ink dark:hover:bg-slate-100 shrink-0 font-semibold"
-              >
-                {aiTriageRunning ? (
-                  <Activity className="w-4 h-4 mr-2 motion-safe:animate-pulse" />
-                ) : (
-                  <Sparkles className="w-4 h-4 mr-2" />
+                aria-pressed={on}
+                onClick={() => toggleDepartment(dept)}
+                className={cn(
+                  'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-4 text-[14px] font-semibold transition-colors',
+                  on
+                    ? 'border-ink bg-ink text-paper dark:border-paper dark:bg-paper dark:text-ink'
+                    : fieldErrors?.departments
+                    ? 'border-critical-700 bg-white text-ink dark:border-critical-400 dark:bg-white/5 dark:text-paper'
+                    : 'border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-white/5 dark:text-paper dark:hover:bg-white/10'
                 )}
-                AI Triage
-              </Button>
-            </div>
-            {fieldErrors?.facility && (
-              <p id="receivingFacility-error" className="text-xs text-critical-600 dark:text-critical-400 font-semibold">
-                {fieldErrors.facility}
-              </p>
-            )}
+              >
+                {on && <Check className="h-4 w-4" aria-hidden="true" />}
+                {dept}
+              </button>
+            );
+          })}
+        </div>
+        <FieldError id="departments-error">{fieldErrors?.departments}</FieldError>
+      </div>
 
-            {/* AI Ranked Facilities Card */}
-            {aiRankedFacilities && (
-              <div className="mt-3 space-y-2 p-3 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-lg animate-in fade-in duration-300">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-ink dark:text-paper" />
-                  <h4 className="text-xs font-bold text-ink dark:text-paper uppercase tracking-wider">
-                    AI Ranked Destination Suggestions
-                  </h4>
-                </div>
-                <div className="space-y-2">
-                  {aiRankedFacilities.map((f, idx) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => setReceivingFacilityId(f.id)}
-                      disabled={f.availableBeds <= 0}
-                      aria-pressed={receivingFacilityId === f.id}
-                      className={`w-full text-left p-2.5 rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 ${
-                        f.availableBeds > 0
-                          ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-700'
-                          : 'opacity-60 cursor-not-allowed grayscale'
-                      } ${
-                        receivingFacilityId === f.id
-                          ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-400 ring-1 ring-blue-500'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded text-white ${
-                                idx === 0 ? 'bg-slate-700' : 'bg-slate-500'
-                              }`}
-                            >
-                              #{idx + 1}
-                            </span>
-                            <p className="font-semibold text-xs text-slate-900 dark:text-slate-100">
-                              {f.name}
-                            </p>
-                          </div>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{f.reason}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="flex items-center justify-end gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                            <Zap className="w-3 h-3 text-slate-500" />
-                            Match: {f.score}%
-                          </div>
-                          <div className="flex items-center justify-end gap-1.5 text-[11px] text-slate-500">
-                            <span className="flex items-center gap-0.5 font-medium">
-                              <Bed className="w-3 h-3" /> {f.availableBeds} free
-                            </span>
-                            <span>•</span>
-                            <span>~{f.randomDistance}km</span>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+      <div>
+        <FieldLabel htmlFor="requiredBedType" required>Bed needed</FieldLabel>
+        <select id="requiredBedType" required value={requiredBedType} onChange={e => setRequiredBedType(e.target.value as BedType)} className={inputClass(false, 'appearance-auto')}>
+          {BED_TYPES.map(b => (
+            <option key={b.value} value={b.value}>{b.label}</option>
+          ))}
+        </select>
+      </div>
 
-          {/* Required Bed Type */}
-          <div>
-            <label htmlFor="requiredBedType" className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-              Required Bed <span className="text-critical-500">*</span>
-            </label>
+      <div>
+        <div className="mb-1.5 flex items-center justify-between gap-3">
+          <label htmlFor="receivingFacility" className="text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
+            Destination<span className="sr-only"> (required)</span>
+          </label>
+          <label className="flex min-h-[44px] cursor-pointer items-center gap-2 text-[14px] font-semibold text-ink dark:text-paper">
+            <input
+              type="checkbox"
+              checked={isAutoRouting}
+              onChange={e => setIsAutoRouting(e.target.checked)}
+              className="h-5 w-5 rounded-[5px] accent-ink dark:accent-paper"
+            />
+            Auto-Route
+          </label>
+        </div>
+        {isAutoRouting ? (
+          <>
+            <p className="rounded-[10px] border border-slate-200 bg-white px-3.5 py-3 text-[14.5px] leading-[1.45] text-ink dark:border-white/12 dark:bg-white/5 dark:text-paper">
+              {receivingDepartments.length === 0
+                ? 'Pick a department and the matching hospitals are notified together.'
+                : `Notifies ${availableFacilities.length} matching ${availableFacilities.length === 1 ? 'hospital' : 'hospitals'} together — ${withBeds} with a free ${requiredBedType} bed now.`}
+            </p>
+            {/* Kept for keyboard users who pick a hospital straight from the list. */}
             <select
-              id="requiredBedType"
-              required
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 p-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-              value={requiredBedType}
-              onChange={e => setRequiredBedType(e.target.value as BedType)}
+              id="receivingFacility"
+              aria-hidden="true"
+              tabIndex={-1}
+              value="auto"
+              onChange={e => {
+                if (e.target.value !== 'auto') {
+                  setIsAutoRouting(false);
+                  setReceivingFacilityId(e.target.value);
+                }
+              }}
+              className="sr-only"
             >
-              {BED_TYPES.map(b => (
-                <option key={b.value} value={b.value}>
-                  {b.label}
+              <option value="auto">Auto-Route</option>
+              {ranked.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+          </>
+        ) : (
+          <>
+            <select
+              id="receivingFacility"
+              required
+              value={receivingFacilityId}
+              onChange={e => setReceivingFacilityId(e.target.value)}
+              disabled={receivingDepartments.length === 0}
+              aria-invalid={!!fieldErrors?.facility}
+              aria-describedby={fieldErrors?.facility ? 'receivingFacility-error' : 'receivingFacility-hint'}
+              className={inputClass(!!fieldErrors?.facility, 'appearance-auto disabled:opacity-50')}
+            >
+              <option value="">{receivingDepartments.length === 0 ? 'Pick a department first' : 'Choose a hospital'}</option>
+              {ranked.map(f => (
+                <option key={f.id} value={f.id}>
+                  {f.name} · {freeBeds(f, requiredBedType)} {requiredBedType} free
                 </option>
               ))}
             </select>
-          </div>
+            {fieldErrors?.facility ? (
+              <FieldError id="receivingFacility-error">{fieldErrors.facility}</FieldError>
+            ) : (
+              <FieldHint id="receivingFacility-hint">Listed by free {requiredBedType} beds right now, most first.</FieldHint>
+            )}
+          </>
+        )}
+      </div>
+
+      <fieldset>
+        <legend className="mb-1.5 text-[12.5px] font-semibold text-slate-700 dark:text-white/70">Transfer type</legend>
+        <div className="grid grid-cols-3 gap-2">
+          {TRANSFER.map(t => (
+            <ChoicePill key={t.value} type="radio" name="transferType" checked={transferType === t.value} onChange={() => setTransferType(t.value)}>
+              <span className="text-[13.5px]">{t.label}</span>
+            </ChoicePill>
+          ))}
         </div>
+      </fieldset>
 
-        {/* Priority, Transfer Type, & Reason Grid */}
-        <div className="flex flex-col gap-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-          {/* Clinical Priority */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
-              Clinical Priority <span className="text-critical-500">*</span>
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-h-[48px]">
-              {PRIORITY_OPTIONS.map(p => (
-                <label
-                  key={p.value}
-                  className={`flex items-center justify-center gap-2 p-3 rounded-xl border font-semibold cursor-pointer transition-all ${
-                    priority === p.value
-                      ? p.value === 'emergency'
-                        ? 'border-critical-400 bg-critical-50 dark:bg-critical-950/40 text-critical-900 dark:text-critical-100 ring-2 ring-critical-500/20'
-                        : p.value === 'urgent'
-                        ? 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 ring-2 ring-amber-500/20'
-                        : 'border-blue-400 bg-blue-50 dark:bg-blue-900/40 text-blue-900 dark:text-blue-100 ring-2 ring-blue-500/20'
-                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="priority"
-                    value={p.value}
-                    checked={priority === p.value}
-                    onChange={() => setPriority(p.value as ReferralPriority)}
-                    className="sr-only"
-                  />
-                  {p.label}
-                </label>
-              ))}
-            </div>
-          </div>
+      <div>
+        <FieldLabel htmlFor="reasonForReferral" required>Why this transfer</FieldLabel>
+        <input
+          id="reasonForReferral"
+          required
+          autoComplete="off"
+          placeholder="e.g. Needs primary PCI — only cath lab in network"
+          value={reasonForReferral}
+          onChange={e => setReasonForReferral(e.target.value)}
+          aria-invalid={!!fieldErrors?.reason}
+          aria-describedby={fieldErrors?.reason ? 'reasonForReferral-error' : undefined}
+          className={inputClass(!!fieldErrors?.reason)}
+        />
+        <FieldError id="reasonForReferral-error">{fieldErrors?.reason}</FieldError>
+      </div>
 
-          {/* Transfer Type */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
-              Transfer Type <span className="text-critical-500">*</span>
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-h-[48px]">
-              {TRANSFER_TYPES.map(t => (
-                <label
-                  key={t.value}
-                  className={`flex items-center justify-center gap-2 p-3 rounded-xl border font-semibold cursor-pointer transition-all text-sm ${
-                    transferType === t.value
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/40 text-blue-900 dark:text-blue-100 ring-2 ring-blue-500/20'
-                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="transferType"
-                    value={t.value}
-                    checked={transferType === t.value}
-                    onChange={() => setTransferType(t.value as ReferralTransferType)}
-                    className="sr-only"
-                  />
-                  {t.label}
-                </label>
-              ))}
-            </div>
-          </div>
+      <div className="space-y-2.5">
+        <ToggleRow
+          id="requires-accompanying-doctor"
+          checked={requiresAccompanyingDoctor}
+          onChange={setRequiresAccompanyingDoctor}
+          title="Doctor escort required"
+          sub="The ambulance cannot leave until your ER names the escorting doctor."
+        />
+        <ToggleRow
+          id="critical-alert"
+          checked={sendCriticalAlert}
+          onChange={setSendCriticalAlert}
+          title="Send a critical alert"
+          sub="Pushes an alert to the receiving hospital's leadership as well as the department."
+        />
+      </div>
 
-          {/* Main Reason for Referral */}
-          <div>
-            <label htmlFor="reasonForReferral" className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-              Main Reason for Transfer <span className="text-critical-500">*</span>
-            </label>
-            <Input
-              id="reasonForReferral"
-              required
-              placeholder="e.g. Needs immediate PCI, No ICU beds..."
-              value={reasonForReferral}
-              onChange={e => setReasonForReferral(e.target.value)}
-            />
-          </div>
-        </div>
+      <section aria-labelledby="review-heading" className="pt-2">
+        <h3 id="review-heading" className="font-heading text-[20px] font-semibold tracking-[-0.02em] text-ink dark:text-paper">Ready to send</h3>
+        <ul className="mt-3 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.04]">
+          {review.map(r => (
+            <li key={r.label} className="flex items-center gap-3 py-2.5 pr-1.5 pl-3.5">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">{r.label}</p>
+                <p className="mt-0.5 text-[14.5px] leading-[1.4] text-ink dark:text-paper">{r.value}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onEditStep(r.step)}
+                aria-label={`Edit ${r.label.toLowerCase()}`}
+                className="min-h-[44px] shrink-0 rounded-[8px] px-3 text-[14px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300"
+              >
+                Edit
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-        {/* Action Toggles: Accompanying Doctor & Critical Alert */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-          {/* Accompanying Doctor Toggle */}
-          <label className="flex items-start gap-3 p-3.5 bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-xl cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors">
-            <input
-              type="checkbox"
-              id="requires-accompanying-doctor"
-              checked={requiresAccompanyingDoctor}
-              onChange={e => setRequiresAccompanyingDoctor(e.target.checked)}
-              className="mt-0.5 w-4 h-4 text-blue-600 bg-white dark:bg-slate-900 border-blue-300 dark:border-blue-800 rounded focus:ring-blue-500"
-            />
-            <div className="min-w-0">
-              <span className="text-xs sm:text-sm font-bold text-blue-950 dark:text-blue-200 flex items-center gap-1.5">
-                <UserPlus className="w-3.5 h-3.5 text-blue-600" />
-                Accompanying Doctor Required
-              </span>
-              <p className="text-[11px] text-blue-700 dark:text-blue-300/80 mt-0.5">
-                Once patient consents, ER Official will assign escort doctor before dispatch.
-              </p>
-            </div>
-          </label>
-
-          {/* Critical Alert Toggle */}
-          <label className="flex items-start gap-3 p-3.5 bg-critical-50/70 dark:bg-critical-950/20 border border-critical-200 dark:border-critical-900/40 rounded-xl cursor-pointer hover:bg-critical-50 dark:hover:bg-critical-950/30 transition-colors">
-            <input
-              type="checkbox"
-              id="critical-alert"
-              checked={sendCriticalAlert}
-              onChange={e => setSendCriticalAlert(e.target.checked)}
-              className="mt-0.5 w-4 h-4 text-critical-600 bg-white dark:bg-slate-900 border-critical-300 dark:border-critical-800 rounded focus:ring-critical-500"
-            />
-            <div className="min-w-0">
-              <span className="text-xs sm:text-sm font-bold text-critical-950 dark:text-critical-200 flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 text-critical-600" />
-                Send Critical Alert
-              </span>
-              <p className="text-[11px] text-critical-700 dark:text-critical-300/80 mt-0.5">
-                Broadcast priority push alert to receiving facility leadership.
-              </p>
-            </div>
-          </label>
-        </div>
-      </CardContent>
-    </Card>
+      {!isOnline && (
+        <p className="flex items-start gap-2.5 rounded-[10px] border border-warning-700 bg-warning-100 px-3.5 py-3 text-[14px] font-medium leading-[1.45] text-warning-900 dark:border-warning-600/60 dark:bg-warning-900/40 dark:text-warning-100">
+          <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          You are offline. This referral is stored on the phone and sends the moment you have signal — the 30-minute response clock starts then.
+        </p>
+      )}
+    </div>
   );
 };

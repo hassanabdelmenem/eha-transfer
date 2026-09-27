@@ -4,9 +4,11 @@ import { Mic, MicOff } from 'lucide-react';
 interface VoiceTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   value?: string;
   onValueChange: (value: string) => void;
+  /** 'full': a 52px full-width control under the field instead of the corner mic. */
+  dictation?: 'inline' | 'full';
 }
 
-export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChange, className, ...props }) => {
+export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChange, className, dictation = 'inline', ...props }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -124,10 +126,25 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
         ref={textareaRef}
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
-        className={`${className} pr-10`}
+        className={dictation === 'full' ? className : `${className} pr-10`}
         {...props}
       />
-      {recognition && (
+      {recognition && dictation === 'full' && (
+        <button
+          type="button"
+          onClick={toggleRecording}
+          aria-pressed={isRecording}
+          className={`mt-2.5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[10px] border text-[15px] font-semibold transition-colors ${
+            isRecording
+              ? 'border-critical-700 bg-critical-50 text-critical-700 dark:border-critical-400 dark:bg-critical-950/50 dark:text-critical-200'
+              : 'border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10'
+          }`}
+        >
+          <Mic className={`h-[18px] w-[18px] ${isRecording ? 'motion-safe:animate-pulse' : ''}`} aria-hidden="true" />
+          {isRecording ? 'Stop recording' : 'Start voice dictation'}
+        </button>
+      )}
+      {recognition && dictation === 'inline' && (
         <button
           type="button"
           onClick={toggleRecording}

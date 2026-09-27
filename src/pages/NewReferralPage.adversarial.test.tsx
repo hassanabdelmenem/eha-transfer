@@ -67,7 +67,7 @@ describe('NewReferralPage - Adversarial Media Upload & Boundary Testing', () => 
     // mounts once the wizard reaches that step.
     let fileInputs = document.querySelectorAll('input[type="file"]');
     if (fileInputs.length === 0) {
-      fireEvent.click(screen.getByText('Diagnostics & Review'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
       fileInputs = document.querySelectorAll('input[type="file"]');
     }
     return fileInputs[0] as HTMLInputElement;
@@ -272,8 +272,7 @@ describe('NewReferralPage - Adversarial Media Upload & Boundary Testing', () => 
       expect(screen.getByText('echo_report.pdf')).toBeInTheDocument();
 
       // Remove file 1
-      const removeButtons = Array.from(document.querySelectorAll('button'));
-      const removeBtn1 = removeButtons.find(b => b.closest('.group')?.querySelector('img[alt="ecg_lead_1.png"]'));
+      const removeBtn1 = screen.getByRole('button', { name: 'Remove attachment ecg_lead_1.png' });
       if (removeBtn1) {
         fireEvent.click(removeBtn1);
       }
