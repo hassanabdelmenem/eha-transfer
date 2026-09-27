@@ -12,17 +12,16 @@ test.beforeEach(async ({ page }) => {
   await expect(page).not.toHaveURL(/\/login/, { timeout: 15000 });
 });
 
-test('signs in and reaches the authenticated app', async ({ page }) => {
-  // ProtectedRoute sends a completed, verified profile to /referrals.
-  await expect(page).toHaveURL(/\/referrals/, { timeout: 15000 });
-
-  // The authenticated shell is rendered and Referrals page is loaded.
-  await expect(page.getByRole('heading', { name: /^Referrals$/i })).toBeVisible();
+test('signs in and lands on the role home', async ({ page }) => {
+  // The index route sends a completed, verified profile to their role home,
+  // which opens on the count of cases blocked on them.
+  await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/need(s)? you|waiting on you|to sign|to send|beds? free/i, { timeout: 15000 });
 });
 
-test('signed-in user can open the dashboard', async ({ page }) => {
-  await expect(page).toHaveURL(/\/referrals/, { timeout: 15000 });
+test('signed-in user can open the referrals list', async ({ page }) => {
+  await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
 
-  await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: /overview/i })).toBeVisible({ timeout: 15000 });
+  await page.goto('/referrals');
+  await expect(page.getByRole('heading', { name: /^Referrals$/i })).toBeVisible({ timeout: 15000 });
 });
