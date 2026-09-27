@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { User, Role, FacilityType, BedType } from '../types';
-import { XCircle, Plus, Trash2, Building, Edit2 } from 'lucide-react';
+import { X, Plus, Trash2, Building, Edit2 } from 'lucide-react';
+import { ScreenHeader } from '../components/layout/ScreenHeader';
+import { RoleHomeHeadline, MicroLabel } from '../components/dashboard/RoleHome';
+import { ROLE_CONFIGS } from '../components/layout/RoleBadge';
+import { cn } from '../lib/utils';
 import { showToast } from '../lib/toast';
 
 export const FacilitySettingsPage: React.FC = () => {
@@ -160,103 +164,117 @@ export const FacilitySettingsPage: React.FC = () => {
     setShowAddFacility(false);
   };
 
+  const roleLabel = (r: Role | string) => ROLE_CONFIGS[r as Role]?.label ?? String(r).replace(/_/g, ' ');
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* 3c/3d: unified facility settings -- edge-to-edge on phones,
-          contained in a rounded header card once there's room. */}
-      <div className="-mt-4 sm:mt-0 rounded-2xl overflow-hidden space-y-0">
-        <div className="bg-slate-950 text-white px-4 pt-4 pb-4 sm:px-6">
-          <h1 className="text-lg sm:text-xl font-heading font-semibold">{facility?.name || 'Global Admin'}</h1>
-          <p className="text-sm text-white/60 mt-0.5">Facility settings · {user.role.replace(/_/g, ' ')}</p>
-        </div>
-        <div className="p-4 sm:p-6 sm:bg-slate-50 sm:dark:bg-slate-950/40 space-y-5">
-          {unverifiedUsers.length > 0 && (
-            <div className="space-y-3">
-              <div>
-                <h2 className="text-[26px] font-heading font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
-                  {unverifiedUsers.length} account{unverifiedUsers.length === 1 ? '' : 's'} to verify
-                </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                  A verified account gets the role it asked for. Nothing else here blocks anyone from working.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                {unverifiedUsers.map(u => (
-                  <div key={u.id} className="rounded-xl border border-warning-700 dark:border-warning-800 bg-warning-100 dark:bg-warning-950/30 p-3.5">
-                    <p className="text-[15.5px] font-semibold text-slate-900 dark:text-slate-100">{u.name}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{u.email}</p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      <span className="text-xs bg-slate-900 dark:bg-slate-700 text-white px-1.5 py-0.5 rounded font-semibold">{(u.requestedRole || u.role).replace(/_/g, ' ')}</span>
-                      {u.department && <span className="text-xs bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">{u.department}</span>}
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                      <button onClick={() => handleVerifyUser(u)} className="flex-1 min-h-[46px] rounded-lg bg-success-700 text-white text-sm font-semibold">
-                        Verify as {(u.requestedRole || u.role).replace(/_/g, ' ')}
-                      </button>
-                      <button onClick={() => handleRemoveUser(u)} aria-label={`Decline ${u.name}`} className="min-h-[46px] min-w-[46px] rounded-lg border border-critical-300 dark:border-critical-800 text-critical-600 dark:text-critical-400 flex items-center justify-center">
-                        <XCircle className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+    <div className="max-w-[760px]">
+      <ScreenHeader
+        title={facility?.name || 'Network settings'}
+        subtitle={`Facility settings · ${roleLabel(user.role).toLowerCase()}`}
+      />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {facility && !['head_of_department'].includes(user.role) && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Departments · {facility.departments.length}</p>
-                <div className="flex flex-wrap gap-2">
-                  {facility.departments.map(dept => (
-                    <span key={dept} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 pl-3 pr-1.5 py-1 text-sm text-slate-700 dark:text-slate-300">
-                      {dept}
-                      <button onClick={() => removeFacilityDepartment(facility.id, dept)} aria-label={`Remove ${dept}`} className="rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-critical-600">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+      {/* 3c: pending verifications first — the only thing here that blocks a person from working. */}
+      {unverifiedUsers.length > 0 && (
+        <section aria-labelledby="to-verify" className="flex flex-col gap-3">
+          <RoleHomeHeadline
+            title={`${unverifiedUsers.length} account${unverifiedUsers.length === 1 ? '' : 's'} to verify`}
+            rationale="A verified account gets the role it asked for. Nothing else here blocks anyone from working."
+          />
+          <ul className="mt-1 flex flex-col gap-3">
+            {unverifiedUsers.map(u => {
+              const asked = u.requestedRole || u.role;
+              return (
+                <li key={u.id} className="rounded-xl border border-warning-700 bg-warning-100 p-[14px] dark:border-warning-600/60 dark:bg-warning-900/35">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-[17px] font-semibold text-ink dark:text-paper">{u.name}</p>
+                      <p className="truncate text-[13.5px] text-warning-900 dark:text-warning-100/80">{u.email}</p>
+                    </div>
+                    <span className="shrink-0 rounded-[6px] bg-ink px-2 py-1 text-[11px] font-bold uppercase leading-none tracking-[0.06em] text-paper dark:bg-paper dark:text-ink">
+                      {roleLabel(asked)}{u.department ? ` · ${u.department}` : ''}
                     </span>
-                  ))}
-                  <form onSubmit={handleAddDepartment} className="inline-flex items-center">
-                    <input
-                      value={newDepartment}
-                      onChange={e => setNewDepartment(e.target.value)}
-                      placeholder="+ Add"
-                      className="w-24 rounded-full border border-dashed border-slate-300 dark:border-slate-700 bg-transparent px-3 py-1 text-sm text-slate-600 dark:text-slate-300 outline-none"
-                    />
-                  </form>
-                </div>
-              </div>
-            )}
+                  </div>
+                  <div className="mt-3 flex gap-2.5">
+                    <button type="button" onClick={() => handleVerifyUser(u)} className="min-h-[52px] flex-1 rounded-[10px] bg-success-700 px-3 text-[15px] font-semibold text-white hover:bg-success-800">
+                      Verify as {roleLabel(asked).toLowerCase()}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveUser(u)}
+                      aria-label={`Decline and remove ${u.name}'s account`}
+                      className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[10px] border border-critical-700 bg-white text-critical-700 hover:bg-critical-50 dark:border-critical-400 dark:bg-transparent dark:text-critical-300 dark:hover:bg-critical-950/40"
+                    >
+                      <X className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
-            {facility && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Configured capacity</p>
-                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
-                  {(Object.keys(facility.capacity) as BedType[]).map(bed => (
-                    <div key={bed} className="px-3.5 py-3 flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{bed}</span>
-                      <span className="text-sm text-slate-500 dark:text-slate-400">{facility.capacity[bed].total} beds · {facility.capacity[bed].occupied} occupied</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      <div className={cn('grid grid-cols-1 gap-6 sm:grid-cols-2', unverifiedUsers.length > 0 && 'mt-7')}>
+        {facility && user.role !== 'head_of_department' && (
+          <section aria-labelledby="departments" className="flex flex-col gap-2.5">
+            <MicroLabel id="departments">Departments · {facility.departments.length}</MicroLabel>
+            <ul className="flex flex-wrap gap-2">
+              {facility.departments.map(dept => (
+                <li key={dept} className="inline-flex min-h-[44px] items-center rounded-full border border-slate-300 bg-white pl-4 text-[14px] font-medium text-ink dark:border-white/25 dark:bg-white/5 dark:text-paper">
+                  {dept}
+                  <button
+                    type="button"
+                    onClick={() => removeFacilityDepartment(facility.id, dept)}
+                    aria-label={`Remove ${dept}`}
+                    className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:text-critical-700 dark:text-white/55 dark:hover:text-critical-300"
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+              <li>
+                <form onSubmit={handleAddDepartment} className="inline-flex">
+                  <label htmlFor="new-department" className="sr-only">Add a department</label>
+                  <input
+                    id="new-department"
+                    value={newDepartment}
+                    onChange={e => setNewDepartment(e.target.value)}
+                    placeholder="+ Add"
+                    className="min-h-[44px] w-32 rounded-full border border-dashed border-slate-400 bg-transparent px-4 text-[14px] text-ink placeholder:text-slate-700 focus:w-48 focus:border-solid focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/35 dark:text-paper dark:placeholder:text-white/65"
+                  />
+                </form>
+              </li>
+            </ul>
+          </section>
+        )}
+
+        {facility && (
+          <section aria-labelledby="configured-capacity" className="flex flex-col gap-2.5">
+            <MicroLabel id="configured-capacity">Configured capacity</MicroLabel>
+            <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.05]">
+              {(Object.keys(facility.capacity) as BedType[]).map(bed => (
+                <li key={bed} className="flex min-h-[48px] items-center justify-between px-[14px]">
+                  <span className="text-[15px] font-semibold text-ink dark:text-paper">{bed}</span>
+                  <span className="text-[14px] tabular-nums text-slate-700 dark:text-white/65">
+                    {facility.capacity[bed].total} beds · {facility.capacity[bed].occupied} occupied
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
 
-      <div className="space-y-6">
-      <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 px-1">
-        {isGlobalAdmin ? 'Network & staff management' : 'Staff roles & transfers'}
-      </h2>
+      <div className="mt-8 space-y-6">
+      <MicroLabel>{isGlobalAdmin ? 'Network and staff management' : 'Staff roles and transfers'}</MicroLabel>
 
       {/* Network Facilities Management -- restyled to match the redesign's
           card language (rounded-xl, bold  micro-labels, larger
           touch targets) while keeping the CRUD form unchanged. */}
       {(isGlobalAdmin || ['hospital_manager', 'medical_director', 'owner'].includes(user.role)) && (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
-          <div className="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-[14px] py-3 dark:border-white/10">
+            <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">
               <Building className="w-4 h-4 text-slate-500 dark:text-slate-400" />
               Network facilities · {facilities.length}
             </p>
@@ -270,7 +288,7 @@ export const FacilitySettingsPage: React.FC = () => {
                   setShowAddFacility(true);
                 }
               }}
-              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold"
+              className="inline-flex min-h-[48px] items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-ink px-3.5 text-[14px] font-semibold text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200"
             >
               <Plus className="w-4 h-4" />
               {showAddFacility ? 'Cancel' : 'Add a contracted facility'}
@@ -278,11 +296,11 @@ export const FacilitySettingsPage: React.FC = () => {
           </div>
           <div className="p-4 sm:p-6 space-y-4">
             {showAddFacility && (
-              <form onSubmit={handleAddFacilitySubmit} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
+              <form onSubmit={handleAddFacilitySubmit} className="space-y-4 rounded-xl border border-slate-200 bg-paper p-4 dark:border-white/12 dark:bg-white/[0.03]">
                 <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{editingFacilityId ? 'Edit Facility' : 'Add New Facility'}</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="facName" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Facility Name *</label>
+                    <label htmlFor="facName" className="mb-1.5 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">Facility Name *</label>
                     <input
                       id="facName"
                       type="text"
@@ -290,16 +308,16 @@ export const FacilitySettingsPage: React.FC = () => {
                       value={facName}
                       onChange={e => setFacName(e.target.value)}
                       placeholder="e.g. Al-Amal Specialized Hospital"
-                      className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                      className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
                     />
                   </div>
                   <div>
-                    <label htmlFor="facType" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Facility Type</label>
+                    <label htmlFor="facType" className="mb-1.5 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">Facility Type</label>
                     <select
                       id="facType"
                       value={facType}
                       onChange={e => setFacType(e.target.value as FacilityType)}
-                      className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                      className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
                     >
                       <option value="tertiary_care">Tertiary Care Hospital</option>
                       <option value="district_hospital">District Hospital</option>
@@ -308,7 +326,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="facLocation" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Location / Address *</label>
+                    <label htmlFor="facLocation" className="mb-1.5 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">Location / Address *</label>
                     <input
                       id="facLocation"
                       type="text"
@@ -316,18 +334,18 @@ export const FacilitySettingsPage: React.FC = () => {
                       value={facLocation}
                       onChange={e => setFacLocation(e.target.value)}
                       placeholder="e.g. Ismailia City Center"
-                      className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                      className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
                     />
                   </div>
                   <div>
-                    <label htmlFor="facDepts" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Departments (comma separated)</label>
+                    <label htmlFor="facDepts" className="mb-1.5 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">Departments (comma separated)</label>
                     <input
                       id="facDepts"
                       type="text"
                       value={facDepts}
                       onChange={e => setFacDepts(e.target.value)}
                       placeholder="Emergency, ICU, CCU, Surgery"
-                      className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                      className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
                     />
                   </div>
                 </div>
@@ -347,50 +365,50 @@ export const FacilitySettingsPage: React.FC = () => {
 
                 {(facIsExternal || facType === 'external_contracted') && (
                   <div>
-                    <label htmlFor="facContractedServices" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Contracted Services (comma separated)</label>
+                    <label htmlFor="facContractedServices" className="mb-1.5 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">Contracted Services (comma separated)</label>
                     <input
                       id="facContractedServices"
                       type="text"
                       value={facContractedServices}
                       onChange={e => setFacContractedServices(e.target.value)}
                       placeholder="e.g. Specialized ICU, Cardiac Surgery, Oncology, Dialysis"
-                      className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-sm outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                      className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
                     />
                   </div>
                 )}
 
                 <div className="border-t border-slate-200 dark:border-slate-800 pt-4">
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Bed capacity (total beds per type)</p>
+                  <p className="mb-2 text-[12.5px] font-semibold text-slate-700 dark:text-white/70">Bed capacity (total beds per type)</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
-                      <label htmlFor="icuTotal" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">ICU Beds</label>
-                      <input id="icuTotal" type="number" min="0" value={icuTotal} onChange={e => setIcuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+                      <label htmlFor="icuTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">ICU Beds</label>
+                      <input id="icuTotal" type="number" min="0" value={icuTotal} onChange={e => setIcuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper tabular-nums" />
                     </div>
                     <div>
-                      <label htmlFor="ccuTotal" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">CCU Beds</label>
-                      <input id="ccuTotal" type="number" min="0" value={ccuTotal} onChange={e => setCcuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+                      <label htmlFor="ccuTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">CCU Beds</label>
+                      <input id="ccuTotal" type="number" min="0" value={ccuTotal} onChange={e => setCcuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper tabular-nums" />
                     </div>
                     <div>
-                      <label htmlFor="picuTotal" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">PICU Beds</label>
-                      <input id="picuTotal" type="number" min="0" value={picuTotal} onChange={e => setPicuTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+                      <label htmlFor="picuTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">PICU Beds</label>
+                      <input id="picuTotal" type="number" min="0" value={picuTotal} onChange={e => setPicuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper tabular-nums" />
                     </div>
                     <div>
-                      <label htmlFor="wardTotal" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Ward Beds</label>
-                      <input id="wardTotal" type="number" min="0" value={wardTotal} onChange={e => setWardTotal(Math.max(0, Number(e.target.value) || 0))} className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 px-2 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+                      <label htmlFor="wardTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">Ward Beds</label>
+                      <input id="wardTotal" type="number" min="0" value={wardTotal} onChange={e => setWardTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper tabular-nums" />
                     </div>
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <button type="button" onClick={() => { setShowAddFacility(false); setEditingFacilityId(null); }} className="min-h-[44px] px-4 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
-                  <button type="submit" className="min-h-[44px] px-4 rounded-lg bg-slate-950 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold">{editingFacilityId ? 'Update Facility' : 'Create Facility'}</button>
+                  <button type="button" onClick={() => { setShowAddFacility(false); setEditingFacilityId(null); }} className="min-h-[48px] rounded-[10px] px-4 text-[15px] font-semibold text-slate-700 hover:bg-slate-100 dark:text-white/75 dark:hover:bg-white/10">Cancel</button>
+                  <button type="submit" className="min-h-[48px] rounded-[10px] bg-ink px-4 text-[15px] font-semibold text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200">{editingFacilityId ? 'Update Facility' : 'Create Facility'}</button>
                 </div>
               </form>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {facilities.map(f => (
-                <div key={f.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-start gap-2">
+                <div key={f.id} className="flex items-start justify-between gap-2 rounded-xl border border-slate-200 bg-white p-[14px] dark:border-white/12 dark:bg-white/[0.05]">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">{f.name}</h4>
@@ -414,14 +432,14 @@ export const FacilitySettingsPage: React.FC = () => {
                     <div className="flex gap-1 shrink-0">
                       <button
                         aria-label={`Edit ${f.name}`}
-                        className="h-11 w-11 rounded-lg flex items-center justify-center text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                        className="h-11 w-11 rounded-lg flex items-center justify-center text-info-700 hover:bg-info-50 dark:text-info-300 dark:hover:bg-white/10"
                         onClick={() => handleEditFacilityClick(f)}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         aria-label={`Remove ${f.name}`}
-                        className="h-11 w-11 rounded-lg flex items-center justify-center text-critical-500 hover:bg-critical-50 dark:hover:bg-critical-900/30"
+                        className="h-11 w-11 rounded-lg flex items-center justify-center text-critical-700 hover:bg-critical-50 dark:text-critical-300 dark:hover:bg-critical-950/40"
                         onClick={() => handleRemoveFacility(f.id, f.name)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -438,9 +456,9 @@ export const FacilitySettingsPage: React.FC = () => {
       {/* Staff Roles & Facility Transfer -- restyled wrapper, same table
           (genuinely dense/tabular data, kept as a table on purpose), larger
           touch targets on every control. */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
         <div className="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Staff roles &amp; facility transfer · {verifiedUsers.length}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">Staff roles &amp; facility transfer · {verifiedUsers.length}</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
@@ -464,7 +482,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">
                       <select
-                        className="text-xs min-h-[44px] border border-slate-300 dark:border-slate-700 rounded-lg px-2 bg-white dark:bg-slate-900 outline-none max-w-[180px]"
+                        className="min-h-[44px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper max-w-[180px]"
                         value={u.facilityId || ''}
                         onChange={(e) => {
                           const newFacId = e.target.value;
@@ -479,7 +497,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">
                        <select
-                         className="text-xs min-h-[44px] border border-slate-300 dark:border-slate-700 rounded-lg px-2 bg-white dark:bg-slate-900 outline-none"
+                         className="min-h-[44px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
                          value={u.role}
                          disabled={user.role !== 'owner' && u.role === 'owner'}
                          onChange={(e) => updateUserRole(u.id, e.target.value as Role, u.department)}
@@ -509,7 +527,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     <td className="px-4 py-3">
                        {['consultant', 'specialist', 'resident', 'head_of_department', 'nurse', 'nursing_supervisor'].includes(u.role) ? (
                          <select
-                           className="text-xs min-h-[44px] border border-slate-300 dark:border-slate-700 rounded-lg px-2 bg-white dark:bg-slate-900 outline-none"
+                           className="min-h-[44px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
                            value={u.department || ''}
                            onChange={(e) => updateUserRole(u.id, u.role, e.target.value)}
                          >
@@ -526,7 +544,7 @@ export const FacilitySettingsPage: React.FC = () => {
                        <button
                          aria-label={`Remove ${u.name}`}
                          title="Remove User Completely"
-                         className="h-11 w-11 rounded-lg inline-flex items-center justify-center text-critical-500 hover:bg-critical-50 dark:hover:bg-critical-900/30"
+                         className="h-11 w-11 rounded-lg inline-flex items-center justify-center text-critical-700 hover:bg-critical-50 dark:text-critical-300 dark:hover:bg-critical-950/40"
                          onClick={() => handleRemoveUser(u)}
                        >
                          <Trash2 className="w-4 h-4" />
