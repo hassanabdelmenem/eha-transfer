@@ -2,6 +2,22 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-27 (afternoon): Merged, deployed, owner decisions
+
+- Repo made public by the owner; Actions runs again. Merged #32 → #30 → #38 → #31 → #33 → #37 with merge
+  commits. #35 conflicted with #32's new App test; resolved on the branch and re-verified (945 unit, 7 e2e).
+  `main` CI green; Deploy to Firebase succeeded at 8847c7b; the live site serves the redesign.
+- Pre-#32 check: 3 production accounts, all owners; one email/password owner
+  (hassan.200006@med.suez.edu.eg) has an unconfirmed email and now lands on the verify screen.
+- Owner decisions d1–d5 answered (table in `task_plan.md`). Shipped on `fix/owner-decisions-0927`:
+  createdAtMs backfill (5 + 69 docs, re-check finds none missing) and rules that require it (102 rules
+  tests); four escalation scenarios in Playwright (11/11 e2e); "End of shift" as its own menu item that
+  keeps you signed in, Log out signs out directly; #24/#28 closed and every stale branch deleted; old-design
+  code removed (stat grid, notification popover, role-home badge, status timeline, AdminCockpit, sepia
+  filter) with the admin tests ported to AdminDashboard.
+- Mistake noted: a `git checkout origin/main` ran in the main checkout by accident; nothing was lost
+  (uncommitted graphify changes carried over) and it was switched back to its branch.
+
 ## 2026-09-27: Redesign phases 3–5, project memory
 
 - **Phase 3 role homes — #35.** Login lands on `/dashboard` (owner approved changing `e2e/navigation.spec.ts`).
