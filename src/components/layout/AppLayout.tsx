@@ -41,6 +41,9 @@ export const AppLayout: React.FC = () => {
   const location = useLocation();
   // One sidebar in the DOM at a time: the rail on desktop, the drawer on phones.
   const isDesktop = useMediaQuery('(min-width: 1024px)');
+  // A referral's detail screen carries its own ink header (back, patient, stage
+  // rail), so on phones it replaces the identity header rather than stacking.
+  const onReferralDetail = /^\/referrals\/(?!new$)[^/]+$/.test(location.pathname);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
@@ -265,7 +268,7 @@ export const AppLayout: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Phone identity header: who you are and where, in ink. */}
-        {!isDesktop && <header className="shrink-0 bg-ink text-paper px-[18px] pt-[max(14px,env(safe-area-inset-top))] pb-4">
+        {!isDesktop && !onReferralDetail && <header className="shrink-0 bg-ink text-paper px-[18px] pt-[max(14px,env(safe-area-inset-top))] pb-4">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-[15px] font-semibold leading-[1.3]">{user.name}</p>
@@ -309,7 +312,7 @@ export const AppLayout: React.FC = () => {
         <main
           id="main-content"
           tabIndex={-1}
-          className="flex-1 overflow-y-auto overflow-x-hidden px-[18px] pt-5 pb-10 lg:px-8 lg:py-8 focus:outline-none"
+          className={cn('flex-1 overflow-y-auto overflow-x-hidden px-[18px] pb-10 lg:px-8 lg:py-8 focus:outline-none', !isDesktop && onReferralDetail ? 'pt-0' : 'pt-5')}
         >
           <div className="max-w-7xl mx-auto w-full">
             <Outlet />

@@ -3,13 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { format } from 'date-fns';
 import { ArrowLeft, FileText } from 'lucide-react';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Skeleton, SkeletonDetailBlock } from '../components/ui/Skeleton';
 import { PrintableSummary } from '../components/referrals/PrintableSummary';
 import { ECGViewerOverlay } from '../components/referrals/ECGViewerOverlay';
-import { ReferralDetailHeader, BannerTint } from '../components/referrals/detail/ReferralDetailHeader';
+import { ReferralDetailHeader, ReferralUtilityBar, BannerTint } from '../components/referrals/detail/ReferralDetailHeader';
+import { RoleBanner } from '../components/referrals/detail/RoleBanner';
+import { ReferralTimeline } from '../components/referrals/ReferralTimeline';
 import { EscalationAlertBanner } from '../components/referrals/detail/EscalationAlertBanner';
 import { TransferContextCard } from '../components/referrals/detail/TransferContextCard';
 import { ClinicalHistoryCard } from '../components/referrals/detail/ClinicalHistoryCard';
@@ -48,6 +51,7 @@ export const ReferralDetailPage: React.FC = () => {
     loading,
   } = useData();
   const { user } = useAuth();
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const [notes, setNotes] = useState('');
   const [selectedECGUrl, setSelectedECGUrl] = useState<string | null>(null);
@@ -69,6 +73,7 @@ export const ReferralDetailPage: React.FC = () => {
   const [escortName, setEscortName] = useState('');
   const [escortPhone, setEscortPhone] = useState('');
   const [escortBusy, setEscortBusy] = useState(false);
+  const [deptBusy, setDeptBusy] = useState(false);
 
   const referral = referralsById.get(id || '');
 
@@ -145,31 +150,51 @@ export const ReferralDetailPage: React.FC = () => {
 
   const latestOwnDeptComment = [...(referral.deptComments || [])].reverse().find(c => c.userId === user?.id);
 
-  const mobileBanner: { label: string; tint: BannerTint } = (() => {
-    if (referral.isEscalated) return { label: 'Escalated — needs attention now', tint: 'critical' };
-    if (isAdmin) return { label: 'System administrator', tint: 'info' };
-    if (isTargetDeptHead && referral.status === 'pending') return { label: 'Waiting on your department review', tint: 'warning' };
+  const toName = (toFacility as { name?: string } | undefined)?.name;
+  // What this referral means to the viewer: a label and one sentence. The
+  // escalation has its own card above this, so it is not repeated here.
+  const mobileBanner: { label: string; text: string; tint: BannerTint } = (() => {
+    if (isAdmin) return { label: 'System administrator', text: 'You can act on this referral at any stage, including placing it at another facility.', tint: 'info' };
+    if (isTargetDeptHead && referral.status === 'pending') {
+      return { label: 'Waiting on your department review', text: 'Approve it, or send it back with what your department needs first.', tint: 'warning' };
+    }
     if (isTargetDeptHead) {
-      return {
-        label: latestOwnDeptComment
-          ? `You approved this · ${format(new Date(latestOwnDeptComment.timestamp), 'HH:mm')}`
-          : 'You reviewed this for your department',
-        tint: 'success',
-      };
+      return latestOwnDeptComment
+        ? { label: `You approved this · ${format(new Date(latestOwnDeptComment.timestamp), 'HH:mm')}`, text: 'Sent up to the hospital manager. You can still send it back if something changed.', tint: 'success' }
+        : { label: 'You reviewed this for your department', text: "It has moved past your department's review.", tint: 'success' };
     }
-    if (isFacilityManager && referral.status === 'dept_approved') return { label: 'Needs your signature', tint: 'critical' };
-    if (isFacilityManager) return { label: 'Manager oversight', tint: 'info' };
-    if (isErRoom && referral.status === 'accepted') return { label: 'Record patient consent before dispatch', tint: 'warning' };
+    if (isFacilityManager && referral.status === 'dept_approved') {
+      return { label: 'Needs your signature', text: `${receivingDepts.join(', ') || 'The department'} approved it. Accept the transfer or decline it.`, tint: 'critical' };
+    }
+    if (isFacilityManager) return { label: 'Manager oversight', text: 'Nothing on this referral is waiting on you right now.', tint: 'info' };
+    if (isErRoom && referral.status === 'accepted') {
+      return { label: 'Record patient consent before dispatch', text: 'The receiving hospital accepted. Ask the patient, then record their answer.', tint: 'warning' };
+    }
     if (isErRoom && referral.requiresAccompanyingDoctor && referral.status === 'patient_consented' && !referral.accompanyingDoctor) {
-      return { label: 'Record the escort before dispatch', tint: 'warning' };
+      return { label: 'Record the escort before dispatch', text: "The ambulance can't leave until the escorting doctor is named.", tint: 'warning' };
     }
-    if (isErRoom && referral.status === 'in_transit') return { label: 'Confirm arrival when the patient lands', tint: 'info' };
-    if (isErRoom) return { label: 'ER room', tint: 'info' };
-    if (isNurse && ['arrived', 'accepted', 'manager_approved'].includes(referral.status)) return { label: 'Prepare a bed', tint: 'info' };
-    if ((isReferring || isErRoom) && referral.status === 'patient_consented') return { label: 'Ready to dispatch', tint: 'info' };
-    if (isReferring && referral.status === 'accepted') return { label: 'Waiting on you — confirm patient consent', tint: 'warning' };
-    if (isReferring) return { label: 'Waiting on you', tint: 'info' };
-    return { label: 'Following this case', tint: 'info' };
+    if (isErRoom && referral.status === 'in_transit') return { label: 'Confirm arrival when the patient lands', text: 'Mark the patient as arrived as soon as they reach the ER.', tint: 'info' };
+    if (isErRoom && referral.status === 'patient_consented') return { label: 'Ready to dispatch', text: 'Consent is recorded. The ambulance can leave.', tint: 'info' };
+    if (isErRoom) return { label: 'Not yours yet', text: 'The ER room acts once the receiving hospital accepts and the patient consents.', tint: 'warning' };
+    if (isNurse && ['arrived', 'accepted', 'manager_approved'].includes(referral.status)) {
+      return { label: 'Prepare a bed', text: `This patient needs a ${referral.requiredBedType} bed. Reserve one before they arrive.`, tint: 'info' };
+    }
+    // Sent back with requirements: the next move is the referring clinician's,
+    // and the banner says what the department asked for.
+    const latestDeptComment = [...(referral.deptComments || [])].reverse()[0];
+    if (isReferring && referral.status === 'postponed' && latestDeptComment?.status === 'requirements_needed') {
+      const asker = usersById.get(latestDeptComment.userId)?.department || receivingDepts[0] || 'The department';
+      return { label: `Waiting on you — ${asker} needs requirements`, text: latestDeptComment.comment || 'Answer what the department asked for, then it can continue.', tint: 'warning' };
+    }
+    if (isReferring && referral.status === 'patient_consented') return { label: 'Ready to dispatch', text: 'Consent is recorded. The ER room dispatches the ambulance.', tint: 'info' };
+    if (isReferring && referral.status === 'accepted') {
+      return { label: 'Waiting on you — confirm patient consent', text: 'Ask the patient whether they agree to the transfer, then record it.', tint: 'warning' };
+    }
+    if (isReferring && ['pending', 'dept_approved', 'manager_approved', 'postponed'].includes(referral.status)) {
+      return { label: `Waiting on ${toName || 'the receiving hospital'}`, text: 'Sent. Nothing is needed from you until they respond.', tint: 'info' };
+    }
+    if (isReferring) return { label: 'Following this case', text: 'Nothing on this referral is waiting on you right now.', tint: 'info' };
+    return { label: 'Following this case', text: 'Nothing on this referral is waiting on you right now.', tint: 'info' };
   })();
 
   const handleCopyId = () => {
@@ -193,6 +218,18 @@ export const ReferralDetailPage: React.FC = () => {
     addDeptComment(referral.id, deptAction, deptCommentText);
     setDeptCommentText('');
     setDeptAction('pending');
+  };
+
+  const handleDeptApprove = async () => {
+    setDeptBusy(true);
+    try {
+      await addDeptComment(referral.id, 'direct_approval', '');
+      showToast('Approved for your department.', 'success');
+    } catch (e: any) {
+      toastError(e, 'Could not record the approval.');
+    } finally {
+      setDeptBusy(false);
+    }
   };
 
   const handleDestinationOverride = async () => {
@@ -296,11 +333,11 @@ export const ReferralDetailPage: React.FC = () => {
     });
   };
 
-  const successFill = 'bg-success-700 hover:bg-success-800 text-white';
-  const warningFill = 'bg-warning-700 hover:bg-warning-800 text-white';
-  const criticalOutline = 'border border-critical-700 text-critical-700 hover:bg-critical-50 dark:hover:bg-critical-950/30';
-  const neutralOutline = 'border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300';
-  const darkFill = 'bg-slate-950 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200';
+  const successFill = 'success' as const;
+  const warningFill = 'warning' as const;
+  const criticalOutline = 'critical-outline' as const;
+  const neutralOutline = 'outline' as const;
+  const darkFill = 'ink' as const;
 
   let footerPrimary: FooterAction | null = null;
   let footerSecondary: FooterAction | null = null;
@@ -308,91 +345,111 @@ export const ReferralDetailPage: React.FC = () => {
   switch (roleVariant) {
     case 'dept-head':
       if (referral.status === 'pending') {
-        footerPrimary = { label: 'Send back with requirements', onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), className: warningFill };
-        footerSecondary = { label: 'Add a note', onClick: () => focusSection('dept-review-section', () => setDeptAction('no_role')), className: neutralOutline };
+        // Decide from here: approve (the same write as the queue's Approve), or
+        // say what the department needs before it can.
+        footerPrimary = { label: `Approve for ${user.department || 'your department'}`, onClick: handleDeptApprove, disabled: deptBusy, tone: successFill };
+        footerSecondary = { label: 'Need requirements', onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), tone: neutralOutline };
+      } else if (['dept_approved', 'manager_approved', 'accepted'].includes(referral.status)) {
+        footerPrimary = { label: 'Send back with requirements', onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), tone: warningFill };
+        footerSecondary = { label: 'Add a note', onClick: () => focusSection('dept-review-section', () => setDeptAction('no_role')), tone: neutralOutline };
       } else {
-        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), className: darkFill };
+        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), tone: darkFill };
       }
       break;
     case 'manager':
       if (referral.status === 'dept_approved') {
-        footerPrimary = { label: 'Accept the transfer', onClick: () => handleStatusUpdate('manager_approved'), className: successFill };
-        footerSecondary = { label: 'Decline', onClick: () => handleStatusUpdate('rejected'), className: criticalOutline };
+        footerPrimary = { label: 'Accept the transfer', onClick: () => handleStatusUpdate('manager_approved'), tone: successFill };
+        footerSecondary = { label: 'Decline', onClick: () => handleStatusUpdate('rejected'), tone: criticalOutline };
       } else {
-        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), className: darkFill };
+        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), tone: darkFill };
       }
       break;
     case 'er-room':
       if (referral.status === 'accepted' && (isReferring || isAdmin)) {
-        footerPrimary = { label: 'Record patient consent', onClick: handlePatientConsent, disabled: consentBusy, className: successFill };
-        footerSecondary = { label: 'Decline this facility', onClick: () => setShowDeclineForm(true), className: criticalOutline };
+        footerPrimary = { label: 'Record patient consent', onClick: handlePatientConsent, disabled: consentBusy, tone: successFill };
+        footerSecondary = { label: 'Decline this facility', onClick: () => setShowDeclineForm(true), tone: criticalOutline };
       } else if (referral.requiresAccompanyingDoctor && referral.status === 'patient_consented' && !referral.accompanyingDoctor) {
-        footerPrimary = { label: 'Save escort', onClick: () => focusSection('escort-form-section'), className: darkFill };
+        footerPrimary = { label: 'Save escort', onClick: () => focusSection('escort-form-section'), tone: darkFill };
       } else if (referral.status === 'patient_consented') {
-        footerPrimary = { label: 'Dispatch ambulance', onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? 'Blocked: record the escorting doctor first' : undefined, className: darkFill };
+        footerPrimary = { label: 'Dispatch ambulance', onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? 'Blocked: record the escorting doctor first' : undefined, tone: darkFill };
       } else if (referral.status === 'in_transit') {
-        footerPrimary = { label: 'Mark as arrived', onClick: () => handleStatusUpdate('arrived'), className: successFill };
+        footerPrimary = { label: 'Mark as arrived', onClick: () => handleStatusUpdate('arrived'), tone: successFill };
       } else {
-        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), className: darkFill };
+        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), tone: darkFill };
       }
       break;
     case 'nurse':
       if (isReceiving && referral.status === 'arrived') {
-        footerPrimary = { label: `Admit to ${referral.requiredBedType} bed`, onClick: () => handleStatusUpdate('admitted'), className: successFill };
-        footerSecondary = { label: 'Update bed counts', onClick: () => navigate('/bed-management'), className: neutralOutline };
+        footerPrimary = { label: `Admit to ${referral.requiredBedType} bed`, onClick: () => handleStatusUpdate('admitted'), tone: successFill };
+        footerSecondary = { label: 'Update bed counts', onClick: () => navigate('/bed-management'), tone: neutralOutline };
       } else {
-        footerPrimary = { label: 'Update bed counts', onClick: () => navigate('/bed-management'), className: darkFill };
+        footerPrimary = { label: 'Update bed counts', onClick: () => navigate('/bed-management'), tone: darkFill };
       }
       break;
     case 'clinician':
       if (referral.status === 'accepted') {
-        footerPrimary = { label: 'Record patient consent', onClick: handlePatientConsent, disabled: consentBusy, className: successFill };
+        footerPrimary = { label: 'Record patient consent', onClick: handlePatientConsent, disabled: consentBusy, tone: successFill };
       } else if (referral.status === 'patient_consented') {
-        footerPrimary = { label: 'Dispatch ambulance', onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? 'Blocked: waiting on the ER room to record the escort' : undefined, className: darkFill };
+        footerPrimary = { label: 'Dispatch ambulance', onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? 'Blocked: waiting on the ER room to record the escort' : undefined, tone: darkFill };
       } else {
-        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), className: darkFill };
+        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), tone: darkFill };
       }
-      footerSecondary = { label: 'Print summary', onClick: () => handlePrint(), className: neutralOutline };
+      if (footerPrimary?.label !== 'Print summary') {
+        footerSecondary = { label: 'Print summary', onClick: () => handlePrint(), tone: neutralOutline };
+      }
       break;
   }
 
   const footerCallNumber = roleVariant && roleVariant !== 'clinician' ? referringUser?.phoneNumber : undefined;
+  const REMIT_LABEL: Record<NonNullable<typeof roleVariant>, string> = {
+    'dept-head': 'Department actions',
+    manager: 'Manager actions',
+    'er-room': 'ER room actions',
+    nurse: 'Ward actions',
+    clinician: 'Your actions',
+  };
+  const remitLabel = roleVariant ? REMIT_LABEL[roleVariant] : undefined;
+  const hasPinnedFooter = !isDesktop && Boolean(footerPrimary);
+
+  const sectionLabel = 'mb-2 text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60';
 
   return (
-    <div className={`space-y-6 ${footerPrimary ? 'pb-40' : 'pb-0'} sm:pb-0 max-w-5xl mx-auto print:max-w-none print:pb-0 print:m-0 print:space-y-4`}>
+    <div className={`max-w-5xl mx-auto ${hasPinnedFooter ? 'pb-48' : 'pb-4'} print:max-w-none print:pb-0 print:m-0`}>
       <ReferralDetailHeader
         referral={referral}
-        copied={copied}
-        onCopyId={handleCopyId}
-        onToggleEscalation={handleToggleEscalation}
-        onPrint={() => handlePrint()}
         onBack={() => navigate(-1)}
-        mobileBanner={mobileBanner}
-        roleVariant={roleVariant}
-        roleVariantLabel={roleVariant ? ROLE_VARIANT_LABEL[roleVariant] : undefined}
+        isDesktop={isDesktop}
+        // Desktop keeps the role's actions in the action console for now: the
+        // same buttons inline here would duplicate it. The unified desktop phase
+        // merges the two.
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:hidden">
-        {/* Main Clinical Column */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-[15px] lg:mt-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-8 print:hidden">
+        {/* What is happening and what the patient looks like */}
+        <div className="flex min-w-0 flex-col gap-[15px]">
           <EscalationAlertBanner referral={referral} />
-
+          <RoleBanner label={mobileBanner.label} text={mobileBanner.text} tint={mobileBanner.tint} />
           <PatientCard patient={referral.patientData} />
-          
-          <TransferContextCard 
-            referral={referral} 
-            referringUser={referringUser} 
-          />
-
+          <ClinicalAttachmentsCard referral={referral} onSelectECG={(url) => setSelectedECGUrl(url)} />
+          {!isDesktop && (
+            <section aria-label="History">
+              <p className={sectionLabel}>History</p>
+              <ReferralTimeline referral={referral} usersById={usersById} />
+            </section>
+          )}
           <ClinicalHistoryCard referral={referral} />
-          
           <ClinicalMedicationsCard referral={referral} />
-          
-          <ClinicalAttachmentsCard 
-            referral={referral} 
-            onSelectECG={(url) => setSelectedECGUrl(url)} 
-          />
+          <TransferContextCard referral={referral} referringUser={referringUser} />
+        </div>
 
+        {/* Who acts next, and the record of what already happened */}
+        <div className="flex min-w-0 flex-col gap-[15px]">
+          {isDesktop && (
+            <section aria-label="History">
+              <p className={sectionLabel}>History</p>
+              <ReferralTimeline referral={referral} usersById={usersById} />
+            </section>
+          )}
           <DepartmentReviewCard
             referral={referral}
             usersById={usersById}
@@ -404,10 +461,6 @@ export const ReferralDetailPage: React.FC = () => {
             setDeptCommentText={setDeptCommentText}
             onSubmitDeptComment={submitDeptComment}
           />
-        </div>
-
-        {/* Logistics, Journey & Action Console */}
-        <div className="space-y-6">
           <TransferJourneyCard
             referral={referral}
             fromFacility={fromFacility}
@@ -471,11 +524,18 @@ export const ReferralDetailPage: React.FC = () => {
         </div>
       </div>
 
-      <MobileActionFooter
-        footerPrimary={footerPrimary}
-        footerSecondary={footerSecondary}
-        footerCallNumber={footerCallNumber}
-      />
+      <div className="mt-6">
+        <ReferralUtilityBar referral={referral} copied={copied} onCopyId={handleCopyId} onToggleEscalation={handleToggleEscalation} onPrint={() => handlePrint()} />
+      </div>
+
+      {!isDesktop && (
+        <MobileActionFooter
+          footerPrimary={footerPrimary}
+          footerSecondary={footerSecondary}
+          footerCallNumber={footerCallNumber}
+          remitLabel={remitLabel}
+        />
+      )}
 
       <ECGViewerOverlay
         isOpen={Boolean(selectedECGUrl)}
