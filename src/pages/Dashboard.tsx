@@ -7,7 +7,6 @@ import { HodCockpit } from '../components/dashboard/HodCockpit';
 import { ManagerCockpit } from '../components/dashboard/ManagerCockpit';
 import { ERCockpit } from '../components/dashboard/ERCockpit';
 import { NurseCockpit } from '../components/dashboard/NurseCockpit';
-import { AdminCockpit } from '../components/dashboard/AdminCockpit';
 import { useAudioAlert } from '../hooks/useAudioAlert';
 
 /**
@@ -33,9 +32,6 @@ export const Dashboard: React.FC = () => {
   useAudioAlert(hasPendingEmergency);
 
   if (!user) return null;
-
-  // The admin console keeps its own layout until its redesign pass (3a).
-  if (user.role === 'system_admin' || user.role === 'owner') return <AdminCockpit />;
 
   // One readable queue column; the desktop panes (3d) come in a later pass.
   return <div className="max-w-[640px]">{roleHome(user.role)}</div>;
