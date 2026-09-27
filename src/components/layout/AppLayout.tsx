@@ -7,7 +7,7 @@ import { AppSidebar } from './AppSidebar';
 import { ShellContext } from './ShellContext';
 import { ROLE_CONFIGS } from './RoleBadge';
 import { Button } from '../ui/Button';
-import { toastError } from '../../lib/toast';
+import { toastError, showToast } from '../../lib/toast';
 import { isDoctorRole, isNurseRole } from '../../types';
 import {
   X,
@@ -48,7 +48,7 @@ export const AppLayout: React.FC = () => {
   // The intake wizard does the same: its header names the patient and the step.
   const onWizard = location.pathname === '/referrals/new';
   // Secondary screens draw a ScreenHeader (title + action + menu) instead.
-  const onTitledScreen = ['/notifications', '/directory', '/archive', '/facility-settings', '/handover'].includes(location.pathname);
+  const onTitledScreen = ['/notifications', '/directory', '/archive', '/facility-settings'].includes(location.pathname);
   const ownHeader = onReferralDetail || onWizard || onTitledScreen;
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -62,7 +62,7 @@ export const AppLayout: React.FC = () => {
   useDialogA11y(showProfile, () => setShowProfile(false), profileModalRef);
 
   const [showEndOfShift, setShowEndOfShift] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
+  const [sendingHandover, setSendingHandover] = useState(false);
   const endOfShiftModalRef = useRef<HTMLDivElement>(null);
   useDialogA11y(showEndOfShift, () => setShowEndOfShift(false), endOfShiftModalRef);
 
@@ -104,18 +104,17 @@ export const AppLayout: React.FC = () => {
     navigate('/directory');
   };
 
+  // Signing out is always a deliberate, separate act; the handover never does it.
   const handleLogoutClick = () => {
     setMobileMenuOpen(false);
-    if (!user) return;
-    const isDoctor = isDoctorRole(user.role);
-    const isNurse = isNurseRole(user.role) || user.role === 'owner';
-    const generatesShiftLog = !!user.facilityId && (isDoctor || isNurse);
-    if (generatesShiftLog) {
-      setShowEndOfShift(true);
-    } else {
-      logout();
-    }
+    logout();
   };
+
+  const openHandover = () => {
+    setMobileMenuOpen(false);
+    setShowEndOfShift(true);
+  };
+
 
   if (!user) return null;
 
@@ -169,34 +168,31 @@ export const AppLayout: React.FC = () => {
   };
 
   const handleConfirmHandover = async () => {
-    if (!user || !user.facilityId) {
-      logout();
+    const handover = buildHandover();
+    if (!user || !user.facilityId || !handover) {
+      setShowEndOfShift(false);
       return;
     }
-
-    setSigningOut(true);
+    setSendingHandover(true);
     try {
-      const handover = buildHandover();
-      if (handover) {
-        await addShiftLog({
-          userId: user.id,
-          userName: user.name || 'Unknown',
-          department: user.department,
-          facilityId: user.facilityId,
-          summary: handover.summary,
-          pendingTransfersCount: handover.carryOver.length,
-          admittedPatientsCount: handover.doneThisShift
-        });
-      }
+      await addShiftLog({
+        userId: user.id,
+        userName: user.name || 'Unknown',
+        department: user.department,
+        facilityId: user.facilityId,
+        summary: handover.summary,
+        pendingTransfersCount: handover.carryOver.length,
+        admittedPatientsCount: handover.doneThisShift
+      });
       setShowEndOfShift(false);
-      logout();
+      showToast('Handover sent to the day shift. You are still signed in.', 'success');
     } catch (err: any) {
-      toastError(err, 'Failed to save handover log. Continuing logout.');
-      logout();
+      toastError(err, 'Could not send the handover. Check the connection and try again.');
     } finally {
-      setSigningOut(false);
+      setSendingHandover(false);
     }
   };
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -233,6 +229,7 @@ export const AppLayout: React.FC = () => {
           unreadNotifsCount={unreadNotifs}
           onOpenProfile={openProfile}
           onOpenHotline={openHotline}
+          onOpenHandover={generatesShiftLog ? openHandover : undefined}
           onLogoutClick={handleLogoutClick}
           theme={theme}
           onToggleTheme={toggleTheme}
@@ -266,6 +263,7 @@ export const AppLayout: React.FC = () => {
           onCloseMobile={() => setMobileMenuOpen(false)}
           onOpenProfile={openProfile}
           onOpenHotline={openHotline}
+          onOpenHandover={generatesShiftLog ? openHandover : undefined}
           onLogoutClick={handleLogoutClick}
           theme={theme}
           onToggleTheme={toggleTheme}
@@ -419,7 +417,7 @@ export const AppLayout: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowEndOfShift(false)}
-                aria-label="Cancel, stay signed in"
+                aria-label="Close the handover"
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border border-paper/25 hover:bg-paper/10"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
@@ -429,7 +427,7 @@ export const AppLayout: React.FC = () => {
             <div className="mx-auto w-full max-w-xl flex-1 space-y-3 px-[18px] py-5">
               <p className={cn(card, 'flex items-start gap-2.5 text-[14px] leading-[1.45] text-paper/85')}>
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-400" aria-hidden="true" />
-                Signed in since {signedInSince} on this device. Sending the handover also signs you out.
+                Signed in since {signedInSince} on this device. Sending the handover keeps you signed in; sign out from the menu when you leave.
               </p>
 
               {handover ? (
@@ -476,11 +474,11 @@ export const AppLayout: React.FC = () => {
               <button
                 type="button"
                 onClick={handleConfirmHandover}
-                disabled={signingOut}
+                disabled={sendingHandover}
                 className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-xl bg-paper text-[16px] font-semibold text-ink transition-colors hover:bg-slate-200 disabled:opacity-60"
               >
                 <Send className="h-4 w-4" aria-hidden="true" />
-                <span>{signingOut ? 'Signing out…' : handover ? 'Send handover to the day shift' : 'Sign out'}</span>
+                <span>{sendingHandover ? 'Sending…' : handover ? 'Send handover to the day shift' : 'Close'}</span>
               </button>
             </div>
           </div>
