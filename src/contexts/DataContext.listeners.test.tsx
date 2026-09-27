@@ -21,7 +21,8 @@ vi.mock('../lib/db', () => ({
 }));
 
 let mockUser: User | null = null;
-vi.mock('./AuthContext', () => ({ useAuth: () => ({ user: mockUser }) }));
+let mockEmailVerified = true;
+vi.mock('./AuthContext', () => ({ useAuth: () => ({ user: mockUser, emailVerified: mockEmailVerified }) }));
 
 const Consumer = () => {
   const { loading, facilities, users, referrals, notifications, directAdmissions, shiftAssignments, shiftLogs, loadOlderReferrals } = useData();
@@ -48,6 +49,7 @@ describe('DataContext Firestore listeners', () => {
     fsState = getActiveFirestoreState();
     resetFirestoreState(fsState);
     mockUser = null;
+    mockEmailVerified = true;
   });
 
   it('does not subscribe to anything and does not crash with no signed-in user', () => {
@@ -85,6 +87,19 @@ describe('DataContext Firestore listeners', () => {
 
   it('stops at the facility list and never opens patient-data listeners for an unverified user', async () => {
     mockUser = makeUser({ role: 'resident', verified: false });
+    seedCollection(fsState, 'facilities', [makeFacility()]);
+    renderProvider();
+
+    await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
+    expect(fsState.subscribers['users']).toBeUndefined();
+    expect(fsState.subscribers['referrals']).toBeUndefined();
+    expect(fsState.subscribers['notifications']).toBeUndefined();
+  });
+
+  it('never opens patient-data listeners for an admin-verified user whose email is unconfirmed', async () => {
+    // isVerifiedCaller() rejects them, and a rejected listener dies for the session.
+    mockUser = makeUser({ role: 'resident', verified: true });
+    mockEmailVerified = false;
     seedCollection(fsState, 'facilities', [makeFacility()]);
     renderProvider();
 

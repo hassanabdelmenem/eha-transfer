@@ -35,7 +35,7 @@ service cloud.firestore {
     // act under that identity. Google Provider accounts are always email_verified.
     function isVerifiedCaller() {
       return callerExists()
-          
+          && request.auth.token.email_verified == true
           && callerDoc().verified == true;
     }
     function callerFacility() {
@@ -452,7 +452,9 @@ service cloud.firestore {
     // user — but reads stay strictly per-recipient, and the only mutable field
     // is the read flag.
     match /notifications/{notificationId} {
-      allow read: if isPrivileged() || (signedIn() && resource.data.userId == request.auth.uid);
+      // isVerifiedCaller(), not signedIn(): notification bodies name patients, and
+      // fan-out picks recipients from the roster without looking at email status.
+      allow read: if isPrivileged() || (isVerifiedCaller() && resource.data.userId == request.auth.uid);
       // The shape constraints below keep this from being a free-form message
       // channel into every clinician's notification tray: a fabricated alert
       // cannot arrive pre-read, cannot carry an unbounded body, and -- via
