@@ -713,6 +713,22 @@ describe('escalation claims', () => {
     })));
   });
 
+  it('refuses a referral without createdAtMs instead of trusting it (required since the backfill)', async () => {
+    // Every production referral was backfilled on 27 Sep 2026, so a document
+    // missing the SLA clock is no longer given the benefit of the doubt.
+    const legacy: Record<string, unknown> = referral({});
+    delete legacy.createdAtMs;
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'referrals', 'ref1'), legacy);
+    });
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), base({
+      escalatedBy: 'system', escalationLevel: 'facility', escalationReason: 'sla_breach',
+    })));
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), base({
+      escalatedBy: F1_MANAGER, escalationLevel: 'facility', escalationReason: 'manual',
+    })));
+  });
+
   it('blocks a manual escalation attributed to the system', async () => {
     // Otherwise a human action is indistinguishable from "nobody responded" in
     // the audit trail.
