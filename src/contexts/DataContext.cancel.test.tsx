@@ -7,7 +7,7 @@ import type { Referral, User } from '../types';
 // --- Mock the authenticated caller (swapped per test via setMockUser) ---
 let mockUser: User | null = null;
 vi.mock('./AuthContext', () => ({
-  useAuth: () => ({ user: mockUser }),
+  useAuth: () => ({ user: mockUser, emailVerified: true }),
 }));
 
 // --- Mock Firestore. cancelReferral/recordPatientDecline/recordPatientConsent read the

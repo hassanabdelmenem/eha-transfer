@@ -16,7 +16,7 @@ vi.mock('../lib/db', () => ({
 }));
 
 let mockUser: User | null = null;
-vi.mock('./AuthContext', () => ({ useAuth: () => ({ user: mockUser }) }));
+vi.mock('./AuthContext', () => ({ useAuth: () => ({ user: mockUser, emailVerified: true }) }));
 
 let capturedError: string | null = null;
 
