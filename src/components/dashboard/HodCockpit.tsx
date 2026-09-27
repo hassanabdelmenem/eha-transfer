@@ -6,7 +6,7 @@ import { Referral } from '../../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { ShieldAlert, ArrowRightLeft, UserCircle, X } from 'lucide-react';
+import { ArrowRightLeft, UserCircle, X, Check } from 'lucide-react';
 import { sortByWorkflow } from '../../lib/referralPriority';
 import { showToast, toastError } from '../../lib/toast';
 import { ReferralSummarySheet } from '../referrals/ReferralSummarySheet';
@@ -14,6 +14,7 @@ import { EscalationAlertBanner } from './EscalationAlertBanner';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
 import { isAdmin as checkIsAdmin } from '../../lib/permissions';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
+import { RoleHomeHeadline, MicroLabel, EmptyQueue, useSecondTick } from './RoleHome';
 
 interface HodCockpitProps {
   isDepartmentRoute?: boolean;
@@ -136,6 +137,9 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
   );
 
   const escalatedReview = useMemo(() => pendingReview.filter(r => r.isEscalated), [pendingReview]);
+  const queue = useMemo(() => pendingReview.filter(r => !r.isEscalated), [pendingReview]);
+  const now = useSecondTick(queue.length > 0);
+  const [approvedNames, setApprovedNames] = useState<string[]>([]);
 
   if (!user || (user.role !== 'head_of_department' && !isAdmin)) {
     return (
@@ -149,6 +153,8 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
     setApprovingId(id);
     try {
       await addDeptComment(id, 'direct_approval', '');
+      const name = referrals.find(r => r.id === id)?.patientData.name;
+      if (name) setApprovedNames(prev => (prev.includes(name) ? prev : [...prev, name]));
       showToast('Referral approved.', 'success');
     } catch (e: any) {
       toastError(e, 'Could not approve this referral.');
@@ -194,7 +200,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-3">
       {/* Admin view facility/department selectors */}
       {isAdmin && (
         <Card className="border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl">
@@ -237,66 +243,54 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
         </Card>
       )}
 
-      {/* Pinned Critical Escalations */}
-      {escalatedReview.length > 0 && (
-        <div className="space-y-3">
-          {escalatedReview.map(r => (
-            <EscalationAlertBanner
-              key={r.id}
-              referral={r}
-              actionLabel="Review now"
-              onAction={() => navigate(`/referrals/${r.id}`)}
-              referrerPhone={usersById.get(r.referringUserId)?.phoneNumber}
-              referringFacilityName={facilitiesById.get(r.referringFacilityId)?.name}
-            />
-          ))}
-        </div>
+      {!isDepartmentRoute && (
+        <RoleHomeHeadline
+          title={`${pendingReview.length} waiting on you`}
+          rationale="Escalated cases stay pinned on top. Everything else is ordered emergency → urgent → routine."
+        />
       )}
 
-      {/* Unit Review Queue Card */}
-      <Card className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
-        <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-4 px-5 bg-slate-50/50 dark:bg-slate-800/40">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-warning-500" />
-                Department Review Queue ({department || 'All'})
-              </CardTitle>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Inbound transfers requesting admission to your unit. Fast-track with direct approval.
-              </p>
-            </div>
-            <Badge variant="warning" className="text-xs">
-              {pendingReview.length} Pending
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="p-5">
-          {pendingReview.length === 0 ? (
-            <div className="py-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
-              Your department review queue is completely clear.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
-              {pendingReview.map(r => (
-                <ReferralCockpitCard
-                  key={r.id}
-                  referral={r}
-                  variant="hod"
-                  getFacilityName={id => facilitiesById.get(id)?.name || id}
-                  onApprove={handleQuickApprove}
-                  onSummary={() => setSummaryReferral(r)}
-                  onAction={() => navigate(`/referrals/${r.id}`)}
-                  busy={approvingId === r.id}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Escalated cases, pinned above the queue */}
+      {escalatedReview.map(r => (
+        <EscalationAlertBanner
+          key={r.id}
+          referral={r}
+          actionLabel="Review now"
+          onAction={() => navigate(`/referrals/${r.id}`)}
+          referrerPhone={usersById.get(r.referringUserId)?.phoneNumber}
+          referringFacilityName={facilitiesById.get(r.referringFacilityId)?.name}
+        />
+      ))}
 
-      {/* Two-Column Section: Shift Delegation & Active Inpatient Census */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section aria-label={`Department review queue${department ? ` · ${department}` : ''}`} className="flex flex-col gap-3">
+        {isDepartmentRoute && <MicroLabel>Department review queue · {department || 'All'} · {pendingReview.length} pending</MicroLabel>}
+        {pendingReview.length === 0 ? (
+          <EmptyQueue>Your department review queue is completely clear.</EmptyQueue>
+        ) : (
+          queue.map(r => (
+            <ReferralCockpitCard
+              key={r.id}
+              referral={r}
+              variant="hod"
+              now={now}
+              getFacilityName={id => facilitiesById.get(id)?.name || id}
+              onApprove={handleQuickApprove}
+              onSummary={() => setSummaryReferral(r)}
+              onAction={() => navigate(`/referrals/${r.id}`)}
+              busy={approvingId === r.id}
+            />
+          ))
+        )}
+        {approvedNames.map(name => (
+          <p key={name} role="status" className="flex items-center gap-2 rounded-[10px] border border-success-300 bg-success-100 px-3 py-3 text-[14px] font-semibold text-success-800 dark:border-success-700 dark:bg-success-900/50 dark:text-success-200">
+            <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
+            Approved {name} · sent to the manager for signature
+          </p>
+        ))}
+      </section>
+
+      {/* Delegation and the unit's inpatients live on the department page, not the home queue. */}
+      {isDepartmentRoute && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
         {/* Shift Delegation Card */}
         <Card className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 flex flex-col">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
@@ -393,7 +387,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
             )}
           </CardContent>
         </Card>
-      </div>
+      </div>}
 
       {/* Internal Transfer Modal */}
       {transferModalOpen && selectedPatient && (
@@ -481,6 +475,19 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
         <ReferralSummarySheet
           referral={summaryReferral}
           onClose={() => setSummaryReferral(null)}
+          primary={{
+            label: department ? `Approve for ${department}` : 'Approve',
+            tone: 'success',
+            onClick: async () => {
+              const r = summaryReferral;
+              setSummaryReferral(null);
+              await handleQuickApprove(r.id);
+            },
+          }}
+          secondary={[
+            { label: 'Need requirements', tone: 'warning', onClick: () => navigate(`/referrals/${summaryReferral.id}#dept-review-section`) },
+            { label: 'Decline', tone: 'critical-outline', onClick: () => navigate(`/referrals/${summaryReferral.id}#dept-review-section`) },
+          ]}
         />
       )}
     </div>

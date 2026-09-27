@@ -1,3 +1,4 @@
+import type React from 'react';
 import { Referral, Facility, User, BedType, ShiftLog, ShiftAssignment } from '../../types';
 import { DirectAdmission } from '../../contexts/DataContext';
 
@@ -24,6 +25,8 @@ export interface EscalationAlertBannerProps {
   referral: Referral;
   onAction?: (referral: Referral) => void;
   actionLabel?: string;
+  /** A second, outline action beside the primary ("Hand to admin"). */
+  secondaryAction?: { label: string; onClick: (referral: Referral) => void };
   referrerPhone?: string;
   referringFacilityName?: string;
   onCallReferrer?: (phone: string) => void;
@@ -34,6 +37,8 @@ export interface ReferralCockpitCardProps {
   variant?: 'clinician' | 'hod' | 'manager' | 'er_outbound' | 'er_inbound' | 'nurse';
   actionLabel?: string;
   actionSentence?: string;
+  /** Replaces the clinician card's default "bed · departments" line. */
+  contextLine?: React.ReactNode;
   onAction?: (id: string) => void;
   onSummary?: (referral: Referral) => void;
   onApprove?: (id: string) => Promise<void>;
@@ -46,6 +51,10 @@ export interface ReferralCockpitCardProps {
   getUserName?: (id: string) => string | undefined;
   referrerPhone?: string;
   approverName?: string;
+  approverDept?: string;
+  approvedAt?: string;
+  /** Epoch ms for the SLA clock on queue cards; the parent owns the tick. */
+  now?: number;
   busy?: boolean;
 }
 

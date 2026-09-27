@@ -3,18 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { Referral } from '../../types';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
-import { Badge } from '../ui/Badge';
-import { Plus, Search, Phone, Bed, WifiOff } from 'lucide-react';
+import { Plus, Search, Phone, ChevronRight } from 'lucide-react';
 import { sortByWorkflow } from '../../lib/referralPriority';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
 import { ShiftHandoverFeed } from './ShiftHandoverFeed';
 import { ReferralSummarySheet } from '../referrals/ReferralSummarySheet';
 import { ClinicianSegment } from './types';
+import { RoleHomeHeadline, SegmentedControl, Segment, EmptyQueue, MicroLabel, HomeActionBar, actionBarPrimary, actionBarSquare } from './RoleHome';
+import { standingPhrase } from '../../lib/referralStage';
 
 export const ClinicianCockpit: React.FC = () => {
   const { user } = useAuth();
-  const { referrals, directAdmissions, shiftLogs, isOnline, pendingSyncCount } = useData();
+  const { referrals, directAdmissions, shiftLogs, facilitiesById } = useData();
   const navigate = useNavigate();
 
   const [segment, setSegment] = useState<ClinicianSegment>('you');
@@ -136,178 +136,109 @@ export const ClinicianCockpit: React.FC = () => {
 
   if (!user) return null;
 
+  const facilityName = (id: string) => facilitiesById.get(id)?.name || 'the receiving hospital';
+  const segments: Segment<ClinicianSegment>[] = [
+    { key: 'you', label: 'You', count: youBucket.length },
+    { key: 'them', label: 'Them', count: themBucket.length },
+    { key: 'moving', label: 'Moving', count: movingBucket.length },
+  ];
+  // Inbound is for clinicians in a receiving department; it only takes a
+  // segment when something is actually coming their way.
+  if (inboundBucket.length > 0 || segment === 'inbound') {
+    segments.push({ key: 'inbound', label: 'Inbound', count: inboundBucket.length });
+  }
+
+  const emptyCopy: Record<ClinicianSegment, string> = {
+    you: 'Nothing is blocked on you. Anything that needs your answer will appear here first.',
+    them: 'No referrals waiting on another team.',
+    moving: 'No patients on the road right now.',
+    inbound: 'Nothing on its way to your department.',
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Clinician Command Center Box */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-xs">
-        {!isOnline && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl bg-warning-500/20 border border-warning-500/40 px-3.5 py-2 text-xs font-bold text-warning-700 dark:text-warning-300">
-            <WifiOff className="w-4 h-4 shrink-0" />
-            Offline · {pendingSyncCount} action{pendingSyncCount === 1 ? '' : 's'} queued, will send automatically
-          </div>
+    <div className="flex flex-col gap-3">
+      <RoleHomeHeadline
+        title={`${youBucket.length} need${youBucket.length === 1 ? 's' : ''} you`}
+        rationale="Blocked on something only you can do. Emergency first."
+      />
+
+      <div className="mt-2">
+        <SegmentedControl label="Your referrals by who they wait on" segments={segments} value={segment} onChange={setSegment} />
+      </div>
+
+      <div className="mt-1 flex flex-col gap-3">
+        {activeSegmentReferrals.length === 0 ? (
+          <EmptyQueue>{emptyCopy[segment]}</EmptyQueue>
+        ) : (
+          activeSegmentReferrals.map(r => (
+            <ReferralCockpitCard
+              key={r.id}
+              referral={r}
+              variant="clinician"
+              contextLine={<>{r.requiredBedType} · {standingPhrase(r, facilityName(r.receivingFacilityId))}</>}
+              actionLabel={segment === 'you' ? youActionLabel(r) : 'Open referral'}
+              actionSentence={segment === 'you' ? youActionSentence(r) : undefined}
+              onAction={() => navigate(`/referrals/${r.id}`)}
+              onSummary={() => setSummaryReferral(r)}
+            />
+          ))
         )}
-
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 dark:text-slate-100">
-            {youBucket.length} need{youBucket.length === 1 ? 's' : ''} you
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Blocked on something only you can do. Emergency and high-priority transfers first.
-          </p>
-        </div>
-
-        {/* Triage Segments Switcher */}
-        <div className="mt-5 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
-          {([
-            ['you', 'You', youBucket.length],
-            ['them', 'Them', themBucket.length],
-            ['moving', 'Moving', movingBucket.length],
-            ['inbound', 'Inbound', inboundBucket.length],
-          ] as [ClinicianSegment, string, number][]).map(([key, label, count]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setSegment(key)}
-              className={`shrink-0 min-h-[48px] px-4 rounded-xl border text-xs font-bold transition-all ${
-                segment === key
-                  ? 'bg-slate-950 dark:bg-white border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
-                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-              }`}
-            >
-              {label} <span className="opacity-70 font-mono">({count})</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Segment Referral Grid */}
-        <div className="mt-5">
-          {activeSegmentReferrals.length === 0 ? (
-            <div className="py-10 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
-              No referrals in this queue right now.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
-              {activeSegmentReferrals.map(r => (
-                <ReferralCockpitCard
-                  key={r.id}
-                  referral={r}
-                  variant="clinician"
-                  actionLabel={segment === 'you' ? youActionLabel(r) : 'View'}
-                  actionSentence={segment === 'you' ? youActionSentence(r) : undefined}
-                  onAction={() => navigate(`/referrals/${r.id}`)}
-                  onSummary={() => setSummaryReferral(r)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Quick Action Bar */}
-        <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          {canCreateReferral && (
-            <button
-              type="button"
-              onClick={() => navigate('/referrals/new')}
-              className="flex-1 min-h-[50px] rounded-xl shadow-sm text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-[0.98]"
-            >
-              <Plus className="w-4 h-4" /> Initiate New Referral
-            </button>
-          )}
-          <div className="flex gap-2.5">
-            <button
-              type="button"
-              onClick={() => navigate('/referrals')}
-              className="flex-1 sm:flex-none min-h-[50px] sm:w-[120px] rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <Search className="w-3.5 h-3.5" /> Search
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/directory')}
-              className="flex-1 sm:flex-none min-h-[50px] sm:w-[120px] rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <Phone className="w-3.5 h-3.5" /> Directory
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* Admitted Census & Handover Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Currently Admitted */}
-        <Card className="flex flex-col border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
-          <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <Bed className="w-4 h-4 text-blue-500" />
-                Currently Admitted to Unit
-              </CardTitle>
-              <Badge variant="info" className="text-[11px]">
-                {totalAdmittedInUnit} Total
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-auto p-0 max-h-[300px]">
-            {totalAdmittedInUnit === 0 ? (
-              <div className="p-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs">
-                No patients currently admitted in your unit.
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {departmentReferralAdmissions.map(r => (
-                  <div
-                    key={r.id}
-                    onClick={() => navigate(`/referrals/${r.id}`)}
-                    className="p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
-                          {r.patientData.name}, {r.patientData.age}y
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                          {r.requiredBedType} Bed · MRN: {r.patientData.hospitalId}
-                        </p>
-                      </div>
-                      <Badge variant="default" className="text-[10px] shrink-0">
-                        Referral
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-                {departmentAdmissions.map(a => (
-                  <div
-                    key={a.id}
-                    className="p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
-                          {a.patientName}
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                          {a.bedType} Bed · HID: {a.hospitalId}
-                        </p>
-                      </div>
-                      <Badge variant="default" className="text-[10px] shrink-0">
-                        Direct
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Below the queue: context for the shift, never competing with it. */}
+      <section aria-labelledby="clinician-admitted" className="mt-6">
+        <MicroLabel id="clinician-admitted">Admitted to your unit · {totalAdmittedInUnit}</MicroLabel>
+        {totalAdmittedInUnit === 0 ? (
+          <p className="mt-2.5 text-[14px] text-slate-700 dark:text-white/65">No patients currently admitted in your unit.</p>
+        ) : (
+          <ul className="mt-2.5 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.04]">
+            {departmentReferralAdmissions.map(r => (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/referrals/${r.id}`)}
+                  className="flex min-h-[52px] w-full items-center justify-between gap-3 px-[14px] py-2.5 text-left hover:bg-slate-50 dark:hover:bg-white/5"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-[15px] font-semibold text-ink dark:text-paper">{r.patientData.name}, {r.patientData.age}</span>
+                    <span className="block truncate text-[13px] text-slate-700 dark:text-white/65">{r.requiredBedType} · referral · <span className="font-mono">{r.patientData.hospitalId}</span></span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+            {departmentAdmissions.map(a => (
+              <li key={a.id} className="flex min-h-[52px] items-center px-[14px] py-2.5">
+                <span className="min-w-0">
+                  <span className="block truncate text-[15px] font-semibold text-ink dark:text-paper">{a.patientName}</span>
+                  <span className="block truncate text-[13px] text-slate-700 dark:text-white/65">{a.bedType} · direct admission · <span className="font-mono">{a.hospitalId}</span></span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
-        {/* Recent Shift Handovers Feed */}
-        <ShiftHandoverFeed
-          shiftLogs={shiftLogs}
-          userFacilityId={user.facilityId}
-          userDepartment={user.department}
-          limit={4}
-        />
-      </div>
+      <ShiftHandoverFeed
+        shiftLogs={shiftLogs}
+        userFacilityId={user.facilityId}
+        userDepartment={user.department}
+        limit={4}
+      />
+
+      <HomeActionBar>
+        {canCreateReferral && (
+          <button type="button" onClick={() => navigate('/referrals/new')} className={actionBarPrimary}>
+            <Plus className="h-5 w-5" aria-hidden="true" /> New referral
+          </button>
+        )}
+        <button type="button" onClick={() => navigate('/referrals')} aria-label="Search referrals" className={actionBarSquare}>
+          <Search className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button type="button" onClick={() => navigate('/directory')} aria-label="Directory and hotlines" className={actionBarSquare}>
+          <Phone className="h-5 w-5" aria-hidden="true" />
+        </button>
+      </HomeActionBar>
 
       {summaryReferral && (
         <ReferralSummarySheet

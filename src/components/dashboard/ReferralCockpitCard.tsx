@@ -2,42 +2,55 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Referral } from '../../types';
 import { Truck, Check, Phone } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import { priorityRailFill, priorityChipClasses, priorityLabel, priorityAskClass } from '../../lib/referralPriority';
 import { ReferralCockpitCardProps } from './types';
+import { SlaClock } from './RoleHome';
 import { cn } from '../../lib/utils';
 
 // Every role home is a column of these. Anatomy, from the handoff's queue card:
 // a 6px priority rail drawn as its own element, the patient (17px/600), one
 // context line, a priority chip, optionally one sentence naming what is needed,
 // then the card's actions at 48px. Priority is carried by the rail AND the
-// chip's text, never by colour alone.
+// chip's text, never by colour alone. The ER variants render flush inside a
+// section box whose header strip names the direction (outbound / inbound).
 
 const shell = 'shrink-0 flex overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]';
-const body = 'flex-1 min-w-0 pt-[14px] px-[14px] pb-3';
+const body = 'flex-1 min-w-0 pt-[14px] px-[14px] pb-[14px]';
 const nameClass = 'text-[17px] font-semibold leading-[1.25] text-ink dark:text-paper';
-const lineClass = 'mt-[3px] text-[13px] leading-[1.35] text-slate-700 dark:text-white/65';
-const btn = 'min-h-[48px] w-full rounded-[10px] px-3 text-[14px] font-semibold transition-colors inline-flex items-center justify-center gap-2 disabled:cursor-not-allowed';
+const lineClass = 'mt-[3px] text-[13.5px] leading-[1.4] text-slate-700 dark:text-white/65';
+const btn = 'min-h-[48px] w-full rounded-[10px] px-3 text-[15px] font-semibold transition-colors inline-flex items-center justify-center gap-2 disabled:cursor-not-allowed';
 const btnInk = 'bg-ink text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200';
 const btnOlive = 'bg-success-700 text-white hover:bg-success-800 disabled:bg-slate-200 disabled:text-slate-500';
 const btnOutline = 'border border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10';
-const input = 'w-full min-h-[52px] rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink placeholder:text-slate-500 focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper dark:placeholder:text-white/50';
+const input = 'w-full min-h-[52px] rounded-[10px] border border-slate-300 bg-white px-3.5 text-[16px] text-ink placeholder:text-slate-500 focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper dark:placeholder:text-white/50';
+const square = 'flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-[10px] border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/25 dark:text-white/80 dark:hover:bg-white/10';
 
 const Rail: React.FC<{ referral: Referral }> = ({ referral }) => (
   <span aria-hidden="true" className={cn('w-[6px] shrink-0', priorityRailFill(referral.priority, referral.isEscalated))} />
 );
 
 const PriorityChip: React.FC<{ referral: Referral }> = ({ referral }) => (
-  <span className={cn('shrink-0 rounded-[6px] px-2 py-1 text-[11px] font-bold leading-none tracking-[0.04em] whitespace-nowrap', priorityChipClasses(referral.priority))}>
+  <span className={cn('shrink-0 rounded-[6px] px-2 py-1 text-[11px] font-bold leading-none tracking-[0.06em] whitespace-nowrap', priorityChipClasses(referral.priority))}>
     {priorityLabel(referral.priority)}
   </span>
 );
+
+const hhmm = (iso?: string) => {
+  const t = Date.parse(iso || '');
+  return Number.isNaN(t) ? null : format(new Date(t), 'HH:mm');
+};
+
+/** When the referral last entered `status`, from its history. */
+const enteredAt = (referral: Referral, status: Referral['status']) =>
+  [...(Array.isArray(referral.statusHistory) ? referral.statusHistory : [])].reverse().find(h => h.status === status);
 
 export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   referral,
   variant = 'clinician',
   actionLabel = 'View',
   actionSentence,
+  contextLine,
   onAction,
   onSummary,
   onApprove,
@@ -50,6 +63,9 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   getUserName = () => undefined,
   referrerPhone,
   approverName,
+  approverDept,
+  approvedAt,
+  now,
   busy = false,
 }) => {
   const navigate = useNavigate();
@@ -77,7 +93,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
 
   // The patient block opens the referral. A real button, so it is reachable by
   // keyboard; the card's own actions sit outside it.
-  const identity = (line: React.ReactNode, aside?: React.ReactNode) => (
+  const identity = (line: React.ReactNode, aside?: React.ReactNode, extra?: React.ReactNode) => (
     <button
       type="button"
       onClick={handleCardClick}
@@ -86,6 +102,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
       <span className="min-w-0">
         <span className={cn('block', nameClass)}>{patient}</span>
         <span className={cn('block', lineClass)}>{line}</span>
+        {extra}
       </span>
       {aside ?? <PriorityChip referral={referral} />}
     </button>
@@ -95,73 +112,73 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   // ER outbound: the real gates in order — consent, escort, then dispatch.
   // -------------------------------------------------------------------------
   if (variant === 'er_outbound') {
-    const consentRecorded = referral.status === 'patient_consented';
+    const consentGiven = ['patient_consented', 'in_transit'].includes(referral.status);
     const escortMissing = !!referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor;
-    const canDispatch = consentRecorded && !escortMissing;
-    const consentEntry = [...(referral.statusHistory || [])].reverse().find(h => h.status === 'patient_consented');
+    const canDispatch = referral.status === 'patient_consented' && !escortMissing;
+    const consentEntry = enteredAt(referral, 'patient_consented');
     const consentClinician = consentEntry ? getUserName(consentEntry.userId) : undefined;
+    const consentTime = hhmm(consentEntry?.timestamp);
+    const dispatchedAt = hhmm(enteredAt(referral, 'in_transit')?.timestamp ?? referral.updatedAt);
 
     return (
-      <div className={shell}>
-        <Rail referral={referral} />
-        <div className={body}>
-          {identity(<>To {getFacilityName(referral.receivingFacilityId)} · {referral.requiredBedType} bed</>)}
+      <div className="px-[14px] pt-3 pb-[14px]">
+        {identity(
+          <>To {getFacilityName(referral.receivingFacilityId)} · {referral.requiredBedType}{referral.receivingDepartments?.length ? ` · ${referral.receivingDepartments.join(', ')}` : ''}</>
+        )}
 
-          <div className="mt-3 space-y-2 border-t border-slate-200 pt-3 dark:border-white/10">
-            <p className={cn('flex items-center gap-2 text-[13.5px] font-semibold', consentRecorded ? 'text-success-700 dark:text-success-300' : 'text-slate-700 dark:text-white/65')}>
-              <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full', consentRecorded ? 'bg-success-700 text-white' : 'bg-slate-200 text-slate-500 dark:bg-white/10')}>
-                <Check className="h-3 w-3" aria-hidden="true" />
-              </span>
-              {consentRecorded
-                ? `Consent recorded · ${format(new Date(referral.updatedAt), 'HH:mm')}${consentClinician ? ` · ${consentClinician}` : ''}`
-                : 'Awaiting patient consent'}
-            </p>
+        <p className={cn(
+          'mt-3 flex items-center gap-2 rounded-[10px] border px-3 py-2.5 text-[14px] font-semibold leading-snug',
+          consentGiven
+            ? 'border-success-300 bg-success-100 text-success-800 dark:border-success-700 dark:bg-success-900/50 dark:text-success-200'
+            : 'border-slate-200 bg-slate-100 text-slate-700 dark:border-white/12 dark:bg-white/5 dark:text-white/70'
+        )}>
+          <Check className={cn('h-4 w-4 shrink-0', !consentGiven && 'opacity-40')} aria-hidden="true" />
+          {consentGiven
+            ? `Patient consented${consentTime ? ` · ${consentTime}` : ''}${consentClinician ? `, ${consentClinician}` : ''}`
+            : 'Waiting for the patient’s consent'}
+        </p>
 
-            {consentRecorded && referral.requiresAccompanyingDoctor && (
-              referral.accompanyingDoctor ? (
-                <p className="flex items-center gap-2 text-[13.5px] font-semibold text-success-700 dark:text-success-300">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-success-700 text-white">
-                    <Check className="h-3 w-3" aria-hidden="true" />
-                  </span>
-                  <span className="truncate">Escort: {referral.accompanyingDoctor.name} · {referral.accompanyingDoctor.phoneNumber}</span>
-                </p>
-              ) : (
-                <div className="space-y-2 pt-1" id="escort-form-section">
-                  <p className="text-[13.5px] font-semibold text-critical-700 dark:text-critical-300">Name the escorting doctor</p>
-                  <label className="sr-only" htmlFor={`escort-name-${referral.id}`}>Escorting doctor's name</label>
-                  <input id={`escort-name-${referral.id}`} type="text" placeholder="Doctor's name" value={escortName} onChange={e => setEscortName(e.target.value)} className={input} />
-                  <label className="sr-only" htmlFor={`escort-phone-${referral.id}`}>Escorting doctor's phone</label>
-                  <input id={`escort-phone-${referral.id}`} type="tel" placeholder="Doctor's phone number" value={escortPhone} onChange={e => setEscortPhone(e.target.value)} className={input} />
-                  <button type="button" onClick={handleSaveEscortClick} disabled={savingEscort || !escortName.trim() || !escortPhone.trim()} className={cn(btn, btnInk, 'disabled:bg-slate-200 disabled:text-slate-500')}>
-                    {savingEscort ? 'Saving…' : 'Save escort'}
-                  </button>
-                </div>
-              )
-            )}
-          </div>
-
-          {referral.status === 'in_transit' ? (
-            <p className={cn(btn, 'mt-3 bg-success-100 text-success-700 dark:bg-success-900/60 dark:text-success-300')}>
-              <Truck className="h-4 w-4" aria-hidden="true" /> Dispatched {format(new Date(referral.updatedAt), 'HH:mm')}
+        {consentGiven && referral.requiresAccompanyingDoctor && (referral.accompanyingDoctor || referral.status === 'patient_consented') && (
+          referral.accompanyingDoctor ? (
+            <p className="mt-2 flex items-center gap-2 rounded-[10px] border border-success-300 bg-success-100 px-3 py-2.5 text-[14px] font-semibold leading-snug text-success-800 dark:border-success-700 dark:bg-success-900/50 dark:text-success-200">
+              <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="min-w-0 truncate">Escort · {referral.accompanyingDoctor.name} · <span className="font-mono">{referral.accompanyingDoctor.phoneNumber}</span></span>
             </p>
           ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => canDispatch && onDispatch && onDispatch(referral.id)}
-                disabled={!canDispatch || busy}
-                className={cn(btn, 'mt-3', canDispatch ? btnInk : 'bg-slate-200 text-slate-500 dark:bg-white/10 dark:text-white/45')}
-              >
-                <Truck className="h-4 w-4" aria-hidden="true" /> Dispatch ambulance
+            <div className="mt-2 space-y-2.5 rounded-[10px] border border-warning-700 bg-warning-100 p-3 dark:border-warning-600/60 dark:bg-warning-900/30" id="escort-form-section">
+              <p className="text-[11px] font-bold uppercase leading-snug tracking-[0.08em] text-warning-800 dark:text-warning-300">Doctor escort required before dispatch</p>
+              <label className="sr-only" htmlFor={`escort-name-${referral.id}`}>Escorting doctor's name</label>
+              <input id={`escort-name-${referral.id}`} type="text" autoComplete="off" placeholder="Doctor's name" value={escortName} onChange={e => setEscortName(e.target.value)} className={input} />
+              <label className="sr-only" htmlFor={`escort-phone-${referral.id}`}>Escorting doctor's phone</label>
+              <input id={`escort-phone-${referral.id}`} type="tel" inputMode="tel" autoComplete="off" placeholder="Doctor's phone number" value={escortPhone} onChange={e => setEscortPhone(e.target.value)} className={cn(input, 'font-mono')} />
+              <button type="button" onClick={handleSaveEscortClick} disabled={savingEscort || !escortName.trim() || !escortPhone.trim()} className={cn(btn, btnInk, 'min-h-[52px] disabled:bg-slate-200 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-white/45')}>
+                {savingEscort ? 'Saving…' : 'Save escort'}
               </button>
-              {!canDispatch && (
-                <p className="mt-1.5 text-center text-[12.5px] font-medium text-slate-700 dark:text-white/65">
-                  Blocked: {!consentRecorded ? 'record patient consent first' : 'record the escorting doctor first'}
-                </p>
-              )}
-            </>
-          )}
-        </div>
+            </div>
+          )
+        )}
+
+        {referral.status === 'in_transit' ? (
+          <p className={cn(btn, 'mt-3 min-h-[52px] bg-success-100 text-success-800 dark:bg-success-900/60 dark:text-success-200')}>
+            <Truck className="h-5 w-5" aria-hidden="true" /> Dispatched{dispatchedAt ? ` ${dispatchedAt}` : ''}
+          </p>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => canDispatch && onDispatch && onDispatch(referral.id)}
+              disabled={!canDispatch || busy}
+              className={cn(btn, 'mt-3 min-h-[52px] text-[16px]', canDispatch ? btnInk : 'bg-slate-200 text-slate-500 dark:bg-white/10 dark:text-white/45')}
+            >
+              <Truck className="h-5 w-5" aria-hidden="true" /> Dispatch ambulance
+            </button>
+            {!canDispatch && (
+              <p className="mt-2 text-center text-[13px] font-medium text-slate-700 dark:text-white/65">
+                Blocked: {!consentGiven ? 'record patient consent first' : 'record the escorting doctor first'}
+              </p>
+            )}
+          </>
+        )}
       </div>
     );
   }
@@ -171,36 +188,28 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   // -------------------------------------------------------------------------
   if (variant === 'er_inbound') {
     const arrived = referral.status === 'arrived';
+    const leftAt = hhmm(enteredAt(referral, 'in_transit')?.timestamp);
+    const arrivedAt = hhmm(enteredAt(referral, 'arrived')?.timestamp ?? referral.updatedAt);
     return (
-      <div className={shell}>
-        <Rail referral={referral} />
-        <div className={body}>
-          {identity(
-            <>From {getFacilityName(referral.referringFacilityId)} · {referral.requiredBedType} bed</>,
-            <span className={cn('shrink-0 rounded-[6px] px-2 py-1 text-[11px] font-bold leading-none tracking-[0.04em]', arrived ? 'bg-success-100 text-success-700' : 'bg-info-100 text-info-800')}>
-              {arrived ? 'ARRIVED' : 'IN TRANSIT'}
-            </span>
+      <div className="px-[14px] pt-3 pb-[14px]">
+        {identity(
+          <>From {getFacilityName(referral.referringFacilityId)}{leftAt ? ` · left ${leftAt}` : ''} · {referral.requiredBedType}</>
+        )}
+        <div className="mt-3 flex items-center gap-2.5">
+          {arrived ? (
+            <p className={cn(btn, 'min-h-[52px] flex-1 bg-success-100 text-success-800 dark:bg-success-900/60 dark:text-success-200')}>
+              <Check className="h-5 w-5" aria-hidden="true" /> Arrival confirmed{arrivedAt ? ` ${arrivedAt}` : ''}
+            </p>
+          ) : (
+            <button type="button" onClick={() => onConfirmArrival && onConfirmArrival(referral.id)} disabled={busy} className={cn(btn, btnInk, 'min-h-[52px] flex-1 text-[16px]')}>
+              Confirm arrival
+            </button>
           )}
-          <div className="mt-3 flex items-center gap-2">
-            {arrived ? (
-              <p className={cn(btn, 'flex-1 bg-success-100 text-success-700 dark:bg-success-900/60 dark:text-success-300')}>
-                <Check className="h-4 w-4" aria-hidden="true" /> Arrival confirmed {format(new Date(referral.updatedAt), 'HH:mm')}
-              </p>
-            ) : (
-              <button type="button" onClick={() => onConfirmArrival && onConfirmArrival(referral.id)} disabled={busy} className={cn(btn, btnInk, 'flex-1')}>
-                Confirm arrival
-              </button>
-            )}
-            {referrerPhone && (
-              <a
-                href={`tel:${referrerPhone}`}
-                aria-label="Call referring facility"
-                className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[10px] border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/25 dark:text-white/80 dark:hover:bg-white/10"
-              >
-                <Phone className="h-5 w-5" aria-hidden="true" />
-              </a>
-            )}
-          </div>
+          {referrerPhone && (
+            <a href={`tel:${referrerPhone}`} aria-label="Call the referring doctor" className={cn(square, 'h-[52px] w-[52px]')}>
+              <Phone className="h-5 w-5" aria-hidden="true" />
+            </a>
+          )}
         </div>
       </div>
     );
@@ -210,13 +219,16 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   // Nurse: an arrived patient waiting for a bed.
   // -------------------------------------------------------------------------
   if (variant === 'nurse') {
+    const arrivedAt = hhmm(enteredAt(referral, 'arrived')?.timestamp ?? referral.updatedAt);
     return (
       <div className={shell}>
         <Rail referral={referral} />
         <div className={body}>
-          {identity(<>Arrived · waiting for a {referral.requiredBedType} bed</>)}
-          <button type="button" onClick={() => onAdmit && onAdmit(referral.id, referral.requiredBedType)} disabled={busy} className={cn(btn, btnInk, 'mt-3')}>
-            Admit to {referral.requiredBedType} bed
+          {identity(
+            <>Arrived{arrivedAt ? ` ${arrivedAt}` : ''} · {referral.requiredBedType} requested · from {getFacilityName(referral.referringFacilityId)}</>
+          )}
+          <button type="button" onClick={() => onAdmit && onAdmit(referral.id, referral.requiredBedType)} disabled={busy} className={cn(btn, btnInk, 'mt-3 min-h-[52px] text-[16px]')}>
+            {busy ? 'Admitting…' : `Admit to ${referral.requiredBedType} bed`}
           </button>
         </div>
       </div>
@@ -227,29 +239,53 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   // Head of department and manager: read the summary, or decide from the list.
   // -------------------------------------------------------------------------
   if (variant === 'hod' || variant === 'manager') {
+    const from = getFacilityName(referral.referringFacilityId);
     const line =
       variant === 'hod' ? (
-        <>{referral.requiredBedType} · from {getFacilityName(referral.referringFacilityId)}{referral.reasonForReferral ? ` · ${referral.reasonForReferral}` : ''}</>
+        <>{referral.requiredBedType} · from {from}{referral.reasonForReferral ? ` · ${referral.reasonForReferral}` : ''}</>
       ) : (
-        <>{referral.requiredBedType} · {approverName ? `Approved by ${approverName}` : 'Department approved'}</>
+        <>{referral.requiredBedType} · from {from}</>
       );
-    const decide = variant === 'hod' ? onApprove : onAccept;
+    const approvedAgo = approvedAt && !Number.isNaN(Date.parse(approvedAt))
+      ? formatDistanceToNowStrict(new Date(approvedAt), { addSuffix: true }).replace(/minutes?/, 'min')
+      : null;
+    const approvedLine = variant === 'manager' && (
+      <span className="mt-1.5 block text-[13px] leading-[1.4] text-slate-700 dark:text-white/65">
+        {approverName || approverDept
+          ? <>Approved by {[approverDept, approverName].filter(Boolean).join(' · ')}{approvedAgo ? `, ${approvedAgo}` : ''}</>
+          : 'Department approved'}
+      </span>
+    );
+    const aside = (
+      <span className="flex shrink-0 flex-col items-end gap-1.5">
+        <PriorityChip referral={referral} />
+        {variant === 'hod' && now !== undefined && <SlaClock referral={referral} now={now} />}
+      </span>
+    );
+    const summary = onSummary && (
+      <button type="button" onClick={e => { e.stopPropagation(); onSummary(referral); }} className={cn(btn, btnOutline)}>
+        Summary
+      </button>
+    );
+    const decideFn = variant === 'hod' ? onApprove : onAccept;
+    const decide = decideFn && (
+      <button
+        type="button"
+        onClick={e => { e.stopPropagation(); decideFn(referral.id); }}
+        disabled={busy}
+        className={cn(btn, variant === 'hod' ? btnOlive : btnInk, !onSummary && 'col-span-2')}
+      >
+        {variant === 'hod' ? 'Approve' : 'Accept'}
+      </button>
+    );
     return (
       <div className={shell}>
         <Rail referral={referral} />
         <div className={body}>
-          {identity(line)}
+          {identity(line, aside, approvedLine)}
           <div className="mt-3 grid grid-cols-2 gap-2.5">
-            {onSummary && (
-              <button type="button" onClick={e => { e.stopPropagation(); onSummary(referral); }} className={cn(btn, btnOutline)}>
-                Summary
-              </button>
-            )}
-            {decide && (
-              <button type="button" onClick={e => { e.stopPropagation(); decide(referral.id); }} disabled={busy} className={cn(btn, btnOlive, !onSummary && 'col-span-2')}>
-                {variant === 'hod' ? 'Approve' : 'Accept'}
-              </button>
-            )}
+            {/* HoD reads before approving; the manager's signature leads. */}
+            {variant === 'hod' ? <>{summary}{decide}</> : <>{decide}{summary}</>}
           </div>
         </div>
       </div>
@@ -263,13 +299,13 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
     <div className={shell}>
       <Rail referral={referral} />
       <div className={body}>
-        {identity(<>{referral.requiredBedType} · {referral.receivingDepartments?.join(', ') || 'Unassigned'}</>)}
+        {identity(contextLine ?? <>{referral.requiredBedType} · {referral.receivingDepartments?.join(', ') || 'Unassigned'}</>)}
         {actionSentence && (
-          <p className={cn('mt-2.5 text-[13.5px] font-semibold leading-[1.4]', priorityAskClass(referral.priority, referral.isEscalated))}>
+          <p className={cn('mt-2.5 text-[15px] font-semibold leading-[1.4]', priorityAskClass(referral.priority, referral.isEscalated))}>
             {actionSentence}
           </p>
         )}
-        <button type="button" onClick={handleCardClick} className={cn(btn, btnInk, 'mt-[11px]')}>
+        <button type="button" onClick={handleCardClick} className={cn(btn, actionSentence ? btnInk : btnOutline, 'mt-3 min-h-[52px] text-[16px]')}>
           {actionLabel}
         </button>
       </div>

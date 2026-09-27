@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { Truck, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { Truck, Clock } from 'lucide-react';
 import { sortByWorkflow } from '../../lib/referralPriority';
 import { showToast, toastError } from '../../lib/toast';
 import { Skeleton, SkeletonGroup } from '../ui/Skeleton';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
+import { RoleHomeHeadline } from './RoleHome';
+import { cn } from '../../lib/utils';
 
 export const ERCockpit: React.FC = () => {
   const { user } = useAuth();
@@ -85,106 +87,88 @@ export const ERCockpit: React.FC = () => {
 
   if (!user) return null;
 
+  const toSend = outboundQueue.filter(r => r.status !== 'in_transit').length;
+  const arriving = inboundQueue.filter(r => r.status === 'in_transit').length;
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      {/* Header Info */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Emergency Logistics & Ambulance Radar
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              {user.facilityId ? getFacilityName(user.facilityId) : 'Facility'} · Live outbound dispatch validation and inbound arrival logger.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 self-start sm:self-center">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-warning-100 dark:bg-warning-900/40 text-warning-800 dark:text-warning-300">
-              {outboundQueue.length} Outbound
-            </span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-info-100 dark:bg-info-900/40 text-info-800 dark:text-info-300">
-              {inboundQueue.length} Inbound
-            </span>
-          </div>
-        </div>
+    <div className="flex flex-col gap-3">
+      <RoleHomeHeadline
+        title={`${toSend} to send, ${arriving} arriving`}
+        rationale="Outbound first — the patient is waiting on you."
+      />
 
-        {/* Dual-Queue Outbound / Inbound Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          {/* Outbound Queue */}
-          <div className="space-y-3">
-            <div className="px-4 py-2.5 rounded-xl bg-warning-100/70 dark:bg-warning-900/30 text-warning-900 dark:text-warning-200 text-xs font-bold flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <ArrowUpRight className="w-4 h-4" /> Outbound · Awaiting Transport
-              </span>
-              <span className="font-mono">{outboundQueue.length}</span>
-            </div>
+      <ErSection
+        tone="warning"
+        icon={<Truck className="h-4 w-4 shrink-0" aria-hidden="true" />}
+        label="Outbound · awaiting ambulance"
+        loading={loading}
+        empty="No outbound patients awaiting transport."
+      >
+        {outboundQueue.map(r => (
+          <ReferralCockpitCard
+            key={r.id}
+            referral={r}
+            variant="er_outbound"
+            onDispatch={handleRequestAmbulance}
+            onSaveEscort={handleSaveEscort}
+            getFacilityName={getFacilityName}
+            getUserName={getUserName}
+          />
+        ))}
+      </ErSection>
 
-            <div className="space-y-3">
-              {loading && (
-                <SkeletonGroup label="Loading transfers…" className="space-y-3">
-                  {Array.from({ length: 2 }).map((_, i) => (
-                    <Skeleton key={i} className="h-40 w-full rounded-2xl" />
-                  ))}
-                </SkeletonGroup>
-              )}
-              {!loading && outboundQueue.length === 0 && (
-                <div className="p-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                  No outbound patients awaiting transport.
-                </div>
-              )}
-              {!loading &&
-                outboundQueue.map(r => (
-                  <ReferralCockpitCard
-                    key={r.id}
-                    referral={r}
-                    variant="er_outbound"
-                    onDispatch={handleRequestAmbulance}
-                    onSaveEscort={handleSaveEscort}
-                    getFacilityName={getFacilityName}
-                    getUserName={getUserName}
-                  />
-                ))}
-            </div>
-          </div>
-
-          {/* Inbound Queue */}
-          <div className="space-y-3">
-            <div className="px-4 py-2.5 rounded-xl bg-info-100/70 dark:bg-info-900/30 text-info-900 dark:text-info-200 text-xs font-bold flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <ArrowDownLeft className="w-4 h-4" /> Inbound · In Transit
-              </span>
-              <span className="font-mono">{inboundQueue.length}</span>
-            </div>
-
-            <div className="space-y-3">
-              {loading && (
-                <SkeletonGroup label="Loading transfers…" className="space-y-3">
-                  {Array.from({ length: 2 }).map((_, i) => (
-                    <Skeleton key={i} className="h-32 w-full rounded-2xl" />
-                  ))}
-                </SkeletonGroup>
-              )}
-              {!loading && inboundQueue.length === 0 && (
-                <div className="p-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                  No incoming patients currently in transit.
-                </div>
-              )}
-              {!loading &&
-                inboundQueue.map(r => (
-                  <ReferralCockpitCard
-                    key={r.id}
-                    referral={r}
-                    variant="er_inbound"
-                    onConfirmArrival={handleConfirmArrival}
-                    getFacilityName={getFacilityName}
-                    referrerPhone={usersById.get(r.referringUserId)?.phoneNumber}
-                  />
-                ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <ErSection
+        tone="info"
+        icon={<Clock className="h-4 w-4 shrink-0" aria-hidden="true" />}
+        label="Inbound · in transit"
+        loading={loading}
+        empty="No incoming patients currently in transit."
+      >
+        {inboundQueue.map(r => (
+          <ReferralCockpitCard
+            key={r.id}
+            referral={r}
+            variant="er_inbound"
+            onConfirmArrival={handleConfirmArrival}
+            getFacilityName={getFacilityName}
+            referrerPhone={usersById.get(r.referringUserId)?.phoneNumber}
+          />
+        ))}
+      </ErSection>
     </div>
   );
 };
+
+/**
+ * A direction box: a tinted header strip naming outbound or inbound, then its
+ * patients flush inside, separated by hairlines.
+ */
+const ErSection: React.FC<{
+  tone: 'warning' | 'info';
+  icon: React.ReactNode;
+  label: string;
+  loading: boolean;
+  empty: string;
+  children: React.ReactNode[];
+}> = ({ tone, icon, label, loading, empty, children }) => (
+  <section aria-label={label} className="mt-2 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
+    <h2 className={cn(
+      'flex items-center gap-2 px-[14px] py-2.5 text-[11.5px] font-bold uppercase leading-tight tracking-[0.08em]',
+      tone === 'warning'
+        ? 'bg-warning-100 text-warning-800 dark:bg-warning-900/40 dark:text-warning-300'
+        : 'bg-info-100 text-info-800 dark:bg-info-900/50 dark:text-info-200'
+    )}>
+      {icon}
+      {label}
+    </h2>
+    {loading ? (
+      <SkeletonGroup label="Loading transfers…" className="p-[14px]">
+        <Skeleton className="h-36 w-full rounded-[10px]" />
+      </SkeletonGroup>
+    ) : children.length === 0 ? (
+      <p className="px-[14px] py-5 text-[14.5px] text-slate-700 dark:text-white/65">{empty}</p>
+    ) : (
+      <div className="divide-y divide-slate-200 dark:divide-white/10">{children}</div>
+    )}
+  </section>
+);
