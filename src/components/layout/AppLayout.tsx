@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { AppSidebar } from './AppSidebar';
+import { ShellContext } from './ShellContext';
 import { ROLE_CONFIGS } from './RoleBadge';
 import { Button } from '../ui/Button';
 import { toastError } from '../../lib/toast';
@@ -46,7 +47,9 @@ export const AppLayout: React.FC = () => {
   const onReferralDetail = /^\/referrals\/(?!new$)[^/]+$/.test(location.pathname);
   // The intake wizard does the same: its header names the patient and the step.
   const onWizard = location.pathname === '/referrals/new';
-  const ownHeader = onReferralDetail || onWizard;
+  // Secondary screens draw a ScreenHeader (title + action + menu) instead.
+  const onTitledScreen = ['/notifications', '/directory', '/archive', '/facility-settings', '/handover'].includes(location.pathname);
+  const ownHeader = onReferralDetail || onWizard || onTitledScreen;
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
@@ -58,7 +61,6 @@ export const AppLayout: React.FC = () => {
   const profileModalRef = useRef<HTMLDivElement>(null);
   useDialogA11y(showProfile, () => setShowProfile(false), profileModalRef);
 
-  const [showHotline, setShowHotline] = useState(false);
   const [showEndOfShift, setShowEndOfShift] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const endOfShiftModalRef = useRef<HTMLDivElement>(null);
@@ -95,9 +97,11 @@ export const AppLayout: React.FC = () => {
     setMobileMenuOpen(false);
   };
 
+  // "Emergency hotline" is the directory's on-call list (2e): who to phone now.
+  const navigate = useNavigate();
   const openHotline = () => {
-    setShowHotline(true);
     setMobileMenuOpen(false);
+    navigate('/directory');
   };
 
   const handleLogoutClick = () => {
@@ -197,13 +201,12 @@ export const AppLayout: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showHotline) setShowHotline(false);
         if (mobileMenuOpen) setMobileMenuOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showHotline, mobileMenuOpen]);
+  }, [mobileMenuOpen]);
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -318,7 +321,9 @@ export const AppLayout: React.FC = () => {
           className={cn('flex-1 overflow-y-auto overflow-x-hidden scroll-pb-40 px-[18px] pb-10 lg:px-8 lg:py-8 focus:outline-none', !isDesktop && ownHeader ? 'pt-0' : 'pt-5')}
         >
           <div className="max-w-7xl mx-auto w-full">
-            <Outlet />
+            <ShellContext.Provider value={{ openMenu: () => setMobileMenuOpen(true), isDesktop }}>
+              <Outlet />
+            </ShellContext.Provider>
           </div>
         </main>
       </div>
@@ -392,106 +397,90 @@ export const AppLayout: React.FC = () => {
       {/* End of Shift Handover Dialog */}
       {showEndOfShift && (() => {
         const handover = buildHandover();
+        const card = 'rounded-xl border border-paper/12 bg-paper/[0.05] p-[14px]';
+        const kind = 'text-[11px] font-bold uppercase tracking-[0.09em]';
         return (
           <div
             ref={endOfShiftModalRef}
-            className="fixed inset-0 bg-slate-950 z-[100] flex flex-col text-white overflow-y-auto"
+            className="fixed inset-0 z-[100] flex flex-col overflow-y-auto bg-ink text-paper"
             role="dialog"
             aria-modal="true"
             aria-labelledby="eos-title"
             tabIndex={-1}
           >
-            <div className="px-4 sm:px-6 pt-5 pb-4 flex items-start justify-between shrink-0 border-b border-white/10">
-              <div>
-                <h2 id="eos-title" className="text-xl font-bold tracking-tight">
-                  End of Shift Clinical Handover
-                </h2>
-                <p className="text-xs text-white/60 mt-0.5">
-                  {user.name} {user.department ? `· ${user.department}` : ''} {facility ? `· ${facility.name}` : ''}
+            {/* 2f: the handover is written for you; sending it signs you out. */}
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-paper/12 px-[18px] pt-[max(14px,env(safe-area-inset-top))] pb-4">
+              <div className="min-w-0">
+                <h2 id="eos-title" className="text-[17px] font-semibold leading-tight">End of Shift Clinical Handover</h2>
+                <p className="mt-0.5 truncate text-[13px] text-paper/65">
+                  {user.name}{user.department ? ` · ${user.department}` : ''}{facility ? ` · ${facility.name}` : ''}
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => setShowEndOfShift(false)}
                 aria-label="Cancel, stay signed in"
-                className="min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border border-paper/25 hover:bg-paper/10"
               >
-                <X className="w-5 h-5" aria-hidden="true" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
 
-            <div className="flex-1 px-4 sm:px-6 py-6 space-y-4 max-w-xl w-full mx-auto">
-              <div className="rounded-2xl border border-white/15 bg-white/5 p-4 flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-success-400" />
-                <p className="text-sm text-white/85 leading-relaxed">
-                  Signed in since {signedInSince} on this workstation. You will not be asked to sign in again after handover.
-                </p>
-              </div>
+            <div className="mx-auto w-full max-w-xl flex-1 space-y-3 px-[18px] py-5">
+              <p className={cn(card, 'flex items-start gap-2.5 text-[14px] leading-[1.45] text-paper/85')}>
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-400" aria-hidden="true" />
+                Signed in since {signedInSince} on this device. Sending the handover also signs you out.
+              </p>
 
               {handover ? (
                 <>
-                  <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-white/50 mb-1">
-                      Automated Handover Summary
-                    </p>
-                    <p className="text-sm leading-relaxed text-white/95 font-medium">
-                      {handover.summary}
-                    </p>
+                  <div className={card}>
+                    <p className={cn(kind, 'text-paper/60')}>Handover, written for you</p>
+                    <p className="mt-1.5 text-[15px] leading-[1.6]">{handover.summary}</p>
                   </div>
 
                   {handover.carryOver.length > 0 && (
-                    <div className="rounded-2xl border border-warning-500/30 bg-warning-950/20 p-4">
-                      <div className="flex items-center gap-2 text-warning-400 mb-1">
-                        <Clock className="w-4 h-4 shrink-0" />
-                        <p className="text-xs font-bold uppercase tracking-wider">Carry Over Cases</p>
-                      </div>
-                      <p className="text-sm text-white/90 leading-relaxed">
-                        {handover.carryOver.join(', ')} — active transfers in transit/review for next shift.
-                      </p>
+                    <div className={card}>
+                      <p className={cn(kind, 'flex items-center gap-1.5 text-warning-300')}><Clock className="h-3.5 w-3.5" aria-hidden="true" />Carry over · waiting on review</p>
+                      <p className="mt-1.5 text-[15px] leading-[1.5]">{handover.carryOver.join(', ')} — still waiting on a department or manager decision.</p>
                     </div>
                   )}
 
                   {handover.watch.length > 0 && (
-                    <div className="rounded-2xl border border-critical-500/30 bg-critical-950/20 p-4">
-                      <div className="flex items-center gap-2 text-critical-400 mb-1">
-                        <AlertTriangle className="w-4 h-4 shrink-0" />
-                        <p className="text-xs font-bold uppercase tracking-wider">Escalated Watch Cases</p>
-                      </div>
-                      <p className="text-sm text-white/90 leading-relaxed">
-                        {handover.watch.join(', ')} — urgent clinical escalations requiring priority attention.
-                      </p>
+                    <div className={card}>
+                      <p className={cn(kind, 'flex items-center gap-1.5 text-critical-300')}><AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />Watch · accepted or on the move</p>
+                      <p className="mt-1.5 text-[15px] leading-[1.5]">{handover.watch.join(', ')} — accepted, in transit or arrived; the next shift sees them through.</p>
                     </div>
                   )}
 
-                  <div className="rounded-2xl border border-white/15 bg-white/5 p-4 flex items-center justify-between">
+                  <div className={cn(card, 'flex items-center justify-between gap-3')}>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wider text-white/50">Completed This Shift</p>
-                      <p className="text-sm text-white/90 mt-0.5 font-medium">
+                      <p className={cn(kind, 'text-success-300')}>On record</p>
+                      <p className="mt-1 text-[15px]">
                         {handover.doneThisShift} patient admission{handover.doneThisShift === 1 ? '' : 's'}/discharge{handover.doneThisShift === 1 ? '' : 's'} recorded.
                       </p>
                     </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-success-500/20 text-success-300 border border-success-500/30">
+                    <span className="shrink-0 rounded-full border border-success-500/40 bg-success-500/15 px-3 py-1 text-[12px] font-bold text-success-200">
                       {handover.doneThisShift} Done
                     </span>
                   </div>
                 </>
               ) : (
-                <div className="rounded-2xl border border-white/15 bg-white/5 p-6 text-center">
-                  <p className="text-sm text-white/70">
-                    No active clinical handover summary required for your role.
-                  </p>
-                </div>
+                <p className={cn(card, 'py-6 text-center text-[14.5px] text-paper/70')}>
+                  No active clinical handover summary required for your role.
+                </p>
               )}
             </div>
 
-            <div className="shrink-0 px-4 sm:px-6 pb-6 pt-3 max-w-xl w-full mx-auto border-t border-white/10">
+            <div className="mx-auto w-full max-w-xl shrink-0 border-t border-paper/12 px-[18px] pt-3 pb-[max(20px,env(safe-area-inset-bottom))]">
               <button
                 type="button"
                 onClick={handleConfirmHandover}
                 disabled={signingOut}
-                className="w-full min-h-[52px] rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-all disabled:opacity-60"
+                className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-xl bg-paper text-[16px] font-semibold text-ink transition-colors hover:bg-slate-200 disabled:opacity-60"
               >
-                <Send className="w-4 h-4" />
-                <span>{signingOut ? 'Signing out…' : 'Send handover to the day shift'}</span>
+                <Send className="h-4 w-4" aria-hidden="true" />
+                <span>{signingOut ? 'Signing out…' : handover ? 'Send handover to the day shift' : 'Sign out'}</span>
               </button>
             </div>
           </div>
