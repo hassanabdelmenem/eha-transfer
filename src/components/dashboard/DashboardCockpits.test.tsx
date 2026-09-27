@@ -381,7 +381,7 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       expect(screen.getByRole('heading', { level: 1, name: /^1 to sign$/i })).toBeInTheDocument();
       expect(screen.getByText(/Department approved · your signature/i)).toBeInTheDocument();
       expect(screen.getByText(/Free beds right now/i)).toBeInTheDocument();
-      expect(screen.getByText(/Network Bed Occupancy Heatmap/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Free beds across the network/i })).toBeInTheDocument();
 
       const acceptBtn = screen.getByRole('button', { name: /^Accept$/i });
       fireEvent.click(acceptBtn);

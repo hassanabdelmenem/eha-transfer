@@ -610,14 +610,16 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
         />
       );
 
-      expect(screen.getByText('Transfer Flow Analytics')).toBeInTheDocument();
-      expect(screen.getByText('Departmental Referral Demand')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Transfer flow' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Demand by department' })).toBeInTheDocument();
+      // Every chart carries its numbers as a table too.
+      expect(screen.getAllByText('View as table')).toHaveLength(4);
 
       // Cycle tabs
       for (const period of ['monthly', 'quarterly', 'yearly', 'weekly']) {
         const tab = screen.getByRole('button', { name: new RegExp(period, 'i') });
         fireEvent.click(tab);
-        expect(tab).toBeInTheDocument();
+        expect(tab).toHaveAttribute('aria-pressed', 'true');
       }
     });
   });
