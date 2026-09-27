@@ -1,4 +1,4 @@
-import seed from './seed';
+import seed, { markEmailVerified } from './seed';
 
 import fs from 'fs';
 import path from 'path';
@@ -56,6 +56,7 @@ export default async function globalSetup() {
     } else {
       const j = await authRes.json();
       const ownerLocalId = j.localId;
+      await markEmailVerified(ownerLocalId);
       // Write an owner user doc to Firestore via emulator REST API
       const fields = {
         id: { stringValue: ownerLocalId },

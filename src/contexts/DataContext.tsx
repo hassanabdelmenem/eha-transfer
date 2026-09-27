@@ -129,7 +129,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [directAdmissions, setDirectAdmissions] = useState<DirectAdmission[]>([]);
   const [shiftAssignments, setShiftAssignments] = useState<ShiftAssignment[]>([]);
   const [shiftLogs, setShiftLogs] = useState<ShiftLog[]>([]);
-  const { user } = useAuth();
+  const { user, emailVerified } = useAuth();
+  // Mirrors isVerifiedCaller() in firestore.rules: admin-verified AND a
+  // confirmed email. Opening a listener the rules reject kills it for good.
+  const cleared = !!user?.verified && emailVerified;
 
   // Whether the real Firestore snapshots have actually arrived.
   //
@@ -304,7 +307,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, logAndCheckOffline));
 
     // Everything below is patient data or staff PII and is gated on verification.
-    if (!user.verified) {
+    if (!cleared) {
       // No referrals listener will ever be opened for this session, so don't
       // leave dataLoading stuck true — Onboarding/PendingVerification only need
       // the facility list, which is already handled above.
@@ -419,7 +422,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }, logAndCheckOffline));
 
     return () => unsubs.forEach(u => u());
-  }, [user?.id, user?.verified, user?.facilityId, user?.role]);
+  }, [user?.id, user?.verified, cleared, user?.facilityId, user?.role]);
 
   // `facilityIds` spans several facilities in one call. Fanning out by calling this
   // once per facility would work for facility staff but would deliver one copy per
@@ -1388,7 +1391,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [referrals, facilitiesById]);
 
   useEffect(() => {
-    if (!user?.verified) return;
+    if (!cleared) return;
     const isAdmin = checkIsAdmin(user);
     if (!isAdmin && !user.facilityId) return;
 
@@ -1434,7 +1437,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // and costs a transaction attempt per tick.
     const id = setInterval(sweep, 30_000);
     return () => clearInterval(id);
-  }, [user?.verified, user?.role, user?.facilityId, autoEscalateReferral, escalateForCapacity]);
+  }, [user?.verified, cleared, user?.role, user?.facilityId, autoEscalateReferral, escalateForCapacity]);
 
   const markNotificationRead = useCallback((id: string) => {
     updateDoc(doc(db, 'notifications', id), { read: true }).catch(writeFailed("Could not mark the notification as read."));
