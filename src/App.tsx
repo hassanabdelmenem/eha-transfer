@@ -65,7 +65,7 @@ const AuthLoading = () => (
 );
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, authReady } = useAuth();
+  const { user, authReady, emailVerified } = useAuth();
   if (!authReady) {
     return <AuthLoading />;
   }
@@ -75,7 +75,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!user.profileCompleted) {
     return <Navigate to="/onboarding" replace />;
   }
-  if (!user.verified) {
+  // Both gates mirror isVerifiedCaller() in firestore.rules: admin-verified AND
+  // a confirmed email. Letting either through would mount DataContext listeners
+  // the rules reject, and a rejected listener dies silently for the session.
+  if (!user.verified || !emailVerified) {
     return <Navigate to="/pending-verification" replace />;
   }
   return <>{children}</>;

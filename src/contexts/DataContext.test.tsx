@@ -11,7 +11,7 @@ vi.mock('../lib/firebase', () => ({
 
 }));
 vi.mock('./AuthContext', () => ({
-  useAuth: () => ({ user: { id: 'u1', facilityId: 'f1', role: 'system_admin' } }),
+  useAuth: () => ({ user: { id: 'u1', facilityId: 'f1', role: 'system_admin' }, emailVerified: true }),
   AuthProvider: ({ children }: any) => <>{children}</>
 }));
 vi.mock('firebase/firestore', () => ({

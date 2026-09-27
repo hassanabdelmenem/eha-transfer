@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AuthProvider, useAuth } from './AuthContext';
+import { AuthProvider, useAuth, resolveEmailVerified } from './AuthContext';
 
 // --- Mock firebase/auth. onAuthStateChanged's callback is captured so tests
 // can drive it manually, simulating a firebaseUser signing in or out. ---
@@ -505,5 +505,37 @@ describe('AuthContext in production mode (isDevAuthAllowed false)', () => {
 
     expect(warnSpy).toHaveBeenCalledWith('Mock login is disabled in production.');
     expect(screen.getByTestId('user')).toHaveTextContent('No User');
+  });
+});
+
+describe('resolveEmailVerified (follows the ID token claim the rules check)', () => {
+  const fakeUser = (emailVerified: boolean, claims: Array<Record<string, unknown>>) => {
+    const getIdTokenResult = vi.fn();
+    claims.forEach((c) => getIdTokenResult.mockResolvedValueOnce({ claims: c }));
+    return { emailVerified, getIdTokenResult } as unknown as import('firebase/auth').User;
+  };
+
+  it('is true when the cached token already says verified', async () => {
+    const u = fakeUser(true, [{ email_verified: true }]);
+    expect(await resolveEmailVerified(u)).toBe(true);
+    expect(u.getIdTokenResult).toHaveBeenCalledTimes(1);
+  });
+
+  it('forces a fresh token when the Auth flag is ahead of the cached claim', async () => {
+    // The user clicked the link, then reloaded the page: flag true, token stale.
+    const u = fakeUser(true, [{ email_verified: false }, { email_verified: true }]);
+    expect(await resolveEmailVerified(u)).toBe(true);
+    expect(u.getIdTokenResult).toHaveBeenLastCalledWith(true);
+  });
+
+  it('is false while the refreshed token still says unverified', async () => {
+    const u = fakeUser(true, [{ email_verified: false }, { email_verified: false }]);
+    expect(await resolveEmailVerified(u)).toBe(false);
+  });
+
+  it('is false for an unverified account without refreshing', async () => {
+    const u = fakeUser(false, [{ email_verified: false }]);
+    expect(await resolveEmailVerified(u)).toBe(false);
+    expect(u.getIdTokenResult).toHaveBeenCalledTimes(1);
   });
 });
