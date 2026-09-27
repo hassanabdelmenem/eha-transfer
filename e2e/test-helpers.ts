@@ -16,10 +16,6 @@ async function clickVisibleLogout(page: Page): Promise<boolean> {
   const railLogout = page.getByRole('button', { name: /^Log out$/i });
   if (!(await railLogout.isVisible({ timeout: 1500 }).catch(() => false))) return false;
   await railLogout.click();
-  const handoverBtn = page.locator('button', { hasText: /Send handover/i });
-  if (await handoverBtn.isVisible({ timeout: 2500 }).catch(() => false)) {
-    await handoverBtn.click();
-  }
   await page.waitForURL(/\/login/, { timeout: 10000 }).catch(() => {});
   return true;
 }
@@ -35,14 +31,9 @@ export async function loginAs(page: Page, user: UserCredentials) {
     await menuTrigger.click();
     const logoutBtn = page.locator('button', { hasText: 'Log out' }).last();
     if (await logoutBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+      // Log out signs out directly; the end-of-shift handover is a separate menu item.
       await logoutBtn.click();
-    
-    // Handle End of Shift modal button if it appeared
-    const handoverBtn = page.locator('button', { hasText: /Send handover/i });
-    if (await handoverBtn.isVisible({ timeout: 2500 }).catch(() => false)) {
-      await handoverBtn.click();
       await page.waitForURL(/\/login/, { timeout: 10000 }).catch(() => {});
-    }
     }
   }
 
@@ -68,11 +59,7 @@ export async function loginAs(page: Page, user: UserCredentials) {
       const headerLogout = page.locator('button', { hasText: 'Log out' }).last();
       if (await headerLogout.isVisible({ timeout: 1500 }).catch(() => false)) {
         await headerLogout.click();
-      const handoverBtn = page.locator('button', { hasText: /Send handover/i });
-      if (await handoverBtn.isVisible({ timeout: 2500 }).catch(() => false)) {
-        await handoverBtn.click();
         await page.waitForURL(/\/login/, { timeout: 10000 }).catch(() => {});
-      }
       }
     }
     await page.goto('/login');

@@ -16,6 +16,7 @@ import {
   Moon,
   WifiOff,
   LogOut,
+  Send,
   X,
   Bell,
   ClipboardList,
@@ -34,6 +35,8 @@ export interface AppSidebarProps {
   onToggleCollapse?: () => void;
   onOpenProfile: () => void;
   onOpenHotline: () => void;
+  /** Opens the end-of-shift handover; absent for roles that write no shift log. */
+  onOpenHandover?: () => void;
   onLogoutClick: () => void;
   onCloseMobile?: () => void;
   isMobile?: boolean;
@@ -60,6 +63,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   unreadNotifsCount,
   onOpenProfile,
   onOpenHotline,
+  onOpenHandover,
   onLogoutClick,
   onCloseMobile,
   isMobile = false,
@@ -153,6 +157,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           <Phone className="h-5 w-5 shrink-0" aria-hidden="true" />
           <span className="truncate">Emergency Hotline</span>
         </button>
+        {onOpenHandover && (
+          <button type="button" onClick={onOpenHandover} className={cn(row(false), 'text-left')}>
+            <Send className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="truncate">End of shift</span>
+          </button>
+        )}
       </nav>
 
       <div className="shrink-0 space-y-1 border-t border-white/12 px-3 pt-3 pb-4">
