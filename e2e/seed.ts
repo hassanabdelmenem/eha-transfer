@@ -15,6 +15,25 @@ const PROJECT = 'eha-transfer-1785622025';
 const AUTH = 'http://127.0.0.1:9099';
 const FIRESTORE = 'http://127.0.0.1:8080';
 
+/**
+ * Mark an emulator account's email as verified. This must be an admin call
+ * (`Bearer owner` against the project-scoped endpoint): the user-facing
+ * accounts:update with the user's own idToken silently ignores emailVerified,
+ * exactly as production does, which left every seeded user unverified.
+ * isVerifiedCaller() in firestore.rules requires email_verified.
+ */
+export async function markEmailVerified(localId: string): Promise<void> {
+  const res = await fetch(
+    `${AUTH}/identitytoolkit.googleapis.com/v1/projects/${PROJECT}/accounts:update`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
+      body: JSON.stringify({ localId, emailVerified: true }),
+    },
+  );
+  if (!res.ok) throw new Error(`emulator emailVerified update failed: ${res.status} ${await res.text()}`);
+}
+
 export const E2E_USER = {
   email: 'e2e.clinician@example.com',
   password: 'e2e-password-not-a-secret',
@@ -65,15 +84,8 @@ async function seed() {
     );
     if (!signUp.ok) throw new Error(`emulator signUp failed: ${signUp.status} ${await signUp.text()}`);
     
-    const { localId, idToken } = await signUp.json();
-    await fetch(
-      `${AUTH}/identitytoolkit.googleapis.com/v1/accounts:update?key=fake-api-key`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken, emailVerified: true }),
-      },
-    );
+    const { localId } = await signUp.json();
+    await markEmailVerified(localId);
 
 
     await write(`users/${localId}`, {
@@ -99,15 +111,8 @@ async function seed() {
   );
   if (signUp.ok) {
     
-    const { localId, idToken } = await signUp.json();
-    await fetch(
-      `${AUTH}/identitytoolkit.googleapis.com/v1/accounts:update?key=fake-api-key`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken, emailVerified: true }),
-      },
-    );
+    const { localId } = await signUp.json();
+    await markEmailVerified(localId);
 
     await write(`users/${localId}`, {
       id: str(localId),
