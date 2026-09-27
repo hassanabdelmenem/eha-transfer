@@ -1,7 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { Search, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Phone } from 'lucide-react';
+import { ScreenHeader } from '../components/layout/ScreenHeader';
+import { MicroLabel } from '../components/dashboard/RoleHome';
+import { ROLE_CONFIGS } from '../components/layout/RoleBadge';
+import { cn } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
 import { BedType, Facility } from '../types';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
@@ -18,14 +22,14 @@ const capacityHint = (f: Facility): string => {
   return free > 0 ? `${free} ${bt} free` : `${bt} full`;
 };
 
+/** "TERTIARY", "DISTRICT", "PRIMARY"… — or "CONTRACTED" for an external partner. */
+const facilityKind = (f: Facility) => (f.isExternal ? 'Contracted' : (f.type || '').split('_')[0] || 'Facility');
+
 export const NetworkDirectoryPage: React.FC = () => {
   const { user } = useAuth();
   const { facilities, shiftAssignments, referrals, users, usersById, loading } = useData();
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(12);
-
-  if (!user) return null;
+  const [showAll, setShowAll] = useState(false);
 
   // Memoized maps for fast HOD and assignment lookups
   const hodByFacilityAndDept = useMemo(() => {
@@ -48,6 +52,9 @@ export const NetworkDirectoryPage: React.FC = () => {
     });
     return map;
   }, [shiftAssignments]);
+
+  // After every hook: returning earlier changed the hook order once the user loaded.
+  if (!user) return null;
 
   const isAdmin = checkIsAdmin(user);
   const isLeadership = ['hospital_manager', 'deputy_manager', 'medical_director', 'owner'].includes(user.role);
@@ -123,17 +130,6 @@ export const NetworkDirectoryPage: React.FC = () => {
     return matchFacility || matchUsers;
   });
 
-  // Pagination logic: reset to page 1 when search changes, then paginate
-  const totalPages = Math.ceil(filteredFacilities.length / pageSize);
-  const paginatedFacilities = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredFacilities.slice(start, start + pageSize);
-  }, [filteredFacilities, currentPage, pageSize]);
-
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(Math.max(1, Math.min(newPage, totalPages)));
-  };
-
   // 2e "On call right now": own facility's staff, filtered to whoever is
   // actually responsible right now -- same isResponsibleNow rule the desktop
   // table below uses per row.
@@ -154,124 +150,91 @@ export const NetworkDirectoryPage: React.FC = () => {
     return u.name.toLowerCase().includes(q) || (u.department || '').toLowerCase().includes(q) || (u.role || '').toLowerCase().replace(/_/g, ' ').includes(q);
   });
 
+  const FIRST_PAGE = 12;
+  const shownFacilities = showAll ? filteredFacilities : filteredFacilities.slice(0, FIRST_PAGE);
+
   return (
-    <div className="space-y-6 h-full overflow-auto">
-      {/* 2e/3d: unified directory header + on-call + facility list, same
-          cards at every width -- edge-to-edge on phones, contained in a
-          rounded header card once there's room. */}
-      <div className="-mt-4 sm:mt-0 rounded-2xl overflow-hidden space-y-0">
-        <div className="bg-slate-950 text-white px-4 pt-4 pb-4 sm:px-6 space-y-3">
-          <div>
-            <h1 className="text-lg sm:text-xl font-heading font-semibold">{canViewNetwork ? 'Network Directory' : 'Hospital Directory'}</h1>
-            <p className="text-sm text-white/60 mt-0.5 hidden sm:block">{canViewNetwork ? 'Global view of facilities and staff.' : 'View departments and on-call staff for your hospital.'}</p>
-          </div>
-          <div className="relative sm:max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-            <input
-              className="w-full min-h-[48px] rounded-lg bg-white/10 border border-white/15 pl-10 pr-3 text-sm text-white placeholder:text-white/50 outline-none"
-              placeholder="Name, department or hospital"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
+    <div className="max-w-[640px]">
+      <ScreenHeader title={canViewNetwork ? 'Directory' : 'Hospital directory'}>
+        <label htmlFor="directory-search" className="sr-only">Search the directory</label>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-paper/60 lg:text-slate-500 dark:lg:text-white/55" aria-hidden="true" />
+          <input
+            id="directory-search"
+            type="search"
+            autoComplete="off"
+            placeholder="Name, department or hospital"
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setShowAll(false); }}
+            className="min-h-[52px] w-full rounded-[10px] border border-paper/20 bg-paper/10 pl-11 pr-3 text-[16px] text-paper placeholder:text-paper/55 focus:border-paper/50 focus:outline-none focus:ring-2 focus:ring-paper/30 lg:border-slate-300 lg:bg-white lg:text-ink lg:placeholder:text-slate-500 lg:focus:border-info-700 lg:focus:ring-info-700/30 dark:lg:border-white/25 dark:lg:bg-white/5 dark:lg:text-paper"
+          />
         </div>
+      </ScreenHeader>
 
-        <div className="p-4 sm:p-6 sm:bg-slate-50 sm:dark:bg-slate-950/40 space-y-3">
-          {ownFacilityId && (
-            <>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">On call right now · your hospital</p>
-              {onCallNow.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400 py-2">No on-call staff found.</p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {onCallNow.map(u => (
-                    <div key={u.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{u.name}</p>
-                          <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400">On call</span>
-                        </div>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 truncate capitalize">{(u.role || '').replace(/_/g, ' ')}{u.department ? ` · ${u.department}` : ''}</p>
-                      </div>
-                      {u.phoneNumber ? (
-                        <a href={`tel:${u.phoneNumber}`} aria-label={`Call ${u.name}`} className="h-14 w-14 shrink-0 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center">
-                          <Phone className="w-5 h-5" />
-                        </a>
-                      ) : (
-                        <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">No number</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 pt-2">Network · {filteredFacilities.length} facilit{filteredFacilities.length === 1 ? 'y' : 'ies'}{filteredFacilities.length > pageSize && ` (page ${currentPage} of ${totalPages})`}</p>
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+      {ownFacilityId && (
+        <section aria-labelledby="on-call-now" className="flex flex-col gap-2.5">
+          <MicroLabel id="on-call-now">On call right now · your hospital</MicroLabel>
+          {onCallNow.length === 0 ? (
+            <p className="text-[14.5px] text-slate-700 dark:text-white/65">{q ? 'Nobody on call matches that search.' : 'No on-call staff found.'}</p>
           ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                {paginatedFacilities.map(f => (
-                  <div key={f.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{f.name}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{f.location} · {capacityHint(f)}</p>
-                    </div>
-                    <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold  ${f.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'}`}>
-                      {(f.type || '').replace('_', ' ')}
-                    </span>
+            <ul className="flex flex-col gap-2.5">
+              {onCallNow.map(u => (
+                <li key={u.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white py-3 pr-3 pl-[14px] dark:border-white/12 dark:bg-white/[0.05]">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2">
+                      <span className="truncate text-[16px] font-semibold text-ink dark:text-paper">{u.name}</span>
+                      <span className="shrink-0 rounded-[5px] bg-success-100 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.06em] text-success-800 dark:bg-success-900/60 dark:text-success-200">On call</span>
+                    </p>
+                    <p className="mt-0.5 truncate text-[13.5px] text-slate-700 dark:text-white/65">
+                      {ROLE_CONFIGS[u.role]?.label ?? (u.role || '').replace(/_/g, ' ')}{u.department ? ` · ${u.department}` : ''}
+                    </p>
                   </div>
-                ))}
-              </div>
-              
-              {filteredFacilities.length > pageSize && (
-                <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 dark:text-slate-400">Show per page:</span>
-                    <select
-                      value={pageSize}
-                      onChange={e => {
-                        setPageSize(parseInt(e.target.value));
-                        setCurrentPage(1);
-                      }}
-                      className="px-2 py-1 text-xs rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-                    >
-                      <option value={6}>6</option>
-                      <option value={12}>12</option>
-                      <option value={24}>24</option>
-                      <option value={50}>50</option>
-                    </select>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="p-1 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800"
-                      aria-label="Previous page"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="text-xs text-slate-600 dark:text-slate-400 min-w-[4rem] text-center">
-                      {(currentPage - 1) * pageSize + 1} – {Math.min(currentPage * pageSize, filteredFacilities.length)}
-                    </span>
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="p-1 rounded border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800"
-                      aria-label="Next page"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
+                  {u.phoneNumber ? (
+                    <a href={`tel:${u.phoneNumber}`} aria-label={`Call ${u.name}`} className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-ink text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200">
+                      <Phone className="h-5 w-5" aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <span className="shrink-0 text-[12.5px] text-slate-500 dark:text-white/55">No number</span>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
-      </div>
+        </section>
+      )}
+
+      <section aria-labelledby="network-list" className="mt-6 flex flex-col gap-2.5">
+        <MicroLabel id="network-list">Network · {filteredFacilities.length} {filteredFacilities.length === 1 ? 'facility' : 'facilities'}</MicroLabel>
+        {loading ? (
+          <div className="flex flex-col gap-2.5">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+        ) : filteredFacilities.length === 0 ? (
+          <p className="text-[14.5px] text-slate-700 dark:text-white/65">No facility matches that search.</p>
+        ) : (
+          <>
+            <ul className="flex flex-col gap-2.5">
+              {shownFacilities.map(f => (
+                <li key={f.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-[14px] py-3 dark:border-white/12 dark:bg-white/[0.05]">
+                  <div className="min-w-0">
+                    <p className="truncate text-[16px] font-semibold text-ink dark:text-paper">{f.name}</p>
+                    <p className="mt-0.5 truncate text-[13.5px] text-slate-700 dark:text-white/65">{f.location} · {capacityHint(f)}</p>
+                  </div>
+                  <span className={cn(
+                    'shrink-0 rounded-[5px] px-2 py-1 text-[10.5px] font-bold uppercase leading-none tracking-[0.06em]',
+                    f.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200' : 'bg-info-100 text-info-800 dark:bg-info-900/60 dark:text-info-200'
+                  )}>
+                    {facilityKind(f)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {filteredFacilities.length > shownFacilities.length && (
+              <button type="button" onClick={() => setShowAll(true)} className="min-h-[48px] rounded-[10px] border border-slate-300 bg-white text-[15px] font-semibold text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10">
+                Show all {filteredFacilities.length} facilities
+              </button>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 };

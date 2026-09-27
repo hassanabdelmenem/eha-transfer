@@ -5,6 +5,11 @@ import { useData } from '../contexts/DataContext';
 import { BedType, Referral } from '../types';
 import { sortByWorkflow } from '../lib/referralPriority';
 import { toastError } from '../lib/toast';
+import { AlertTriangle } from 'lucide-react';
+import { RoleHomeHeadline, MicroLabel, EmptyQueue } from '../components/dashboard/RoleHome';
+import { BedOccupancyHeatmap } from '../components/dashboard/BedOccupancyHeatmap';
+import { capacityTone } from '../lib/capacityTone';
+import { cn } from '../lib/utils';
 
 const ESCALATION_LABEL: Record<string, string> = {
   no_beds_available: 'No beds available',
@@ -127,195 +132,147 @@ export const AdminDashboard: React.FC = () => {
       .sort((a, b) => (b.emergency - a.emergency) || (b.urgent - a.urgent) || (b.routine - a.routine));
   })();
 
+  const free = (bed: BedType) => Math.max(0, globalTotals[bed].available);
+  const n = systemEscalations.length;
+
   return (
-    <div className="space-y-6 h-full overflow-auto">
-      {/* 3a/3d: unified escalation console -- edge-to-edge on phones,
-          contained in a rounded card once there's room, escalation cards
-          reflow into a responsive grid at wider widths. */}
-      <div className="-mt-4 sm:mt-0 rounded-2xl overflow-hidden bg-slate-950 text-white">
-        <div className="px-4 pt-4 pb-4 sm:px-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg sm:text-xl font-heading font-semibold">Escalation console</h1>
-              <p className="text-xs text-white/60">System administrator · whole network</p>
-            </div>
-          </div>
+    <div className="max-w-[760px] flex flex-col gap-3">
+      <RoleHomeHeadline
+        title={n === 0 ? 'Nothing only you can fix' : `${n} only you can fix`}
+        rationale="System-level means chasing the hospitals will not help — the capacity does not exist."
+      />
 
-          <div>
-            <h2 className="text-2xl font-heading font-semibold">{systemEscalations.length} only you can fix</h2>
-            <p className="text-sm text-white/60 mt-1">System-level means chasing the hospitals will not help — the capacity does not exist.</p>
-          </div>
+      {/* Network free beds: tertiary and district hospitals, primary care excluded. */}
+      <ul aria-label="Free beds across the network" className="mt-1 grid grid-cols-4 gap-2">
+        {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => {
+          const tone = capacityTone(free(bed), globalTotals[bed].total);
+          return (
+            <li key={bed} className="rounded-[10px] border border-slate-200 bg-white px-1 py-2.5 text-center dark:border-white/12 dark:bg-white/[0.05]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">{bed}</p>
+              <p className={cn('mt-0.5 font-heading text-[22px] font-semibold leading-none tabular-nums', tone.text)}>{free(bed)}</p>
+              <p className="mt-1 text-[11.5px] text-slate-700 dark:text-white/60">of {globalTotals[bed].total}</p>
+            </li>
+          );
+        })}
+      </ul>
 
-          <div className="grid grid-cols-4 sm:grid-cols-8 xl:grid-cols-4 gap-2">
-            {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => (
-              <div key={bed} className="rounded-lg bg-white/5 border border-white/10 p-2.5 text-center">
-                <p className="text-[10px] font-bold text-white/50">{bed}</p>
-                <p className="text-xl font-bold tabular-nums mt-0.5">{globalTotals[bed].available}</p>
-                <p className="text-[10px] text-white/50">of {globalTotals[bed].total}</p>
-              </div>
-            ))}
-          </div>
+      {n === 0 ? (
+        <EmptyQueue>Nothing needs administrative placement right now.</EmptyQueue>
+      ) : (
+        <ul className="mt-1 flex flex-col gap-3">
+          {systemEscalations.map(r => {
+            const reason = r.escalationReason || 'manual';
+            const fromFacility = facilitiesById.get(r.referringFacilityId)?.name || 'referring facility';
+            const capacityReason = reason === 'no_beds_available' || reason === 'no_matching_facility';
+            const placing = placingId === r.id;
+            return (
+              <li key={r.id} className="overflow-hidden rounded-xl border-2 border-critical-700 bg-critical-100 dark:border-critical-400/70 dark:bg-critical-950/45">
+                <p className="flex items-center justify-between gap-3 bg-critical-700 px-[14px] py-2 text-[11.5px] font-bold uppercase tracking-[0.08em] text-white dark:bg-transparent dark:pb-0 dark:pt-3 dark:text-critical-300">
+                  <span className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />System level · {ESCALATION_LABEL[reason] || reason}</span>
+                  <span className="font-mono normal-case tracking-normal">{escalationAge(r)}</span>
+                </p>
+                <div className="px-[14px] pt-3 pb-[14px]">
+                  <p className="text-[17px] font-semibold leading-[1.25] text-ink dark:text-paper">{r.patientData.name}, {r.patientData.age}</p>
+                  <p className="mt-[3px] text-[13.5px] text-critical-900 dark:text-white/70">
+                    {r.requiredBedType}{r.receivingDepartments?.length ? ` · ${r.receivingDepartments.join(' + ')}` : ''} · {r.priority} · from {fromFacility}
+                  </p>
+                  <p className="mt-2.5 rounded-[10px] bg-white/70 px-3 py-2.5 text-[14px] leading-[1.45] text-ink dark:bg-white/5 dark:text-white/85">
+                    {ESCALATION_DESC[reason] || ESCALATION_DESC.manual}
+                  </p>
 
-          {systemEscalations.length === 0 ? (
-            <p className="text-sm text-white/60 py-6 text-center">Nothing needs administrative placement right now.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {systemEscalations.map(r => {
-                const reason = r.escalationReason || 'manual';
-                const fromFacility = facilitiesById.get(r.referringFacilityId)?.name || 'referring facility';
-                return (
-                  <div key={r.id} className="rounded-xl border-2 border-critical-700 bg-critical-950/40 overflow-hidden">
-                    <div className="bg-critical-700 px-3 py-1.5 text-xs font-semibold flex items-center justify-between">
-                      <span>System level · {ESCALATION_LABEL[reason]}</span>
-                      <span className="font-mono normal-case">{escalationAge(r)}</span>
-                    </div>
-                    <div className="p-3.5 space-y-3">
-                      <div>
-                        <p className="text-[17px] font-semibold">{r.patientData.name}, {r.patientData.age}</p>
-                        <p className="text-sm text-white/60 mt-0.5">{r.requiredBedType} · {r.priority} · from {fromFacility}</p>
-                      </div>
-                      <p className="text-sm text-white/80 bg-white/5 rounded-lg p-2.5">{ESCALATION_DESC[reason]}</p>
-
-                      {placingId === r.id ? (
-                        <div className="space-y-2">
-                          <select
-                            value={placementFacilityId}
-                            onChange={e => setPlacementFacilityId(e.target.value)}
-                            className="w-full min-h-[48px] rounded-lg border border-white/25 bg-white/10 text-white text-sm px-3"
-                          >
-                            <option value="" className="text-slate-900">Select a facility…</option>
-                            {facilities.filter(f => f.id !== r.referringFacilityId).map(f => (
-                              <option key={f.id} value={f.id} className="text-slate-900">
-                                {f.name} ({f.capacity?.[r.requiredBedType]?.occupied ?? 0}/{f.capacity?.[r.requiredBedType]?.total ?? 0} {r.requiredBedType})
-                              </option>
-                            ))}
-                          </select>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              onClick={() => { setPlacingId(null); setPlacementFacilityId(''); }}
-                              className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-semibold"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => handleConfirmPlacement(r.id)}
-                              disabled={!placementFacilityId || busyId === r.id}
-                              className="min-h-[48px] rounded-lg bg-white text-slate-950 text-xs font-semibold disabled:opacity-50"
-                            >
-                              Confirm placement
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            if (ESCALATION_PRIMARY[reason]) {
-                              setPlacingId(r.id);
-                              setPlacementFacilityId('');
-                            } else {
-                              navigate(`/referrals/${r.id}`);
-                            }
-                          }}
-                          className="w-full min-h-[52px] rounded-lg bg-white text-slate-950 text-sm font-semibold"
-                        >
-                          {ESCALATION_PRIMARY[reason] || 'Review now'}
-                        </button>
-                      )}
+                  {placing ? (
+                    <div className="mt-3 space-y-2">
+                      <label htmlFor={`place-${r.id}`} className="block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
+                        {reason === 'no_matching_facility' ? 'New destination' : 'Contracted facility'}
+                      </label>
+                      <select
+                        id={`place-${r.id}`}
+                        value={placementFacilityId}
+                        onChange={e => setPlacementFacilityId(e.target.value)}
+                        className="min-h-[52px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-ink dark:text-paper"
+                      >
+                        <option value="">Choose a facility</option>
+                        {facilities
+                          .filter(f => f.id !== r.referringFacilityId)
+                          .map(f => ({ f, free: Math.max(0, (f.capacity?.[r.requiredBedType]?.total ?? 0) - (f.capacity?.[r.requiredBedType]?.occupied ?? 0)) }))
+                          .sort((x, y) => Number(!!y.f.isExternal) - Number(!!x.f.isExternal) || y.free - x.free)
+                          .map(({ f, free }) => (
+                            <option key={f.id} value={f.id}>
+                              {f.name}{f.isExternal ? ' · contracted' : ''} · {free} {r.requiredBedType} free
+                            </option>
+                          ))}
+                      </select>
                       <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => handlePostpone(r.id)}
-                          disabled={busyId === r.id}
-                          className="min-h-[48px] rounded-lg border border-warning-500 text-warning-400 text-xs font-semibold disabled:opacity-50"
-                        >
-                          Postpone
+                        <button type="button" onClick={() => { setPlacingId(null); setPlacementFacilityId(''); }} className={outlineBtn}>
+                          Cancel
                         </button>
-                        <button
-                          onClick={() => handleDeEscalate(r.id)}
-                          disabled={busyId === r.id}
-                          className="min-h-[48px] rounded-lg border border-white/30 text-white text-xs font-semibold disabled:opacity-50"
-                        >
-                          De-escalate
+                        <button type="button" onClick={() => handleConfirmPlacement(r.id)} disabled={!placementFacilityId || busyId === r.id} className={cn(primaryBtn, 'disabled:opacity-50')}>
+                          Confirm placement
                         </button>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (capacityReason) { setPlacingId(r.id); setPlacementFacilityId(''); }
+                        else navigate(`/referrals/${r.id}`);
+                      }}
+                      className={cn(primaryBtn, 'mt-3 w-full min-h-[54px] text-[16px]')}
+                    >
+                      {ESCALATION_PRIMARY[reason] || 'Review now'}
+                    </button>
+                  )}
 
-          <div className="pt-2">
-            <h2 className="text-xs font-semibold text-white/50 mb-2">Live Bed Capacity by Facility</h2>
-            <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[500px]">
-                <thead>
-                  <tr className="bg-white/10 border-b border-white/10 text-xs text-white/70">
-                    <th className="px-3 py-2 font-medium">Facility</th>
-                    <th className="px-3 py-2 font-medium text-center">ICU</th>
-                    <th className="px-3 py-2 font-medium text-center">CCU</th>
-                    <th className="px-3 py-2 font-medium text-center">PICU</th>
-                    <th className="px-3 py-2 font-medium text-center">Ward</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {facilities.map(f => {
-                    const renderBed = (type: BedType) => {
-                      const bed = f.capacity?.[type];
-                      if (!bed) return <span className="text-white/30">-</span>;
-                      const available = bed.total - bed.occupied;
-                      return (
-                        <div className="flex flex-col items-center">
-                          <span className={`font-semibold ${available > 0 ? 'text-white' : 'text-critical-400'}`}>{available}</span>
-                          <span className="text-[10px] text-white/40">/ {bed.total}</span>
-                        </div>
-                      );
-                    };
-                    return (
-                      <tr key={f.id} className="hover:bg-white/5 text-sm">
-                        <td className="px-3 py-2 text-white/90 font-medium truncate max-w-[200px]">{f.name}</td>
-                        <td className="px-3 py-2 text-center">{renderBed('ICU')}</td>
-                        <td className="px-3 py-2 text-center">{renderBed('CCU')}</td>
-                        <td className="px-3 py-2 text-center">{renderBed('PICU')}</td>
-                        <td className="px-3 py-2 text-center">{renderBed('Ward')}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {waitlistByFacility.length > 0 && (
-            <div className="pt-2">
-              <h2 className="text-xs font-semibold text-white/50 mb-2">Waitlist pressure by facility</h2>
-              <div className="rounded-xl bg-white/5 border border-white/10 divide-y divide-white/10">
-                {waitlistByFacility.map(f => (
-                  <div key={f.facilityId} className="px-3.5 py-2.5 flex items-center justify-between gap-3">
-                    <span className="text-sm text-white/90 truncate">{f.name}</span>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {f.emergency > 0 && (
-                        <span className="h-5 min-w-5 px-1 rounded-full bg-critical-700 text-white text-[10px] font-bold flex items-center justify-center" title={`${f.emergency} emergency`}>
-                          E {f.emergency}
-                        </span>
-                      )}
-                      {f.urgent > 0 && (
-                        <span className="h-5 min-w-5 px-1 rounded-full bg-warning-700 text-white text-[10px] font-bold flex items-center justify-center" title={`${f.urgent} urgent`}>
-                          U {f.urgent}
-                        </span>
-                      )}
-                      {f.routine > 0 && (
-                        <span className="h-5 min-w-5 px-1 rounded-full bg-info-500 text-white text-[10px] font-bold flex items-center justify-center" title={`${f.routine} routine`}>
-                          R {f.routine}
-                        </span>
-                      )}
-                    </div>
+                  <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+                    <button type="button" onClick={() => handlePostpone(r.id)} disabled={busyId === r.id} className={outlineBtn}>
+                      Postpone
+                    </button>
+                    <button type="button" onClick={() => handleDeEscalate(r.id)} disabled={busyId === r.id} className={outlineBtn}>
+                      De-escalate
+                    </button>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <section aria-labelledby="network-grid" className="mt-5 flex flex-col gap-2.5">
+        <MicroLabel id="network-grid">Live capacity by facility</MicroLabel>
+        <BedOccupancyHeatmap facilities={facilities} />
+      </section>
+
+      {waitlistByFacility.length > 0 && (
+        <section aria-labelledby="waitlist" className="mt-5 flex flex-col gap-2.5">
+          <MicroLabel id="waitlist">Waitlist pressure by facility</MicroLabel>
+          <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.05]">
+            {waitlistByFacility.map(f => (
+              <li key={f.facilityId} className="flex min-h-[48px] items-center justify-between gap-3 px-[14px] py-2">
+                <span className="truncate text-[15px] text-ink dark:text-paper">{f.name}</span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {f.emergency > 0 && <WaitDot className="bg-critical-700" letter="E" count={f.emergency} label="emergency" />}
+                  {f.urgent > 0 && <WaitDot className="bg-warning-700" letter="U" count={f.urgent} label="urgent" />}
+                  {f.routine > 0 && <WaitDot className="bg-info-700" letter="R" count={f.routine} label="routine" />}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 };
+
+const primaryBtn = 'min-h-[48px] rounded-[10px] bg-ink px-3 text-[15px] font-semibold text-paper transition-colors hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200';
+const outlineBtn = 'min-h-[48px] rounded-[10px] border border-critical-700/40 bg-white/60 px-3 text-[14.5px] font-semibold text-ink transition-colors hover:bg-white disabled:opacity-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10';
+
+// E/U/R: the letter is the colour-blind-safe channel; fills are the 700 steps
+// so white text clears contrast (warning-500 would be 2.15:1).
+const WaitDot: React.FC<{ className: string; letter: string; count: number; label: string }> = ({ className, letter, count, label }) => (
+  <span className={cn('inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums text-white', className)}>
+    <span aria-hidden="true">{letter} {count}</span>
+    <span className="sr-only">{count} {label}</span>
+  </span>
+);
