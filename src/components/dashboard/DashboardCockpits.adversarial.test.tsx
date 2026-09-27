@@ -9,8 +9,7 @@ import { HodCockpit } from './HodCockpit';
 import { ManagerCockpit } from './ManagerCockpit';
 import { ERCockpit } from './ERCockpit';
 import { NurseCockpit } from './NurseCockpit';
-import { AdminCockpit } from './AdminCockpit';
-import { DashboardStatGrid } from './DashboardStatGrid';
+import { AdminDashboard } from '../../pages/AdminDashboard';
 import { EscalationAlertBanner } from './EscalationAlertBanner';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
 import { FacilityAnalyticsCharts } from './FacilityAnalyticsCharts';
@@ -163,12 +162,6 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
       mockDirectAdmissions = [];
       mockShiftLogs = [];
 
-      // 1. DashboardStatGrid with 0 referrals
-      const { unmount: unmountGrid } = render(<DashboardStatGrid facilityReferrals={[]} loading={false} />);
-      expect(screen.getByText('Pending Referrals')).toBeInTheDocument();
-      expect(screen.getAllByText('0')).toHaveLength(4);
-      unmountGrid();
-
       // 2. Clinician Cockpit empty state
       mockUser = { id: 'u1', name: 'Dr. Empty', email: 'e@test.com', role: 'specialist', facilityId: 'fac-none' };
       const { unmount: unmountClinician } = render(
@@ -234,14 +227,14 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
       expect(screen.getByText(/No transferred patients waiting for a bed/i)).toBeInTheDocument();
       unmountNurse();
 
-      // 7. Admin Cockpit empty state
+      // 7. Admin console empty state
       mockUser = { id: 'u6', name: 'Admin Empty', email: 'admin@test.com', role: 'system_admin', facilityId: 'fac-none' };
       const { unmount: unmountAdmin } = render(
         <MemoryRouter>
-          <AdminCockpit />
+          <AdminDashboard />
         </MemoryRouter>
       );
-      expect(screen.getByText(/0 Unplaced Transfers/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /^Nothing only you can fix$/ })).toBeInTheDocument();
       expect(screen.getByText(/Nothing needs administrative placement right now/i)).toBeInTheDocument();
       unmountAdmin();
 
@@ -283,8 +276,6 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
         { role: 'hospital_manager', expectedSnippet: /to sign$/i },
         { role: 'er_official', expectedSnippet: /to send, \d+ arriving$/i },
         { role: 'nurse', expectedSnippet: /beds? free$|^Beds$/i },
-        { role: 'system_admin', expectedSnippet: /System Escalation Console/i },
-        { role: 'owner', expectedSnippet: /System Escalation Console/i },
         { role: 'consultant', expectedSnippet: /need(s)? you$/i },
       ];
 
@@ -312,11 +303,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
 
         // Each role opens on its own queue: no shared KPI overview.
         expect(screen.queryByRole('heading', { name: /overview/i })).not.toBeInTheDocument();
-        if (role === 'system_admin' || role === 'owner') {
-          expect(screen.getByText(expectedSnippet)).toBeInTheDocument();
-        } else {
-          expect(screen.getByRole('heading', { level: 1, name: expectedSnippet })).toBeInTheDocument();
-        }
+        expect(screen.getByRole('heading', { level: 1, name: expectedSnippet })).toBeInTheDocument();
       }
     });
 
@@ -681,7 +668,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
       );
     });
 
-    it('handles Admin Destination Override and Postpone in AdminCockpit', async () => {
+    it('handles destination override, postpone and de-escalate in the admin console', async () => {
       mockUser = {
         id: 'u-admin',
         name: 'System Admin',
@@ -697,15 +684,29 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
           escalationReason: 'no_matching_facility',
         }),
       ];
+      // A second facility to place at: the picker never offers the referring one.
+      const contracted = { ...testFacility, id: 'fac-contracted', name: 'Contracted Center', isExternal: true };
+      mockFacilities = [testFacility, contracted];
+      mockFacilitiesById = new Map(mockFacilities.map(f => [f.id, f]));
 
       render(
         <MemoryRouter>
-          <AdminCockpit />
+          <AdminDashboard />
         </MemoryRouter>
       );
 
-      expect(screen.getByText(/Active System-Level Escalations/i)).toBeInTheDocument();
-      expect(screen.getByText(/Override the destination/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /^1 only you can fix$/ })).toBeInTheDocument();
+
+      // 0. Override the destination: pick a facility and confirm.
+      fireEvent.click(screen.getByRole('button', { name: /Override the destination/i }));
+      const picker = screen.getByLabelText(/New destination/i) as HTMLSelectElement;
+      const target = Array.from(picker.options).find(o => o.value)?.value;
+      expect(target).toBeTruthy();
+      fireEvent.change(picker, { target: { value: target } });
+      fireEvent.click(screen.getByRole('button', { name: /Confirm placement/i }));
+      await waitFor(() => {
+        expect(mockOverrideReferralDestination).toHaveBeenCalledWith('ref-escalated-admin', target);
+      });
 
       // 1. Postpone
       const postponeBtn = screen.getByRole('button', { name: /Postpone/i });
