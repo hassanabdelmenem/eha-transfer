@@ -13,13 +13,13 @@ describe('Button', () => {
   it('applies default classes (primary, md)', () => {
     render(<Button>Default</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-command-blue', 'min-h-[48px]'); // Checking one class for variant and size
+    expect(button).toHaveClass('bg-ink', 'min-h-[48px]'); // Checking one class for variant and size
   });
 
   it('applies destructive variant classes', () => {
     render(<Button variant="destructive">Destructive</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('bg-critical-600');
+    expect(button).toHaveClass('bg-critical-700');
   });
 
   it('applies large size classes', () => {

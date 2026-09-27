@@ -92,7 +92,7 @@ export const Login: React.FC = () => {
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-command-blue rounded-lg flex items-center justify-center shadow-lg">
+          <div className="w-16 h-16 bg-ink rounded-xl flex items-center justify-center shadow-lg">
             <Shield className="h-8 w-8 text-white" aria-hidden="true" />
           </div>
         </div>

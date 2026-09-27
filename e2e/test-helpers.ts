@@ -11,8 +11,23 @@ export interface UserCredentials {
  * Ensures any existing session is signed out via UI or state reset,
  * then logs in via the UI with the provided user credentials.
  */
+/** On desktop the navigation rail is always visible and carries Log out itself. */
+async function clickVisibleLogout(page: Page): Promise<boolean> {
+  const railLogout = page.getByRole('button', { name: /^Log out$/i });
+  if (!(await railLogout.isVisible({ timeout: 1500 }).catch(() => false))) return false;
+  await railLogout.click();
+  const handoverBtn = page.locator('button', { hasText: /Send handover/i });
+  if (await handoverBtn.isVisible({ timeout: 2500 }).catch(() => false)) {
+    await handoverBtn.click();
+  }
+  await page.waitForURL(/\/login/, { timeout: 10000 }).catch(() => {});
+  return true;
+}
+
 export async function loginAs(page: Page, user: UserCredentials) {
-  // If already in an authenticated layout, click the Logout button
+  // If already in an authenticated layout, log out: from the rail on desktop,
+  // from the header menu on phones.
+  await clickVisibleLogout(page);
   const userMenu = page.getByRole('button', { name: /User account menu/i });
   const mobileMenu = page.locator('button[aria-label^="Open menu"]');
   const menuTrigger = (await userMenu.isVisible().catch(() => false)) ? userMenu : mobileMenu;
@@ -41,6 +56,9 @@ export async function loginAs(page: Page, user: UserCredentials) {
   });
 
   // If redirected away because of leftover auth session, trigger logout again
+  if (!page.url().includes('/login') && (await clickVisibleLogout(page))) {
+    await page.goto('/login');
+  }
   if (!page.url().includes('/login')) {
     const userMenu2 = page.getByRole('button', { name: /User account menu/i });
     const mobileMenu2 = page.locator('button[aria-label^="Open menu"]');
