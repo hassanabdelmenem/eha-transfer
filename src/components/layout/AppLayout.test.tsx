@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, act, waitFor, within, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AppLayout } from './AppLayout';
 import type { User, Facility, Referral, Notification } from '../../types';
@@ -156,15 +156,22 @@ describe('AppLayout', () => {
     expect(container.querySelector('[data-testid="drawer-backdrop"]')).not.toBeInTheDocument();
   });
 
-  it('opens the Emergency Hotline flow from the sidebar and closes the mobile menu, and Escape does not error while it is open', () => {
-    renderLayout();
+  it('sends "Emergency Hotline" to the directory\'s on-call list and closes the drawer', () => {
+    render(
+      <MemoryRouter initialEntries={['/referrals']}>
+        <Routes>
+          <Route path="/" element={<AppLayout />}>
+            <Route path="referrals" element={<div>Referrals outlet</div>} />
+            <Route path="directory" element={<div>Directory outlet</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
     act(() => { screen.getByLabelText('Open menu').click(); });
     act(() => { screen.getByRole('button', { name: /emergency hotline/i }).click(); });
 
-    act(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
-    // No visible hotline dialog exists in this component today; this just
-    // exercises the showHotline branch of the Escape handler without erroring.
-    expect(screen.getByText('Ismailia Medical Complex')).toBeInTheDocument();
+    expect(screen.getByText('Directory outlet')).toBeInTheDocument();
+    expect(screen.queryByTestId('drawer-backdrop')).not.toBeInTheDocument();
   });
 
   it('closes the mobile drawer from the sidebar\'s own close button', () => {
@@ -317,7 +324,9 @@ describe('AppLayout', () => {
 
       expect(screen.getByText('No active clinical handover summary required for your role.')).toBeInTheDocument();
 
-      await act(async () => { screen.getByText(/send handover to the day shift/i).click(); });
+      // Nothing to hand over: the button says what it does.
+      expect(screen.queryByText(/send handover to the day shift/i)).not.toBeInTheDocument();
+      await act(async () => { screen.getByRole('button', { name: /^Sign out$/ }).click(); });
       expect(addShiftLogMock).not.toHaveBeenCalled();
       expect(logoutMock).toHaveBeenCalled();
     });
@@ -390,7 +399,9 @@ describe('AppLayout', () => {
       rerender(<MemoryRouter initialEntries={['/referrals']}><AppLayout /></MemoryRouter>);
       expect(screen.getByText('No active clinical handover summary required for your role.')).toBeInTheDocument();
 
-      await act(async () => { screen.getByText(/send handover to the day shift/i).click(); });
+      // Nothing to hand over: the button says what it does.
+      expect(screen.queryByText(/send handover to the day shift/i)).not.toBeInTheDocument();
+      await act(async () => { screen.getByRole('button', { name: /^Sign out$/ }).click(); });
       expect(addShiftLogMock).not.toHaveBeenCalled();
       expect(logoutMock).toHaveBeenCalled();
     });
