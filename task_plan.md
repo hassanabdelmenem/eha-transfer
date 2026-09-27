@@ -20,7 +20,7 @@ https://eha-transfer.web.app, and PR checks show red without having run.
 Then, in order:
 1. Review and merge the security fix **#32** (email_verified); before it deploys, check how many
    admin-verified email/password accounts never confirmed their email (they will hit the verify screen).
-2. Merge **#30** (Claude Code setup, carries this file) and **#31** (react-router pin).
+2. Merge **#30** (Claude Code setup), **#38** (this project memory, based on #30) and **#31** (react-router pin).
 3. Review the redesign stack **#33 → #37** in order (each is based on the one before).
 4. Answer the open decisions below.
 5. Phase 6 of the redesign.
@@ -46,6 +46,7 @@ Phase 3: Mobile-workflow redesign (5 of 6 sub-phases done, in review)
 - [ ] #32 restore `email_verified` in `isVerifiedCaller` and notifications read; token-claim `emailVerified`; e2e seed fix
 - [ ] #30 Claude Code setup: CLAUDE.md, hooks, Firebase MCP, `/rules-change` skill, `rbac-rules-reviewer` agent
 - [ ] #31 drop the react-router ^8 override, pin react-router-dom ^7.18.4
+- [ ] #38 project memory (this file, findings.md, progress.md) and published pages; stacked on #30
 - **Status:** all open, CI was green before the billing block (except #32's latest run)
 
 ### Phase 3: Mobile-workflow redesign (/impeccable, handoff screens 1a–3d)
