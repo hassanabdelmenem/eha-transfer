@@ -11,6 +11,18 @@ Cloud Firestore, with IndexedDB (`idb`) for offline drafts and sync. Cloud Funct
 Firebase project: **`eha-transfer-1785622025`** → https://eha-transfer.web.app.
 This repo shares nothing with `imc-er` or `er-app-final`. `main` is production.
 
+## Project memory (read first)
+
+Read `task_plan.md` (roadmap, next step, open owner decisions), `findings.md` (IDs, accounts, design
+tokens, gotchas) and `progress.md` (session log, newest first) before starting work. After any
+significant change, update them and the published pages below if the change affects them.
+
+## Published pages (claude.ai Artifacts, owned by the user)
+
+- Mission Control: https://claude.ai/artifact/KtYWpySizeSSx9V8RcnYDN (blockers, next steps, PR stack, health, decisions; republish from the repo files)
+- Launch Checklist: https://claude.ai/artifact/77g7kAhHFpgEQcZkGfVS7M (tasks in the HTML; ticks in its database, collection `ticks`, doc id = task id; update with ArtifactData)
+- Playbook: https://claude.ai/artifact/MUhShMSD6f5uzUVhADXcTW (purpose, people, lifecycle, design direction, how we work and ship)
+
 ## Production data warning
 
 `npm run dev` and PR previews talk to the **production** Firebase project; there is no staging.
