@@ -9,6 +9,23 @@ test.describe('Exceptions and Edge Cases Suite', () => {
     await page.goto('/referrals/new');
 
     const form = page.locator('form');
+
+    // Step 1: patient identity (default step)
+    await form.locator('#hospitalId').fill('ISM-REJ-01');
+    await form.locator('#patientName').fill('Tariq Mansour');
+    await form.locator('#patientAge').fill('61');
+    await form.getByRole('radio', { name: 'Male', exact: true }).check();
+
+    await page.getByRole('button', { name: /^Step 2:/ }).click();
+    await page.getByRole('button', { name: /^Step 3:/ }).click();
+    await form.locator('#complaint').fill('High grade fever, altered sensorium');
+    await form.locator('#presentation').fill('Septic shock unresponsive to peripheral fluids');
+    await page.getByRole('button', { name: /^Step 4:/ }).click();
+    await form.locator('#diagnosis').fill('Urosepsis complicated by septic shock');
+
+    await form.getByRole('button', { name: /Continue/i }).click();
+    await expect(form.getByRole('button', { name: /Continue/i })).toHaveCount(0);
+    // Step 5: where it goes — decided with the whole clinical picture written
     await form.getByRole('button', { name: 'ICU', exact: true }).click();
     const autoRouteCheckbox = form.getByRole('checkbox', { name: 'Auto-Route' });
     if (await autoRouteCheckbox.isChecked()) {
@@ -16,23 +33,8 @@ test.describe('Exceptions and Edge Cases Suite', () => {
     }
     await form.locator('#receivingFacility').selectOption('test-receiving-2');
     await form.locator('#requiredBedType').selectOption('ICU');
-    await form.getByRole('radio', { name: /Urgent/i }).check({ force: true });
+    await form.getByRole('radio', { name: /Urgent/i }).check();
     await form.locator('#reasonForReferral').fill('Severe sepsis requiring intensive care monitoring');
-
-    await page.getByText('Patient Identification').click();
-    await form.locator('#hospitalId').fill('ISM-REJ-01');
-    await form.locator('#patientName').fill('Tariq Mansour');
-    await form.locator('#patientAge').fill('61');
-    await form.getByRole('radio', { name: 'Male', exact: true }).check();
-
-    await page.getByText('Clinical & Vitals').click();
-    await form.locator('#complaint').fill('High grade fever, altered sensorium');
-    await form.locator('#presentation').fill('Septic shock unresponsive to peripheral fluids');
-    await form.locator('#diagnosis').fill('Urosepsis complicated by septic shock');
-
-    await page.getByText('Diagnostics & Review').click();
-    await form.getByRole('button', { name: /Continue/i }).click();
-    await expect(form.getByRole('button', { name: /Continue/i })).toHaveCount(0);
     const submitBtn = form.getByRole('button', { name: /Submit Referral/i });
     await expect(submitBtn).toBeVisible();
     await expect(submitBtn).toBeEnabled();
@@ -95,25 +97,27 @@ test.describe('Exceptions and Edge Cases Suite', () => {
     await page.goto('/referrals/new');
 
     const form = page.locator('form');
-    await form.getByRole('button', { name: 'ICU', exact: true }).click();
-    await form.locator('#requiredBedType').selectOption('ICU');
-    await form.getByRole('radio', { name: /Routine/i }).check({ force: true });
-    await form.locator('#reasonForReferral').fill('Elective post-op ICU bed reservation');
 
-    await page.getByText('Patient Identification').click();
+    // Step 1: patient identity (default step)
     await form.locator('#hospitalId').fill('ISM-CAN-02');
     await form.locator('#patientName').fill('Samira Fawzy');
     await form.locator('#patientAge').fill('45');
     await form.getByRole('radio', { name: 'Female', exact: true }).check();
 
-    await page.getByText('Clinical & Vitals').click();
+    await page.getByRole('button', { name: /^Step 2:/ }).click();
+    await page.getByRole('button', { name: /^Step 3:/ }).click();
     await form.locator('#complaint').fill('Scheduled elective procedure');
     await form.locator('#presentation').fill('Pre-op evaluation complete');
+    await page.getByRole('button', { name: /^Step 4:/ }).click();
     await form.locator('#diagnosis').fill('Post-thyroidectomy observation');
 
-    await page.getByText('Diagnostics & Review').click();
     await form.getByRole('button', { name: /Continue/i }).click();
     await expect(form.getByRole('button', { name: /Continue/i })).toHaveCount(0);
+    // Step 5: where it goes — decided with the whole clinical picture written
+    await form.getByRole('button', { name: 'ICU', exact: true }).click();
+    await form.locator('#requiredBedType').selectOption('ICU');
+    await form.getByRole('radio', { name: /Routine/i }).check();
+    await form.locator('#reasonForReferral').fill('Elective post-op ICU bed reservation');
     const submitBtn = form.getByRole('button', { name: /Submit Referral/i });
     await expect(submitBtn).toBeVisible();
     await expect(submitBtn).toBeEnabled();
@@ -160,30 +164,32 @@ test.describe('Exceptions and Edge Cases Suite', () => {
     await page.goto('/referrals/new');
 
     const form = page.locator('form');
-    await form.getByRole('button', { name: 'ICU', exact: true }).click();
-    await form.locator('#requiredBedType').selectOption('ICU');
-    await form.getByRole('radio', { name: /Urgent/i }).check({ force: true });
-    await form.locator('#reasonForReferral').fill('Severe cardiac arrhythmia');
 
-    await page.getByText('Patient Identification').click();
+    // Step 1: patient identity (default step)
     await form.locator('#hospitalId').fill('ISM-ECG-03');
     await form.locator('#patientName').fill('Adel El-Sayed');
     await form.locator('#patientAge').fill('67');
     await form.getByRole('radio', { name: 'Male', exact: true }).check();
 
-    await page.getByText('Clinical & Vitals').click();
+    await page.getByRole('button', { name: /^Step 2:/ }).click();
+    await page.getByRole('button', { name: /^Step 3:/ }).click();
     await form.locator('#complaint').fill('Palpitations and dizziness');
     await form.locator('#presentation').fill('Sudden onset ventricular tachycardia');
+    await page.getByRole('button', { name: /^Step 4:/ }).click();
     await form.locator('#diagnosis').fill('Ventricular tachycardia / STEMI');
 
-    // Step 4: Diagnostics & Review — attach mock ECG image
-    await page.getByText('Diagnostics & Review').click();
+    // Still on step 4 — attach mock ECG image
     const ecgFile = createMockImageFile('patient_12_lead_ecg.png');
     await form.locator('input[type="file"]').setInputFiles(ecgFile);
     await expect(form.locator('img[alt="patient_12_lead_ecg.png"]')).toBeVisible({ timeout: 10000 });
 
     await form.getByRole('button', { name: /Continue/i }).click();
     await expect(form.getByRole('button', { name: /Continue/i })).toHaveCount(0);
+    // Step 5: where it goes — decided with the whole clinical picture written
+    await form.getByRole('button', { name: 'ICU', exact: true }).click();
+    await form.locator('#requiredBedType').selectOption('ICU');
+    await form.getByRole('radio', { name: /Urgent/i }).check();
+    await form.locator('#reasonForReferral').fill('Severe cardiac arrhythmia');
     const submitBtn = form.getByRole('button', { name: /Submit Referral/i });
     await expect(submitBtn).toBeVisible();
     await expect(submitBtn).toBeEnabled();

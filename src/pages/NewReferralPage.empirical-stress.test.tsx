@@ -86,6 +86,23 @@ vi.mock('react-router-dom', async () => {
 
 globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock-file-url');
 
+
+/**
+ * Fills the clinical fields every submit needs (age, complaint, presentation,
+ * diagnosis) so a test can leave out exactly the field it is about, then lands
+ * on Step 5 where the referral is sent from.
+ */
+function fillClinicalMinimum() {
+  fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
+  fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '50' } });
+  fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
+  fireEvent.change(document.querySelector('#complaint')!, { target: { value: 'Chest pain' } });
+  fireEvent.change(document.querySelector('#presentation')!, { target: { value: 'Diaphoretic' } });
+  fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
+  fireEvent.change(document.querySelector('#diagnosis')!, { target: { value: 'ACS' } });
+  fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
+}
+
 describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
   let toastSpy: any;
 
@@ -115,9 +132,10 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       expect(form).toBeInTheDocument();
 
       // Heading
-      expect(screen.getByRole('heading', { name: /New Referral Request/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /step \d of 5/i })).toBeInTheDocument();
 
       // Step 1 selectors (Destination & Priority — default step)
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
       const icuBtn = screen.getByRole('button', { name: 'ICU' });
       expect(icuBtn).toBeInTheDocument();
 
@@ -139,7 +157,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       expect(requiresAccompanyingDoctor).toBeInTheDocument();
 
       // Step 2 selectors (Patient Identification)
-      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
 
       const hospitalId = document.querySelector('#hospitalId');
       expect(hospitalId).toBeInTheDocument();
@@ -153,7 +171,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       expect(screen.getByRole('radio', { name: 'Male' })).toBeInTheDocument();
 
       // Step 3 selectors (Clinical & Vitals)
-      fireEvent.click(screen.getByText('Clinical & Vitals'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
 
       const vitalHr = document.querySelector('#vitalHr');
       expect(vitalHr).toBeInTheDocument();
@@ -173,12 +191,14 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       const vitalGcs = document.querySelector('#vitalGcs');
       expect(vitalGcs).toBeInTheDocument();
 
+      fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
       const complaint = document.querySelector('#complaint');
       expect(complaint).toBeInTheDocument();
 
       const presentation = document.querySelector('#presentation');
       expect(presentation).toBeInTheDocument();
 
+      fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
       const diagnosis = document.querySelector('#diagnosis');
       expect(diagnosis).toBeInTheDocument();
 
@@ -186,7 +206,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       expect(investigations).toBeInTheDocument();
 
       // Step 4 selectors (Diagnostics & Review)
-      fireEvent.click(screen.getByText('Diagnostics & Review'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
 
       const fileInput = document.querySelector('input[type="file"]');
       expect(fileInput).toBeInTheDocument();
@@ -204,13 +224,13 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
         </MemoryRouter>
       );
 
-      const form = document.querySelector('form')!;
-      fireEvent.submit(form);
+      fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-12345' } });
+      fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Ahmed Ali' } });
+      fillClinicalMinimum();
+      fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Needs ICU' } });
+      fireEvent.click(screen.getByRole('button', { name: /Submit Referral/i }));
 
-      expect(toastSpy).toHaveBeenCalledWith(
-        'Select at least one target department before submitting.',
-        'error'
-      );
+      expect(toastSpy).toHaveBeenCalledWith('Pick at least one receiving department.', 'error');
       expect(mockAddReferral).not.toHaveBeenCalled();
     });
 
@@ -222,19 +242,19 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       );
 
       // Select department
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
       fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
 
       // Fill hospitalId but omit patientName
-      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-12345' } });
+      fillClinicalMinimum();
+      fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Needs ICU' } });
+      fireEvent.click(screen.getByRole('button', { name: /Submit Referral/i }));
 
-      const form = document.querySelector('form')!;
-      fireEvent.submit(form);
-
-      expect(toastSpy).toHaveBeenCalledWith(
-        'Patient Name and Hospital ID are mandatory fields.',
-        'error'
-      );
+      expect(toastSpy).toHaveBeenCalledWith('Enter the patient’s full name.', 'error');
+      // The form jumps back to the step with the gap and flags the field.
+      expect(document.querySelector('#patientName')).toHaveAttribute('aria-invalid', 'true');
       expect(mockAddReferral).not.toHaveBeenCalled();
     });
 
@@ -246,19 +266,18 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       );
 
       // Select department
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
       fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
 
       // Fill patientName but omit hospitalId
-      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Ahmed Ali' } });
+      fillClinicalMinimum();
+      fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Needs ICU' } });
+      fireEvent.click(screen.getByRole('button', { name: /Submit Referral/i }));
 
-      const form = document.querySelector('form')!;
-      fireEvent.submit(form);
-
-      expect(toastSpy).toHaveBeenCalledWith(
-        'Patient Name and Hospital ID are mandatory fields.',
-        'error'
-      );
+      expect(toastSpy).toHaveBeenCalledWith('Enter the hospital ID.', 'error');
+      expect(document.querySelector('#hospitalId')).toHaveAttribute('aria-invalid', 'true');
       expect(mockAddReferral).not.toHaveBeenCalled();
     });
 
@@ -270,6 +289,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       );
 
       // Select department
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
       fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
 
       // Uncheck Auto-Route
@@ -277,18 +297,17 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.click(autoRouteCheckbox);
 
       // Fill patient info
-      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-12345' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Ahmed Ali' } });
 
-      // Do NOT select receivingFacility
-      const form = document.querySelector('form')!;
-      fireEvent.submit(form);
+      fillClinicalMinimum();
+      fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Needs ICU' } });
 
-      expect(toastSpy).toHaveBeenCalledWith(
-        'Select a receiving facility or enable Auto-Route.',
-        'error'
-      );
+      // Do NOT select receivingFacility
+      fireEvent.click(screen.getByRole('button', { name: /Submit Referral/i }));
+
+      expect(toastSpy).toHaveBeenCalledWith('Choose a hospital, or turn Auto-Route back on.', 'error');
       expect(mockAddReferral).not.toHaveBeenCalled();
     });
   });
@@ -304,7 +323,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
         </MemoryRouter>
       );
 
-      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
       const nidInput = document.querySelector('#nationalId') as HTMLInputElement;
 
       // 13 digits (too short)
@@ -390,7 +409,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
         </MemoryRouter>
       );
 
-      fireEvent.click(screen.getByText('Clinical & Vitals'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
       const gcsInput = document.querySelector('#vitalGcs') as HTMLInputElement;
 
       // Enter value below minimum
@@ -421,6 +440,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       );
 
       // Fill full valid referral — Step 1: Destination & Priority
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
       fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
 
       // Uncheck Auto-Route and select f2
@@ -433,19 +453,21 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Offline transfer test' } });
 
       // Step 2: Patient Identification
-      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-OFFLINE-01' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Offline Patient' } });
       fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '45' } });
 
       // Step 3: Clinical & Vitals
-      fireEvent.click(screen.getByText('Clinical & Vitals'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
       fireEvent.change(document.querySelector('#complaint')!, { target: { value: 'Severe chest pain' } });
       fireEvent.change(document.querySelector('#presentation')!, { target: { value: 'Ongoing discomfort' } });
+      fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
       fireEvent.change(document.querySelector('#diagnosis')!, { target: { value: 'Unstable Angina' } });
 
       // Step 4: Diagnostics & Review, then advance to the confirm/submit screen
-      fireEvent.click(screen.getByText('Diagnostics & Review'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
       fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
 
       // Submit while offline
@@ -468,13 +490,13 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       // Verify Queued Offline confirmation view renders
       await waitFor(() => {
         expect(screen.getByText(/Queued for E2E Tertiary Medical Center/i)).toBeInTheDocument();
-        expect(screen.getByText(/will send automatically when the connection is back/i)).toBeInTheDocument();
+        expect(screen.getByText(/it sends automatically when the connection is back/i)).toBeInTheDocument();
       });
 
-      // Verify "Done" button navigates to /referrals
+      // "Done" goes home, where the queued referral shows under "Them".
       const doneBtn = screen.getByRole('button', { name: /Done/i });
       fireEvent.click(doneBtn);
-      expect(mockNavigate).toHaveBeenCalledWith('/referrals');
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     });
   });
 
@@ -492,6 +514,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       );
 
       // Select department — Step 1: Destination & Priority
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
       fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
 
       // Destination options
@@ -515,7 +538,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       expect(alertCheckbox.checked).toBe(true);
 
       // Patient Demographics — Step 2: Patient Identification
-      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-98231' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Sayed Abdel-Rahman' } });
       fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '58' } });
@@ -525,7 +548,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.click(screen.getByRole('radio', { name: 'Male' }));
 
       // Vitals — Step 3: Clinical & Vitals
-      fireEvent.click(screen.getByText('Clinical & Vitals'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
       fireEvent.change(document.querySelector('#vitalHr')!, { target: { value: '118' } });
       fireEvent.change(document.querySelector('#vitalBp')!, { target: { value: '135/85' } });
       fireEvent.change(document.querySelector('#vitalSpo2')!, { target: { value: '89' } });
@@ -534,12 +557,14 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.change(document.querySelector('#vitalGcs')!, { target: { value: '14' } });
 
       // Clinical
+      fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
       fireEvent.change(document.querySelector('#complaint')!, {
         target: { value: 'Sudden onset severe chest tightness and dyspnea' },
       });
       fireEvent.change(document.querySelector('#presentation')!, {
         target: { value: 'Patient presented with acute hypoxemic respiratory failure' },
       });
+      fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
       fireEvent.change(document.querySelector('#diagnosis')!, {
         target: { value: 'Severe ARDS and acute coronary syndrome' },
       });
@@ -548,7 +573,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       });
 
       // Upload file — Step 4: Diagnostics & Review
-      fireEvent.click(screen.getByText('Diagnostics & Review'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const file = new File(['content'], 'ecg_lead2_trace.png', { type: 'image/png' });
       Object.defineProperty(file, 'size', { value: 1024 * 1024 }); // 1MB
@@ -610,15 +635,16 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       );
 
       // 'Neurology' is not offered by f1, f2, or f3_full
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
       fireEvent.click(screen.getByRole('button', { name: 'Neurology' }));
       fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Acute stroke' } });
 
-      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-NEURO-01' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Neurology Patient' } });
 
-      const form = document.querySelector('form')!;
-      fireEvent.submit(form);
+      fillClinicalMinimum();
+      fireEvent.click(screen.getByRole('button', { name: /Submit Referral/i }));
 
       expect(toastSpy).toHaveBeenCalledWith(
         expect.stringMatching(/No hospital in the network can take this patient/i),
@@ -660,16 +686,17 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
         </MemoryRouter>
       );
 
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
       fireEvent.click(screen.getByRole('button', { name: 'Pediatrics' }));
       fireEvent.change(document.querySelector('#requiredBedType')!, { target: { value: 'PICU' } });
       fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Full PICU transfer' } });
 
-      fireEvent.click(screen.getByText('Patient Identification'));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-PICU-01' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'PICU Child' } });
 
-      const form = document.querySelector('form')!;
-      fireEvent.submit(form);
+      fillClinicalMinimum();
+      fireEvent.click(screen.getByRole('button', { name: /Submit Referral/i }));
 
       expect(toastSpy).toHaveBeenCalledWith(
         expect.stringMatching(/Every matching hospital is full/i),
@@ -688,25 +715,37 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
   // =========================================================================
   // 8. AI Triage Simulation
   // =========================================================================
-  describe('AI Triage Simulation', () => {
-    it('executes AI Triage ranking algorithm and updates suggested facility', async () => {
+  describe('Destination ranking (real capacity only)', () => {
+    it('ranks hospitals by free beds of the required type and states the count, with no invented distances', () => {
+      // Own fixture: an earlier test in this file reassigns mockFacilities.
+      const cap = (icu: [number, number]) => ({ Ward: { total: 10, occupied: 0 }, ICU: { total: icu[0], occupied: icu[1] }, CCU: { total: 0, occupied: 0 }, PICU: { total: 0, occupied: 0 } });
+      mockFacilities = [
+        { id: 'f1', name: 'Referring Hospital', departments: ['ICU'], capacity: cap([10, 2]), type: 'district_hospital', location: 'Ismailia' },
+        { id: 'f3_full', name: 'Full Hospital', departments: ['Emergency', 'ICU'], capacity: cap([5, 5]), type: 'general_hospital', location: 'Ismailia' },
+        { id: 'f2', name: 'E2E Tertiary Medical Center', departments: ['ICU', 'Cardiology'], capacity: cap([20, 5]), type: 'tertiary_hospital', location: 'Ismailia' },
+      ] as typeof mockFacilities;
       render(
         <MemoryRouter>
           <NewReferralPage />
         </MemoryRouter>
       );
 
-      fireEvent.click(screen.getByRole('button', { name: 'Emergency' }));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
+      fireEvent.change(document.querySelector('#requiredBedType')!, { target: { value: 'ICU' } });
 
-      const aiTriageBtn = screen.getByRole('button', { name: /AI Triage/i });
-      fireEvent.click(aiTriageBtn);
+      // Auto-route states how many hospitals it will notify and how many have a bed.
+      expect(screen.getByText(/Notifies 2 matching hospitals together — 1 with a free ICU bed now/i)).toBeInTheDocument();
 
-      await waitFor(
-        () => {
-          expect(screen.getByText(/AI Ranked Destination Suggestions/i)).toBeInTheDocument();
-        },
-        { timeout: 3000 }
-      );
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Auto-Route' }));
+      const options = Array.from((document.querySelector('#receivingFacility') as HTMLSelectElement).options).map(o => o.textContent);
+      expect(options).toEqual([
+        'Choose a hospital',
+        'E2E Tertiary Medical Center · 15 ICU free',
+        'Full Hospital · 0 ICU free',
+      ]);
+      expect(screen.queryByText(/km/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /AI Triage/i })).not.toBeInTheDocument();
     });
   });
 
@@ -716,7 +755,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
   describe('Draft Restore and Discard Lifecycle', () => {
     it('restores draft state on mount and discards properly when requested', () => {
       const savedDraft = {
-        step: 2,
+        step: 1,
         patientData: {
           hospitalId: 'ISM-DRAFT-99',
           name: 'Saved Draft Patient',
