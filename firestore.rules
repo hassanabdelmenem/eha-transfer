@@ -200,8 +200,9 @@ service cloud.firestore {
           // createdAtMs is the SLA clock (see slaWindowElapsed). If it were
           // editable, a party could push it forward and switch the 30-minute
           // escalation off for that referral permanently.
-          && (!('createdAtMs' in resource.data)
-              || request.resource.data.createdAtMs == resource.data.createdAtMs)
+          // Required since the 27 Sep 2026 backfill (scripts/backfill-created-at-ms.mjs).
+          && 'createdAtMs' in resource.data
+          && request.resource.data.createdAtMs == resource.data.createdAtMs
           // Set once at creation by the referring clinician. Without pinning
           // this, any party could flip it to false in an ordinary intermediate
           // update -- one that never touches `status` at all -- and silently
@@ -247,11 +248,13 @@ service cloud.firestore {
     // genuinely been waiting 30 minutes, at which point the escalation is correct
     // no matter who wrote it.
     //
-    // Referrals created before createdAtMs existed cannot be checked; they are
-    // allowed through rather than becoming permanently un-escalatable.
+    // Every referral has createdAtMs since the 27 Sep 2026 backfill
+    // (scripts/backfill-created-at-ms.mjs), so a document without it is
+    // refused rather than trusted.
     function slaWindowElapsed() {
-      return !('createdAtMs' in resource.data)
-          || request.time.toMillis() >= resource.data.createdAtMs + 1800000;
+      return 'createdAtMs' in resource.data
+          && resource.data.createdAtMs is number
+          && request.time.toMillis() >= resource.data.createdAtMs + 1800000;
     }
 
     // Escalation is a claim about why a patient is stuck, and the banner tells
