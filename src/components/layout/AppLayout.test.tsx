@@ -105,6 +105,18 @@ describe('AppLayout', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('states the offline queue in the phone header, pluralised by count', () => {
+    mockIsOnline = false;
+    mockPendingSyncCount = 3;
+    const { unmount } = renderLayout();
+    expect(screen.getByText(/Offline · 3 actions queued, will send automatically/i)).toBeInTheDocument();
+    unmount();
+
+    mockPendingSyncCount = 1;
+    renderLayout();
+    expect(screen.getByText(/Offline · 1 action queued, will send automatically/i)).toBeInTheDocument();
+  });
+
   it('renders the sidebar, facility name, and the outlet content', () => {
     renderLayout();
     expect(screen.getByText('Ismailia Medical Complex')).toBeInTheDocument();

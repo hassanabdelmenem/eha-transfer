@@ -1,87 +1,111 @@
 import React from 'react';
-import { Referral } from '../../types';
-import { ShieldAlert, Phone, ArrowRight } from 'lucide-react';
+import { AlertTriangle, Phone } from 'lucide-react';
+import { describeCapacityEscalation } from '../../lib/routing';
 import { EscalationAlertBannerProps } from './types';
+import { cn } from '../../lib/utils';
 
-const ESCALATION_LABELS: Record<string, string> = {
-  no_beds_available: 'No beds available',
-  no_matching_facility: 'No matching facility',
-  sla_breach: 'SLA breach',
-  requirements_needed: 'Requirements needed',
-  manual: 'Manual escalation',
+// Why the case escalated, in the words the strip uses ("Escalated · no
+// response 34 min"). Lower-case: the strip sets its own case.
+const REASON_WORDS: Record<string, string> = {
+  sla_breach: 'no response',
+  no_beds_available: 'no beds in network',
+  no_matching_facility: 'no matching facility',
+  requirements_needed: 'requirements outstanding',
+  manual: 'raised by hand',
 };
 
+const minutesSince = (iso: string | undefined): number | null => {
+  const t = Date.parse(iso || '');
+  if (Number.isNaN(t)) return null;
+  return Math.max(0, Math.round((Date.now() - t) / 60000));
+};
+
+/**
+ * The escalated case, pinned above the queue: a 2px brick card whose solid
+ * header strip states the reason and how long it has waited. System-level
+ * escalations (no bed anywhere in the network) say so, and carry the capacity
+ * sentence from lib/routing instead of the referral context line.
+ */
 export const EscalationAlertBanner: React.FC<EscalationAlertBannerProps> = ({
   referral,
   onAction,
   actionLabel = 'Review now',
+  secondaryAction,
   referrerPhone,
   referringFacilityName,
 }) => {
-  const since = referral.escalatedAt || referral.createdAt;
-  const mins = Math.max(0, Math.round((Date.now() - Date.parse(since)) / 60000));
   const reasonKey = referral.escalationReason || 'manual';
-  const reasonText = ESCALATION_LABELS[reasonKey] || reasonKey.replace(/_/g, ' ');
+  const reason = REASON_WORDS[reasonKey] || reasonKey.replace(/_/g, ' ');
+  const systemLevel = referral.escalationLevel === 'system';
+  const mins = minutesSince(referral.escalatedAt || referral.createdAt);
+  const strip = systemLevel
+    ? `System level · ${reason}`
+    : `Escalated · ${reason}${mins === null ? '' : ` ${mins} min`}`;
+
+  const capacitySentence =
+    reasonKey === 'no_beds_available' || reasonKey === 'no_matching_facility'
+      ? describeCapacityEscalation(reasonKey)
+      : null;
 
   return (
-    <div
-      role="region"
-      aria-label="Critical Escalation Alert"
-      aria-live="polite"
-      className="rounded-2xl border-2 border-critical-600 bg-critical-50 dark:bg-critical-950/50 shadow-md overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300"
+    <section
+      aria-label="Escalated case"
+      className="shrink-0 overflow-hidden rounded-xl border-2 border-critical-700 bg-critical-100 dark:border-critical-400/70 dark:bg-critical-950/45"
     >
-      <div className="bg-critical-600 text-white px-4 py-2 text-xs font-bold flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 motion-safe:animate-pulse shrink-0" />
-          <span>CRITICAL ESCALATION · {reasonText.toUpperCase()} ({mins} MIN OVERDUE)</span>
-        </div>
-        <span className="font-mono text-[11px] bg-critical-700 px-2 py-0.5 rounded text-white/90">
-          MRN: {referral.patientData.hospitalId}
-        </span>
-      </div>
+      <p className="flex items-center gap-2 bg-critical-700 px-[14px] py-2 text-[11.5px] font-bold uppercase leading-tight tracking-[0.08em] text-white dark:bg-transparent dark:pb-0 dark:pt-3 dark:text-critical-300">
+        <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+        {strip}
+      </p>
+      <div className="px-[14px] pt-3 pb-[14px]">
+        <p className="text-[17px] font-semibold leading-[1.25] text-ink dark:text-paper">
+          {referral.patientData.name}, {referral.patientData.age}
+          {systemLevel && <span> · {referral.requiredBedType}</span>}
+        </p>
+        <p className="mt-[3px] text-[13.5px] leading-[1.4] text-critical-900 dark:text-white/70">
+          {capacitySentence ?? (
+            <>
+              {referral.requiredBedType} bed
+              {referral.reasonForReferral ? ` · ${referral.reasonForReferral}` : ''}
+              {referringFacilityName ? ` · from ${referringFacilityName}` : ''}
+            </>
+          )}
+        </p>
 
-      <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              {referral.patientData.name}, {referral.patientData.age}y
-            </h2>
-            <span className="px-2 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wide bg-critical-100 dark:bg-critical-900/60 text-critical-800 dark:text-critical-300">
-              {referral.priority}
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-            <span className="font-semibold text-slate-800 dark:text-slate-200">{referral.requiredBedType} Bed</span>
-            {referral.receivingDepartments && referral.receivingDepartments.length > 0 && (
-              <span> · {referral.receivingDepartments.join(', ')}</span>
+        {(onAction || secondaryAction || referrerPhone) && (
+          <div className="mt-3 flex gap-2.5">
+            {onAction && (
+              <button
+                type="button"
+                onClick={() => onAction(referral)}
+                className="min-h-[52px] flex-1 rounded-[10px] bg-ink px-3 text-[15px] font-semibold text-paper transition-colors hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200"
+              >
+                {actionLabel}
+              </button>
             )}
-            {referringFacilityName && <span> · From {referringFacilityName}</span>}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5 shrink-0">
-          {referrerPhone && (
-            <a
-              href={`tel:${referrerPhone}`}
-              aria-label="Call referring facility"
-              className="min-h-[48px] min-w-[48px] px-3 flex items-center justify-center gap-1.5 rounded-xl border-2 border-critical-600 text-critical-700 dark:text-critical-300 hover:bg-critical-100 dark:hover:bg-critical-900/40 font-bold text-xs transition-colors"
-            >
-              <Phone className="w-4 h-4" />
-              <span className="hidden md:inline">Call Referrer</span>
-            </a>
-          )}
-          {onAction && (
-            <button
-              type="button"
-              onClick={() => onAction(referral)}
-              className="min-h-[48px] px-5 rounded-xl bg-critical-600 hover:bg-critical-700 text-white text-sm font-bold shadow-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-            >
-              <span>{actionLabel}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+            {secondaryAction && (
+              <button
+                type="button"
+                onClick={() => secondaryAction.onClick(referral)}
+                className="min-h-[52px] flex-1 rounded-[10px] border border-critical-700/50 bg-transparent px-3 text-[15px] font-semibold text-ink transition-colors hover:bg-critical-200/60 dark:border-white/25 dark:text-paper dark:hover:bg-white/10"
+              >
+                {secondaryAction.label}
+              </button>
+            )}
+            {referrerPhone && (
+              <a
+                href={`tel:${referrerPhone}`}
+                aria-label="Call the referring doctor"
+                className={cn(
+                  'flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[10px] border border-critical-700 bg-white text-critical-700 transition-colors hover:bg-critical-50',
+                  'dark:border-critical-400/70 dark:bg-transparent dark:text-critical-300 dark:hover:bg-critical-950/60'
+                )}
+              >
+                <Phone className="h-5 w-5" aria-hidden="true" />
+              </a>
+            )}
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 };

@@ -1,10 +1,14 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
-import { Badge } from '../ui/Badge';
-import { ClipboardList } from 'lucide-react';
 import { ShiftHandoverFeedProps } from './types';
+import { MicroLabel } from './RoleHome';
 
+const when = (iso?: string) => {
+  const t = Date.parse(iso || '');
+  return Number.isNaN(t) ? '' : format(new Date(t), 'd MMM, HH:mm');
+};
+
+/** The last few handovers written for this unit, quiet, below the queue. */
 export const ShiftHandoverFeed: React.FC<ShiftHandoverFeedProps> = ({
   shiftLogs,
   userFacilityId,
@@ -20,76 +24,31 @@ export const ShiftHandoverFeed: React.FC<ShiftHandoverFeedProps> = ({
     .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
     .slice(0, limit);
 
-  if (filteredLogs.length === 0) {
-    return (
-      <Card className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
-        <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
-          <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <ClipboardList className="w-4 h-4 text-slate-500" />
-            Recent Shift Handovers
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs">
-          No recent handovers recorded for your unit.
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
-      <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <ClipboardList className="w-4 h-4 text-slate-500" />
-            Recent Shift Handovers
-          </CardTitle>
-          <Badge variant="default" className="text-[11px]">
-            {filteredLogs.length} recent
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+    <section aria-labelledby="handover-feed" className="mt-6">
+      <MicroLabel id="handover-feed">Recent handovers</MicroLabel>
+      {filteredLogs.length === 0 ? (
+        <p className="mt-2.5 text-[14px] text-slate-700 dark:text-white/65">No recent handovers recorded for your unit.</p>
+      ) : (
+        <ul className="mt-2.5 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.04]">
           {filteredLogs.map(log => (
-            <div
-              key={log.id}
-              className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                      {log.userName}
-                    </span>
-                    {log.department && (
-                      <Badge variant="info" className="text-[10px]">
-                        {log.department}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
-                    {log.summary}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono block">
-                    {log.timestamp ? format(new Date(log.timestamp), 'MMM d, h:mm a') : ''}
-                  </span>
-                  <div className="flex items-center gap-1.5 mt-1.5 justify-end text-[11px] font-semibold">
-                    <span className="bg-warning-100 dark:bg-warning-900/40 text-warning-800 dark:text-warning-300 px-2 py-0.5 rounded-md">
-                      Pending: {log.pendingTransfersCount ?? 0}
-                    </span>
-                    <span className="bg-success-100 dark:bg-success-900/40 text-success-800 dark:text-success-300 px-2 py-0.5 rounded-md">
-                      Admitted: {log.admittedPatientsCount ?? 0}
-                    </span>
-                  </div>
-                </div>
+            <li key={log.id} className="px-[14px] py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="min-w-0 truncate text-[15px] font-semibold text-ink dark:text-paper">
+                  {log.userName}
+                  {log.department && <span className="font-normal text-slate-700 dark:text-white/65"> · {log.department}</span>}
+                </p>
+                <span className="shrink-0 font-mono text-[12px] font-medium text-slate-500 dark:text-white/60">{when(log.timestamp)}</span>
               </div>
-            </div>
+              <p className="mt-1 line-clamp-2 text-[14px] leading-[1.5] text-slate-700 dark:text-white/70">{log.summary}</p>
+              <p className="mt-1.5 flex gap-3 text-[12.5px] font-semibold">
+                <span className="text-warning-800 dark:text-warning-300">Pending: {log.pendingTransfersCount ?? 0}</span>
+                <span className="text-success-700 dark:text-success-300">Admitted: {log.admittedPatientsCount ?? 0}</span>
+              </p>
+            </li>
           ))}
-        </div>
-      </CardContent>
-    </Card>
+        </ul>
+      )}
+    </section>
   );
 };

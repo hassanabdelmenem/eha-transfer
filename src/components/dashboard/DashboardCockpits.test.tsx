@@ -201,8 +201,10 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         />
       );
 
-      expect(screen.getByText(/CRITICAL ESCALATION/i)).toBeInTheDocument();
-      expect(screen.getByText(/Ahmed Hassan, 45y/i)).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: /Escalated case/i })).toBeInTheDocument();
+      expect(screen.getByText(/^Escalated · /i)).toBeInTheDocument();
+      expect(screen.getByText(/Ahmed Hassan, 45/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Call the referring doctor/i })).toHaveAttribute('href', 'tel:01012345678');
       expect(screen.getByText(/Review now/i)).toBeInTheDocument();
 
       fireEvent.click(screen.getByText(/Review now/i));
@@ -229,13 +231,16 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByText(/Them/i)).toBeInTheDocument();
-      expect(screen.getByText(/Moving/i)).toBeInTheDocument();
-      expect(screen.getByText(/Inbound/i)).toBeInTheDocument();
-      expect(screen.getByText(/Initiate New Referral/i)).toBeInTheDocument();
-      expect(screen.getByText(/Search/i)).toBeInTheDocument();
-      expect(screen.getByText(/Directory/i)).toBeInTheDocument();
-      expect(screen.getByText(/Currently Admitted to Unit/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /need(s)? you$/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^You/i })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: /^Them/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Moving/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /New referral/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Search referrals/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Directory and hotlines/i })).toBeInTheDocument();
+      expect(screen.getByText(/Admitted to your unit/i)).toBeInTheDocument();
+      // The home is the queue: no KPI overview section.
+      expect(screen.queryByRole('heading', { name: /overview/i })).not.toBeInTheDocument();
     });
 
     it('switches segments on tab click', () => {
@@ -247,7 +252,8 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
 
       const themTab = screen.getByRole('button', { name: /^Them/i });
       fireEvent.click(themTab);
-      expect(themTab).toBeInTheDocument();
+      expect(themTab).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: /^You/i })).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('safely handles null user and transitions without hook ordering mismatch', () => {
@@ -288,20 +294,50 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       };
     });
 
-    it('renders HoD review queue, quick direct approval, and shift delegation', async () => {
+    it('renders the HoD home: count headline, pinned escalation, then the queue with an SLA clock', async () => {
+      mockReferrals = [
+        testReferral,
+        {
+          ...testReferral,
+          id: 'ref-2',
+          isEscalated: false,
+          escalationReason: null,
+          priority: 'urgent',
+          createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+          patientData: { ...testReferral.patientData, name: 'Sara Abdelrahman' },
+        },
+      ];
       render(
         <MemoryRouter>
           <HodCockpit />
         </MemoryRouter>
       );
 
-      expect(screen.getByText(/Department Review Queue/i)).toBeInTheDocument();
-      expect(screen.getByText(/On-Call Shift Delegation/i)).toBeInTheDocument();
-      expect(screen.getByText(/Active Unit Inpatients/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /2 waiting on you/i })).toBeInTheDocument();
+      // The escalated case is pinned, not repeated in the queue below it.
+      expect(screen.getByRole('region', { name: /Escalated case/i })).toHaveTextContent(/Ahmed Hassan/);
+      expect(screen.getAllByText(/Ahmed Hassan/)).toHaveLength(1);
+      // Urgent ICU case waiting 10 min: the clock shows roughly 20 minutes left.
+      expect(screen.getByText(/^(19|20):\d\d left$/)).toBeInTheDocument();
+      // Delegation and inpatients live on /department, not the home queue.
+      expect(screen.queryByText(/On-Call Shift Delegation/i)).not.toBeInTheDocument();
 
       const approveBtn = screen.getByRole('button', { name: /^Approve$/i });
       fireEvent.click(approveBtn);
-      expect(mockAddDeptComment).toHaveBeenCalledWith('ref-1', 'direct_approval', '');
+      expect(mockAddDeptComment).toHaveBeenCalledWith('ref-2', 'direct_approval', '');
+      expect(await screen.findByText(/Approved Sara Abdelrahman/i)).toBeInTheDocument();
+    });
+
+    it('keeps shift delegation and unit inpatients on the department route', () => {
+      render(
+        <MemoryRouter>
+          <HodCockpit isDepartmentRoute />
+        </MemoryRouter>
+      );
+
+      expect(screen.getByText(/Department review queue/i)).toBeInTheDocument();
+      expect(screen.getByText(/On-Call Shift Delegation/i)).toBeInTheDocument();
+      expect(screen.getByText(/Active Unit Inpatients/i)).toBeInTheDocument();
     });
 
     it('renders DepartmentPage with HoD workspace', () => {
@@ -329,6 +365,8 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         {
           ...testReferral,
           status: 'dept_approved',
+          isEscalated: false,
+          escalationReason: null,
         },
       ];
     });
@@ -340,9 +378,9 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByText(/need your signature/i)).toBeInTheDocument();
-      expect(screen.getByText(/Department-Approved Queue/i)).toBeInTheDocument();
-      expect(screen.getByText(/Real-time Free Beds/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /^1 to sign$/i })).toBeInTheDocument();
+      expect(screen.getByText(/Department approved · your signature/i)).toBeInTheDocument();
+      expect(screen.getByText(/Free beds right now/i)).toBeInTheDocument();
       expect(screen.getByText(/Network Bed Occupancy Heatmap/i)).toBeInTheDocument();
 
       const acceptBtn = screen.getByRole('button', { name: /^Accept$/i });
@@ -375,7 +413,7 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
           <ManagerCockpit />
         </MemoryRouter>
       );
-      expect(screen.getByText(/need your signature/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /to sign/i })).toBeInTheDocument();
     });
   });
 
@@ -409,9 +447,12 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByText(/Emergency Logistics & Ambulance Radar/i)).toBeInTheDocument();
-      expect(screen.getByText(/Outbound · Awaiting Transport/i)).toBeInTheDocument();
-      expect(screen.getByText(/Inbound · In Transit/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /1 to send, 1 arriving/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Outbound · awaiting ambulance/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Inbound · in transit/i })).toBeInTheDocument();
+      // Consent is recorded but the escort is not: dispatch stays blocked, with the reason.
+      expect(screen.getByRole('button', { name: /Dispatch ambulance/i })).toBeDisabled();
+      expect(screen.getByText(/Blocked: record the escorting doctor first/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/Doctor's name/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/Doctor's phone number/i)).toBeInTheDocument();
 
@@ -445,7 +486,7 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
           <ERCockpit />
         </MemoryRouter>
       );
-      expect(screen.getByText(/Emergency Logistics & Ambulance Radar/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /to send/i })).toBeInTheDocument();
     });
 
     it('renders ERDashboard wrapper route seamlessly', () => {
@@ -455,7 +496,7 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByText(/ER Room & Dispatch Console/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /to send, .* arriving/i })).toBeInTheDocument();
     });
   });
 
@@ -483,10 +524,11 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByText(/Ward Capacity & Bed Management Console/i)).toBeInTheDocument();
-      expect(screen.getByText(/Arrived Transfers · Waiting for Bed Assignment/i)).toBeInTheDocument();
-      expect(screen.getByText(/Active Unit Bed Occupancy/i)).toBeInTheDocument();
-      expect(screen.getByText(/Active Ward Inpatient Census/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /beds? free$/i })).toBeInTheDocument();
+      expect(screen.getByText(/Arrived · waiting to be admitted/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Direct admit a walk-in/i })).toHaveAttribute('href', '/admissions/new');
+      // The census lives on /bed-management; the home links to it.
+      expect(screen.getByRole('link', { name: /Inpatient census and discharges/i })).toHaveAttribute('href', '/bed-management');
 
       const admitBtn = screen.getByRole('button', { name: /Admit to CCU bed/i });
       fireEvent.click(admitBtn);
@@ -525,8 +567,8 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
     });
   });
 
-  describe('9. Master Dashboard Page Coordinator & DOM Heading Contract', () => {
-    it('renders Overview heading matching /overview/i for clinician role', () => {
+  describe('9. Role home coordinator & heading contract', () => {
+    it('opens a clinician on their queue, headed by the count that needs them', () => {
       mockUser = {
         id: 'doc-1',
         name: 'Dr. Mahmoud Tarek',
@@ -542,13 +584,15 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         </MemoryRouter>
       );
 
-      // Playwright navigation.spec.ts invariant
-      expect(screen.getByRole('heading', { name: /overview/i })).toBeVisible();
-      expect(screen.getByText(/Incoming Referrals Grid/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Priority Sort/i })).toBeInTheDocument();
+      // Playwright navigation.spec.ts invariant: the home's one h1 is the count.
+      expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+      expect(screen.getByRole('heading', { level: 1, name: /need(s)? you$/i })).toBeVisible();
+      // No KPI overview, no second referrals grid.
+      expect(screen.queryByRole('heading', { name: /overview/i })).not.toBeInTheDocument();
+      expect(screen.queryByText(/Incoming Referrals Grid/i)).not.toBeInTheDocument();
     });
 
-    it('renders Overview heading and manager cockpit for hospital manager', () => {
+    it('opens a hospital manager on the signature queue', () => {
       mockUser = {
         id: 'mgr-1',
         name: 'Dr. Tamer Manager',
@@ -563,8 +607,8 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         </MemoryRouter>
       );
 
-      expect(screen.getByRole('heading', { name: /overview/i })).toBeVisible();
-      expect(screen.getByText(/need your signature/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /to sign$/i })).toBeVisible();
+      expect(screen.queryByRole('heading', { name: /overview/i })).not.toBeInTheDocument();
     });
   });
 });
