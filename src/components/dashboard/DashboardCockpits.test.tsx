@@ -299,7 +299,7 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       expect(screen.getByText(/On-Call Shift Delegation/i)).toBeInTheDocument();
       expect(screen.getByText(/Active Unit Inpatients/i)).toBeInTheDocument();
 
-      const approveBtn = screen.getByRole('button', { name: /Direct Approve/i });
+      const approveBtn = screen.getByRole('button', { name: /^Approve$/i });
       fireEvent.click(approveBtn);
       expect(mockAddDeptComment).toHaveBeenCalledWith('ref-1', 'direct_approval', '');
     });

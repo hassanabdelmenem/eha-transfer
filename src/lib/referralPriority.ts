@@ -25,18 +25,34 @@ export function sortByWorkflow<T extends Pick<Referral, 'isEscalated' | 'priorit
   });
 }
 
-/** 5-6px left rail colour, carrying priority alongside the text chip -- never colour alone. */
+/**
+ * Fill for the 6px priority rail, drawn as its own element at the card's left
+ * edge. It always pairs with the chip's text, so priority never rests on colour.
+ */
+export function priorityRailFill(priority: ReferralPriority, escalated?: boolean): string {
+  if (escalated || priority === 'emergency') return 'bg-critical-700';
+  if (priority === 'urgent') return 'bg-warning-800';
+  return 'bg-slate-300 dark:bg-white/25';
+}
+
+/** Rail as a thick left border, for table rows that can't hold an element. */
 export function priorityRailClass(priority: ReferralPriority, escalated?: boolean): string {
-  if (escalated) return 'border-l-[6px] border-critical-700';
-  if (priority === 'emergency') return 'border-l-[6px] border-critical-600';
-  if (priority === 'urgent') return 'border-l-[6px] border-warning-500';
-  return 'border-l-[6px] border-slate-200 dark:border-slate-700';
+  if (escalated || priority === 'emergency') return 'border-l-[6px] border-critical-700';
+  if (priority === 'urgent') return 'border-l-[6px] border-warning-800';
+  return 'border-l-[6px] border-slate-300 dark:border-white/25';
 }
 
 export function priorityChipClasses(priority: ReferralPriority): string {
-  if (priority === 'emergency') return 'bg-critical-700 text-white dark:bg-critical-600';
-  if (priority === 'urgent') return 'bg-warning-100 text-warning-800 border border-warning-700 dark:bg-warning-900/40 dark:text-warning-300 dark:border-warning-700';
-  return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+  if (priority === 'emergency') return 'bg-critical-700 text-white';
+  if (priority === 'urgent') return 'bg-warning-100 text-warning-800';
+  return 'bg-slate-200 text-slate-700 dark:bg-white/10 dark:text-white/75';
+}
+
+/** Colour of the one sentence naming what the card needs, matched to its priority. */
+export function priorityAskClass(priority: ReferralPriority, escalated?: boolean): string {
+  if (escalated || priority === 'emergency') return 'text-critical-700 dark:text-critical-300';
+  if (priority === 'urgent') return 'text-warning-800 dark:text-warning-300';
+  return 'text-slate-700 dark:text-white/75';
 }
 
 export function priorityLabel(priority: ReferralPriority): string {
