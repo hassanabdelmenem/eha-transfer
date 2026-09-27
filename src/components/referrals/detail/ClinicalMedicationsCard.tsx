@@ -15,8 +15,7 @@ export const ClinicalMedicationsCard: React.FC<ClinicalMedicationsCardProps> = (
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Pill className="h-5 w-5 text-emerald-700" />
+        <CardTitle>
           Medications & Interventions
         </CardTitle>
       </CardHeader>

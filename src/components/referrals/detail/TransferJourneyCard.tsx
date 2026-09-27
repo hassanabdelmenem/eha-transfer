@@ -1,7 +1,6 @@
 import React from 'react';
 import { Building, Truck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/Card';
-import { ReferralTimeline } from '../ReferralTimeline';
 import { Referral, Facility, User } from '../../../types';
 
 export interface TransferJourneyCardProps {
@@ -15,7 +14,6 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
   referral,
   fromFacility,
   toFacility,
-  usersById,
 }) => {
   return (
     <Card>
@@ -92,10 +90,6 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
           )}
         </div>
 
-        <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-0 relative">
-          <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-4">Timeline</h4>
-          <ReferralTimeline referral={referral} usersById={usersById} />
-        </div>
       </CardContent>
     </Card>
   );

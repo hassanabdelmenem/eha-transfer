@@ -344,17 +344,17 @@ describe('Milestone 4 Empirical Adversarial Suite: Referral Detail, Timeline & A
       render(<ReferralTimeline referral={ref} usersById={mockUsersById} />);
 
       // Should render without error
-      expect(screen.getByText(/Status: PENDING/i)).toBeInTheDocument();
-      expect(screen.getByText(/Status: DEPT APPROVED/i)).toBeInTheDocument();
-      expect(screen.getByText(/Status: MANAGER APPROVED/i)).toBeInTheDocument();
-      expect(screen.getByText(/Status: IN TRANSIT/i)).toBeInTheDocument();
+      expect(screen.getByText(/^Referral sent$/i)).toBeInTheDocument();
+      expect(screen.getByText(/^Department approved$/i)).toBeInTheDocument();
+      expect(screen.getByText(/^Manager accepted the transfer$/i)).toBeInTheDocument();
+      expect(screen.getByText(/^Dispatched$/i)).toBeInTheDocument();
 
       // 'invalid-iso-date' produces 'Invalid Date'
       expect(screen.getByText('Invalid Date')).toBeInTheDocument();
       // Empty string produces 'Unknown Time'
       expect(screen.getByText('Unknown Time')).toBeInTheDocument();
       // Unknown user renders 'System / Unknown'
-      expect(screen.getAllByText(/by System \/ Unknown/i).length).toBe(2);
+      expect(screen.getAllByText(/System \/ Unknown/i).length).toBe(2);
     });
 
     it('sorts mixed status changes and department comments chronologically descending', () => {
@@ -371,12 +371,12 @@ describe('Milestone 4 Empirical Adversarial Suite: Referral Detail, Timeline & A
 
       render(<ReferralTimeline referral={ref} usersById={mockUsersById} />);
 
-      const eventTitles = screen.getAllByText(/(Status:|Dept Review:)/i).map(el => el.textContent);
+      const eventTitles = screen.getAllByRole('listitem').map(li => li.querySelector('p')?.textContent ?? '');
       // Newest first: 08:45 -> 08:30 -> 08:15 -> 08:00
-      expect(eventTitles[0]).toContain('Dept Review: URGENT APPROVAL');
-      expect(eventTitles[1]).toContain('Status: DEPT APPROVED');
-      expect(eventTitles[2]).toContain('Dept Review: DIRECT APPROVAL');
-      expect(eventTitles[3]).toContain('Status: PENDING');
+      expect(eventTitles[0]).toMatch(/^Urgent approval by /);
+      expect(eventTitles[1]).toBe('Department approved');
+      expect(eventTitles[2]).toMatch(/^Approved by /);
+      expect(eventTitles[3]).toBe('Referral sent');
     });
   });
 

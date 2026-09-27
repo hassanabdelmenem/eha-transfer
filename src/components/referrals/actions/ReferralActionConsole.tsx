@@ -99,8 +99,8 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
 }) => {
   return (
     <Card>
-      <CardHeader className="bg-slate-900 rounded-t-lg border-b-0 pb-4">
-        <CardTitle className="text-white">Facility Actions</CardTitle>
+      <CardHeader>
+        <CardTitle>Facility Actions</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
         {referral.status === 'pending' && (
@@ -284,7 +284,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
             </div>
           )}
           {referral.status === 'postponed' && (
-            <Badge variant="warning" className="w-full justify-center py-2 text-xs bg-warning-500 text-white">
+            <Badge variant="warning" className="w-full justify-center py-2.5">
               Referral Postponed
             </Badge>
           )}
