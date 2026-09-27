@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Clock, Mail, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { auth } from '../lib/firebase';
 import { Button } from '../components/ui/Button';
 
 export const PendingVerification: React.FC = () => {
@@ -10,7 +11,7 @@ export const PendingVerification: React.FC = () => {
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   if (!user) return <Navigate to="/login" replace />;
-  if (user.verified) return <Navigate to="/" replace />;
+  if (user.verified && emailVerified) return <Navigate to="/" replace />;
 
   const handleResend = async () => {
     setResendStatus('sending');
@@ -22,10 +23,17 @@ export const PendingVerification: React.FC = () => {
     }
   };
 
-  // Refresh the page to pick up the updated emailVerified status from Firebase
-  // Auth after the user clicks the verification link in their inbox.
-  const handleRefresh = () => {
-    window.location.reload();
+  // After the user clicks the link in their inbox: reload the Auth user so
+  // emailVerified updates, and force a new ID token so the email_verified claim
+  // the Firestore rules check updates too. A page reload alone keeps the cached
+  // token, and the rules keep rejecting the user for up to an hour.
+  const handleRefresh = async () => {
+    try {
+      await auth.currentUser?.reload();
+      await auth.currentUser?.getIdToken(true);
+    } finally {
+      window.location.reload();
+    }
   };
 
   return (
@@ -83,12 +91,20 @@ export const PendingVerification: React.FC = () => {
               </div>
             )}
 
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Your profile has been submitted successfully. You requested the role of <strong>{(user.role || "").replace('_', ' ')}</strong> at <strong>{user.facilityId || 'Global Network'}</strong>.
-            </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              An administrator will review and verify your account shortly. Please check back later.
-            </p>
+            {user.verified ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                An administrator has approved your account. Confirm your email address to continue.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Your profile has been submitted successfully. You requested the role of <strong>{(user.role || "").replace('_', ' ')}</strong> at <strong>{user.facilityId || 'Global Network'}</strong>.
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  An administrator will review and verify your account shortly. Please check back later.
+                </p>
+              </>
+            )}
             <Button onClick={logout} variant="outline" className="w-full">
               Sign Out
             </Button>

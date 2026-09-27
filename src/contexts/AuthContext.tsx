@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
 import { auth, googleProvider, db } from '../lib/firebase';
-import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, type User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { clearOfflineReferrals } from '../lib/db';
 
@@ -37,6 +37,24 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+/**
+ * Whether the ID token the Firestore rules will see says the email is verified.
+ * Falls back to the Auth user's flag only when the token can't be read (e.g.
+ * offline with an expired token), where no Firestore request would succeed
+ * anyway.
+ */
+export async function resolveEmailVerified(firebaseUser: FirebaseUser): Promise<boolean> {
+  try {
+    let claims = (await firebaseUser.getIdTokenResult()).claims;
+    if (firebaseUser.emailVerified && claims.email_verified !== true) {
+      claims = (await firebaseUser.getIdTokenResult(true)).claims;
+    }
+    return claims.email_verified === true;
+  } catch {
+    return firebaseUser.emailVerified === true;
+  }
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -83,7 +101,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (firebaseUser) {
-        setEmailVerified(firebaseUser.emailVerified);
+        // The rules check the ID token's email_verified claim, not the Auth
+        // user's emailVerified flag, and the two diverge after the user clicks
+        // the link in their inbox: a page load refreshes the flag but keeps the
+        // cached token for up to an hour. Trusting the flag would let the user
+        // into the app while every listener is rejected (and dies silently), so
+        // follow the claim, and force a fresh token when the flag is ahead.
+        setEmailVerified(await resolveEmailVerified(firebaseUser));
         const userRef = doc(db, 'users', firebaseUser.uid);
         
         // Listen to real-time updates for the logged-in user
