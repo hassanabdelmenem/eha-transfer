@@ -11,6 +11,7 @@ import { ReferralSummarySheet } from '../referrals/ReferralSummarySheet';
 import { ClinicianSegment } from './types';
 import { RoleHomeHeadline, SegmentedControl, Segment, EmptyQueue, MicroLabel, HomeActionBar, actionBarPrimary, actionBarSquare } from './RoleHome';
 import { standingPhrase } from '../../lib/referralStage';
+import { DraftReferralCard, readReferralDraft } from './DraftReferralCard';
 
 export const ClinicianCockpit: React.FC = () => {
   const { user } = useAuth();
@@ -19,6 +20,8 @@ export const ClinicianCockpit: React.FC = () => {
 
   const [segment, setSegment] = useState<ClinicianSegment>('you');
   const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
+  // Read once per visit: the draft only changes inside the wizard.
+  const [draft] = useState(readReferralDraft);
 
   const canCreateReferral = user
     ? [
@@ -136,9 +139,10 @@ export const ClinicianCockpit: React.FC = () => {
 
   if (!user) return null;
 
+  const youCount = youBucket.length + (draft && canCreateReferral ? 1 : 0);
   const facilityName = (id: string) => facilitiesById.get(id)?.name || 'the receiving hospital';
   const segments: Segment<ClinicianSegment>[] = [
-    { key: 'you', label: 'You', count: youBucket.length },
+    { key: 'you', label: 'You', count: youCount },
     { key: 'them', label: 'Them', count: themBucket.length },
     { key: 'moving', label: 'Moving', count: movingBucket.length },
   ];
@@ -158,7 +162,7 @@ export const ClinicianCockpit: React.FC = () => {
   return (
     <div className="flex flex-col gap-3">
       <RoleHomeHeadline
-        title={`${youBucket.length} need${youBucket.length === 1 ? 's' : ''} you`}
+        title={`${youCount} need${youCount === 1 ? 's' : ''} you`}
         rationale="Blocked on something only you can do. Emergency first."
       />
 
@@ -168,6 +172,7 @@ export const ClinicianCockpit: React.FC = () => {
 
       <div className="mt-1 flex flex-col gap-3">
         {activeSegmentReferrals.length === 0 ? (
+          segment === 'you' && draft && canCreateReferral ? null :
           <EmptyQueue>{emptyCopy[segment]}</EmptyQueue>
         ) : (
           activeSegmentReferrals.map(r => (
@@ -183,6 +188,8 @@ export const ClinicianCockpit: React.FC = () => {
             />
           ))
         )}
+        {/* Live cases first (emergency leads); the unsent draft follows them. */}
+        {segment === 'you' && draft && canCreateReferral && <DraftReferralCard draft={draft} />}
       </div>
 
       {/* Below the queue: context for the shift, never competing with it. */}

@@ -51,8 +51,8 @@ describe('NewReferralPage - Clinician Access & Media Attachment Validation', () 
 
     expect(screen.queryByText(/Access Denied/i)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Patient Identification'));
-    expect(screen.getAllByText(/Unified Hospital ID/i).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
+    expect(screen.getAllByText(/^Hospital ID/i).length).toBeGreaterThan(0);
   });
 
   it('rejects files larger than 15MB with an error toast', () => {
@@ -63,7 +63,7 @@ describe('NewReferralPage - Clinician Access & Media Attachment Validation', () 
     );
 
     // The file input lives on Step 4 (Diagnostics & Review)
-    fireEvent.click(screen.getByText('Diagnostics & Review'));
+    fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
     const fileInputs = document.querySelectorAll('input[type="file"]');
     const fileInput = fileInputs[0] as HTMLInputElement;
 
@@ -86,7 +86,7 @@ describe('NewReferralPage - Clinician Access & Media Attachment Validation', () 
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByText('Diagnostics & Review'));
+    fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
     const fileInputs = document.querySelectorAll('input[type="file"]');
     const fileInput = fileInputs[0] as HTMLInputElement;
 
@@ -106,7 +106,7 @@ describe('NewReferralPage - Clinician Access & Media Attachment Validation', () 
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByText('Diagnostics & Review'));
+    fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
     const fileInputs = document.querySelectorAll('input[type="file"]');
     const fileInput = fileInputs[0] as HTMLInputElement;
 

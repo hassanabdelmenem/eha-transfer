@@ -1,5 +1,3 @@
-import React from 'react';
-import { AlertTriangle, CheckCircle2, AlertOctagon } from 'lucide-react';
 
 export type VitalStatus = 'normal' | 'low' | 'high' | 'critical' | 'unknown';
 
@@ -75,36 +73,3 @@ export function evaluateVital(
 
   return { status: 'unknown', label: '', isAbnormal: false, isCritical: false };
 }
-
-interface VitalsRangeBadgeProps {
-  evaluation: VitalEvaluation;
-}
-
-export const VitalsRangeBadge: React.FC<VitalsRangeBadgeProps> = ({ evaluation }) => {
-  if (!evaluation.label || evaluation.status === 'unknown') return null;
-
-  if (evaluation.isCritical) {
-    return (
-      <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-critical-600 dark:text-critical-400">
-        <AlertOctagon className="w-3 h-3 shrink-0" />
-        <span className="truncate">{evaluation.label}</span>
-      </div>
-    );
-  }
-
-  if (evaluation.isAbnormal) {
-    return (
-      <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-warning-600 dark:text-warning-400">
-        <AlertTriangle className="w-3 h-3 shrink-0" />
-        <span className="truncate">{evaluation.label}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-      <CheckCircle2 className="w-3 h-3 shrink-0" />
-      <span className="truncate">{evaluation.label}</span>
-    </div>
-  );
-};
