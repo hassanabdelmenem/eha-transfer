@@ -1,6 +1,7 @@
 import React from 'react';
 import { Facility, BedType } from '../../types';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
+import { capacityTone } from '../../lib/capacityTone';
+import { cn } from '../../lib/utils';
 
 interface BedOccupancyHeatmapProps {
   facilities: Facility[];
@@ -8,83 +9,98 @@ interface BedOccupancyHeatmapProps {
 
 const BED_TYPES: BedType[] = ['ICU', 'CCU', 'PICU', 'Ward'];
 
-export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facilities }) => {
-  const getOccupancyColor = (total: number, occupied: number) => {
-    if (total === 0) return 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
-    const pct = occupied / total;
-    // Three occupancy tiers need three distinct colors — red and amber used
-    // to render as the same brand orange, so a 95%-full facility and a
-    // 75%-full one looked identical on this heatmap.
-    if (pct >= 0.9) return 'bg-critical-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)] border-critical-600';
-    if (pct >= 0.7) return 'bg-warning-400 text-warning-950 border-warning-500';
-    return 'bg-success-400 text-success-950 border-success-500';
-  };
+const LEGEND = [
+  { label: 'Full', swatch: 'bg-critical-100 border-critical-300 dark:bg-critical-900/70 dark:border-critical-700' },
+  { label: 'Under 20% free', swatch: 'bg-warning-100 border-warning-300 dark:bg-warning-900/70 dark:border-warning-700' },
+  { label: 'Beds free', swatch: 'bg-success-100 border-success-300 dark:bg-success-800/80 dark:border-success-600' },
+];
 
-  // Filter facilities that actually have some capacity defined
-  const displayFacilities = facilities.filter(f => 
-    f.type !== 'primary_care' && 
-    BED_TYPES.some(bed => f.capacity[bed] && f.capacity[bed].total > 0)
+/**
+ * Free beds per unit across the network. Each cell states "free / total" and
+ * is tinted on the same thresholds as the free-bed bars (lib/capacityTone),
+ * so the tint repeats what the number already says.
+ */
+export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facilities }) => {
+  const displayFacilities = facilities.filter(
+    f => f.type !== 'primary_care' && BED_TYPES.some(bed => f.capacity[bed] && f.capacity[bed].total > 0)
   );
 
   return (
-    <Card className="border border-slate-200 dark:border-slate-800 flex flex-col mt-6">
-      <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-4">
-        <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-          Network Bed Occupancy Heatmap
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0 overflow-auto">
-        {displayFacilities.length === 0 ? (
-          <p className="p-6 text-center text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 italic">
-            No facilities have bed capacity configured yet.
-          </p>
-        ) : (
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 font-semibold text-xs">
-            <tr>
-              <th className="p-3 border-b border-slate-100 dark:border-slate-800">Facility</th>
-              {BED_TYPES.map(bed => (
-                <th key={bed} className="p-3 border-b border-slate-100 dark:border-slate-800 text-center">{bed}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-            {displayFacilities.map(facility => (
-              <tr key={facility.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-                <td className="p-3 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                  {facility.name}
-                  <div className="text-xs text-slate-500 dark:text-slate-400 font-normal capitalize">{(facility.type || "").replace('_', ' ')}</div>
-                </td>
-                {BED_TYPES.map(bed => {
-                  const cap = facility.capacity[bed];
-                  if (!cap || cap.total === 0) {
+    <section aria-labelledby="network-free-beds" className="rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 px-[14px] pt-[14px]">
+        <div>
+          <h3 id="network-free-beds" className="font-heading text-[17px] font-semibold tracking-[-0.01em] text-ink dark:text-paper">
+            Free beds across the network
+          </h3>
+          <p className="mt-0.5 text-[13px] text-slate-700 dark:text-white/65">Free of total, per unit · tertiary and district hospitals</p>
+        </div>
+        {displayFacilities.length > 0 && (
+          <ul className="flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px] text-slate-700 dark:text-white/70" aria-label="Legend">
+            {LEGEND.map(l => (
+              <li key={l.label} className="flex items-center gap-1.5">
+                <span aria-hidden="true" className={cn('h-3 w-3 rounded-[3px] border', l.swatch)} />
+                {l.label}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {displayFacilities.length === 0 ? (
+        <p className="px-[14px] pt-3 pb-[14px] text-[14px] text-slate-700 dark:text-white/65">
+          No facilities have bed capacity configured yet.
+        </p>
+      ) : (
+        <div className="overflow-x-auto px-[14px] pt-3 pb-[14px]">
+          <table className="w-full min-w-[340px] border-separate border-spacing-[3px] text-left">
+            <thead>
+              <tr>
+                <th scope="col" className="pb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">
+                  <span className="sr-only">Facility</span>
+                </th>
+                {BED_TYPES.map(bed => (
+                  <th key={bed} scope="col" className="w-[54px] pb-1 text-center text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">
+                    {bed}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {displayFacilities.map(facility => (
+                <tr key={facility.id}>
+                  <th scope="row" className="pr-2 align-middle font-normal">
+                    <span className="block text-[13.5px] font-semibold leading-tight text-ink dark:text-paper">{facility.name}</span>
+                    <span className="block text-[12px] capitalize leading-tight text-slate-500 dark:text-white/60">{(facility.type || '').replace('_', ' ')}</span>
+                  </th>
+                  {BED_TYPES.map(bed => {
+                    const cap = facility.capacity[bed];
+                    if (!cap || cap.total === 0) {
+                      return (
+                        <td key={bed} className="h-11 rounded-md text-center text-[13px] text-slate-400 dark:text-white/30">
+                          <span aria-hidden="true">·</span>
+                          <span className="sr-only">No {bed} unit</span>
+                        </td>
+                      );
+                    }
+                    const free = Math.max(0, cap.total - cap.occupied);
+                    const tone = capacityTone(free, cap.total);
                     return (
-                      <td key={bed} className="p-2 text-center">
-                        <div className="w-full h-full min-h-[32px] rounded flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 text-slate-300 dark:text-slate-600 text-xs">
-                          -
-                        </div>
+                      <td
+                        key={bed}
+                        title={`${facility.name} ${bed}: ${free} of ${cap.total} free, ${cap.occupied} occupied`}
+                        className={cn('h-11 rounded-md text-center text-[13.5px] font-semibold tabular-nums', tone.tint)}
+                      >
+                        {free}<span className="font-normal opacity-75">/{cap.total}</span>
+                        <span className="sr-only"> free{tone.level === 'full' ? ', full' : tone.level === 'low' ? ', under 20% free' : ''}</span>
                       </td>
                     );
-                  }
-                  
-                  const pct = Math.round((cap.occupied / cap.total) * 100);
-                  const colorClass = getOccupancyColor(cap.total, cap.occupied);
-                  
-                  return (
-                    <td key={bed} className="p-2 text-center">
-                      <div className={`w-full h-full min-h-[36px] rounded border flex flex-col items-center justify-center p-1 transition-all ${colorClass}`}>
-                        <span className="font-bold">{pct}%</span>
-                        <span className="text-xs opacity-80">{cap.occupied}/{cap.total}</span>
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        )}
-      </CardContent>
-    </Card>
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 };
