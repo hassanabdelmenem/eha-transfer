@@ -1,4 +1,4 @@
-import { PatientData, ReferralPriority, BedType, ReferralTransferType, Facility } from '../../../types';
+import { PatientData, ReferralPriority, BedType, ReferralTransferType } from '../../../types';
 
 export const DRAFT_STORAGE_KEY = 'newReferralDraft';
 export const MAX_ATTACHMENT_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
@@ -16,13 +16,6 @@ export interface WizardDraft {
   sendCriticalAlert: boolean;
   requiresAccompanyingDoctor: boolean;
   lastSaved?: string;
-}
-
-export interface AiRankedFacility extends Facility {
-  availableBeds: number;
-  randomDistance: number;
-  score: number;
-  reason: string;
 }
 
 export const NETWORK_DEPARTMENTS = [
@@ -44,41 +37,15 @@ export const BED_TYPES: { label: string; value: BedType }[] = [
   { label: 'PICU (Pediatric ICU)', value: 'PICU' }
 ];
 
-export const PRIORITY_OPTIONS: { label: string; value: ReferralPriority; description: string }[] = [
-  { label: 'Routine (24–48h)', value: 'routine', description: 'Standard inter-facility transfer with stable vitals' },
-  { label: 'Urgent (2–6h)', value: 'urgent', description: 'Time-sensitive clinical condition requiring specialized care' },
-  { label: 'Emergency (Immediate)', value: 'emergency', description: 'Life-threatening condition requiring immediate placement' }
-];
-
-export const TRANSFER_TYPES: { label: string; value: ReferralTransferType }[] = [
-  { label: 'Going (One-Way Transfer)', value: 'one_way' },
-  { label: 'Service & Return (e.g. Scans, PCI)', value: 'service_and_return' },
-  { label: 'Assessment (Possible Return)', value: 'assessment_with_return' }
-];
-
+/**
+ * The five required steps, in the order a clinician thinks: who, what was
+ * measured, what is wrong, what the workup shows, then where it goes. Routing
+ * is decided last, with the whole clinical picture already written.
+ */
 export const WIZARD_STEPS = [
-  {
-    id: 1,
-    title: 'Destination & Priority',
-    shortTitle: 'Destination',
-    description: 'Target facility, bed type, priority & escort'
-  },
-  {
-    id: 2,
-    title: 'Patient Identification',
-    shortTitle: 'Patient ID',
-    description: 'Demographics, Hospital ID & National ID'
-  },
-  {
-    id: 3,
-    title: 'Clinical & Vitals',
-    shortTitle: 'Clinical',
-    description: 'Vital signs, presentation & diagnosis'
-  },
-  {
-    id: 4,
-    title: 'Diagnostics & Review',
-    shortTitle: 'Review',
-    description: 'ECG/scans, summary & submission'
-  }
+  { id: 1, title: 'Patient identity' },
+  { id: 2, title: 'Vitals' },
+  { id: 3, title: 'Complaint & presentation' },
+  { id: 4, title: 'Diagnosis, workup & ECG' },
+  { id: 5, title: 'Where it goes & send' },
 ] as const;

@@ -10,59 +10,56 @@ test.describe('Complete Referral Lifecycle Journey', () => {
     await loginAs(page, E2E_USERS.clinician);
 
     await page.goto('/referrals/new');
-    await expect(page.getByRole('heading', { name: /New Referral Request/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { level: 1, name: /step 1 of 5/i })).toBeVisible({ timeout: 15000 });
 
     const form = page.locator('form');
 
-    // Step 1: Destination & Priority (default step) — select target department: ICU
-    const icuDeptBtn = form.getByRole('button', { name: 'ICU', exact: true });
-    await icuDeptBtn.click();
-
-    // Disable auto-route to explicitly route to E2E Tertiary Medical Center (f2)
-    const autoRouteCheckbox = form.getByRole('checkbox', { name: 'Auto-Route' });
-    if (await autoRouteCheckbox.isChecked()) {
-      await autoRouteCheckbox.uncheck();
-    }
-    await form.locator('#receivingFacility').selectOption('test-receiving-2');
-
-    // Bed type & Clinical priority
-    await form.locator('#requiredBedType').selectOption('ICU');
-    await form.getByRole('radio', { name: /Urgent/i }).check({ force: true });
-    await form.locator('#reasonForReferral').fill('Severe acute respiratory distress with hemodynamic instability');
-
-    // Flag accompanying doctor requirement
-    await form.locator('#requires-accompanying-doctor').check();
-    await expect(form.locator('#requires-accompanying-doctor')).toBeChecked();
-
-    // Step 2: Patient Identification
-    await page.getByText('Patient Identification').click();
+    // Step 1: patient identity (default step)
     await form.locator('#hospitalId').fill('ISM-98231');
     await form.locator('#patientName').fill('Sayed Abdel-Rahman');
     await form.locator('#patientAge').fill('58');
     await form.getByRole('radio', { name: 'Male', exact: true }).check();
 
-    // Step 3: Clinical & Vitals
-    await page.getByText('Clinical & Vitals').click();
+    // Step 2: vitals, then 3: complaint & presentation, then 4: diagnosis & workup
+    await page.getByRole('button', { name: /^Step 2:/ }).click();
     await form.locator('#vitalHr').fill('118');
     await form.locator('#vitalBp').fill('135/85');
     await form.locator('#vitalSpo2').fill('89');
     await form.locator('#vitalTemp').fill('38.2');
     await form.locator('#vitalRr').fill('26');
     await form.locator('#vitalGcs').fill('14');
+    await page.getByRole('button', { name: /^Step 3:/ }).click();
     await form.locator('#complaint').fill('Sudden onset severe chest tightness and dyspnea');
     await form.locator('#presentation').fill('Patient presented with acute hypoxemic respiratory failure');
+    await page.getByRole('button', { name: /^Step 4:/ }).click();
     await form.locator('#diagnosis').fill('Severe ARDS and acute coronary syndrome');
     await form.locator('#investigations').fill('Trop I positive, ST elevation on Lead II');
 
-    // Step 4: Diagnostics & Review — attach mock diagnostic image (ECG trace)
-    await page.getByText('Diagnostics & Review').click();
+    // Still on step 4 — attach mock diagnostic image (ECG trace)
     const mockFile = createMockImageFile('ecg_lead2_trace.png');
     await form.locator('input[type="file"]').setInputFiles(mockFile);
     await expect(form.locator('img[alt="ecg_lead2_trace.png"]')).toBeVisible({ timeout: 10000 });
 
-    // Advance to the confirm/submit screen, then submit
+    // Continue to step 5 (where it goes), fill routing, then submit
     await form.getByRole('button', { name: /Continue/i }).click();
     await expect(form.getByRole('button', { name: /Continue/i })).toHaveCount(0);
+    // Step 5: where it goes — decided with the whole clinical picture written
+    // Target department: ICU
+    const icuDeptBtn = form.getByRole('button', { name: 'ICU', exact: true });
+    await icuDeptBtn.click();
+    // Disable auto-route to explicitly route to E2E Tertiary Medical Center (f2)
+    const autoRouteCheckbox = form.getByRole('checkbox', { name: 'Auto-Route' });
+    if (await autoRouteCheckbox.isChecked()) {
+      await autoRouteCheckbox.uncheck();
+    }
+    await form.locator('#receivingFacility').selectOption('test-receiving-2');
+    // Bed type & Clinical priority
+    await form.locator('#requiredBedType').selectOption('ICU');
+    await form.getByRole('radio', { name: /Urgent/i }).check();
+    await form.locator('#reasonForReferral').fill('Severe acute respiratory distress with hemodynamic instability');
+    // Flag accompanying doctor requirement
+    await form.locator('#requires-accompanying-doctor').check();
+    await expect(form.locator('#requires-accompanying-doctor')).toBeChecked();
     const submitBtn = form.getByRole('button', { name: /Submit Referral/i });
     await expect(submitBtn).toBeVisible();
     await expect(submitBtn).toBeEnabled();
