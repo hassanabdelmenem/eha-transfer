@@ -177,7 +177,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
         </MemoryRouter>
       );
       expect(screen.getByText(/0 need you/i)).toBeInTheDocument();
-      expect(screen.getByText(/No referrals in this queue right now/i)).toBeInTheDocument();
+      expect(screen.getByText(/Nothing is blocked on you/i)).toBeInTheDocument();
       expect(screen.getByText(/No patients currently admitted in your unit/i)).toBeInTheDocument();
       expect(screen.getByText(/No recent handovers recorded for your unit/i)).toBeInTheDocument();
       unmountClinician();
@@ -189,9 +189,17 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
           <HodCockpit />
         </MemoryRouter>
       );
+      expect(screen.getByRole('heading', { level: 1, name: /^0 waiting on you$/i })).toBeInTheDocument();
       expect(screen.getByText(/Your department review queue is completely clear/i)).toBeInTheDocument();
-      expect(screen.getByText(/No inpatients currently admitted to this department/i)).toBeInTheDocument();
       unmountHod();
+      // The department route carries the inpatient list.
+      const { unmount: unmountDept } = render(
+        <MemoryRouter>
+          <HodCockpit isDepartmentRoute />
+        </MemoryRouter>
+      );
+      expect(screen.getByText(/No inpatients currently admitted to this department/i)).toBeInTheDocument();
+      unmountDept();
 
       // 4. Manager Cockpit empty state
       mockUser = { id: 'u3', name: 'Dr. Manager Empty', email: 'mgr@test.com', role: 'hospital_manager', facilityId: 'fac-none' };
@@ -200,7 +208,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
           <ManagerCockpit />
         </MemoryRouter>
       );
-      expect(screen.getByText(/0 need your signature/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /^Nothing to sign$/i })).toBeInTheDocument();
       expect(screen.getByText(/Nothing waiting on your signature right now/i)).toBeInTheDocument();
       unmountMgr();
 
@@ -223,7 +231,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
         </MemoryRouter>
       );
       expect(screen.getByText(/No bed capacity configured for this facility yet/i)).toBeInTheDocument();
-      expect(screen.getByText(/No patients currently admitted in the ward/i)).toBeInTheDocument();
+      expect(screen.getByText(/No transferred patients waiting for a bed/i)).toBeInTheDocument();
       unmountNurse();
 
       // 7. Admin Cockpit empty state
@@ -270,14 +278,14 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
   describe('2. Rapid Role Switching & Workspace Isolation', () => {
     it('seamlessly transitions across all 6 role archetypes in rapid succession without hook crashes or state contamination', () => {
       const roles: { role: User['role']; expectedSnippet: RegExp }[] = [
-        { role: 'resident', expectedSnippet: /Initiate New Referral/i },
-        { role: 'head_of_department', expectedSnippet: /Department Review Queue/i },
-        { role: 'hospital_manager', expectedSnippet: /need your signature/i },
-        { role: 'er_official', expectedSnippet: /Emergency Logistics & Ambulance Radar/i },
-        { role: 'nurse', expectedSnippet: /Ward Capacity & Bed Management Console/i },
+        { role: 'resident', expectedSnippet: /need(s)? you$/i },
+        { role: 'head_of_department', expectedSnippet: /waiting on you$/i },
+        { role: 'hospital_manager', expectedSnippet: /to sign$/i },
+        { role: 'er_official', expectedSnippet: /to send, \d+ arriving$/i },
+        { role: 'nurse', expectedSnippet: /beds? free$|^Beds$/i },
         { role: 'system_admin', expectedSnippet: /System Escalation Console/i },
         { role: 'owner', expectedSnippet: /System Escalation Console/i },
-        { role: 'consultant', expectedSnippet: /Initiate New Referral/i },
+        { role: 'consultant', expectedSnippet: /need(s)? you$/i },
       ];
 
       const { rerender } = render(
@@ -302,8 +310,13 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
           </MemoryRouter>
         );
 
-        expect(screen.getByRole('heading', { name: /overview/i })).toBeVisible();
-        expect(screen.getByText(expectedSnippet)).toBeInTheDocument();
+        // Each role opens on its own queue: no shared KPI overview.
+        expect(screen.queryByRole('heading', { name: /overview/i })).not.toBeInTheDocument();
+        if (role === 'system_admin' || role === 'owner') {
+          expect(screen.getByText(expectedSnippet)).toBeInTheDocument();
+        } else {
+          expect(screen.getByRole('heading', { level: 1, name: expectedSnippet })).toBeInTheDocument();
+        }
       }
     });
 
@@ -333,8 +346,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
       const { unmount: u1 } = render(
         <EscalationAlertBanner referral={pastRef} actionLabel="Review" />
       );
-      expect(screen.getByText(/CRITICAL ESCALATION · SLA BREACH/i)).toBeInTheDocument();
-      expect(screen.getByText(/525600 MIN OVERDUE/i)).toBeInTheDocument();
+      expect(screen.getByText(/^Escalated · no response 525600 min$/i)).toBeInTheDocument();
       u1();
 
       // 2. Future extreme (scheduled in year 2099)
@@ -347,7 +359,8 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
       const { unmount: u2 } = render(
         <EscalationAlertBanner referral={futureRef} actionLabel="Review" />
       );
-      expect(screen.getByText(/0 MIN OVERDUE/i)).toBeInTheDocument();
+      // A future timestamp clamps to 0 rather than going negative.
+      expect(screen.getByText(/^Escalated · no beds in network 0 min$/i)).toBeInTheDocument();
       u2();
     });
 
@@ -360,9 +373,9 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
       });
 
       render(<EscalationAlertBanner referral={corruptRef} actionLabel="Review" />);
-      // Date.parse('not-a-valid-date') returns NaN -> mins evaluates to NaN
-      expect(screen.getByText(/CRITICAL ESCALATION · MANUAL/i)).toBeInTheDocument();
-      expect(screen.getByText(/NaN MIN OVERDUE/i)).toBeInTheDocument();
+      // An unreadable timestamp drops the age instead of printing "NaN min".
+      expect(screen.getByText(/^Escalated · raised by hand$/i)).toBeInTheDocument();
+      expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
     });
 
     it('renders ShiftHandoverFeed safely when timestamps or summaries are empty or unusual', () => {
@@ -459,7 +472,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
   // 5. ADVERSARIAL STRESS: OFFLINE NETWORK STATUS TRANSITIONS
   // ============================================================================
   describe('5. Offline Status & Action Sync Queue Banners', () => {
-    it('displays offline indicator and pluralized pending sync queue counter in ClinicianCockpit', () => {
+    it('leaves the offline banner to the app header instead of repeating it in the clinician home', () => {
       mockIsOnline = false;
       mockPendingSyncCount = 3;
 
@@ -469,20 +482,8 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
         </MemoryRouter>
       );
 
-      expect(screen.getByText(/Offline · 3 actions queued, will send automatically/i)).toBeInTheDocument();
-    });
-
-    it('displays singular action text when exactly 1 sync action is pending', () => {
-      mockIsOnline = false;
-      mockPendingSyncCount = 1;
-
-      render(
-        <MemoryRouter>
-          <ClinicianCockpit />
-        </MemoryRouter>
-      );
-
-      expect(screen.getByText(/Offline · 1 action queued, will send automatically/i)).toBeInTheDocument();
+      // AppLayout's header owns "Offline · N actions queued" (see AppLayout.test).
+      expect(screen.queryByText(/actions? queued/i)).not.toBeInTheDocument();
     });
   });
 
@@ -609,14 +610,16 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
         />
       );
 
-      expect(screen.getByText('Transfer Flow Analytics')).toBeInTheDocument();
-      expect(screen.getByText('Departmental Referral Demand')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Transfer flow' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Demand by department' })).toBeInTheDocument();
+      // Every chart carries its numbers as a table too.
+      expect(screen.getAllByText('View as table')).toHaveLength(4);
 
       // Cycle tabs
       for (const period of ['monthly', 'quarterly', 'yearly', 'weekly']) {
         const tab = screen.getByRole('button', { name: new RegExp(period, 'i') });
         fireEvent.click(tab);
-        expect(tab).toBeInTheDocument();
+        expect(tab).toHaveAttribute('aria-pressed', 'true');
       }
     });
   });
@@ -649,7 +652,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
 
       render(
         <MemoryRouter>
-          <HodCockpit />
+          <HodCockpit isDepartmentRoute />
         </MemoryRouter>
       );
 
@@ -753,8 +756,8 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
         </MemoryRouter>
       );
 
-      expect(screen.getByText(/Department-Approved Queue/i)).toBeInTheDocument();
-      expect(screen.getByText(/Approved by Dr. Clinician/i)).toBeInTheDocument();
+      expect(screen.getByText(/Department approved · your signature/i)).toBeInTheDocument();
+      expect(screen.getByText(/Approved by .*Dr. Clinician/i)).toBeInTheDocument();
 
       const acceptBtn = screen.getByRole('button', { name: /^Accept$/i });
       fireEvent.click(acceptBtn);

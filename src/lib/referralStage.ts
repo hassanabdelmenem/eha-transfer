@@ -41,3 +41,38 @@ export function stageIndexForStatus(status: Referral['status']): number | null {
       return 1;
   }
 }
+
+/**
+ * Where a referral stands, in the words a clinician card's context line uses
+ * ("Qassasin asked for requirements", "consent recorded, escort needed").
+ * Display only, like the rail above.
+ */
+export function standingPhrase(
+  referral: Pick<Referral, 'status' | 'receivingDepartments' | 'requiresAccompanyingDoctor' | 'accompanyingDoctor'>,
+  receivingName: string
+): string {
+  const dept = referral.receivingDepartments?.[0];
+  switch (referral.status) {
+    case 'pending':
+      return dept ? `waiting on ${dept} at ${receivingName}` : `waiting on ${receivingName}`;
+    case 'postponed':
+      return `${receivingName} asked for requirements`;
+    case 'dept_approved':
+      return `${dept ?? 'department'} approved · waiting on the manager`;
+    case 'manager_approved':
+    case 'accepted':
+      return `accepted by ${receivingName} · consent next`;
+    case 'patient_consented':
+      return referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor
+        ? 'consent recorded, escort needed'
+        : 'consent recorded · waiting on the ambulance';
+    case 'in_transit':
+      return `in transit to ${receivingName}`;
+    case 'arrived':
+      return `arrived at ${receivingName}`;
+    case 'admitted':
+      return `admitted at ${receivingName}`;
+    default:
+      return receivingName;
+  }
+}

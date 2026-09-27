@@ -105,10 +105,10 @@ describe('App routing', () => {
     expect(screen.queryByText('Referrals Page')).not.toBeInTheDocument();
   });
 
-  it('lands a fully cleared user on the referrals queue via the index redirect', async () => {
+  it('lands a fully cleared user on their role home via the index redirect', async () => {
     mockAuthState = { user: makeUser(), authReady: true };
     render(<App />);
-    await waitFor(() => expect(screen.getByText('Referrals Page')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Resident Dashboard')).toBeInTheDocument());
     expect(screen.getByTestId('app-layout')).toBeInTheDocument();
   });
 
@@ -116,14 +116,14 @@ describe('App routing', () => {
     mockInitialPath = '/login';
     mockAuthState = { user: makeUser(), authReady: true };
     render(<App />);
-    await waitFor(() => expect(screen.getByText('Referrals Page')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Resident Dashboard')).toBeInTheDocument());
   });
 
   it('bounces a signed-in, profile-complete user away from /onboarding back into the app', async () => {
     mockInitialPath = '/onboarding';
     mockAuthState = { user: makeUser(), authReady: true };
     render(<App />);
-    await waitFor(() => expect(screen.getByText('Referrals Page')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Resident Dashboard')).toBeInTheDocument());
   });
 
   it('sends a signed-out visitor at /onboarding to login instead', async () => {
