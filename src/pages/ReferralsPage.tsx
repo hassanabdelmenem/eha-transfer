@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
+import { toCsv, downloadCsv, isoOrEmpty } from '../lib/csv';
 import { ReferralList } from '../components/referrals/ReferralList';
 import { Input } from '../components/ui/Input';
 import { Search, Filter, Activity, Clock, CheckCircle, Download, ArrowDownUp } from 'lucide-react';
@@ -43,30 +44,17 @@ export const ReferralsPage: React.FC = () => {
     );
     
     const headers = ['ID', 'Patient Name', 'Hospital ID', 'Priority', 'Status', 'Referring Facility', 'Receiving Facility', 'Created At'];
-    const rows = myReferrals.map(r => {
-      const fromF = facilitiesById.get(r.referringFacilityId)?.name || 'Unknown';
-      const toF = r.receivingFacilityId === 'auto' ? 'Auto-Routed (Pending)' : facilitiesById.get(r.receivingFacilityId || '')?.name || 'Unknown';
-      return [
-        r.id,
-        `"${r.patientData.name}"`,
-        r.patientData.hospitalId,
-        r.priority,
-        r.status,
-        `"${fromF}"`,
-        `"${toF}"`,
-        new Date(r.createdAt).toISOString()
-      ].join(',');
-    });
-    
-    const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `referrals_export_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const rows = myReferrals.map(r => [
+      r.id,
+      r.patientData.name,
+      r.patientData.hospitalId,
+      r.priority,
+      r.status,
+      facilitiesById.get(r.referringFacilityId)?.name || 'Unknown',
+      r.receivingFacilityId === 'auto' ? 'Auto-Routed (Pending)' : facilitiesById.get(r.receivingFacilityId || '')?.name || 'Unknown',
+      isoOrEmpty(r.createdAt),
+    ]);
+    downloadCsv(`referrals_export_${new Date().toISOString().split('T')[0]}.csv`, toCsv(headers, rows));
   };
 
   if (!user) return null;
