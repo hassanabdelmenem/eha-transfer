@@ -12,6 +12,7 @@ import { showToast, toastError } from '../../lib/toast';
 import { ReferralSummarySheet } from '../referrals/ReferralSummarySheet';
 import { EscalationAlertBanner } from './EscalationAlertBanner';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
+import { useOpenCase, useReportQueue } from '../layout/Workspace';
 import { isAdmin as checkIsAdmin } from '../../lib/permissions';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
 import { RoleHomeHeadline, MicroLabel, EmptyQueue, useSecondTick } from './RoleHome';
@@ -35,6 +36,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
     addDeptComment,
   } = useData();
   const navigate = useNavigate();
+  const openCase = useOpenCase();
 
   const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
@@ -139,6 +141,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
   const escalatedReview = useMemo(() => pendingReview.filter(r => r.isEscalated), [pendingReview]);
   const queue = useMemo(() => pendingReview.filter(r => !r.isEscalated), [pendingReview]);
   const now = useSecondTick(queue.length > 0);
+  useReportQueue([...escalatedReview, ...queue].map(r => r.id));
   const [approvedNames, setApprovedNames] = useState<string[]>([]);
 
   if (!user || (user.role !== 'head_of_department' && !isAdmin)) {
@@ -256,7 +259,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
           key={r.id}
           referral={r}
           actionLabel="Review now"
-          onAction={() => navigate(`/referrals/${r.id}`)}
+          onAction={() => openCase(r.id)}
           referrerPhone={usersById.get(r.referringUserId)?.phoneNumber}
           referringFacilityName={facilitiesById.get(r.referringFacilityId)?.name}
         />
@@ -276,7 +279,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
               getFacilityName={id => facilitiesById.get(id)?.name || id}
               onApprove={handleQuickApprove}
               onSummary={() => setSummaryReferral(r)}
-              onAction={() => navigate(`/referrals/${r.id}`)}
+              onAction={() => openCase(r.id)}
               busy={approvingId === r.id}
             />
           ))

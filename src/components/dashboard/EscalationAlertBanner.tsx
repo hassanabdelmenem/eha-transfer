@@ -3,6 +3,7 @@ import { AlertTriangle, Phone } from 'lucide-react';
 import { describeCapacityEscalation } from '../../lib/routing';
 import { EscalationAlertBannerProps } from './types';
 import { cn } from '../../lib/utils';
+import { useWorkspace } from '../layout/Workspace';
 
 // Why the case escalated, in the words the strip uses ("Escalated · no
 // response 34 min"). Lower-case: the strip sets its own case.
@@ -34,6 +35,9 @@ export const EscalationAlertBanner: React.FC<EscalationAlertBannerProps> = ({
   referrerPhone,
   referringFacilityName,
 }) => {
+  // In the desktop workspace, mark the pinned case when it is the one open beside the queue.
+  const ws = useWorkspace();
+  const selected = !!ws && ws.selectedId === referral.id;
   const reasonKey = referral.escalationReason || 'manual';
   const reason = REASON_WORDS[reasonKey] || reasonKey.replace(/_/g, ' ');
   const systemLevel = referral.escalationLevel === 'system';
@@ -50,7 +54,8 @@ export const EscalationAlertBanner: React.FC<EscalationAlertBannerProps> = ({
   return (
     <section
       aria-label="Escalated case"
-      className="shrink-0 overflow-hidden rounded-xl border-2 border-critical-700 bg-critical-100 dark:border-critical-400/70 dark:bg-critical-950/45"
+      aria-current={selected ? 'true' : undefined}
+      className={cn('shrink-0 overflow-hidden rounded-xl border-2 border-critical-700 bg-critical-100 dark:border-critical-400/70 dark:bg-critical-950/45', selected && 'ring-2 ring-ink ring-offset-2 ring-offset-paper dark:ring-paper dark:ring-offset-ink')}
     >
       <p className="flex items-center gap-2 bg-critical-700 px-[14px] py-2 text-[11.5px] font-bold uppercase leading-tight tracking-[0.08em] text-white dark:bg-transparent dark:pb-0 dark:pt-3 dark:text-critical-300">
         <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />

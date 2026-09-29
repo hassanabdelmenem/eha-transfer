@@ -1,5 +1,6 @@
+import { Link } from 'react-router-dom';
 import React from 'react';
-import { ChevronLeft, Check, Copy, Printer, ShieldAlert } from 'lucide-react';
+import { ChevronLeft, ArrowUpRight, Check, Copy, Printer, ShieldAlert } from 'lucide-react';
 import { Referral } from '../../../types';
 import { STAGE_LABELS, stageIndexForStatus } from '../../../lib/referralStage';
 import { cn } from '../../../lib/utils';
@@ -57,9 +58,11 @@ export interface ReferralDetailHeaderProps {
   /** Desktop only: the viewer's actions, inline at the top right. */
   actions?: React.ReactNode;
   isDesktop: boolean;
+  /** Set when the case is open inside the desktop workspace: no back button, a full-page link instead. */
+  fullPageHref?: string;
 }
 
-export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ referral, onBack, actions, isDesktop }) => {
+export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ referral, onBack, actions, isDesktop, fullPageHref }) => {
   const name = `${referral.patientData.name || 'Unknown patient'}, ${referral.patientData.age}`;
   const facts = [referral.patientData.hospitalId, `${referral.requiredBedType}`, referral.priority].filter(Boolean).join(' · ');
 
@@ -74,6 +77,7 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
         <header className="print:hidden border-b border-slate-200 pb-5 dark:border-white/10">
           <div className="flex items-start justify-between gap-6">
             <div className="flex min-w-0 items-start gap-3">
+              {!fullPageHref && (
               <button
                 type="button"
                 onClick={onBack}
@@ -82,9 +86,18 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
               >
                 <ChevronLeft className="h-5 w-5" aria-hidden="true" />
               </button>
+              )}
               <div className="min-w-0">
-                <h1 className="text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h1>
+                {/* In the workspace the queue's headline is the page's h1; the case is a section of it. */}
+                {fullPageHref
+                  ? <h2 className="text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h2>
+                  : <h1 className="text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h1>}
                 <p className="mt-1 text-[13.5px] text-slate-700 dark:text-white/65">{facts}</p>
+                {fullPageHref && (
+                  <Link to={fullPageHref} className="mt-1.5 inline-flex min-h-[32px] items-center gap-1 text-[13px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300">
+                    Open full page <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                )}
               </div>
             </div>
             {actions && <div className="flex shrink-0 flex-wrap items-center justify-end gap-2.5">{actions}</div>}

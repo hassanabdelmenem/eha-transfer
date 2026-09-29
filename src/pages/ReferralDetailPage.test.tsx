@@ -127,6 +127,15 @@ describe('ReferralDetailPage - Rejection, Cancellation & ECG Viewer', () => {
     });
   });
 
+  it('makes the manager\'s Decline ask for a reason instead of rejecting on the spot', () => {
+    renderDetailPage();
+    fireEvent.click(screen.getByRole('button', { name: /^Decline$/ }));
+
+    // The same reason-required dialog as Reject Transfer; nothing written yet.
+    expect(screen.getByRole('dialog', { name: /reject transfer/i })).toBeInTheDocument();
+    expect(mockUpdateReferralStatus).not.toHaveBeenCalled();
+  });
+
   it('disables Confirm Cancellation button when cancellation reason is empty', async () => {
     mockUser = { id: 'u1', name: 'Dr. Referring', role: 'clinician', facilityId: 'f1', verified: true };
     mockReferrals = [makeReferral({ status: 'pending', referringUserId: 'u1' })];

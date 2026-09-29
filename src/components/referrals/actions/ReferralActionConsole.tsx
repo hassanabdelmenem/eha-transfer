@@ -11,6 +11,8 @@ import { CancellationDialog } from './CancellationDialog';
 import { Facility, Referral, ReferralStatus, User } from '../../../types';
 
 export interface ReferralActionConsoleProps {
+  /** Action labels the desktop header already shows (lower-case); the console skips those buttons so each exists once. */
+  headerActions?: string[];
   referral: Referral;
   user: User;
   isAdmin: boolean;
@@ -58,6 +60,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
   referral,
   user,
   isAdmin,
+  headerActions = [],
   isReceiving,
   isReferring,
   isFacilityManager,
@@ -97,6 +100,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
   onCancelReferral,
   onOpenRejectModal,
 }) => {
+  const inHeader = (label: string) => headerActions.includes(label.toLowerCase());
   return (
     <Card>
       <CardHeader>
@@ -144,12 +148,15 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           {/* Standard Manager Final Approval (non-admin) */}
           {!isAdmin && isFacilityManager && referral.status === 'dept_approved' && (
             <>
+              {!inHeader('accept the transfer') && (
               <Button
                 onClick={() => onStatusUpdate('manager_approved')}
                 className="w-full bg-success-700 hover:bg-success-800 min-h-[48px]"
               >
                 <CheckCircle className="h-4 w-4 mr-2" /> Accept the Transfer
               </Button>
+              )}
+              {!inHeader('decline') && (
               <Button
                 onClick={onOpenRejectModal}
                 variant="destructive"
@@ -157,6 +164,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
               >
                 <X className="h-4 w-4 mr-2" /> Reject Transfer
               </Button>
+              )}
             </>
           )}
 
@@ -170,7 +178,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
             </Button>
           )}
 
-          {(isReceiving || isErRoom) && referral.status === 'in_transit' && (
+          {(isReceiving || isErRoom) && referral.status === 'in_transit' && !inHeader('mark as arrived') && (
             <Button
               onClick={() => onStatusUpdate('arrived')}
               className="w-full bg-blue-600 hover:bg-blue-700 min-h-[48px]"
@@ -250,7 +258,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           )}
 
           {/* Referring Facility Actions */}
-          {(isReferring || isErRoom) && referral.status === 'patient_consented' && (
+          {(isReferring || isErRoom) && referral.status === 'patient_consented' && !inHeader('dispatch ambulance') && (
             <Button
               onClick={() => onStatusUpdate('in_transit')}
               disabled={Boolean(referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor)}
