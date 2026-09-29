@@ -144,7 +144,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
                 onClick={() => onStatusUpdate('manager_approved')}
                 className="w-full bg-success-700 hover:bg-success-800 min-h-[48px]"
               >
-                <CheckCircle className="h-4 w-4 mr-2" /> Accept the Transfer
+                <CheckCircle className="h-4 w-4 me-2" /> Accept the Transfer
               </Button>
               )}
               {!inHeader('decline') && (
@@ -153,7 +153,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
                 variant="destructive"
                 className="w-full"
               >
-                <X className="h-4 w-4 mr-2" /> Reject Transfer
+                <X className="h-4 w-4 me-2" /> Reject Transfer
               </Button>
               )}
             </>
@@ -165,7 +165,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
               onClick={() => onStatusUpdate('accepted')}
               className="w-full bg-success-600 hover:bg-success-700 min-h-[48px]"
             >
-              <Check className="h-4 w-4 mr-2" /> Ready for Receive (Accepted)
+              <Check className="h-4 w-4 me-2" /> Ready for Receive (Accepted)
             </Button>
           )}
 
@@ -234,7 +234,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
               </div>
             ) : (
               <div className="relative p-3 bg-warning-50 dark:bg-warning-950/30 border-2 border-warning-400 rounded-lg mt-2">
-                <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
+                <span className="absolute -top-1.5 -end-1.5 flex h-3 w-3">
                   <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-warning-500"></span>
                 </span>
@@ -255,7 +255,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
               disabled={Boolean(referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor)}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 min-h-[48px]"
             >
-              <Truck className="h-4 w-4 mr-2" /> Dispatch Ambulance
+              <Truck className="h-4 w-4 me-2" /> Dispatch Ambulance
             </Button>
           )}
 

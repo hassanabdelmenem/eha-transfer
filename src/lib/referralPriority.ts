@@ -37,9 +37,9 @@ export function priorityRailFill(priority: ReferralPriority, escalated?: boolean
 
 /** Rail as a thick left border, for table rows that can't hold an element. */
 export function priorityRailClass(priority: ReferralPriority, escalated?: boolean): string {
-  if (escalated || priority === 'emergency') return 'border-l-[6px] border-critical-700';
-  if (priority === 'urgent') return 'border-l-[6px] border-warning-800';
-  return 'border-l-[6px] border-slate-300 dark:border-white/25';
+  if (escalated || priority === 'emergency') return 'border-s-[6px] border-critical-700';
+  if (priority === 'urgent') return 'border-s-[6px] border-warning-800';
+  return 'border-s-[6px] border-slate-300 dark:border-white/25';
 }
 
 export function priorityChipClasses(priority: ReferralPriority): string {

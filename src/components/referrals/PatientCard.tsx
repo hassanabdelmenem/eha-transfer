@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatClock } from '../../i18n/format';
 import { AlertTriangle } from 'lucide-react';
 import { PatientData } from '../../types';
 
@@ -28,7 +29,7 @@ const VitalStat: React.FC<{ label: string; value: React.ReactNode; unit?: string
       {abnormal && <AlertTriangle className="h-3 w-3" aria-hidden="true" />}
     </p>
     <p className={`mt-0.5 text-[17px] font-bold tabular ${abnormal ? 'text-critical-800 dark:text-critical-200' : 'text-ink dark:text-paper'}`}>
-      {value}{unit && <span className={`ml-1 text-[11px] font-medium ${abnormal ? 'text-critical-700 dark:text-critical-300' : 'text-slate-500 dark:text-white/55'}`}>{unit}</span>}
+      {value}{unit && <span className={`ms-1 text-[11px] font-medium ${abnormal ? 'text-critical-700 dark:text-critical-300' : 'text-slate-500 dark:text-white/55'}`}>{unit}</span>}
       {abnormal && <span className="sr-only"> (abnormal)</span>}
     </p>
   </div>
@@ -41,7 +42,7 @@ const MicroLabel: React.FC<{ children: React.ReactNode; className?: string }> = 
 const recordedAt = (iso?: string) => {
   if (!iso) return null;
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? null : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  return Number.isNaN(d.getTime()) ? null : formatClock(d);
 };
 
 export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {

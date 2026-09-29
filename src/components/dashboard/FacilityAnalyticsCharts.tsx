@@ -96,19 +96,19 @@ const TableView: React.FC<{ caption: string; rows: Row[]; series: typeof FLOW; r
       View as table
     </summary>
     <div className="overflow-x-auto">
-      <table className="w-full text-left text-[13px]">
+      <table className="w-full text-start text-[13px]">
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr className="border-b border-slate-200 text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:border-white/10 dark:text-white/60">
-            <th scope="col" className="py-1.5 pr-3">{rowHeader}</th>
-            {series.map(s => <th key={s.key} scope="col" className="py-1.5 pr-3 text-right">{s.label}</th>)}
+            <th scope="col" className="py-1.5 pe-3">{rowHeader}</th>
+            {series.map(s => <th key={s.key} scope="col" className="py-1.5 pe-3 text-end">{s.label}</th>)}
           </tr>
         </thead>
         <tbody>
           {rows.map(r => (
             <tr key={r.name} className="border-b border-slate-100 last:border-0 dark:border-white/5">
-              <th scope="row" className="py-1.5 pr-3 font-medium text-ink dark:text-paper">{r.name}</th>
-              {series.map(s => <td key={s.key} className="py-1.5 pr-3 text-right tabular-nums text-slate-700 dark:text-white/75">{r[s.key]}</td>)}
+              <th scope="row" className="py-1.5 pe-3 font-medium text-ink dark:text-paper">{r.name}</th>
+              {series.map(s => <td key={s.key} className="py-1.5 pe-3 text-end tabular-nums text-slate-700 dark:text-white/75">{r[s.key]}</td>)}
             </tr>
           ))}
         </tbody>

@@ -493,7 +493,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                 disabled={isSubmitting}
                 className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white min-h-[48px] px-6 font-bold shadow-xs"
               >
-                <UserPlus className="w-4 h-4 mr-2" />
+                <UserPlus className="w-4 h-4 me-2" />
                 {/* Accessible text matching `/Admit Patient & Update Capacity/i` and `/Admit Patient/i` */}
                 Admit Patient & Update Capacity
               </Button>

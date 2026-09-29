@@ -208,13 +208,13 @@ export const ClinicianCockpit: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => openCase(r.id)}
-                  className="flex min-h-[52px] w-full items-center justify-between gap-3 px-[14px] py-2.5 text-left hover:bg-slate-50 dark:hover:bg-white/5"
+                  className="flex min-h-[52px] w-full items-center justify-between gap-3 px-[14px] py-2.5 text-start hover:bg-slate-50 dark:hover:bg-white/5"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-[15px] font-semibold text-ink dark:text-paper">{r.patientData.name}, {r.patientData.age}</span>
                     <span className="block truncate text-[13px] text-slate-700 dark:text-white/65">{r.requiredBedType} · referral · <span className="font-mono">{r.patientData.hospitalId}</span></span>
                   </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-500 rtl:-scale-x-100" aria-hidden="true" />
                 </button>
               </li>
             ))}

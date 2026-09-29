@@ -220,7 +220,7 @@ export const FacilitySettingsPage: React.FC = () => {
             <MicroLabel id="departments">Departments · {facility.departments.length}</MicroLabel>
             <ul className="flex flex-wrap gap-2">
               {facility.departments.map(dept => (
-                <li key={dept} className="inline-flex min-h-[48px] items-center rounded-full border border-slate-300 bg-white pl-4 text-[14px] font-medium text-ink dark:border-white/25 dark:bg-white/5 dark:text-paper">
+                <li key={dept} className="inline-flex min-h-[48px] items-center rounded-full border border-slate-300 bg-white ps-4 text-[14px] font-medium text-ink dark:border-white/25 dark:bg-white/5 dark:text-paper">
                   {dept}
                   <button
                     type="button"
@@ -454,14 +454,14 @@ export const FacilitySettingsPage: React.FC = () => {
           <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">Staff roles &amp; facility transfer · {verifiedUsers.length}</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
+          <table className="w-full text-start text-sm whitespace-nowrap">
             <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="px-4 py-3">Name / Email</th>
                 <th className="px-4 py-3">Facility Location</th>
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Department</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3 text-end">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -533,7 +533,7 @@ export const FacilitySettingsPage: React.FC = () => {
                          <span className="text-slate-500 dark:text-slate-400 text-xs italic">N/A</span>
                        )}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-end">
                        <button
                          aria-label={`Remove ${u.name}`}
                          title="Remove User Completely"

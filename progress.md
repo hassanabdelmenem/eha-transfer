@@ -2,6 +2,20 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-30: Arabic and right-to-left, foundation
+
+- Owner decisions: profile setting with device default; Western digits; IBM Plex Sans Arabic; Claude
+  drafts and a clinician reviews.
+- `src/i18n`: typed catalogue (en/ar), `translate`, plurals via Intl.PluralRules, `formatNumber` with
+  `ar-EG-u-nu-latn`; `I18nProvider` in App (saved on the user doc, `language` field; no rules change).
+- Codemod: 96 physical classes → logical (ms/me/ps/pe/start/end/border-s/rounded-s/text-start);
+  drawer slides from the right in Arabic; 9 directional icons mirrored.
+- Found and fixed a live bug: clocks formatted with the browser locale showed ٠-٩ digits on Arabic
+  phones; now `src/i18n/format.ts` with explicit locales everywhere.
+- Arabic is gated (`VITE_ENABLE_ARABIC`, on in dev): English text in a right-to-left page reads broken,
+  so production stays English until the translation PRs land.
+- Verified: tsc, vitest 935/935, Playwright 11/11, Arabic captures (desktop workspace, phone detail).
+
 ## 2026-09-29 (night): Design follow-ups
 
 - Phone stage labels 9px uppercase -> 11px sentence case (uppercase kept from lg).

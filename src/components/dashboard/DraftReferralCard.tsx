@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatClock } from '../../i18n/format';
 import { useNavigate } from 'react-router-dom';
 import { DRAFT_STORAGE_KEY, WizardDraft, WIZARD_STEPS } from '../referrals/wizard/types';
 
@@ -37,7 +38,7 @@ export const DraftReferralCard: React.FC<{ draft: WizardDraft }> = ({ draft }) =
   const navigate = useNavigate();
   const [savedAt] = useState(() => {
     const t = Date.parse(draft.lastSaved || '');
-    return Number.isNaN(t) ? null : new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return Number.isNaN(t) ? null : formatClock(new Date(t));
   });
   const p = draft.patientData || {};
   const step = Math.min(WIZARD_STEPS.length, Math.max(1, draft.step || 1));
