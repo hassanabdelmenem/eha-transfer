@@ -7,6 +7,7 @@ import { Minus, Plus, UserPlus } from 'lucide-react';
 import { Skeleton, SkeletonGroup } from '../ui/Skeleton';
 import { showToast, toastError } from '../../lib/toast';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
+import { useReportQueue } from '../layout/Workspace';
 import { RoleHomeHeadline, MicroLabel, EmptyQueue } from './RoleHome';
 import { capacityTone } from '../../lib/capacityTone';
 import { cn } from '../../lib/utils';
@@ -101,6 +102,8 @@ export const NurseCockpit: React.FC = () => {
     [referrals, facility]
   );
 
+  useReportQueue(arrivedReferrals.map(r => r.id));
+
   if (!user) return null;
 
   const handleStepperChange = (bedType: BedType, occupied: number) => {
@@ -147,7 +150,7 @@ export const NurseCockpit: React.FC = () => {
       />
 
       {configured.length > 0 ? (
-        <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
           {configured.map(bt => (
             <BedStepperWidget
               key={bt}

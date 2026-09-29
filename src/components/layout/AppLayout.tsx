@@ -5,6 +5,7 @@ import { useData } from '../../contexts/DataContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { AppSidebar } from './AppSidebar';
 import { ShellContext } from './ShellContext';
+import { WORKSPACE_QUERY } from './Workspace';
 import { ROLE_CONFIGS } from './RoleBadge';
 import { Button } from '../ui/Button';
 import { toastError, showToast } from '../../lib/toast';
@@ -50,6 +51,9 @@ export const AppLayout: React.FC = () => {
   // Secondary screens draw a ScreenHeader (title + action + menu) instead.
   const onTitledScreen = ['/notifications', '/directory', '/archive', '/facility-settings'].includes(location.pathname);
   const ownHeader = onReferralDetail || onWizard || onTitledScreen;
+  // 3d: the role home on a wide screen is a two-pane workspace that scrolls per pane.
+  const wide = useMediaQuery(WORKSPACE_QUERY);
+  const workspace = wide && location.pathname === '/dashboard' && !!user && user.role !== 'system_admin' && user.role !== 'owner';
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
@@ -316,9 +320,12 @@ export const AppLayout: React.FC = () => {
         <main
           id="main-content"
           tabIndex={-1}
-          className={cn('flex-1 overflow-y-auto overflow-x-hidden scroll-pb-40 px-[18px] pb-10 lg:px-8 lg:py-8 focus:outline-none', !isDesktop && ownHeader ? 'pt-0' : 'pt-5')}
+          className={cn(
+            'flex-1 overflow-x-hidden scroll-pb-40 focus:outline-none',
+            workspace ? 'overflow-hidden p-0' : cn('overflow-y-auto px-[18px] pb-10 lg:px-8 lg:py-8', !isDesktop && ownHeader ? 'pt-0' : 'pt-5')
+          )}
         >
-          <div className="max-w-7xl mx-auto w-full">
+          <div className={workspace ? 'h-full' : 'max-w-7xl mx-auto w-full'}>
             <ShellContext.Provider value={{ openMenu: () => setMobileMenuOpen(true), isDesktop }}>
               <Outlet />
             </ShellContext.Provider>

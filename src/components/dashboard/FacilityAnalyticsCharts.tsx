@@ -297,7 +297,7 @@ export const FacilityAnalyticsCharts: React.FC<FacilityAnalyticsChartsProps> = (
             ))}
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-1">
           <ChartBlock title="Referrals in and out" rows={periodRows} series={FLOW} rowHeader="Period" />
           <ChartBlock title="By transfer type" rows={periodRows} series={TYPES} stacked rowHeader="Period" />
         </div>
@@ -309,7 +309,7 @@ export const FacilityAnalyticsCharts: React.FC<FacilityAnalyticsChartsProps> = (
         {departmentChartData.length === 0 ? (
           <p className="mt-3 text-[14px] text-slate-700 dark:text-white/65">No referrals recorded yet.</p>
         ) : (
-          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-1">
             <ChartBlock title="Referrals in and out" rows={departmentChartData} series={FLOW} horizontal rowHeader="Department" />
             <ChartBlock title="By transfer type" rows={departmentChartData} series={TYPES} stacked horizontal rowHeader="Department" />
           </div>

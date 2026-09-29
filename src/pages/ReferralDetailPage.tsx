@@ -21,7 +21,7 @@ import { ClinicalAttachmentsCard } from '../components/referrals/detail/Clinical
 import { DepartmentReviewCard } from '../components/referrals/detail/DepartmentReviewCard';
 import { PatientCard } from '../components/referrals/PatientCard';
 import { TransferJourneyCard } from '../components/referrals/detail/TransferJourneyCard';
-import { MobileActionFooter, FooterAction } from '../components/referrals/detail/MobileActionFooter';
+import { MobileActionFooter, FooterAction, InlineDetailActions } from '../components/referrals/detail/MobileActionFooter';
 import { ReferralActionConsole } from '../components/referrals/actions/ReferralActionConsole';
 import { RejectionModal } from '../components/referrals/actions/RejectionModal';
 import { ReferralStatus, DeptApprovalStatus } from '../types';
@@ -29,8 +29,16 @@ import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataCon
 import { showToast, toastError } from '../lib/toast';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
 
-export const ReferralDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+export interface ReferralDetailPageProps {
+  /** Open this referral instead of the one in the URL (the desktop workspace pane). */
+  referralId?: string;
+  /** Rendered inside the desktop workspace: no back button, no page-width cap. */
+  embedded?: boolean;
+}
+
+export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referralId, embedded = false }) => {
+  const params = useParams<{ id: string }>();
+  const id = referralId ?? params.id;
   const navigate = useNavigate();
   const {
     referrals,
@@ -359,7 +367,8 @@ export const ReferralDetailPage: React.FC = () => {
     case 'manager':
       if (referral.status === 'dept_approved') {
         footerPrimary = { label: 'Accept the transfer', onClick: () => handleStatusUpdate('manager_approved'), tone: successFill };
-        footerSecondary = { label: 'Decline', onClick: () => handleStatusUpdate('rejected'), tone: criticalOutline };
+        // A rejection always needs a reason: open the same dialog the console uses.
+        footerSecondary = { label: 'Decline', onClick: () => setShowRejectModal(true), tone: criticalOutline };
       } else {
         footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), tone: darkFill };
       }
@@ -414,14 +423,17 @@ export const ReferralDetailPage: React.FC = () => {
   const sectionLabel = 'mb-2 text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60';
 
   return (
-    <div className={`max-w-5xl mx-auto ${hasPinnedFooter ? 'pb-48' : 'pb-4'} print:max-w-none print:pb-0 print:m-0`}>
+    <div className={`${embedded ? '' : 'max-w-5xl mx-auto'} ${hasPinnedFooter ? 'pb-48' : 'pb-4'} print:max-w-none print:pb-0 print:m-0`}>
       <ReferralDetailHeader
         referral={referral}
         onBack={() => navigate(-1)}
         isDesktop={isDesktop}
-        // Desktop keeps the role's actions in the action console for now: the
-        // same buttons inline here would duplicate it. The unified desktop phase
-        // merges the two.
+        fullPageHref={embedded ? `/referrals/${referral.id}` : undefined}
+        // Desktop: the role's next action sits top-right (3d); the console below
+        // skips any button the header already shows, so each exists once.
+        actions={isDesktop ? (
+          <InlineDetailActions footerPrimary={footerPrimary} footerSecondary={footerSecondary} footerCallNumber={footerCallNumber} />
+        ) : undefined}
       />
 
       <div className="grid grid-cols-1 gap-[15px] lg:mt-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-8 print:hidden">
@@ -469,6 +481,7 @@ export const ReferralDetailPage: React.FC = () => {
           />
 
           <ReferralActionConsole
+            headerActions={isDesktop ? [footerPrimary?.label, footerSecondary?.label].filter((l): l is string => !!l).map(l => l.toLowerCase()) : []}
             referral={referral}
             user={user}
             isAdmin={isAdmin}

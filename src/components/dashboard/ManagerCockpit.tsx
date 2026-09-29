@@ -8,6 +8,7 @@ import { showToast, toastError } from '../../lib/toast';
 import { ReferralSummarySheet } from '../referrals/ReferralSummarySheet';
 import { EscalationAlertBanner } from './EscalationAlertBanner';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
+import { useOpenCase, useReportQueue } from '../layout/Workspace';
 import { BedOccupancyHeatmap } from './BedOccupancyHeatmap';
 import { FacilityAnalyticsCharts } from './FacilityAnalyticsCharts';
 import { RoleHomeHeadline, MicroLabel, EmptyQueue } from './RoleHome';
@@ -25,6 +26,7 @@ export const ManagerCockpit: React.FC = () => {
     updateReferralStatus,
   } = useData();
   const navigate = useNavigate();
+  const openCase = useOpenCase();
 
   const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
   const [busyAcceptId, setBusyAcceptId] = useState<string | null>(null);
@@ -85,6 +87,9 @@ export const ManagerCockpit: React.FC = () => {
     }
   };
 
+  const pinnedId = managerEscalations[0]?.id;
+  useReportQueue([...(pinnedId ? [pinnedId] : []), ...managerQueue.filter(r => r.id !== pinnedId).map(r => r.id)]);
+
   if (!user) return null;
 
   const pinned = managerEscalations[0];
@@ -107,7 +112,7 @@ export const ManagerCockpit: React.FC = () => {
         <EscalationAlertBanner
           referral={pinned}
           actionLabel={capacityReason ? 'Source a bed' : 'Review now'}
-          onAction={() => navigate(`/referrals/${pinned.id}`)}
+          onAction={() => openCase(pinned.id)}
           secondaryAction={capacityReason ? { label: 'Call admin', onClick: () => navigate('/directory') } : undefined}
           referringFacilityName={facilitiesById.get(pinned.referringFacilityId)?.name}
         />
@@ -169,7 +174,7 @@ export const ManagerCockpit: React.FC = () => {
                 approvedAt={approvingComment?.timestamp}
                 onAccept={handleManagerAccept}
                 onSummary={() => setSummaryReferral(r)}
-                onAction={() => navigate(`/referrals/${r.id}`)}
+                onAction={() => openCase(r.id)}
                 busy={busyAcceptId === r.id}
               />
             );
