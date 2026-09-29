@@ -72,7 +72,7 @@ export const Onboarding: React.FC = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <Card className="border-t-4 border-t-blue-900 shadow-xl">
+        <Card className="border-t-4 border-t-blue-900">
           <CardHeader className="bg-white dark:bg-slate-900">
             <CardTitle>Welcome! Please provide your details</CardTitle>
           </CardHeader>

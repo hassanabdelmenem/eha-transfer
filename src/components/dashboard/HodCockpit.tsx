@@ -402,7 +402,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
           tabIndex={-1}
           className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4"
         >
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-[0_8px_24px_rgba(20,20,19,0.14)] border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 space-y-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
             <div className="flex items-center justify-between">
               <h3 id="transferModalTitle" className="text-base font-bold text-slate-900 dark:text-slate-100">
                 Transfer Patient to Another Unit

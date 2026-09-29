@@ -189,7 +189,7 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium rounded-full border shadow-sm transition-colors select-none',
+        'inline-flex items-center font-medium rounded-full border transition-colors select-none',
         config.bgClass,
         config.textClass,
         config.borderClass,

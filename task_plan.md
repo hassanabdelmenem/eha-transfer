@@ -58,12 +58,12 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 - [x] 6 Unified desktop panes (3d) at >=1280px: 436px queue + case pane on the desk, selection in
       `?case=`, the role's actions top-right (console skips duplicates), DESIGN.md rewritten by the
       impeccable documenter, finish review run and its 9 material findings fixed (29 Sep)
-- [ ] Follow-ups from the finish review / documenter: review the wizard, inbox, directory, archive,
-      settings, admin and handover screens (the reviewer ran out of budget before them); rail count
-      badges; 9px stage-rail labels on phones; older modals still on stock `shadow-xl`/zoom animations;
-      the stale comment at the top of `src/index.css` about which hues are remapped; manager analytics
-      sit under the queue column on desktop (not in 1c; placement undecided)
-- **Status:** phases 1–5 live 27 Sep; phase 6 in review 29 Sep
+- [x] Finish review of the remaining screens (1d, 2d–2f, 3a–3c): 15 fixes, in #40
+- [x] Stage-rail labels 11px on phones; shadows only on floating surfaces (dialogs, drawer, toasts);
+      no zoom animations; `src/index.css` header comment corrected (29 Sep, follow-ups PR)
+- [ ] Rail count badges; manager analytics sit under the queue column on desktop (not in 1c; placement
+      undecided)
+- **Status:** phases 1–6 live (phase 6 merged and deployed 29 Sep, 93dbceb)
 
 ### Phase 4: Known gaps (NEXT_STEPS_PROMPT.md phase 2)
 

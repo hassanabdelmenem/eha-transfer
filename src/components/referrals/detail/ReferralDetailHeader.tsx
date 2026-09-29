@@ -37,7 +37,8 @@ export const StageRail: React.FC<{ status: Referral['status']; tone?: 'ink' | 'p
             />
             <span
               className={cn(
-                'truncate text-[9px] font-semibold uppercase tracking-[0.03em] lg:text-[11px] lg:tracking-[0.06em]',
+                // Sentence case on phones: at 11px uppercase the longest label no longer fits a 55px segment.
+                'truncate text-[11px] font-semibold leading-tight tracking-normal lg:uppercase lg:tracking-[0.06em]',
                 onInk
                   ? current ? 'text-paper' : 'text-white/62'
                   : current ? 'text-ink dark:text-paper' : 'text-slate-500 dark:text-white/60'
