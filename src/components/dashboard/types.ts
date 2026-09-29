@@ -4,23 +4,6 @@ import { DirectAdmission } from '../../contexts/DataContext';
 
 export type ClinicianSegment = 'you' | 'them' | 'moving' | 'inbound';
 
-export interface DashboardMetric {
-  label: string;
-  value: number;
-  valueColor: string;
-  bg: string;
-  labelColor: string;
-  badgeBg: string;
-  badgeText: string;
-  badgeLabel: string;
-}
-
-export interface DashboardStatGridProps {
-  metrics?: DashboardMetric[];
-  loading?: boolean;
-  facilityReferrals?: Referral[];
-}
-
 export interface EscalationAlertBannerProps {
   referral: Referral;
   onAction?: (referral: Referral) => void;

@@ -8,8 +8,9 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
 - Firebase project `eha-transfer-1785622025` → https://eha-transfer.web.app. Shares nothing with `imc-er` or `er-app-final`.
 - There is **no staging**: `npm run dev` and PR preview channels talk to production. Destructive work only with
   `VITE_USE_FIREBASE_EMULATORS=true` (Auth :9099, Firestore :8080).
-- Production users (23 Sep): 2, both owners. There is no real non-admin account to smoke-test as.
-- Production data (23 Sep): 10 referrals (5 lack `createdAtMs`), 127 notifications (69 lack it); all have a valid `createdAt`.
+- There is no real non-admin production account to smoke-test as.
+- Production data: every referral and notification has `createdAtMs` since the 27 Sep backfill; the rules require it.
+- Production accounts (27 Sep): 3, all owners; `hassan.200006@med.suez.edu.eg` (email/password) has an unconfirmed email.
 - The global firebase CLI config maps "/" → `hospital-er-unified` (stray); pass `--project eha-transfer-1785622025`.
 
 ## CI / deploy
@@ -17,10 +18,12 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
 - Workflows: `ci.yml` (every branch; lint, vitest, rules, e2e), `firebase-deploy.yml` (push to `main` or manual:
   Firestore rules + indexes + hosting only), `firebase-preview.yml` (PR preview channel), `claude.yml`,
   `claude-code-review.yml`, `stryker-nightly.yml`. Runners use Node 24; `functions/` targets Node 20.
-- **Since 27 Sep GitHub refuses every Actions job** (billing: "recent account payments have failed or your
-  spending limit needs to be increased"). Jobs fail in 2–3 s with zero steps; red checks on PRs #33–#37 are
-  this, not test failures. Nothing merged to `main` deploys until the owner fixes billing. ClinicGuard hit
-  the same block on 26 Sep (same GitHub account).
+- The repo is **public** since 27 Sep (Actions minutes free). Before that, GitHub refused every job for billing:
+  jobs failing in 2–3 s with zero steps mean that, not test failures. CI on `main` cancels superseded runs;
+  the deploy only runs after CI succeeds on `main`.
+- `gh pr edit --base` fails on a Projects (classic) deprecation error; retarget with
+  `gh api -X PATCH repos/hassanabdelmenem/eha-transfer/pulls/<n> -f base=main`.
+- Stacked PRs: merge with merge commits (not squash) and retarget the next PR to `main` after each merge.
 - Local gate before pushing: `npm run lint && npx vitest run && npm run test:rules`; plus `npm run test:e2e`
   for UI work. `test:rules` / `test:e2e` wrap `firebase emulators:exec` and set Homebrew OpenJDK on PATH.
 
@@ -69,6 +72,13 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
 - `evaluateVital` names GCS tiers "high"/"low" by severity, not direction; any abnormal GCS reads "low" in the UI.
 - Escalation writers, routing (`src/lib/routing.ts`) and SLA logic are untouchable in presentation work.
 - `User.role` is the only role field the rules trust; `requestedRole` carries no authority.
+
+## Escalation e2e (`e2e/escalation.spec.ts`)
+
+- Referrals are created through the wizard, then changed with emulator admin REST writes (`Bearer owner`):
+  backdate `createdAt`/`createdAtMs` 31 min for the SLA case, set ICU `occupied == total` for no-beds.
+- The sweep runs on page load and every 30 s, only for referrals from the viewer's facility (all for admins).
+- The app navigates before its write is visible over REST; poll for the new referral.
 
 ## Gotchas
 

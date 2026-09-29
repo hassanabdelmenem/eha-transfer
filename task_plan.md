@@ -12,22 +12,17 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
 
 ## Next Step
 
-**Owner first: fix GitHub billing.** Since 27 Sep every Actions job is refused ("recent account payments
-have failed or your spending limit needs to be increased"): CI, preview deploys, claude-review and the
-production deploy on `main` do not run. Until then nothing merged to `main` reaches
-https://eha-transfer.web.app, and PR checks show red without having run.
+Everything through redesign phase 5 is merged and live (27 Sep, `main` 8847c7b); the repo is public, so
+GitHub Actions runs again. Owner decisions d1–d5 were answered the same day and are being shipped in the
+"owner decisions" PR (createdAtMs backfill + rules, escalation e2e, handover without sign-out, old-design
+cleanup). **Now: redesign phase 6** (desktop panes, DESIGN.md rewrite, finish review).
 
-Then, in order:
-1. Review and merge the security fix **#32** (email_verified); before it deploys, check how many
-   admin-verified email/password accounts never confirmed their email (they will hit the verify screen).
-2. Merge **#30** (Claude Code setup), **#38** (this project memory, based on #30) and **#31** (react-router pin).
-3. Review the redesign stack **#33 → #37** in order (each is based on the one before).
-4. Answer the open decisions below.
-5. Phase 6 of the redesign.
+Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg); since
+#32 it lands on the verify screen until confirmed. Two moderate Dependabot alerts on `main` are unreviewed.
 
 ## Current Phase
 
-Phase 3: Mobile-workflow redesign (5 of 6 sub-phases done, in review)
+Phase 3: Mobile-workflow redesign (phases 1–5 live; phase 6 in progress)
 
 ## Phases
 
@@ -37,17 +32,17 @@ Phase 3: Mobile-workflow redesign (5 of 6 sub-phases done, in review)
 - [x] Deploy pipeline: CI then "Deploy to Firebase" (Firestore rules/indexes + hosting) on push to `main`
 - [x] Owner account verified in production (role owner, verified true)
 - [ ] Smoke test as a real non-admin clinician (production has only 2 users, both owners)
-- [ ] Phase 1.4 backfill: 5/10 referrals and 69/127 notifications lack `createdAtMs` (all have a valid
+- [x] Phase 1.4 backfill (27 Sep): `scripts/backfill-created-at-ms.mjs` wrote 5 referrals + 69 notifications; rules now require the field. Was: 5/10 referrals and 69/127 notifications lack `createdAtMs` (all have a valid
       `createdAt`); decision pending (dry run first, then make the rules require the field)
-- **Status:** mostly complete; two items open
+- **Status:** complete except the non-admin smoke test (Phase 5)
 
 ### Phase 2: Security and repo setup (PRs, 26–27 Sep)
 
-- [ ] #32 restore `email_verified` in `isVerifiedCaller` and notifications read; token-claim `emailVerified`; e2e seed fix
-- [ ] #30 Claude Code setup: CLAUDE.md, hooks, Firebase MCP, `/rules-change` skill, `rbac-rules-reviewer` agent
-- [ ] #31 drop the react-router ^8 override, pin react-router-dom ^7.18.4
-- [ ] #38 project memory (this file, findings.md, progress.md) and published pages; stacked on #30
-- **Status:** all open, CI was green before the billing block (except #32's latest run)
+- [x] #32 restore `email_verified` in `isVerifiedCaller` and notifications read; token-claim `emailVerified`; e2e seed fix
+- [x] #30 Claude Code setup: CLAUDE.md, hooks, Firebase MCP, `/rules-change` skill, `rbac-rules-reviewer` agent
+- [x] #31 drop the react-router ^8 override, pin react-router-dom ^7.18.4
+- [x] #38 project memory (this file, findings.md, progress.md) and published pages; stacked on #30
+- **Status:** complete, merged 27 Sep
 
 ### Phase 3: Mobile-workflow redesign (/impeccable, handoff screens 1a–3d)
 
@@ -65,7 +60,7 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
       top-right; merge desktop header actions with the action console; rewrite DESIGN.md with the
       impeccable documenter (the committed DESIGN.md still describes the old command-blue world);
       finish review against the direction contract
-- **Status:** in review; phase 6 not started
+- **Status:** phases 1–5 merged and live 27 Sep; phase 6 in progress
 
 ### Phase 4: Known gaps (NEXT_STEPS_PROMPT.md phase 2)
 
@@ -73,7 +68,7 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 - [ ] 2c `statusHistory` as a subcollection (not started)
 - [ ] 2d `useIdleTimeout` exists; wiring and duration unverified
 - [ ] 2e small text / 28px buttons (largely superseded by the redesign; re-audit after phase 6)
-- [ ] Emulator Playwright tests for the four escalation scenarios instead of manual production smoke tests (decision pending)
+- [x] Emulator Playwright tests for the four escalation scenarios (`e2e/escalation.spec.ts`, 27 Sep)
 - **Status:** open
 
 ### Phase 5: Launch readiness
@@ -83,15 +78,15 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 - [ ] Staging project (today `npm run dev` and PR previews talk to production)
 - **Status:** not started
 
-## Open decisions (owner)
+## Decisions (owner, answered 27 Sep)
 
-| # | Decision | Where it came from |
+| # | Decision | Answer |
 | --- | --- | --- |
-| d1 | Backfill `createdAtMs` in production (dry run first), then require it in the rules? | Phase 1.4, 23 Sep |
-| d2 | Emulator e2e for the four escalation scenarios instead of manual prod smoke tests? | 23 Sep |
-| d3 | End of shift: keep it tied to Log out (today's behaviour, copy now says so) or a separate "Send handover" that keeps you signed in (the handoff's intent)? | #37 |
-| d4 | Declining a pending account deletes it. Keep, or reject the request only? | #37 |
-| d5 | Close the earlier redesign attempts **#24** and **#28**, now superseded by #33–#37? | 27 Sep |
+| d1 | Backfill `createdAtMs`, then require it in the rules? | Yes; done |
+| d2 | Emulator e2e for the four escalation scenarios? | Yes; `e2e/escalation.spec.ts` |
+| d3 | End of shift tied to Log out? | No: sending the handover keeps you signed in; users sign out manually |
+| d4 | Declining a pending account deletes it? | Yes, keep deleting |
+| d5 | Old redesign attempts? | Keep only the current design: #24/#28 closed, stale branches deleted, old-design code removed |
 
 ## Rules that always apply
 

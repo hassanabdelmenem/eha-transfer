@@ -9,8 +9,7 @@ import { HodCockpit } from './HodCockpit';
 import { ManagerCockpit } from './ManagerCockpit';
 import { ERCockpit } from './ERCockpit';
 import { NurseCockpit } from './NurseCockpit';
-import { AdminCockpit } from './AdminCockpit';
-import { DashboardStatGrid } from './DashboardStatGrid';
+import { AdminDashboard } from '../../pages/AdminDashboard';
 import { EscalationAlertBanner } from './EscalationAlertBanner';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
 import { FacilityAnalyticsCharts } from './FacilityAnalyticsCharts';
@@ -170,22 +169,6 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         summary: 'Smooth shift, all CCU beds stable.',
       },
     ];
-  });
-
-  describe('1. DashboardStatGrid & KPIGrid', () => {
-    it('renders all 4 KPI tiles and calculates counts from referrals', () => {
-      render(<DashboardStatGrid facilityReferrals={mockReferrals} loading={false} />);
-      expect(screen.getByText(/Pending Referrals/i)).toBeInTheDocument();
-      expect(screen.getByText(/In Transit/i)).toBeInTheDocument();
-      expect(screen.getByText(/Emergencies/i)).toBeInTheDocument();
-      expect(screen.getByText(/Completed/i)).toBeInTheDocument();
-    });
-
-    it('renders loading skeleton when loading=true', () => {
-      render(<DashboardStatGrid facilityReferrals={[]} loading={true} />);
-      expect(screen.getByRole('status')).toBeInTheDocument();
-      expect(screen.getByText(/Loading statistics…/i)).toBeInTheDocument();
-    });
   });
 
   describe('2. EscalationAlertBanner', () => {
@@ -536,7 +519,7 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
     });
   });
 
-  describe('8. AdminCockpit', () => {
+  describe('8. Admin escalation console (AdminDashboard)', () => {
     beforeEach(() => {
       mockUser = {
         id: 'admin-1',
@@ -553,15 +536,15 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       ];
     });
 
-    it('renders system escalation console with global bed totals and actions', () => {
+    it('renders the system escalation console with network bed totals and actions', () => {
       render(
         <MemoryRouter>
-          <AdminCockpit />
+          <AdminDashboard />
         </MemoryRouter>
       );
 
-      expect(screen.getByText(/System Escalation Console/i)).toBeInTheDocument();
-      expect(screen.getByText(/Active System-Level Escalations/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /^1 only you can fix$/ })).toBeInTheDocument();
+      expect(screen.getByRole('list', { name: /Free beds across the network/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Postpone/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /De-escalate/i })).toBeInTheDocument();
     });
