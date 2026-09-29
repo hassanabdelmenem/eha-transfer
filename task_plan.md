@@ -61,8 +61,9 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 - [x] Finish review of the remaining screens (1d, 2d–2f, 3a–3c): 15 fixes, in #40
 - [x] Stage-rail labels 11px on phones; shadows only on floating surfaces (dialogs, drawer, toasts);
       no zoom animations; `src/index.css` header comment corrected (29 Sep, follow-ups PR)
-- [ ] Rail count badges; manager analytics sit under the queue column on desktop (not in 1c; placement
-      undecided)
+- [x] Rail count: one count, on "Waiting on you", equal to the role home's headline
+      (`src/lib/waitingOnYou.ts`); Referrals and Inbox plain. Manager charts moved to /reports
+      (rail item "Reports", manager roles). Owner decisions 29 Sep.
 - **Status:** phases 1–6 live (phase 6 merged and deployed 29 Sep, 93dbceb)
 
 ### Phase 4: Known gaps (NEXT_STEPS_PROMPT.md phase 2)

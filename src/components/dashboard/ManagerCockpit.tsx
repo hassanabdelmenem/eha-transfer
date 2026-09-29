@@ -9,8 +9,6 @@ import { ReferralSummarySheet } from '../referrals/ReferralSummarySheet';
 import { EscalationAlertBanner } from './EscalationAlertBanner';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
 import { useOpenCase, useReportQueue } from '../layout/Workspace';
-import { BedOccupancyHeatmap } from './BedOccupancyHeatmap';
-import { FacilityAnalyticsCharts } from './FacilityAnalyticsCharts';
 import { RoleHomeHeadline, MicroLabel, EmptyQueue } from './RoleHome';
 import { capacityTone } from '../../lib/capacityTone';
 import { cn } from '../../lib/utils';
@@ -19,10 +17,8 @@ export const ManagerCockpit: React.FC = () => {
   const { user } = useAuth();
   const {
     referrals,
-    facilities,
     facilitiesById,
     usersById,
-    directAdmissions,
     updateReferralStatus,
   } = useData();
   const navigate = useNavigate();
@@ -42,10 +38,6 @@ export const ManagerCockpit: React.FC = () => {
         (r.receivingFacilityId === 'auto' && r.candidateFacilityIds?.includes(user.facilityId || ''))
     );
   }, [referrals, user?.facilityId]);
-
-  const facilityAdmissions = user?.facilityId
-    ? directAdmissions.filter(a => a.facilityId === user.facilityId)
-    : [];
 
   const managerEscalations = useMemo(
     () =>
@@ -182,15 +174,8 @@ export const ManagerCockpit: React.FC = () => {
         )}
       </section>
 
-      {/* Below the queue: the wider picture, for when nothing is waiting. */}
-      <section aria-label="Network and facility activity" className="mt-8 space-y-4">
-        <BedOccupancyHeatmap facilities={facilities} />
-        <FacilityAnalyticsCharts
-          facilityReferrals={facilityReferrals}
-          facilityAdmissions={facilityAdmissions}
-          userFacilityId={user.facilityId}
-        />
-      </section>
+      {/* The wider picture (network free beds, facility activity) lives on
+          /reports, so this column holds only work. */}
 
       {summaryReferral && (
         <ReferralSummarySheet
