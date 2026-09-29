@@ -61,7 +61,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
           className="fixed inset-0 z-[100] bg-slate-950/95 flex flex-col backdrop-blur-sm"
         >
           {/* Header toolbar */}
-          <div className="flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 text-white shrink-0 shadow-lg z-10">
+          <div className="flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 text-white shrink-0 z-10">
             <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
               <Activity className="w-5 h-5 text-blue-500" />
               ECG Quick-Viewer
@@ -175,7 +175,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   onLoad={() => setImageLoaded(true)}
                   onError={() => setLoadError(true)}
-                  className={`max-w-[90vw] max-h-[80vh] object-contain shadow-2xl rounded transition-opacity duration-200 ${
+                  className={`max-w-[90vw] max-h-[80vh] object-contain rounded transition-opacity duration-200 ${
                     imageLoaded ? 'opacity-100' : 'opacity-90'
                   }`}
                   style={{ 

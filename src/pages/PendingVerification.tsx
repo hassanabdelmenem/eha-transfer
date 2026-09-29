@@ -39,7 +39,7 @@ export const PendingVerification: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Card className="border-t-4 border-t-yellow-500 shadow-xl">
+        <Card className="border-t-4 border-t-yellow-500">
           <CardHeader className="bg-white dark:bg-slate-900 text-center">
             <div className="flex justify-center mb-4">
               <Clock className="h-12 w-12 text-warning-500" />

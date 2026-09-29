@@ -80,7 +80,7 @@ export const DirectAdmissionModal: React.FC<DirectAdmissionModalProps> = ({
         }
       }}
     >
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-[0_8px_24px_rgba(20,20,19,0.14)] border border-slate-200 dark:border-slate-800 overflow-hidden my-auto max-h-[92vh] flex flex-col">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
           <div className="flex items-center gap-3">

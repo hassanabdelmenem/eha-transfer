@@ -73,7 +73,7 @@ export const ReferralsPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 shrink-0">
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center gap-4">
           <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full text-blue-600 dark:text-blue-500">
             <Activity className="h-6 w-6" />
           </div>
@@ -82,7 +82,7 @@ export const ReferralsPage: React.FC = () => {
             <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.active}</p>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center gap-4">
           <div className="bg-warning-100 dark:bg-warning-900/30 p-3 rounded-full text-warning-600 dark:text-warning-500">
             <Clock className="h-6 w-6" />
           </div>
@@ -91,7 +91,7 @@ export const ReferralsPage: React.FC = () => {
             <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.pending}</p>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center gap-4">
           <div className="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full text-emerald-600 dark:text-emerald-500">
             <CheckCircle className="h-6 w-6" />
           </div>
@@ -163,7 +163,7 @@ export const ReferralsPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col overflow-hidden shadow-sm">
+      <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
           <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">All Referrals Grid</h3>
           <button 

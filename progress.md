@@ -2,6 +2,13 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-29 (night): Design follow-ups
+
+- Phone stage labels 9px uppercase -> 11px sentence case (uppercase kept from lg).
+- Shadows brought into the vocabulary: dialogs use Toast lift, the phone drawer a sideways Sheet rise;
+  resting cards (stat tiles, consent and escort callouts, role badge, skeleton, auth cards) lost theirs.
+- `src/index.css` header now lists the hue remaps that actually exist.
+
 ## 2026-09-29 (evening): Finish-review fixes for the remaining screens (PR #40)
 
 - Dependabot: #41 merged (firebase-tools ^15.32.0, stream-json override removed); alerts #11/#12 cleared.
@@ -15,7 +22,11 @@ Newest first. One entry per working session: what changed, what was verified, wh
   in "Ready to send"; inbox shows a visible "New" chip and "Mark as read" for link-less notices;
   Directory title for everyone; archive line has no trailing "admitted ".
 - Verified: tsc clean, vitest 927/927, Playwright 11/11, phone captures of wizard, settings, admin.
-- Left: owner review and merge of #40; owner confirms the email on the second owner login.
+- Owner said "merge #40": merged d9f9c39, then #42 (undici 6.29/8.11.2, ip-address 10.7.2, dev-only;
+  clears Dependabot 23/24/27-37). Main CI green; Deploy to Firebase succeeded at 93dbceb (20:43 UTC).
+  The redesign (phases 1-6) is live.
+- Left: owner confirms the email on the second owner login.
+
 
 ## 2026-09-29: Owner decisions live; redesign phase 6
 

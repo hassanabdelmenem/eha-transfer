@@ -233,7 +233,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
                 />
               </div>
             ) : (
-              <div className="relative p-3 bg-warning-50 dark:bg-warning-950/30 border-2 border-warning-400 rounded-lg shadow-sm mt-2">
+              <div className="relative p-3 bg-warning-50 dark:bg-warning-950/30 border-2 border-warning-400 rounded-lg mt-2">
                 <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
                   <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-warning-500"></span>
