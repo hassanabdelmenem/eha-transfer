@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDayMonthClock } from '../../i18n/format';
 import { DirectAdmission } from '../../contexts/DataContext';
 import { Card, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -49,12 +50,7 @@ export const ActiveInpatientCensus: React.FC<ActiveInpatientCensusProps> = ({
           {admissions.map((admission) => {
             const isDischarging = dischargingId === admission.id;
             const formattedDate = admission.admittedAt
-              ? new Date(admission.admittedAt).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
+              ? formatDayMonthClock(new Date(admission.admittedAt))
               : 'Unknown date';
 
             return (
@@ -96,7 +92,7 @@ export const ActiveInpatientCensus: React.FC<ActiveInpatientCensusProps> = ({
                       className="border-critical-200 dark:border-critical-900 text-critical-600 dark:text-critical-400 hover:bg-critical-50 dark:hover:bg-critical-950/30 px-4 font-semibold"
                       onClick={() => onDischarge(admission.id)}
                     >
-                      <UserMinus className="w-4 h-4 mr-2" />
+                      <UserMinus className="w-4 h-4 me-2" />
                       Discharge
                     </Button>
                   </div>

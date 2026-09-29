@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { formatDayMonth } from '../../i18n/format';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -6,6 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { AppSidebar } from './AppSidebar';
 import { ShellContext } from './ShellContext';
 import { WORKSPACE_QUERY } from './Workspace';
+import { LANGUAGES, useI18n } from '../../i18n';
 import { ROLE_CONFIGS } from './RoleBadge';
 import { Button } from '../ui/Button';
 import { toastError, showToast } from '../../lib/toast';
@@ -27,6 +29,7 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 const nextShift = (shiftType: string) => (shiftType === 'Day' ? 'night' : 'day');
 
 export const AppLayout: React.FC = () => {
+  const { t, lang, setLanguage, arabicAvailable } = useI18n();
   const { user, logout, updateUserProfile } = useAuth();
   const {
     notifications,
@@ -76,11 +79,11 @@ export const AppLayout: React.FC = () => {
     try {
       const existing = localStorage.getItem('authSinceDate');
       if (existing) return existing;
-      const today = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+      const today = formatDayMonth(new Date());
       localStorage.setItem('authSinceDate', today);
       return today;
     } catch {
-      return new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+      return formatDayMonth(new Date());
     }
   });
 
@@ -221,7 +224,7 @@ export const AppLayout: React.FC = () => {
       {/* Accessibility Skip Link */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:bg-paper focus:text-ink focus:px-4 focus:py-3 focus:rounded-[10px] focus:shadow-[0_8px_24px_rgba(20,20,19,0.14)] font-semibold text-sm"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[200] focus:bg-paper focus:text-ink focus:px-4 focus:py-3 focus:rounded-[10px] focus:shadow-[0_8px_24px_rgba(20,20,19,0.14)] font-semibold text-sm"
       >
         Skip to main content
       </a>
@@ -254,8 +257,8 @@ export const AppLayout: React.FC = () => {
       )}
       {!isDesktop && <div
         className={cn(
-          'fixed inset-y-0 left-0 z-[90] w-[85vw] max-w-[320px] shadow-[8px_0_30px_rgba(20,20,19,0.18)] transition-transform duration-200 ease-out motion-reduce:transition-none',
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed inset-y-0 start-0 z-[90] w-[85vw] max-w-[320px] shadow-[8px_0_30px_rgba(20,20,19,0.18)] rtl:shadow-[-8px_0_30px_rgba(20,20,19,0.18)] transition-transform duration-200 ease-out motion-reduce:transition-none',
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'
         )}
         inert={!mobileMenuOpen}
       >
@@ -294,7 +297,7 @@ export const AppLayout: React.FC = () => {
               >
                 <Bell className="h-5 w-5" aria-hidden="true" />
                 {unreadNotifs > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-[9px] w-[9px] rounded-full border-2 border-ink bg-critical-500" aria-hidden="true" />
+                  <span className="absolute top-1.5 end-1.5 h-[9px] w-[9px] rounded-full border-2 border-ink bg-critical-500" aria-hidden="true" />
                 )}
               </Link>
               <button
@@ -362,12 +365,33 @@ export const AppLayout: React.FC = () => {
             </div>
 
             <div className="p-4 space-y-4 overflow-y-auto">
+              {arabicAvailable && <fieldset>
+                <legend className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('language.label')}</legend>
+                {/* Applies at once and is saved to the profile; not part of "Save Changes". */}
+                <div className="grid grid-cols-2 gap-2">
+                  {LANGUAGES.map(l => (
+                    <label
+                      key={l}
+                      className={cn(
+                        'relative flex min-h-[48px] cursor-pointer items-center justify-center rounded-[10px] border text-[15px] font-semibold',
+                        lang === l ? 'border-ink bg-ink text-paper dark:border-paper dark:bg-paper dark:text-ink' : 'border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10'
+                      )}
+                    >
+                      <input type="radio" name="profileLanguage" value={l} checked={lang === l} onChange={() => setLanguage(l)} className="absolute inset-0 cursor-pointer opacity-0" />
+                      <span lang={l}>{l === 'ar' ? t('language.arabic') : t('language.english')}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{t('language.hint')}</p>
+              </fieldset>}
+
               <div>
                 <label htmlFor="profilePhone" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   On-Call Phone Number
                 </label>
                 <input
                   id="profilePhone"
+                  dir="ltr"
                   type="tel"
                   value={profilePhone}
                   onChange={(e) => setProfilePhone(e.target.value)}

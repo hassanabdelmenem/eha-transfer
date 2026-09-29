@@ -48,7 +48,7 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
               onClose();
               setRejectError('');
             }}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center -me-2 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

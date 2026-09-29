@@ -257,6 +257,23 @@ body {
   }
 }
 
+/* Arabic (owner decision, 30 Sep): IBM Plex Sans Arabic for text and headings,
+   because Poppins has no Arabic. Its Latin digits keep vitals in 0–9. */
+html:lang(ar) {
+  --font-sans: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-sans);
+  --font-heading: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Tracking pulls joined Arabic letters apart, and every label here is tracked.
+   !important inside the base layer beats utilities; English islands (lang="en")
+   keep their tracking because :lang() follows the nearest lang attribute. */
+@layer base {
+  :lang(ar) {
+    letter-spacing: 0 !important;
+  }
+}
+
 /* The parts the browser draws still belong to the world. */
 ::selection {
   background-color: var(--color-info-200);

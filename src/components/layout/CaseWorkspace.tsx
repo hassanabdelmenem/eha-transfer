@@ -15,7 +15,7 @@ export const CaseWorkspace: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <WorkspaceProvider>
       <div className="grid h-full min-h-0 grid-cols-[436px_minmax(0,1fr)]">
-        <section aria-label="Queue" className="min-h-0 overflow-y-auto border-r border-slate-200 bg-paper px-6 py-7 dark:border-white/10 dark:bg-ink">
+        <section aria-label="Queue" className="min-h-0 overflow-y-auto border-e border-slate-200 bg-paper px-6 py-7 dark:border-white/10 dark:bg-ink">
           {children}
         </section>
         <CasePane />

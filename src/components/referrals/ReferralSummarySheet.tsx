@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { formatClock } from '../../i18n/format';
 import { useNavigate } from 'react-router-dom';
 import { X, ChevronRight, AlertTriangle } from 'lucide-react';
 import { Referral } from '../../types';
@@ -83,7 +84,7 @@ export const ReferralSummarySheet: React.FC<{
             type="button"
             onClick={onClose}
             aria-label="Close summary"
-            className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-slate-700 hover:bg-slate-100 dark:text-white/70 dark:hover:bg-white/10"
+            className="-me-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-slate-700 hover:bg-slate-100 dark:text-white/70 dark:hover:bg-white/10"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -97,7 +98,7 @@ export const ReferralSummarySheet: React.FC<{
 
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">
-              Vitals{vitals?.timestamp ? <> · <span className="font-mono normal-case tracking-normal">{new Date(vitals.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></> : ''}
+              Vitals{vitals?.timestamp ? <> · <span className="font-mono normal-case tracking-normal">{formatClock(new Date(vitals.timestamp))}</span></> : ''}
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2">
               <VitalCell label="HR" value={show(vitals?.hr, ' bpm')} abnormal={isAbnormal(vitals?.hr, n => n > 100 || n < 60)} />
@@ -122,7 +123,7 @@ export const ReferralSummarySheet: React.FC<{
             className="flex min-h-[52px] w-full items-center justify-between rounded-[10px] border border-slate-300 bg-white px-4 text-[15px] font-semibold text-ink transition-colors hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10"
           >
             ECG + full chart
-            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            <ChevronRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden="true" />
           </button>
         </div>
 

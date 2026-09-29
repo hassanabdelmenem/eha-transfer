@@ -67,7 +67,7 @@ export const ReferralsPage: React.FC = () => {
           <p className="text-gray-500 dark:text-gray-400">Manage all incoming and outgoing patient transfers.</p>
         </div>
         <Button onClick={handleExportCSV} variant="outline" className="bg-white dark:bg-slate-900">
-          <Download className="w-4 h-4 mr-2" />
+          <Download className="w-4 h-4 me-2" />
           Export CSV
         </Button>
       </div>
@@ -104,11 +104,11 @@ export const ReferralsPage: React.FC = () => {
 
       <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 shrink-0">
         <div className="relative flex-1 min-w-[200px]">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
             <Search className="h-4 w-4 text-slate-500 dark:text-slate-400" />
           </div>
           <Input 
-            className="pl-9" 
+            className="ps-9" 
             placeholder="Search by Patient ID, Facility, or Department..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

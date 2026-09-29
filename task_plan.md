@@ -66,6 +66,22 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
       (rail item "Reports", manager roles). Owner decisions 29 Sep.
 - **Status:** phases 1–6 live (phase 6 merged and deployed 29 Sep, 93dbceb)
 
+### Arabic and right-to-left (owner decisions 30 Sep)
+
+Language follows the device, overridable in the profile (saved on the user doc); clinical numbers
+always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician reviews
+(`npm run i18n:sheet` → `docs/i18n/arabic-review.csv`). Arabic stays off in production builds
+(`VITE_ENABLE_ARABIC`) until the screens are translated.
+
+- [x] Foundation: typed `src/i18n` (en source of truth, ar typed to match, Intl plurals), provider sets
+      `lang`/`dir`, profile language choice, logical start/end classes app-wide (96), mirrored icons and
+      drawer, Arabic font and zero tracking, explicit-locale clock/date helpers (fixes ٠-٩ digits on
+      Arabic phones in production today), rail translated
+- [ ] Translate: role homes and cards; referral detail and actions; intake wizard; inbox, directory,
+      archive, settings, admin; sign-in, onboarding; toasts and errors; status/role/priority labels
+- [ ] Dates in Arabic (date-fns `ar` locale with Western digits); charts stay left-to-right
+- [ ] Clinician review of the sheet; then enable Arabic in production
+
 ### Phase 4: Known gaps (NEXT_STEPS_PROMPT.md phase 2)
 
 - [x] 2a Escalation when nobody is signed in: `.github/workflows/escalation-sweep.yml` every 5 min (keyless

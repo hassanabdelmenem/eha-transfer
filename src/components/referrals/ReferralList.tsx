@@ -226,7 +226,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
           </SkeletonGroup>
         </div>
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-start">
             <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-semibold">
               <tr>
                 <th className="px-6 py-3">Patient Identity</th>
@@ -234,7 +234,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                 <th className="px-6 py-3">Target Specialty</th>
                 <th className="px-6 py-3">Clinical Priority</th>
                 <th className="px-6 py-3">Current Status</th>
-                <th className="px-6 py-3 text-right">Action</th>
+                <th className="px-6 py-3 text-end">Action</th>
               </tr>
             </thead>
             {/* aria-label/aria-busy directly on <tbody>, not a wrapping <div>:
@@ -308,7 +308,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                   className="inline-flex items-center justify-center gap-1 min-h-[44px] px-3 rounded text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs font-semibold transition-colors"
                 >
                   View Card
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  <ChevronRight className="w-3.5 h-3.5 rtl:-scale-x-100" />
                 </Link>
               </div>
             </Card>
@@ -318,7 +318,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
 
       {/* Desktop View */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left">
+        <table className="w-full text-start">
           <thead className="bg-slate-50 dark:bg-slate-950 text-xs text-slate-500 dark:text-slate-400 font-semibold">
             <tr>
               <th className="px-6 py-3">Patient Identity</th>
@@ -326,7 +326,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               <th className="px-6 py-3">Target Specialty</th>
               <th className="px-6 py-3">Clinical Priority</th>
               <th className="px-6 py-3">Current Status</th>
-              <th className="px-6 py-3 text-right">Action</th>
+              <th className="px-6 py-3 text-end">Action</th>
             </tr>
           </thead>
           <tbody className="text-xs">
@@ -364,10 +364,10 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-end">
                     <Link to={`/referrals/${referral.id}`} className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-400 font-semibold text-xs border border-blue-200 dark:border-blue-800 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors whitespace-nowrap">
                       View Card
-                      <ChevronRight className="w-3 h-3" />
+                      <ChevronRight className="w-3 h-3 rtl:-scale-x-100" />
                     </Link>
                   </td>
                 </tr>

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { isNurseRole } from '../../types';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../i18n';
 import { waitingOnYouCount } from '../../lib/waitingOnYou';
 
 export interface AppSidebarProps {
@@ -71,6 +72,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onToggleTheme,
 }) => {
   const location = useLocation();
+  const { t } = useI18n();
 
   const isDoctor = ['consultant', 'specialist', 'resident', 'clinician', 'er_official', 'medical_director', 'head_of_department', 'owner', 'system_admin'].includes(user.role);
   const isNurse = isNurseRole(user.role) || user.role === 'owner' || user.role === 'er_room';
@@ -96,7 +98,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
   const count = (n: number, active: boolean) =>
     n > 0 ? (
-      <span className={cn('ml-auto min-w-[28px] rounded-full px-2 py-0.5 text-center text-[12px] font-bold tabular', active ? 'bg-paper text-ink' : 'bg-white/12 text-paper')}>
+      <span className={cn('ms-auto min-w-[28px] rounded-full px-2 py-0.5 text-center text-[12px] font-bold tabular', active ? 'bg-paper text-ink' : 'bg-white/12 text-paper')}>
         <span className="sr-only">, </span>{n}
       </span>
     ) : null;
@@ -115,22 +117,22 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const roleLabel = ROLE_CONFIGS[user.role]?.label ?? user.role;
 
   return (
-    <aside className="flex h-full w-[228px] flex-col bg-ink text-paper select-none max-lg:w-full" aria-label="Main navigation">
+    <aside className="flex h-full w-[228px] flex-col bg-ink text-paper select-none max-lg:w-full" aria-label={t('rail.mainNavigation')}>
       <div className="flex shrink-0 items-center justify-between gap-2 px-4 pt-5 pb-4">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-paper text-ink">
             <Activity className="h-5 w-5" aria-hidden="true" />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-[15px] font-semibold leading-tight">Ismailia Health</span>
-            <span className="block truncate text-[12.5px] text-white/60">Connect</span>
+            <span className="block truncate text-[15px] font-semibold leading-tight">{t('rail.brand')}</span>
+            <span className="block truncate text-[12.5px] text-white/60">{t('rail.brandSub')}</span>
           </span>
         </div>
         {isMobile && onCloseMobile && (
           <button
             type="button"
             onClick={onCloseMobile}
-            aria-label="Close menu"
+            aria-label={t('rail.closeMenu')}
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border border-white/25 text-paper hover:bg-white/10"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -141,42 +143,42 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       {(!isOnline || pendingSyncCount > 0) && (
         <p role="status" className="mx-4 mb-2 flex items-center gap-2 rounded-lg border border-warning-700 bg-warning-800/30 px-3 py-2 text-[12.5px] font-semibold text-warning-300">
           <WifiOff className="h-4 w-4 shrink-0" aria-hidden="true" />
-          {!isOnline ? `Offline · ${pendingSyncCount} queued` : `Sending ${pendingSyncCount} queued…`}
+          {!isOnline ? t('rail.offlineQueued', { count: pendingSyncCount }) : t('rail.sendingQueued', { count: pendingSyncCount })}
         </p>
       )}
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-1">
-        {navLink("/dashboard", LayoutDashboard, isNurseRole(user.role) ? "Beds" : "Waiting on you", waitingCount)}
-        {navLink("/referrals", Users, "Referrals")}
-        {isDoctor && navLink("/referrals/new", Plus, "New Referral")}
-        {navLink("/notifications", Bell, "Inbox")}
-        {(isNurse || isLeadership) && navLink("/bed-management", Bed, "Bed Management")}
-        {isNurse && navLink("/admissions/new", ClipboardList, "Direct Admit")}
-        {isHeadOfDept && navLink("/department", Activity, "Department")}
-        {isManager && navLink("/reports", BarChart3, "Reports")}
-        {navLink("/directory", BookOpen, "Directory")}
-        {navLink("/archive", Archive, "Archive")}
-        {isLeadership && navLink("/facility-settings", Settings, "Facility Settings")}
-        <button type="button" onClick={onOpenHotline} className={cn(row(false), 'text-left')}>
+        {navLink("/dashboard", LayoutDashboard, isNurseRole(user.role) ? t('rail.beds') : t('rail.waitingOnYou'), waitingCount)}
+        {navLink("/referrals", Users, t('rail.referrals'))}
+        {isDoctor && navLink("/referrals/new", Plus, t('rail.newReferral'))}
+        {navLink("/notifications", Bell, t('rail.inbox'))}
+        {(isNurse || isLeadership) && navLink("/bed-management", Bed, t('rail.bedManagement'))}
+        {isNurse && navLink("/admissions/new", ClipboardList, t('rail.directAdmit'))}
+        {isHeadOfDept && navLink("/department", Activity, t('rail.department'))}
+        {isManager && navLink("/reports", BarChart3, t('rail.reports'))}
+        {navLink("/directory", BookOpen, t('rail.directory'))}
+        {navLink("/archive", Archive, t('rail.archive'))}
+        {isLeadership && navLink("/facility-settings", Settings, t('rail.facilitySettings'))}
+        <button type="button" onClick={onOpenHotline} className={cn(row(false), 'text-start')}>
           <Phone className="h-5 w-5 shrink-0" aria-hidden="true" />
-          <span className="truncate">Emergency Hotline</span>
+          <span className="truncate">{t('rail.emergencyHotline')}</span>
         </button>
         {onOpenHandover && (
-          <button type="button" onClick={onOpenHandover} className={cn(row(false), 'text-left')}>
+          <button type="button" onClick={onOpenHandover} className={cn(row(false), 'text-start')}>
             <Send className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span className="truncate">End of shift</span>
+            <span className="truncate">{t('rail.endOfShift')}</span>
           </button>
         )}
       </nav>
 
       <div className="shrink-0 space-y-1 border-t border-white/12 px-3 pt-3 pb-4">
-        <button type="button" onClick={onOpenProfile} className="w-full rounded-[10px] px-3 py-2 text-left hover:bg-white/[0.07]" title="My Profile & On-Call Schedule">
+        <button type="button" onClick={onOpenProfile} className="w-full rounded-[10px] px-3 py-2 text-start hover:bg-white/[0.07]" title="My Profile & On-Call Schedule">
           <span className="block truncate text-[14px] font-semibold">{user.name}</span>
           <span className="block truncate text-[12.5px] text-white/60">
             {roleLabel}{user.department ? ` · ${user.department}` : ''}
           </span>
           <span className="block text-[12.5px] leading-[1.35] text-white/60">
-            <span>{facility?.name ?? 'Network'}</span>
+            <span>{facility?.name ?? t('rail.network')}</span>
             <span aria-hidden="true"> · </span>
             <span className="whitespace-nowrap">{FACILITY_TYPE_LABELS[facility?.type ?? ''] ?? 'Regional Facility'}</span>
           </span>
@@ -185,14 +187,14 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           <button
             type="button"
             onClick={onToggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={theme === 'dark' ? t('rail.toLight') : t('rail.toDark')}
             className="flex h-12 w-12 items-center justify-center rounded-[10px] text-white/70 hover:bg-white/10 hover:text-paper"
           >
             {theme === 'dark' ? <Sun className="h-5 w-5" aria-hidden="true" /> : <Moon className="h-5 w-5" aria-hidden="true" />}
           </button>
-          <button type="button" onClick={onLogoutClick} className={cn(row(false), 'flex-1 text-[14px]')} title="Log out">
+          <button type="button" onClick={onLogoutClick} className={cn(row(false), 'flex-1 text-[14px]')} title={t('rail.logOut')}>
             <LogOut className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span>Log out</span>
+            <span>{t('rail.logOut')}</span>
           </button>
         </div>
       </div>
