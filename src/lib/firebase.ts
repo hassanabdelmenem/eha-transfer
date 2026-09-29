@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, initializeAuth, browserLocalPersistence, browserPopupRedirectResolver, connectAuthEmulator, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { resolveFirebaseTarget } from './firebaseTarget';
 
 // Read env values from import.meta.env when available (Vite) or fall back to
 // process.env for Node-based test runners (vitest) where import.meta.env isn't set.
@@ -76,6 +77,22 @@ const PRODUCTION_FIREBASE_CONFIG = {
   projectNumber: '467744756760',
 };
 
+// Firebase Web config for the staging project (`eha-transfer-staging`), created
+// 29 Sep 2026 so local development and PR previews stop touching real patient
+// data. Same public-identifier reasoning as above. authDomain is the hosting
+// domain for the same mobile Google sign-in reason.
+const STAGING_FIREBASE_CONFIG = {
+  projectId: 'eha-transfer-staging',
+  appId: '1:1098268876026:web:b71fe6df7bd31676e47d43',
+  storageBucket: 'eha-transfer-staging.firebasestorage.app',
+  apiKey: 'AIzaSyBpNlQA7j5PmCdHQ4WSS-yFFmtTqEkx_XA',
+  authDomain: 'eha-transfer-staging.web.app',
+  messagingSenderId: '1098268876026',
+  projectNumber: '1098268876026',
+};
+
+export const firebaseTarget = resolveFirebaseTarget(getEnvString('VITE_FIREBASE_TARGET'), isDev);
+
 // Emulator runs get placeholders instead of the real key and domain: the SDK only
 // needs these fields to be non-empty, and connectAuthEmulator below redirects the
 // traffic anyway. Keeps `npm run test:e2e` working without a .env file.
@@ -85,7 +102,9 @@ const EMULATOR_FIREBASE_CONFIG = {
   authDomain: 'localhost',
 };
 
-const defaults = useEmulators ? EMULATOR_FIREBASE_CONFIG : PRODUCTION_FIREBASE_CONFIG;
+const defaults = useEmulators
+  ? EMULATOR_FIREBASE_CONFIG
+  : firebaseTarget === 'staging' ? STAGING_FIREBASE_CONFIG : PRODUCTION_FIREBASE_CONFIG;
 
 const firebaseConfig = {
   projectId: getEnvString('VITE_FIREBASE_PROJECT_ID') ?? defaults.projectId,

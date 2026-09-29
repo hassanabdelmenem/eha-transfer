@@ -10,6 +10,7 @@ import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { Toaster } from './components/ui/Toaster';
+import { StagingRibbon } from './components/layout/StagingRibbon';
 import { SkeletonGroup, Skeleton } from './components/ui/Skeleton';
 
 // Each page is imported by its named export.
@@ -24,6 +25,7 @@ import { SkeletonGroup, Skeleton } from './components/ui/Skeleton';
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
 const ERDashboard = lazy(() => import('./pages/ERDashboard').then(m => ({ default: m.ERDashboard })));
 const ReferralsPage = lazy(() => import('./pages/ReferralsPage').then(m => ({ default: m.ReferralsPage })));
 const ArchivePage = lazy(() => import('./pages/ArchivePage').then(m => ({ default: m.ArchivePage })));
@@ -123,6 +125,7 @@ const AppRoutes = () => {
           <Route path="admissions/new" element={<AdmitPatientPage />} />
           <Route path="department" element={<DepartmentPage />} />
           <Route path="directory" element={<NetworkDirectoryPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="facility-settings" element={<FacilitySettingsPage />} />
           <Route path="bed-management" element={<BedManagementPage />} />
         </Route>
@@ -142,6 +145,7 @@ export default function App() {
           {/* Above the router so it also covers Login and Onboarding, which render
               outside AppLayout. */}
           <Toaster />
+          <StagingRibbon />
         </DataProvider>
       </AuthProvider>
     </ThemeProvider>

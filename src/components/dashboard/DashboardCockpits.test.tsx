@@ -13,6 +13,7 @@ import { AdminDashboard } from '../../pages/AdminDashboard';
 import { EscalationAlertBanner } from './EscalationAlertBanner';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
 import { FacilityAnalyticsCharts } from './FacilityAnalyticsCharts';
+import { ReportsPage } from '../../pages/ReportsPage';
 import { ShiftHandoverFeed } from './ShiftHandoverFeed';
 import { Dashboard } from '../../pages/Dashboard';
 import { DepartmentPage } from '../../pages/DepartmentPage';
@@ -354,6 +355,16 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       ];
     });
 
+    it('shows the network free beds and facility activity on Reports, for managers', () => {
+      render(
+        <MemoryRouter>
+          <ReportsPage />
+        </MemoryRouter>
+      );
+      expect(screen.getByRole('heading', { level: 1, name: 'Reports' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Free beds across the network/i })).toBeInTheDocument();
+    });
+
     it('renders manager decision queue with accept CTA and capacity radar', async () => {
       render(
         <MemoryRouter>
@@ -364,7 +375,8 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       expect(screen.getByRole('heading', { level: 1, name: /^1 to sign$/i })).toBeInTheDocument();
       expect(screen.getByText(/Department approved · your signature/i)).toBeInTheDocument();
       expect(screen.getByText(/Free beds right now/i)).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: /Free beds across the network/i })).toBeInTheDocument();
+      // The wider picture moved to /reports: the home holds only work.
+      expect(screen.queryByRole('heading', { name: /Free beds across the network/i })).not.toBeInTheDocument();
 
       const acceptBtn = screen.getByRole('button', { name: /^Accept$/i });
       fireEvent.click(acceptBtn);

@@ -116,9 +116,21 @@ npm install
 npm run dev
 ```
 
-The dev server talks to the **production** Firebase project. There is no staging
-project, so treat local work as live: don't test destructive changes against
-real patient data. The same applies to PR preview builds.
+The dev server talks to the **staging** project (`eha-transfer-staging`,
+https://eha-transfer-staging.web.app), which holds test data only; every screen
+shows a "STAGING · test data only" label. PR previews build for staging too and
+deploy to staging Hosting channels, using `FIREBASE_SERVICE_ACCOUNT_STAGING` (a
+service account that exists only in the staging project).
+
+`src/lib/firebaseTarget.ts` picks the project: `VITE_FIREBASE_TARGET` wins when set
+(`staging` or `production`); otherwise the dev server uses staging and `npm run
+build` uses production, so the deploy workflow is unchanged. To run the dev
+server against production (read-only checks only), use
+`VITE_FIREBASE_TARGET=production npm run dev`.
+
+Staging mirrors production's `firestore.rules` and indexes, but nothing deploys
+them automatically: after a rules change, run
+`npx firebase deploy --only firestore --project eha-transfer-staging`.
 
 ### Before pushing
 
