@@ -67,7 +67,9 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 
 ### Phase 4: Known gaps (NEXT_STEPS_PROMPT.md phase 2)
 
-- [ ] 2a `scripts/overnight-sweep.ts` exists but nothing schedules it
+- [x] 2a Escalation when nobody is signed in: `.github/workflows/escalation-sweep.yml` every 5 min (keyless
+      WIF, `escalation-sweep` SA with datastore.user) runs `scripts/escalation-sweep.ts`; rules shared with the
+      in-app sweep in `src/lib/escalationSweep.ts`. Stale `overnight-sweep.ts` removed (30 Sep)
 - [ ] 2c `statusHistory` as a subcollection (not started)
 - [ ] 2d `useIdleTimeout` exists; wiring and duration unverified
 - [ ] 2e small text / 28px buttons (largely superseded by the redesign; re-audit after phase 6)
