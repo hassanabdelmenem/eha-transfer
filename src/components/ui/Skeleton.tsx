@@ -46,7 +46,7 @@ export const SkeletonLine: React.FC<{ className?: string; width?: string }> = ({
 
 /** Mirrors one row of ReferralList's mobile card layout. */
 export const SkeletonReferralCard: React.FC = () => (
-  <div className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 shadow-sm space-y-3">
+  <div className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 space-y-3">
     <div className="flex items-start justify-between gap-3">
       <div className="space-y-2 flex-1">
         <Skeleton className="h-4 w-2/3" />

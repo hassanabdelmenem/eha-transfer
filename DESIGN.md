@@ -302,8 +302,8 @@ Breakpoints as built: 640px (toasts move from the top of the screen to bottom-ri
 Flat by default, layered by tone. Cards rest on paper with a hairline border and no shadow; the desktop panes separate by paper against desk; selection is an ink border plus a 1px ink ring (an ink ring with offset on the escalation card). Shadows appear only on surfaces that float above the page and must detach from it.
 
 ### Shadow Vocabulary
-- **Toast lift** (`0 8px 24px rgba(20,20,19,0.14)`): toasts over any screen.
-- **Sheet rise** (`0 -8px 30px rgba(20,20,19,0.18)`): the bottom summary sheet, cast upward.
+- **Toast lift** (`0 8px 24px rgba(20,20,19,0.14)`): toasts and dialogs over any screen.
+- **Sheet rise** (`0 -8px 30px rgba(20,20,19,0.18)`): the bottom summary sheet, cast upward; the phone menu drawer casts the same shadow sideways (`8px 0 30px`).
 - **Tooltip** (`0 4px 16px rgba(20,20,19,0.12)`): chart tooltips.
 
 ### Named Rules
