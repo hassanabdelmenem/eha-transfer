@@ -24,6 +24,7 @@ export const en = {
     bedManagement: 'Bed Management',
     directAdmit: 'Direct Admit',
     department: 'Department',
+    reports: 'Reports',
     directory: 'Directory',
     archive: 'Archive',
     facilitySettings: 'Facility Settings',
