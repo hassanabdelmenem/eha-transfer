@@ -35,18 +35,19 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
 
 ## Redesign working setup
 
-- Worktree `~/antigravity/eha-transfer/.claude/worktrees/redesign` (node_modules symlinked), branches
-  `redesign/1-world-and-queue` … `redesign/5-secondary-screens`, each PR based on the previous one.
-- Capture harness (local only, git-ignored) in the worktree's `.capture/`: `run.sh` (per-role routes),
-  `run-wizard.sh` (walks the five wizard steps), `run-phase5.sh` (inbox, directory, archive, settings, admin,
-  handover). Run inside `firebase emulators:exec`; `SCHEME=dark` for dark mode, `FULL=1` for full-page.
+- Worktrees live under `.claude/worktrees/` and **other sessions may delete them** (the `redesign` one
+  vanished between 27 and 29 Sep). Always `cd <dir> || exit 1`; never let a failed `cd` fall through to
+  the main checkout, which holds another session's uncommitted graphify work. Phase 6: `.claude/worktrees/phase6`.
+- Capture harness (local only, git-ignored via the repo's info/exclude) in the worktree's `.capture/`:
+  `run.sh <worktree> <out> role:path[:click-text]…` with `VIEW=wide|laptop|narrow|phone` and `SCHEME=dark`;
+  `fixture.mjs` seeds six synthetic cases after `e2e/seed.ts`. It is lost when its worktree is deleted. Run inside `firebase emulators:exec`; `SCHEME=dark` for dark mode, `FULL=1` for full-page.
   `fixture.mjs` seeds synthetic handoff cases (r-mahmoud escalated, r-sara, r-amal, r-youssef, r-hoda sent
   back, r-karim consented/no escort, r-nour dept_approved, r-laila in transit).
 - Handoff bundle: `~/Documents/Projects/Mobile app redesign workflow.zip` (README, `Mobile Redesign.dc.html`,
   screenshots 1a–3d). High fidelity; its copy and geometry are final unless untrue for this app.
 - Impeccable surface brief: `.impeccable/surfaces/src-app-tsx.md` (Operate mode, direction contract, seed 745e793f).
 
-## Design system as built (DESIGN.md is stale until phase 6)
+## Design system as built (DESIGN.md rewritten from the build on 29 Sep; read it first)
 
 - Ink and paper: paper `#faf9f5`, cards `#ffffff`, hairlines `#e8e6dc`, ink `#141413`, desk `#f4f2ed` (desktop
   detail pane). Muted text `slate-500 #78766d` / `slate-700 #5f5d54`; never `slate-400` for information.
@@ -79,6 +80,15 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
   backdate `createdAt`/`createdAtMs` 31 min for the SLA case, set ICU `occupied == total` for no-beds.
 - The sweep runs on page load and every 30 s, only for referrals from the viewer's facility (all for admins).
 - The app navigates before its write is visible over REST; poll for the new referral.
+
+## Desktop workspace (phase 6)
+
+- `src/components/layout/Workspace.tsx` (context, `useOpenCase`, `useReportQueue`) and `CaseWorkspace.tsx`.
+  On at `WORKSPACE_QUERY` (min-width 1280px) on `/dashboard` for non-admin roles; AppLayout drops `<main>`
+  padding there. Cockpits must open cases with `useOpenCase()`, never `navigate('/referrals/…')`.
+- The desktop case header shows the role's actions; the action console takes `headerActions` (lower-case
+  labels) and skips those buttons, so each accessible name exists once (Playwright strict mode, E2E contract).
+- Playwright's default viewport is 1280px, so e2e runs exercise the workspace.
 
 ## Gotchas
 

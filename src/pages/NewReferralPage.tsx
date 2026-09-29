@@ -4,7 +4,7 @@ import { Check, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { PatientData, ReferralPriority, BedType, ReferralTransferType, isDoctorRole } from '../types';
-import { showToast } from '../lib/toast';
+import { clearToasts, showToast } from '../lib/toast';
 import { findCandidateFacilities } from '../lib/routing';
 import { DRAFT_STORAGE_KEY, WizardDraft, WIZARD_STEPS } from '../components/referrals/wizard/types';
 import { WizardStepper } from '../components/referrals/wizard/WizardStepper';
@@ -147,7 +147,11 @@ export const NewReferralPage: React.FC = () => {
     showToast('Draft discarded.', 'info');
   };
 
-  const goToStep = (step: number) => setCurrentStep(Math.min(LAST_STEP, Math.max(1, step)));
+  const goToStep = (step: number) => {
+    // A toast from the step being left no longer applies.
+    clearToasts();
+    setCurrentStep(Math.min(LAST_STEP, Math.max(1, step)));
+  };
 
   /** Move the focus to the first field that needs attention, once it renders. */
   const focusFirstError = () => {
@@ -262,8 +266,8 @@ export const NewReferralPage: React.FC = () => {
 
   const goNext = () => {
     if (!isComplete(currentStep)) {
+      // The fields say what is missing; focus goes to the first one. No toast on top of that.
       setAttempted(prev => Array.from(new Set([...prev, currentStep])));
-      showToast('Fill in the required fields before continuing.', 'error');
       focusFirstError();
       return;
     }
@@ -309,7 +313,9 @@ export const NewReferralPage: React.FC = () => {
   const stepTitle = WIZARD_STEPS[currentStep - 1].title;
 
   return (
-    <div className="mx-auto max-w-[640px]">
+    // Full-height column on phones so the footer sits at the bottom even on a short step;
+    // 2.5rem is <main>'s pb-10, which the footer's -mb-10 cancels.
+    <div className="mx-auto flex min-h-[calc(100dvh-2.5rem)] max-w-[640px] flex-col lg:min-h-0">
       {/* Ink header: patient · step, the step's name, and the tappable progress bar.
           Full-bleed on phones (AppLayout hides its own header on this route). */}
       <header className="-mx-[18px] bg-ink px-[18px] pt-[max(14px,env(safe-area-inset-top))] pb-2 text-paper lg:mx-0 lg:rounded-xl lg:pt-4">
@@ -334,14 +340,14 @@ export const NewReferralPage: React.FC = () => {
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} noValidate className="pt-5">
+      <form onSubmit={handleSubmit} noValidate className="flex flex-1 flex-col pt-5">
         {draftBannerVisible && initialDraft && (
           <div className="mb-5">
             <DraftRestoreBanner lastSaved={initialDraft.lastSaved} onDiscard={handleDiscardDraft} onDismiss={() => setDraftBannerVisible(false)} />
           </div>
         )}
 
-        <div ref={bodyRef} key={currentStep} className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
+        <div ref={bodyRef} key={currentStep} className="pb-8 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
           {currentStep === 1 && (
             <StepPatientDemographics patientData={patientData} setPatientData={setPatientData} fieldErrors={errorsFor(1)} />
           )}
@@ -382,7 +388,7 @@ export const NewReferralPage: React.FC = () => {
         </div>
 
         {/* Sticky footer: bottom -2.5rem cancels <main>'s pb-10 so it sits flush. */}
-        <div className="sticky -bottom-10 z-30 -mx-[18px] -mb-10 mt-8 border-t border-slate-200 bg-paper px-[18px] pt-2.5 pb-[max(16px,env(safe-area-inset-bottom))] dark:border-white/12 dark:bg-ink lg:mx-0 lg:rounded-b-xl lg:border-x lg:px-4">
+        <div className="sticky -bottom-10 z-30 -mx-[18px] -mb-10 mt-auto border-t border-slate-200 bg-paper px-[18px] pt-2.5 pb-[max(16px,env(safe-area-inset-bottom))] dark:border-white/12 dark:bg-ink lg:mx-0 lg:rounded-b-xl lg:border-x lg:px-4">
           <p className="flex min-h-[28px] items-center gap-1.5 text-[13px] font-medium text-success-700 dark:text-success-300" aria-live="polite">
             {hasContent && (
               <>

@@ -6,6 +6,7 @@ import { Referral } from '../../types';
 import { Plus, Search, Phone, ChevronRight } from 'lucide-react';
 import { sortByWorkflow } from '../../lib/referralPriority';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
+import { useOpenCase, useReportQueue } from '../layout/Workspace';
 import { ShiftHandoverFeed } from './ShiftHandoverFeed';
 import { ReferralSummarySheet } from '../referrals/ReferralSummarySheet';
 import { ClinicianSegment } from './types';
@@ -17,6 +18,7 @@ export const ClinicianCockpit: React.FC = () => {
   const { user } = useAuth();
   const { referrals, directAdmissions, shiftLogs, facilitiesById } = useData();
   const navigate = useNavigate();
+  const openCase = useOpenCase();
 
   const [segment, setSegment] = useState<ClinicianSegment>('you');
   const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
@@ -97,6 +99,8 @@ export const ClinicianCockpit: React.FC = () => {
       : segment === 'moving'
       ? movingBucket
       : inboundBucket;
+
+  useReportQueue(activeSegmentReferrals.map(r => r.id));
 
   const youActionSentence = (r: Referral) => {
     if (r.status === 'postponed') {
@@ -183,7 +187,7 @@ export const ClinicianCockpit: React.FC = () => {
               contextLine={<>{r.requiredBedType} · {standingPhrase(r, facilityName(r.receivingFacilityId))}</>}
               actionLabel={segment === 'you' ? youActionLabel(r) : 'Open referral'}
               actionSentence={segment === 'you' ? youActionSentence(r) : undefined}
-              onAction={() => navigate(`/referrals/${r.id}`)}
+              onAction={() => openCase(r.id)}
               onSummary={() => setSummaryReferral(r)}
             />
           ))
@@ -203,7 +207,7 @@ export const ClinicianCockpit: React.FC = () => {
               <li key={r.id}>
                 <button
                   type="button"
-                  onClick={() => navigate(`/referrals/${r.id}`)}
+                  onClick={() => openCase(r.id)}
                   className="flex min-h-[52px] w-full items-center justify-between gap-3 px-[14px] py-2.5 text-left hover:bg-slate-50 dark:hover:bg-white/5"
                 >
                   <span className="min-w-0">

@@ -1055,7 +1055,9 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /continue/i }));
 
-      expect(toastShowSpy).toHaveBeenCalledWith('Fill in the required fields before continuing.', 'error');
+      // The fields themselves say what is missing; no toast is stacked on top.
+      expect(toastShowSpy).not.toHaveBeenCalled();
+      expect(document.querySelector('[aria-invalid="true"]')).not.toBeNull();
       expect(screen.getByRole('heading', { level: 1, name: /step 1 of 5/i })).toBeInTheDocument();
     });
 

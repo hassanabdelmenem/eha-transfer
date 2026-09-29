@@ -2,7 +2,7 @@ import React from 'react';
 import { Check, WifiOff } from 'lucide-react';
 import { BedType, Facility, PatientData, ReferralPriority, ReferralTransferType } from '../../../types';
 import { NETWORK_DEPARTMENTS, BED_TYPES } from './types';
-import { ChoicePill, FieldError, FieldHint, FieldLabel, StepHeading, inputClass } from './fields';
+import { ChoicePill, FieldError, FieldHint, FieldLabel, StepHeading, inputClass, textareaClass } from './fields';
 import { cn } from '../../../lib/utils';
 import { isSlaTracked, SLA_MINUTES } from '../../../lib/sla';
 
@@ -120,7 +120,10 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
     { label: 'Vitals', value: vitalsLine || 'None recorded', step: 2 },
     { label: 'Complaint', value: patientData.complaint || 'Not entered', step: 3 },
     { label: 'Diagnosis', value: [patientData.diagnosis, (patientData.attachments?.length ?? 0) > 0 && `${patientData.attachments!.length} attachment${patientData.attachments!.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ') || 'Not entered', step: 4 },
+    // The reason is on this step, so Edit takes the focus to it rather than changing step.
+    { label: 'Reason', value: reasonForReferral.trim() || 'Not entered', step: 5 },
   ];
+  const editRow = (step: number) => (step === 5 ? document.getElementById('reasonForReferral')?.focus() : onEditStep(step));
 
   return (
     <div className="space-y-6">
@@ -198,7 +201,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
           <label htmlFor="receivingFacility" className="text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
             Destination<span className="sr-only"> (required)</span>
           </label>
-          <label className="flex min-h-[44px] cursor-pointer items-center gap-2 text-[14px] font-semibold text-ink dark:text-paper">
+          <label className="flex min-h-[48px] cursor-pointer items-center gap-2 text-[14px] font-semibold text-ink dark:text-paper">
             <input
               type="checkbox"
               checked={isAutoRouting}
@@ -274,16 +277,16 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
 
       <div>
         <FieldLabel htmlFor="reasonForReferral" required>Why this transfer</FieldLabel>
-        <input
+        <textarea
           id="reasonForReferral"
           required
-          autoComplete="off"
+          rows={3}
           placeholder="e.g. Needs primary PCI — only cath lab in network"
           value={reasonForReferral}
           onChange={e => setReasonForReferral(e.target.value)}
           aria-invalid={!!fieldErrors?.reason}
           aria-describedby={fieldErrors?.reason ? 'reasonForReferral-error' : undefined}
-          className={inputClass(!!fieldErrors?.reason)}
+          className={textareaClass(!!fieldErrors?.reason, 'resize-y')}
         />
         <FieldError id="reasonForReferral-error">{fieldErrors?.reason}</FieldError>
       </div>
@@ -316,9 +319,9 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
               </div>
               <button
                 type="button"
-                onClick={() => onEditStep(r.step)}
+                onClick={() => editRow(r.step)}
                 aria-label={`Edit ${r.label.toLowerCase()}`}
-                className="min-h-[44px] shrink-0 rounded-[8px] px-3 text-[14px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300"
+                className="min-h-[48px] shrink-0 rounded-[8px] px-3 text-[14px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300"
               >
                 Edit
               </button>

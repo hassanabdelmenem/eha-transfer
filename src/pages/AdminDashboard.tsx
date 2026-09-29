@@ -239,11 +239,6 @@ export const AdminDashboard: React.FC = () => {
         </ul>
       )}
 
-      <section aria-labelledby="network-grid" className="mt-5 flex flex-col gap-2.5">
-        <MicroLabel id="network-grid">Live capacity by facility</MicroLabel>
-        <BedOccupancyHeatmap facilities={facilities} />
-      </section>
-
       {waitlistByFacility.length > 0 && (
         <section aria-labelledby="waitlist" className="mt-5 flex flex-col gap-2.5">
           <MicroLabel id="waitlist">Waitlist pressure by facility</MicroLabel>
@@ -261,6 +256,11 @@ export const AdminDashboard: React.FC = () => {
           </ul>
         </section>
       )}
+
+      {/* The heatmap carries its own heading; it sits last, after what needs acting on. */}
+      <div className="mt-5">
+        <BedOccupancyHeatmap facilities={facilities} />
+      </div>
     </div>
   );
 };

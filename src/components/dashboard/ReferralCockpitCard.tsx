@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Referral } from '../../types';
 import { Truck, Check, Phone } from 'lucide-react';
 import { format, formatDistanceToNowStrict } from 'date-fns';
 import { priorityRailFill, priorityChipClasses, priorityLabel, priorityAskClass } from '../../lib/referralPriority';
 import { ReferralCockpitCardProps } from './types';
 import { SlaClock } from './RoleHome';
+import { useOpenCase, useWorkspace } from '../layout/Workspace';
 import { cn } from '../../lib/utils';
 
 // Every role home is a column of these. Anatomy, from the handoff's queue card:
@@ -68,7 +68,14 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   now,
   busy = false,
 }) => {
-  const navigate = useNavigate();
+  const openCase = useOpenCase();
+  const ws = useWorkspace();
+  // In the desktop workspace the case opens beside the queue: mark which one,
+  // and drop the inline decision buttons, which live in the case header there.
+  const selected = !!ws && ws.selectedId === referral.id;
+  // ER cards drop their gate buttons too: the open case's header and console carry them.
+  const compact = !!ws && variant !== 'nurse';
+  const shellFor = (base: string) => cn(base, selected && 'border-ink ring-1 ring-ink dark:border-paper dark:ring-paper');
   const [escortName, setEscortName] = useState('');
   const [escortPhone, setEscortPhone] = useState('');
   const [savingEscort, setSavingEscort] = useState(false);
@@ -76,7 +83,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
 
   const handleCardClick = () => {
     if (onAction) onAction(referral.id);
-    else navigate(`/referrals/${referral.id}`);
+    else openCase(referral.id);
   };
 
   const handleSaveEscortClick = async () => {
@@ -97,6 +104,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
     <button
       type="button"
       onClick={handleCardClick}
+      aria-current={selected ? 'true' : undefined}
       className="flex w-full items-start justify-between gap-2.5 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-700 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-ink"
     >
       <span className="min-w-0">
@@ -121,7 +129,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
     const dispatchedAt = hhmm(enteredAt(referral, 'in_transit')?.timestamp ?? referral.updatedAt);
 
     return (
-      <div className="px-[14px] pt-3 pb-[14px]">
+      <div className={cn('px-[14px] pt-3 pb-[14px]', selected && 'bg-slate-100 dark:bg-white/[0.07]')}>
         {identity(
           <>To {getFacilityName(referral.receivingFacilityId)} · {referral.requiredBedType}{referral.receivingDepartments?.length ? ` · ${referral.receivingDepartments.join(', ')}` : ''}</>
         )}
@@ -138,7 +146,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
             : 'Waiting for the patient’s consent'}
         </p>
 
-        {consentGiven && referral.requiresAccompanyingDoctor && (referral.accompanyingDoctor || referral.status === 'patient_consented') && (
+        {!compact && consentGiven && referral.requiresAccompanyingDoctor && (referral.accompanyingDoctor || referral.status === 'patient_consented') && (
           referral.accompanyingDoctor ? (
             <p className="mt-2 flex items-center gap-2 rounded-[10px] border border-success-300 bg-success-100 px-3 py-2.5 text-[14px] font-semibold leading-snug text-success-800 dark:border-success-700 dark:bg-success-900/50 dark:text-success-200">
               <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -158,7 +166,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
           )
         )}
 
-        {referral.status === 'in_transit' ? (
+        {compact ? null : referral.status === 'in_transit' ? (
           <p className={cn(btn, 'mt-3 min-h-[52px] bg-success-100 text-success-800 dark:bg-success-900/60 dark:text-success-200')}>
             <Truck className="h-5 w-5" aria-hidden="true" /> Dispatched{dispatchedAt ? ` ${dispatchedAt}` : ''}
           </p>
@@ -191,11 +199,11 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
     const leftAt = hhmm(enteredAt(referral, 'in_transit')?.timestamp);
     const arrivedAt = hhmm(enteredAt(referral, 'arrived')?.timestamp ?? referral.updatedAt);
     return (
-      <div className="px-[14px] pt-3 pb-[14px]">
+      <div className={cn('px-[14px] pt-3 pb-[14px]', selected && 'bg-slate-100 dark:bg-white/[0.07]')}>
         {identity(
           <>From {getFacilityName(referral.referringFacilityId)}{leftAt ? ` · left ${leftAt}` : ''} · {referral.requiredBedType}</>
         )}
-        <div className="mt-3 flex items-center gap-2.5">
+        <div className={cn('mt-3 flex items-center gap-2.5', compact && 'hidden')}>
           {arrived ? (
             <p className={cn(btn, 'min-h-[52px] flex-1 bg-success-100 text-success-800 dark:bg-success-900/60 dark:text-success-200')}>
               <Check className="h-5 w-5" aria-hidden="true" /> Arrival confirmed{arrivedAt ? ` ${arrivedAt}` : ''}
@@ -221,7 +229,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   if (variant === 'nurse') {
     const arrivedAt = hhmm(enteredAt(referral, 'arrived')?.timestamp ?? referral.updatedAt);
     return (
-      <div className={shell}>
+      <div className={shellFor(shell)}>
         <Rail referral={referral} />
         <div className={body}>
           {identity(
@@ -279,11 +287,11 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
       </button>
     );
     return (
-      <div className={shell}>
+      <div className={shellFor(shell)}>
         <Rail referral={referral} />
         <div className={body}>
           {identity(line, aside, approvedLine)}
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <div className={cn('mt-3 grid grid-cols-2 gap-2.5', compact && 'hidden')}>
             {/* HoD reads before approving; the manager's signature leads. */}
             {variant === 'hod' ? <>{summary}{decide}</> : <>{decide}{summary}</>}
           </div>
@@ -296,7 +304,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   // Clinician (default): one sentence naming what is needed, one action.
   // -------------------------------------------------------------------------
   return (
-    <div className={shell}>
+    <div className={shellFor(shell)}>
       <Rail referral={referral} />
       <div className={body}>
         {identity(contextLine ?? <>{referral.requiredBedType} · {referral.receivingDepartments?.join(', ') || 'Unassigned'}</>)}
@@ -305,7 +313,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
             {actionSentence}
           </p>
         )}
-        <button type="button" onClick={handleCardClick} className={cn(btn, actionSentence ? btnInk : btnOutline, 'mt-3 min-h-[52px] text-[16px]')}>
+        <button type="button" onClick={handleCardClick} className={cn(btn, actionSentence ? btnInk : btnOutline, 'mt-3 min-h-[52px] text-[16px]', compact && 'hidden')}>
           {actionLabel}
         </button>
       </div>

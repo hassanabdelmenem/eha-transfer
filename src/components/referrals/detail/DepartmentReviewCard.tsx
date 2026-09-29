@@ -33,12 +33,9 @@ export const DepartmentReviewCard: React.FC<DepartmentReviewCardProps> = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Department review</CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-5">
         <div id="dept-review-section" className="space-y-3">
-          <h4 className="font-sans text-[13px] font-semibold tracking-normal text-slate-700 dark:text-white/70">Add Department Review</h4>
+          <h3 className="font-heading text-[17px] font-semibold tracking-[-0.01em] text-ink dark:text-paper">Add Department Review</h3>
           <label className="sr-only" htmlFor="dept-review-action">Review decision</label>
           <select
             id="dept-review-action"

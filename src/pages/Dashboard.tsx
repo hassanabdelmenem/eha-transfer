@@ -8,6 +8,7 @@ import { ManagerCockpit } from '../components/dashboard/ManagerCockpit';
 import { ERCockpit } from '../components/dashboard/ERCockpit';
 import { NurseCockpit } from '../components/dashboard/NurseCockpit';
 import { useAudioAlert } from '../hooks/useAudioAlert';
+import { CaseWorkspace } from '../components/layout/CaseWorkspace';
 
 /**
  * The role home. Each role opens on the cases blocked on that person, in
@@ -33,8 +34,8 @@ export const Dashboard: React.FC = () => {
 
   if (!user) return null;
 
-  // One readable queue column; the desktop panes (3d) come in a later pass.
-  return <div className="max-w-[640px]">{roleHome(user.role)}</div>;
+  // Wide screens: the queue column with the selected case beside it (3d).
+  return <CaseWorkspace>{roleHome(user.role)}</CaseWorkspace>;
 };
 
 function roleHome(role: string) {

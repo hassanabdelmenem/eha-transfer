@@ -11,6 +11,8 @@ import { CancellationDialog } from './CancellationDialog';
 import { Facility, Referral, ReferralStatus, User } from '../../../types';
 
 export interface ReferralActionConsoleProps {
+  /** Action labels the desktop header already shows (lower-case); the console skips those buttons so each exists once. */
+  headerActions?: string[];
   referral: Referral;
   user: User;
   isAdmin: boolean;
@@ -58,6 +60,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
   referral,
   user,
   isAdmin,
+  headerActions = [],
   isReceiving,
   isReferring,
   isFacilityManager,
@@ -97,22 +100,14 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
   onCancelReferral,
   onOpenRejectModal,
 }) => {
+  const inHeader = (label: string) => headerActions.includes(label.toLowerCase());
   return (
     <Card>
       <CardHeader>
         <CardTitle>Facility Actions</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
-        {referral.status === 'pending' && (
-          <div className="relative bg-warning-50 border-2 border-warning-400 p-3 rounded-lg text-warning-900 text-sm flex items-start gap-3 mb-4 shadow-sm">
-            <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
-              <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-warning-500"></span>
-            </span>
-            <AlertCircle className="w-5 h-5 shrink-0 text-warning-600 mt-0.5" />
-            <span className="font-semibold">Action Required: Waiting for Department Head review before final Manager approval.</span>
-          </div>
-        )}
+        {/* What the referral waits on is stated once, by the role banner above. */}
 
         <div className="text-sm">
           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
@@ -144,12 +139,15 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           {/* Standard Manager Final Approval (non-admin) */}
           {!isAdmin && isFacilityManager && referral.status === 'dept_approved' && (
             <>
+              {!inHeader('accept the transfer') && (
               <Button
                 onClick={() => onStatusUpdate('manager_approved')}
                 className="w-full bg-success-700 hover:bg-success-800 min-h-[48px]"
               >
                 <CheckCircle className="h-4 w-4 mr-2" /> Accept the Transfer
               </Button>
+              )}
+              {!inHeader('decline') && (
               <Button
                 onClick={onOpenRejectModal}
                 variant="destructive"
@@ -157,6 +155,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
               >
                 <X className="h-4 w-4 mr-2" /> Reject Transfer
               </Button>
+              )}
             </>
           )}
 
@@ -170,7 +169,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
             </Button>
           )}
 
-          {(isReceiving || isErRoom) && referral.status === 'in_transit' && (
+          {(isReceiving || isErRoom) && referral.status === 'in_transit' && !inHeader('mark as arrived') && (
             <Button
               onClick={() => onStatusUpdate('arrived')}
               className="w-full bg-blue-600 hover:bg-blue-700 min-h-[48px]"
@@ -250,7 +249,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           )}
 
           {/* Referring Facility Actions */}
-          {(isReferring || isErRoom) && referral.status === 'patient_consented' && (
+          {(isReferring || isErRoom) && referral.status === 'patient_consented' && !inHeader('dispatch ambulance') && (
             <Button
               onClick={() => onStatusUpdate('in_transit')}
               disabled={Boolean(referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor)}
