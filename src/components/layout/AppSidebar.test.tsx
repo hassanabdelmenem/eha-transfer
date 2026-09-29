@@ -91,7 +91,7 @@ describe('AppSidebar', () => {
     expect(screen.getByText('Ismailia Health')).toBeInTheDocument();
     expect(screen.getByText('Ismailia Medical Complex')).toBeInTheDocument();
     expect(screen.getByText('Tertiary Center')).toBeInTheDocument();
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Waiting on you')).toBeInTheDocument();
     expect(screen.getByText('Referrals')).toBeInTheDocument();
     expect(screen.getByText('New Referral')).toBeInTheDocument();
     expect(screen.getByText('Archive')).toBeInTheDocument();

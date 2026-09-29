@@ -2,7 +2,7 @@ import React from 'react';
 import { Phone } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
-export type FooterTone = 'ink' | 'success' | 'warning' | 'critical-outline' | 'outline';
+export type FooterTone = 'ink' | 'success' | 'warning' | 'warning-tint' | 'critical-outline' | 'outline';
 
 export type FooterAction = {
   label: string;
@@ -16,6 +16,8 @@ export const FOOTER_TONE_CLASSES: Record<FooterTone, string> = {
   ink: 'bg-ink text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200',
   success: 'bg-success-700 text-white hover:bg-success-800',
   warning: 'bg-warning-700 text-white hover:bg-warning-800',
+  // A softer 'needs something first' action beside a primary (3d's Need requirements).
+  'warning-tint': 'border border-warning-700 bg-warning-100 text-warning-800 hover:bg-warning-200 dark:border-warning-600 dark:bg-warning-900/40 dark:text-warning-200',
   'critical-outline': 'border border-critical-700 bg-white text-critical-700 hover:bg-critical-50 dark:border-critical-400 dark:bg-transparent dark:text-critical-300 dark:hover:bg-critical-950/40',
   outline: 'border border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10',
 };
@@ -78,7 +80,7 @@ export const MobileActionFooter: React.FC<MobileActionFooterProps> = ({ footerPr
 };
 
 /** The same actions, inline at the top right of the desktop header. */
-export const InlineDetailActions: React.FC<MobileActionFooterProps> = ({ footerPrimary, footerSecondary, footerCallNumber }) => {
+export const InlineDetailActions: React.FC<MobileActionFooterProps & { footerTertiary?: FooterAction | null }> = ({ footerPrimary, footerSecondary, footerTertiary, footerCallNumber }) => {
   if (!footerPrimary) return null;
   return (
     <>
@@ -90,6 +92,11 @@ export const InlineDetailActions: React.FC<MobileActionFooterProps> = ({ footerP
         >
           <Phone className="h-5 w-5" aria-hidden="true" />
         </a>
+      )}
+      {footerTertiary && (
+        <button type="button" onClick={footerTertiary.onClick} disabled={footerTertiary.disabled} className={cn('min-h-[48px] rounded-[10px] px-4 text-[14px] font-semibold', FOOTER_TONE_CLASSES[footerTertiary.tone], disabledClasses)}>
+          {footerTertiary.label}
+        </button>
       )}
       {footerSecondary && (
         <button type="button" onClick={footerSecondary.onClick} disabled={footerSecondary.disabled} className={cn('min-h-[48px] rounded-[10px] px-4 text-[14px] font-semibold', FOOTER_TONE_CLASSES[footerSecondary.tone], disabledClasses)}>

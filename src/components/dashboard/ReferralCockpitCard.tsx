@@ -73,7 +73,8 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   // In the desktop workspace the case opens beside the queue: mark which one,
   // and drop the inline decision buttons, which live in the case header there.
   const selected = !!ws && ws.selectedId === referral.id;
-  const compact = !!ws && (variant === 'hod' || variant === 'manager' || variant === 'clinician');
+  // ER cards drop their gate buttons too: the open case's header and console carry them.
+  const compact = !!ws && variant !== 'nurse';
   const shellFor = (base: string) => cn(base, selected && 'border-ink ring-1 ring-ink dark:border-paper dark:ring-paper');
   const [escortName, setEscortName] = useState('');
   const [escortPhone, setEscortPhone] = useState('');
@@ -145,7 +146,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
             : 'Waiting for the patient’s consent'}
         </p>
 
-        {consentGiven && referral.requiresAccompanyingDoctor && (referral.accompanyingDoctor || referral.status === 'patient_consented') && (
+        {!compact && consentGiven && referral.requiresAccompanyingDoctor && (referral.accompanyingDoctor || referral.status === 'patient_consented') && (
           referral.accompanyingDoctor ? (
             <p className="mt-2 flex items-center gap-2 rounded-[10px] border border-success-300 bg-success-100 px-3 py-2.5 text-[14px] font-semibold leading-snug text-success-800 dark:border-success-700 dark:bg-success-900/50 dark:text-success-200">
               <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -165,7 +166,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
           )
         )}
 
-        {referral.status === 'in_transit' ? (
+        {compact ? null : referral.status === 'in_transit' ? (
           <p className={cn(btn, 'mt-3 min-h-[52px] bg-success-100 text-success-800 dark:bg-success-900/60 dark:text-success-200')}>
             <Truck className="h-5 w-5" aria-hidden="true" /> Dispatched{dispatchedAt ? ` ${dispatchedAt}` : ''}
           </p>
@@ -202,7 +203,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
         {identity(
           <>From {getFacilityName(referral.referringFacilityId)}{leftAt ? ` · left ${leftAt}` : ''} · {referral.requiredBedType}</>
         )}
-        <div className="mt-3 flex items-center gap-2.5">
+        <div className={cn('mt-3 flex items-center gap-2.5', compact && 'hidden')}>
           {arrived ? (
             <p className={cn(btn, 'min-h-[52px] flex-1 bg-success-100 text-success-800 dark:bg-success-900/60 dark:text-success-200')}>
               <Check className="h-5 w-5" aria-hidden="true" /> Arrival confirmed{arrivedAt ? ` ${arrivedAt}` : ''}
