@@ -5,10 +5,10 @@ import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '.
 import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
 import { toastError } from '../lib/toast';
-import { formatDateTime } from '../lib/utils';
-import { SLA_MINUTES, needsAutoEscalation } from '../lib/sla';
-import { capacityEscalationReason, describeCapacityEscalation } from '../lib/routing';
+import { needsAutoEscalation } from '../lib/sla';
+import { capacityEscalationReason } from '../lib/routing';
 import { isNotificationRecipient } from '../lib/notificationRecipients';
+import { escalationNotice, escalationUpdate, stillEscalates } from '../lib/escalationSweep';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
 // Type-only: `isolatedModules` is on, so esbuild transpiles this file without
 // cross-file type information and would emit a runtime import for a binding that
@@ -660,16 +660,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * way through.
    */
   const notifyCapacityEscalation = useCallback((referral: Referral, reason: CapacityEscalationReason) => {
-    createNotification({
-      title: reason === 'no_matching_facility'
-        ? 'ESCALATION: No Matching Facility'
-        : 'ESCALATION: No Beds Available',
-      message: `${referral.patientData?.name || 'A patient'} needs ${referral.receivingDepartments.join(', ')} (${referral.requiredBedType}). ${describeCapacityEscalation(reason)} Administrative placement required.`,
-      type: 'urgent',
-      referralId: referral.id,
-      facilityId: referral.referringFacilityId,
-      facilityIds: [],
-    });
+    createNotification(escalationNotice(referral, { kind: 'capacity', reason }));
   }, [createNotification]);
 
   const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => {
@@ -1283,39 +1274,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const snap = await transaction.get(refDocRef);
       if (!snap.exists()) return null;
       const r = snap.data() as Referral;
-      if (!needsAutoEscalation(r, Date.now())) return null;
-
-      const now = new Date().toISOString();
-      transaction.update(refDocRef, {
-        isEscalated: true,
-        escalatedAt: now,
-        escalatedBy: 'system',
-        escalationReason: 'sla_breach',
-        escalationLevel: 'facility',
-        updatedAt: now,
-        statusHistory: [...r.statusHistory, {
-          status: r.status,
-          timestamp: now,
-          userId: 'system',
-          notes: `No response within ${SLA_MINUTES} minutes. Automatically escalated for administrative intervention.`,
-        }],
-      });
+      if (!stillEscalates(r, { kind: 'sla' }, Date.now())) return null;
+      // Shared with scripts/escalation-sweep.ts (lib/escalationSweep), so the
+      // same event writes the same document whichever sweep got there first.
+      transaction.update(refDocRef, escalationUpdate(r, { kind: 'sla' }, new Date().toISOString()));
       return { ...r, id };
     });
 
     if (!escalated) return;
-    const r = escalated;
-    createNotification({
-      title: `Referral Escalated — No Response in ${SLA_MINUTES} Minutes`,
-      message: `${r.patientData.name} (${r.priority} ${r.requiredBedType}) has had no response since ${formatDateTime(r.createdAt)} and has been escalated for intervention.`,
-      type: 'urgent',
-      referralId: r.id,
-      facilityId: r.referringFacilityId,
-      // The referring facility must chase it; the candidates are the ones who
-      // have not answered. Owners and system_admins are included regardless.
-      facilityIds: [r.referringFacilityId, ...(r.candidateFacilityIds || [])],
-      targetRoles: ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department', 'er_official'],
-    });
+    createNotification(escalationNotice(escalated, { kind: 'sla' }));
   }, [createNotification]);
 
   /**
@@ -1339,23 +1306,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // autoEscalationSuppressed: a human de-escalated this. Re-raising it on the
       // next tick made the De-escalate button look broken and spammed every
       // administrator with a fresh urgent alert each time.
-      if (r.isEscalated || r.autoEscalationSuppressed || r.status !== 'pending') return null;
-
-      const now = new Date().toISOString();
-      transaction.update(refDocRef, {
-        isEscalated: true,
-        escalatedAt: now,
-        escalatedBy: 'system',
-        escalationReason: reason,
-        escalationLevel: 'system',
-        updatedAt: now,
-        statusHistory: [...r.statusHistory, {
-          status: r.status,
-          timestamp: now,
-          userId: 'system',
-          notes: describeCapacityEscalation(reason) + ' Escalated for administrative placement.',
-        }],
-      });
+      if (!stillEscalates(r, { kind: 'capacity', reason }, Date.now())) return null;
+      transaction.update(refDocRef, escalationUpdate(r, { kind: 'capacity', reason }, new Date().toISOString()));
       return { ...r, id };
     });
 
@@ -1365,12 +1317,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   /**
    * Client-side half of the SLA escalation.
    *
-   * The scheduled Cloud Function (functions/src/index.ts) is the authoritative
-   * writer, because it runs whether or not anyone is signed in -- and a referral
-   * that breaches at 3am with nobody watching is exactly the case escalation
-   * exists for. This sweep exists so escalation still works before that function
-   * is deployed, and so it lands within seconds rather than up to a minute while
-   * staff are actually looking at the screen.
+   * The scheduled sweep (.github/workflows/escalation-sweep.yml running
+   * scripts/escalation-sweep.ts every ~5 minutes) covers the hours when nobody is
+   * signed in -- a referral that breaches at 3am with nobody watching is exactly
+   * the case escalation exists for. This one lands within seconds while staff are
+   * looking at the screen. Both apply src/lib/escalationSweep.ts.
    *
    * Scoped to the referring facility (plus admins) rather than every party: the
    * referring facility owns chasing the referral, and it keeps a breached
