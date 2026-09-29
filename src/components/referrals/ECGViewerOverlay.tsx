@@ -76,7 +76,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
                 aria-label="Toggle high contrast"
                 aria-pressed={highContrast}
               >
-                <Contrast className="w-4 h-4 sm:mr-2" aria-hidden="true" />
+                <Contrast className="w-4 h-4 sm:me-2" aria-hidden="true" />
                 <span className="hidden sm:inline">High Contrast</span>
               </button>
               <div className="w-px h-6 bg-slate-700 mx-1 sm:mx-2"></div>

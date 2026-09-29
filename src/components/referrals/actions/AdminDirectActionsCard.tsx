@@ -65,7 +65,7 @@ export const AdminDirectActionsCard: React.FC<AdminDirectActionsCardProps> = ({
           className="bg-success-600 hover:bg-success-700 text-xs py-1.5"
           title="Direct Approve Referral"
         >
-          <CheckCircle className="h-3.5 w-3.5 mr-1 shrink-0" /> Approve
+          <CheckCircle className="h-3.5 w-3.5 me-1 shrink-0" /> Approve
         </Button>
         <Button
           onClick={onDirectDecline}
@@ -73,14 +73,14 @@ export const AdminDirectActionsCard: React.FC<AdminDirectActionsCardProps> = ({
           className="text-xs py-1.5"
           title="Direct Decline Referral"
         >
-          <X className="h-3.5 w-3.5 mr-1 shrink-0" /> Decline
+          <X className="h-3.5 w-3.5 me-1 shrink-0" /> Decline
         </Button>
         <Button
           onClick={onDirectPostpone}
           className="bg-warning-600 hover:bg-warning-700 text-white text-xs py-1.5"
           title="Direct Postpone Referral"
         >
-          <Clock className="h-3.5 w-3.5 mr-1 shrink-0" /> Postpone
+          <Clock className="h-3.5 w-3.5 me-1 shrink-0" /> Postpone
         </Button>
       </div>
     </div>

@@ -312,7 +312,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
         <h3 id="review-heading" className="font-heading text-[20px] font-semibold tracking-[-0.02em] text-ink dark:text-paper">Ready to send</h3>
         <ul className="mt-3 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.04]">
           {review.map(r => (
-            <li key={r.label} className="flex items-center gap-3 py-2.5 pr-1.5 pl-3.5">
+            <li key={r.label} className="flex items-center gap-3 py-2.5 pe-1.5 ps-3.5">
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">{r.label}</p>
                 <p className="mt-0.5 text-[14.5px] leading-[1.4] text-ink dark:text-paper">{r.value}</p>

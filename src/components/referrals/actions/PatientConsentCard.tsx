@@ -27,7 +27,7 @@ export const PatientConsentCard: React.FC<PatientConsentCardProps> = ({
 }) => {
   return (
     <div className="relative p-3 bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-400 dark:border-blue-500 rounded-lg space-y-3">
-      <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
+      <span className="absolute -top-1.5 -end-1.5 flex h-3 w-3">
         <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
         <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
       </span>
@@ -44,7 +44,7 @@ export const PatientConsentCard: React.FC<PatientConsentCardProps> = ({
             disabled={consentBusy}
             className="bg-success-600 hover:bg-success-700 text-xs py-1.5"
           >
-            <UserCheck className="h-3.5 w-3.5 mr-1 shrink-0" /> Accepted Transfer
+            <UserCheck className="h-3.5 w-3.5 me-1 shrink-0" /> Accepted Transfer
           </Button>
           <Button
             onClick={() => setShowDeclineForm(true)}
@@ -52,7 +52,7 @@ export const PatientConsentCard: React.FC<PatientConsentCardProps> = ({
             variant="destructive"
             className="text-xs py-1.5"
           >
-            <UserX className="h-3.5 w-3.5 mr-1 shrink-0" /> Declined This Facility
+            <UserX className="h-3.5 w-3.5 me-1 shrink-0" /> Declined This Facility
           </Button>
         </div>
       ) : (

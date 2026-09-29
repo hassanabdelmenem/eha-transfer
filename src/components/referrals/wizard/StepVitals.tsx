@@ -90,14 +90,14 @@ export const StepVitals: React.FC<{
                   aria-describedby={flag ? flagId : undefined}
                   className={cn(
                     fieldBase,
-                    'min-h-[54px] pr-14 text-[17px] font-semibold tabular-nums',
+                    'min-h-[54px] pe-14 text-[17px] font-semibold tabular-nums',
                     abnormal
                       ? 'border-critical-700 bg-transparent text-critical-800 focus:ring-critical-700/25 dark:border-critical-400 dark:bg-transparent dark:text-critical-200'
                       : 'border-slate-300 focus:border-info-700 focus:ring-info-700/30 dark:border-white/25'
                   )}
                 />
                 {flag && (
-                  <span id={flagId} className="pointer-events-none absolute right-3 text-[12.5px] font-bold text-critical-700 dark:text-critical-300">
+                  <span id={flagId} className="pointer-events-none absolute end-3 text-[12.5px] font-bold text-critical-700 dark:text-critical-300">
                     {flag}
                     <span className="sr-only"> — {evaluation.label}</span>
                   </span>

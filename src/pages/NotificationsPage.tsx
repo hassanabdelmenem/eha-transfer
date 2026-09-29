@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatClock, formatDayMonth } from '../i18n/format';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -50,8 +51,8 @@ const stamp = (iso: string) => {
   if (Number.isNaN(d.getTime())) return '';
   const today = new Date();
   return d.toDateString() === today.toDateString()
-    ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-    : d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+    ? formatClock(d)
+    : formatDayMonth(d);
 };
 
 export const NotificationsPage: React.FC = () => {

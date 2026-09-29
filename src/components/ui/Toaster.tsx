@@ -50,7 +50,7 @@ export const Toaster: React.FC = () => {
       aria-live="polite"
       aria-relevant="additions text"
       // Top on phones: the bottom of every phone screen is a sticky action bar.
-      className="fixed z-[120] top-[max(12px,env(safe-area-inset-top))] right-3 left-3 sm:top-auto sm:bottom-4 sm:left-auto sm:right-4 sm:w-96 flex flex-col gap-2 print:hidden empty:hidden"
+      className="fixed z-[120] top-[max(12px,env(safe-area-inset-top))] end-3 start-3 sm:top-auto sm:bottom-4 sm:start-auto sm:end-4 sm:w-96 flex flex-col gap-2 print:hidden empty:hidden"
     >
       {toasts.map((toast) => {
         const Icon = TONE_ICONS[toast.tone];
@@ -58,7 +58,7 @@ export const Toaster: React.FC = () => {
           <div
             key={toast.id}
             className={cn(
-              'flex items-start gap-3 rounded-xl border py-2 pr-1.5 pl-3.5 shadow-[0_8px_24px_rgba(20,20,19,0.14)]',
+              'flex items-start gap-3 rounded-xl border py-2 pe-1.5 ps-3.5 shadow-[0_8px_24px_rgba(20,20,19,0.14)]',
               TONE_STYLES[toast.tone]
             )}
           >

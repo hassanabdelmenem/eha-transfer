@@ -105,7 +105,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
       type="button"
       onClick={handleCardClick}
       aria-current={selected ? 'true' : undefined}
-      className="flex w-full items-start justify-between gap-2.5 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-700 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-ink"
+      className="flex w-full items-start justify-between gap-2.5 rounded-md text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-700 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-ink"
     >
       <span className="min-w-0">
         <span className={cn('block', nameClass)}>{patient}</span>

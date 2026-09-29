@@ -103,7 +103,7 @@ export const ArchivePage: React.FC = () => {
         aria-pressed={on}
         onClick={() => setOutcomeFilter(on ? 'all' : key)}
         className={cn(
-          'min-h-[76px] rounded-xl border px-[14px] py-3 text-left transition-colors',
+          'min-h-[76px] rounded-xl border px-[14px] py-3 text-start transition-colors',
           on
             ? key === 'admitted'
               ? 'border-success-700 bg-success-100 ring-1 ring-success-700 dark:border-success-400 dark:bg-success-900/50 dark:ring-success-400'
@@ -123,7 +123,7 @@ export const ArchivePage: React.FC = () => {
         title="Archive"
         action={
           <button type="button" onClick={handleExportCSV} className={headerActionClass}>
-            <Download className="mr-1.5 h-4 w-4" aria-hidden="true" /> Export CSV
+            <Download className="me-1.5 h-4 w-4" aria-hidden="true" /> Export CSV
           </button>
         }
       />
@@ -139,7 +139,7 @@ export const ArchivePage: React.FC = () => {
 
       <div className="relative mt-3">
         <label htmlFor="archive-search" className="sr-only">Search ended cases</label>
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500 dark:text-white/55" aria-hidden="true" />
+        <Search className="pointer-events-none absolute start-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500 dark:text-white/55" aria-hidden="true" />
         <input
           id="archive-search"
           type="search"
@@ -147,7 +147,7 @@ export const ArchivePage: React.FC = () => {
           placeholder="Patient name, hospital ID or department"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="min-h-[52px] w-full rounded-[10px] border border-slate-300 bg-white pl-11 pr-3 text-[16px] text-ink placeholder:text-slate-500 focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper dark:placeholder:text-white/45"
+          className="min-h-[52px] w-full rounded-[10px] border border-slate-300 bg-white ps-11 pe-3 text-[16px] text-ink placeholder:text-slate-500 focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper dark:placeholder:text-white/45"
         />
       </div>
 
@@ -164,7 +164,7 @@ export const ArchivePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate(`/referrals/${r.id}`)}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-[14px] text-left transition-colors hover:bg-slate-50 dark:border-white/12 dark:bg-white/[0.05] dark:hover:bg-white/10"
+                  className="w-full rounded-xl border border-slate-200 bg-white p-[14px] text-start transition-colors hover:bg-slate-50 dark:border-white/12 dark:bg-white/[0.05] dark:hover:bg-white/10"
                 >
                   <span className="flex items-start justify-between gap-2.5">
                     <span className="min-w-0">

@@ -120,7 +120,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
           This referral may have been cancelled, or the link is no longer valid.
         </p>
         <Button variant="outline" className="mt-6 bg-white dark:bg-slate-900" onClick={() => navigate('/referrals')}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Referrals
+          <ArrowLeft className="h-4 w-4 me-2 rtl:-scale-x-100" /> Back to Referrals
         </Button>
       </div>
     );

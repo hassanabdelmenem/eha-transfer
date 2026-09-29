@@ -158,7 +158,7 @@ export const NetworkDirectoryPage: React.FC = () => {
       <ScreenHeader title="Directory">
         <label htmlFor="directory-search" className="sr-only">Search the directory</label>
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-paper/60 lg:text-slate-500 dark:lg:text-white/55" aria-hidden="true" />
+          <Search className="pointer-events-none absolute start-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-paper/60 lg:text-slate-500 dark:lg:text-white/55" aria-hidden="true" />
           <input
             id="directory-search"
             type="search"
@@ -166,7 +166,7 @@ export const NetworkDirectoryPage: React.FC = () => {
             placeholder="Name, department or hospital"
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); setShowAll(false); }}
-            className="min-h-[52px] w-full rounded-[10px] border border-paper/20 bg-paper/10 pl-11 pr-3 text-[16px] text-paper placeholder:text-paper/55 focus:border-paper/50 focus:outline-none focus:ring-2 focus:ring-paper/30 lg:border-slate-300 lg:bg-white lg:text-ink lg:placeholder:text-slate-500 lg:focus:border-info-700 lg:focus:ring-info-700/30 dark:lg:border-white/25 dark:lg:bg-white/5 dark:lg:text-paper"
+            className="min-h-[52px] w-full rounded-[10px] border border-paper/20 bg-paper/10 ps-11 pe-3 text-[16px] text-paper placeholder:text-paper/55 focus:border-paper/50 focus:outline-none focus:ring-2 focus:ring-paper/30 lg:border-slate-300 lg:bg-white lg:text-ink lg:placeholder:text-slate-500 lg:focus:border-info-700 lg:focus:ring-info-700/30 dark:lg:border-white/25 dark:lg:bg-white/5 dark:lg:text-paper"
           />
         </div>
       </ScreenHeader>
@@ -179,7 +179,7 @@ export const NetworkDirectoryPage: React.FC = () => {
           ) : (
             <ul className="flex flex-col gap-2.5">
               {onCallNow.map(u => (
-                <li key={u.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white py-3 pr-3 pl-[14px] dark:border-white/12 dark:bg-white/[0.05]">
+                <li key={u.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white py-3 pe-3 ps-[14px] dark:border-white/12 dark:bg-white/[0.05]">
                   <div className="min-w-0">
                     <p className="flex items-center gap-2">
                       <span className="truncate text-[16px] font-semibold text-ink dark:text-paper">{u.name}</span>
