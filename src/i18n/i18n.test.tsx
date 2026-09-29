@@ -72,7 +72,6 @@ describe('I18nProvider', () => {
             referrals={[]}
             isOnline
             pendingSyncCount={0}
-            unreadNotifsCount={0}
             onLogoutClick={() => {}}
             onOpenProfile={() => {}}
             onOpenHotline={() => {}}

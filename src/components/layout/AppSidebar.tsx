@@ -20,10 +20,12 @@ import {
   X,
   Bell,
   ClipboardList,
+  BarChart3,
 } from 'lucide-react';
 import { isNurseRole } from '../../types';
 import { cn } from '../../lib/utils';
 import { useI18n } from '../../i18n';
+import { waitingOnYouCount } from '../../lib/waitingOnYou';
 
 export interface AppSidebarProps {
   user: User;
@@ -31,7 +33,6 @@ export interface AppSidebarProps {
   referrals: Referral[];
   isOnline: boolean;
   pendingSyncCount: number;
-  unreadNotifsCount: number;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
   onOpenProfile: () => void;
@@ -61,7 +62,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   referrals,
   isOnline,
   pendingSyncCount,
-  unreadNotifsCount,
   onOpenProfile,
   onOpenHotline,
   onOpenHandover,
@@ -77,9 +77,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const isDoctor = ['consultant', 'specialist', 'resident', 'clinician', 'er_official', 'medical_director', 'head_of_department', 'owner', 'system_admin'].includes(user.role);
   const isNurse = isNurseRole(user.role) || user.role === 'owner' || user.role === 'er_room';
   const isHeadOfDept = user.role === 'head_of_department' || user.role === 'owner';
+  const isManager = ['hospital_manager', 'deputy_manager', 'medical_director'].includes(user.role);
   const isLeadership = ['hospital_manager', 'deputy_manager', 'medical_director', 'owner', 'system_admin'].includes(user.role);
 
-  const activeReferralsCount = referrals.filter(r => !['admitted', 'discharged', 'cancelled', 'rejected'].includes(r.status)).length;
+  // One count on the rail, on the item that holds your work; the same number as
+  // the role home's headline. Other items stay plain (owner decision, 29 Sep).
+  const waitingCount = waitingOnYouCount(user, referrals) ?? 0;
 
   const isActivePath = (path: string) => {
     if (path === '/dashboard' || path === '/referrals') return location.pathname === path;
@@ -96,7 +99,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const count = (n: number, active: boolean) =>
     n > 0 ? (
       <span className={cn('ms-auto min-w-[28px] rounded-full px-2 py-0.5 text-center text-[12px] font-bold tabular', active ? 'bg-paper text-ink' : 'bg-white/12 text-paper')}>
-        {n}
+        <span className="sr-only">, </span>{n}
       </span>
     ) : null;
 
@@ -145,13 +148,14 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       )}
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-1">
-        {navLink("/dashboard", LayoutDashboard, isNurseRole(user.role) ? t('rail.beds') : t('rail.waitingOnYou'))}
-        {navLink("/referrals", Users, t('rail.referrals'), activeReferralsCount)}
+        {navLink("/dashboard", LayoutDashboard, isNurseRole(user.role) ? t('rail.beds') : t('rail.waitingOnYou'), waitingCount)}
+        {navLink("/referrals", Users, t('rail.referrals'))}
         {isDoctor && navLink("/referrals/new", Plus, t('rail.newReferral'))}
-        {navLink("/notifications", Bell, t('rail.inbox'), unreadNotifsCount)}
+        {navLink("/notifications", Bell, t('rail.inbox'))}
         {(isNurse || isLeadership) && navLink("/bed-management", Bed, t('rail.bedManagement'))}
         {isNurse && navLink("/admissions/new", ClipboardList, t('rail.directAdmit'))}
         {isHeadOfDept && navLink("/department", Activity, t('rail.department'))}
+        {isManager && navLink("/reports", BarChart3, t('rail.reports'))}
         {navLink("/directory", BookOpen, t('rail.directory'))}
         {navLink("/archive", Archive, t('rail.archive'))}
         {isLeadership && navLink("/facility-settings", Settings, t('rail.facilitySettings'))}

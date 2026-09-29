@@ -25,6 +25,7 @@ export const ar: Messages = {
     bedManagement: 'إدارة الأسرّة',
     directAdmit: 'دخول مباشر',
     department: 'القسم',
+    reports: 'التقارير',
     directory: 'الدليل',
     archive: 'الأرشيف',
     facilitySettings: 'إعدادات المنشأة',

@@ -1,15 +1,15 @@
 name: PR Preview
 
-# Builds each pull request and publishes it to a temporary Firebase Hosting
-# channel, so changes can be opened on a real phone before merging.
+# Builds each pull request against the STAGING project (`eha-transfer-staging`)
+# and publishes it to a temporary Hosting channel on that project, so changes can
+# be opened on a real phone before merging without touching patient data. Every
+# screen shows a "STAGING · test data only" label.
 #
-# NOTE: a preview build talks to the *production* Firestore project — same as a
-# local dev server does. It is not a sandbox; don't use it to try destructive
-# changes against real patient data.
+# The deploy key (secrets.FIREBASE_SERVICE_ACCOUNT_STAGING) belongs to a service
+# account that exists only in the staging project; it cannot reach production.
 #
-# NOTE: Google sign-in only works on a preview URL if its domain is listed under
-# Firebase Console -> Authentication -> Settings -> Authorized domains. Preview
-# channels are served from <site>--<channel>-<hash>.web.app.
+# Preview channels are served from eha-transfer-staging--<channel>-<hash>.web.app.
+# Deploying a channel adds its domain to staging's Auth authorized domains.
 on:
   pull_request:
 
@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FIREBASE_PROJECT: eha-transfer-1785622025
+  FIREBASE_PROJECT: eha-transfer-staging
 
 jobs:
   preview:
@@ -43,14 +43,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build for staging
         run: npm run build
+        env:
+          VITE_FIREBASE_TARGET: staging
+
+      # firebase.json names the production site and allows the production auth
+      # domain in the CSP frame-src. Point both at staging for this run only.
+      - name: Point firebase.json at the staging site
+        run: |
+          jq '.hosting.site = "eha-transfer-staging"
+              | .hosting.headers |= map(.headers |= map(
+                  if .key == "Content-Security-Policy"
+                  then .value |= gsub("https://eha-transfer\\.web\\.app"; "https://eha-transfer-staging.web.app")
+                  else . end))' firebase.json > firebase.staging.json
+          mv firebase.staging.json firebase.json
+          grep -q '"site": "eha-transfer-staging"' firebase.json
+          grep -q 'frame-src .*https://eha-transfer-staging.web.app' firebase.json
 
       - name: Deploy to preview channel
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: eha-transfer-1785622025
-          target: eha-transfer
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}
+          projectId: eha-transfer-staging
+          target: eha-transfer-staging
           expires: 7d

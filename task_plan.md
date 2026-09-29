@@ -61,8 +61,9 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 - [x] Finish review of the remaining screens (1d, 2d–2f, 3a–3c): 15 fixes, in #40
 - [x] Stage-rail labels 11px on phones; shadows only on floating surfaces (dialogs, drawer, toasts);
       no zoom animations; `src/index.css` header comment corrected (29 Sep, follow-ups PR)
-- [ ] Rail count badges; manager analytics sit under the queue column on desktop (not in 1c; placement
-      undecided)
+- [x] Rail count: one count, on "Waiting on you", equal to the role home's headline
+      (`src/lib/waitingOnYou.ts`); Referrals and Inbox plain. Manager charts moved to /reports
+      (rail item "Reports", manager roles). Owner decisions 29 Sep.
 - **Status:** phases 1–6 live (phase 6 merged and deployed 29 Sep, 93dbceb)
 
 ### Arabic and right-to-left (owner decisions 30 Sep)
@@ -83,7 +84,9 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
 
 ### Phase 4: Known gaps (NEXT_STEPS_PROMPT.md phase 2)
 
-- [ ] 2a `scripts/overnight-sweep.ts` exists but nothing schedules it
+- [x] 2a Escalation when nobody is signed in: `.github/workflows/escalation-sweep.yml` every 5 min (keyless
+      WIF, `escalation-sweep` SA with datastore.user) runs `scripts/escalation-sweep.ts`; rules shared with the
+      in-app sweep in `src/lib/escalationSweep.ts`. Stale `overnight-sweep.ts` removed (30 Sep)
 - [ ] 2c `statusHistory` as a subcollection (not started)
 - [ ] 2d `useIdleTimeout` exists; wiring and duration unverified
 - [ ] 2e small text / 28px buttons (largely superseded by the redesign; re-audit after phase 6)
