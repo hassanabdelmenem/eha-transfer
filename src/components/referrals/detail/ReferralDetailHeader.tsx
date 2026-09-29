@@ -60,11 +60,15 @@ export interface ReferralDetailHeaderProps {
   isDesktop: boolean;
   /** Set when the case is open inside the desktop workspace: no back button, a full-page link instead. */
   fullPageHref?: string;
+  /** Source facility, for the desktop meta line. */
+  fromName?: string;
 }
 
-export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ referral, onBack, actions, isDesktop, fullPageHref }) => {
+export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ referral, onBack, actions, isDesktop, fullPageHref, fromName }) => {
   const name = `${referral.patientData.name || 'Unknown patient'}, ${referral.patientData.age}`;
   const facts = [referral.patientData.hospitalId, `${referral.requiredBedType}`, referral.priority].filter(Boolean).join(' · ');
+  // Desktop has room for who the patient is and where they come from (3d); blood type only when known.
+  const deskFacts = [referral.patientData.hospitalId, referral.patientData.gender, referral.patientData.bloodType, `${referral.requiredBedType} bed`, referral.priority, fromName && `from ${fromName}`].filter(Boolean).join(' · ');
 
   return (
     <>
@@ -75,7 +79,7 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
 
       {isDesktop ? (
         <header className="print:hidden border-b border-slate-200 pb-5 dark:border-white/10">
-          <div className="flex items-start justify-between gap-6">
+          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
             <div className="flex min-w-0 items-start gap-3">
               {!fullPageHref && (
               <button
@@ -92,9 +96,9 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
                 {fullPageHref
                   ? <h2 className="text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h2>
                   : <h1 className="text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h1>}
-                <p className="mt-1 text-[13.5px] text-slate-700 dark:text-white/65">{facts}</p>
+                <p className="mt-1 text-[13.5px] text-slate-700 dark:text-white/65">{deskFacts}</p>
                 {fullPageHref && (
-                  <Link to={fullPageHref} className="mt-1.5 inline-flex min-h-[32px] items-center gap-1 text-[13px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300">
+                  <Link to={fullPageHref} className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300">
                     Open full page <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </Link>
                 )}

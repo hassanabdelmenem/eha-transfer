@@ -183,8 +183,7 @@ export const ManagerCockpit: React.FC = () => {
       </section>
 
       {/* Below the queue: the wider picture, for when nothing is waiting. */}
-      <section aria-labelledby="manager-activity" className="mt-8 space-y-4">
-        <MicroLabel id="manager-activity">Network and facility activity</MicroLabel>
+      <section aria-label="Network and facility activity" className="mt-8 space-y-4">
         <BedOccupancyHeatmap facilities={facilities} />
         <FacilityAnalyticsCharts
           facilityReferrals={facilityReferrals}

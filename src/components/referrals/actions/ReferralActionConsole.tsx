@@ -107,16 +107,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
         <CardTitle>Facility Actions</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
-        {referral.status === 'pending' && (
-          <div className="relative bg-warning-50 border-2 border-warning-400 p-3 rounded-lg text-warning-900 text-sm flex items-start gap-3 mb-4 shadow-sm">
-            <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
-              <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-warning-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-warning-500"></span>
-            </span>
-            <AlertCircle className="w-5 h-5 shrink-0 text-warning-600 mt-0.5" />
-            <span className="font-semibold">Action Required: Waiting for Department Head review before final Manager approval.</span>
-          </div>
-        )}
+        {/* What the referral waits on is stated once, by the role banner above. */}
 
         <div className="text-sm">
           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
