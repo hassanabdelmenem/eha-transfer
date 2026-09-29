@@ -2,6 +2,18 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-30: Rail count and Reports page
+
+- Owner chose: count on the queue item only; manager charts on their own Reports page.
+- `src/lib/waitingOnYou.ts` mirrors each role home's headline (ER, manager, HoD, admin, clinician;
+  none for nurses, whose item is "Beds"); the rail shows it on "Waiting on you" (announced
+  "Waiting on you, N"). Referrals and Inbox counts removed.
+- `/reports` (ReportsPage): network free beds + facility activity charts, manager roles only;
+  removed from ManagerCockpit.
+- Verified: tsc, vitest 935/935, Playwright 11/11, desktop captures (HoD 4 = headline 4; manager
+  2 = 1 escalation + 1 to sign; Reports page).
+- Staging (#44) is open: the owner merges it and enables staging Auth in the console.
+
 ## 2026-09-29 (night): Design follow-ups
 
 - Phone stage labels 9px uppercase -> 11px sentence case (uppercase kept from lg).
