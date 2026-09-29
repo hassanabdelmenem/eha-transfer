@@ -115,7 +115,7 @@ export const Login: React.FC = () => {
             {(error || redirectError) && (
               <div
                 role="alert"
-                className="rounded border-l-4 border-l-critical-600 bg-critical-50 dark:bg-critical-950/40 px-4 py-3 text-sm text-critical-900 dark:text-critical-200"
+                className="rounded border-s-4 border-s-critical-600 bg-critical-50 dark:bg-critical-950/40 px-4 py-3 text-sm text-critical-900 dark:text-critical-200"
               >
                 {error || redirectError}
               </div>
@@ -149,13 +149,13 @@ export const Login: React.FC = () => {
               <div>
                 <label htmlFor="loginEmail" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Email address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
+                  <Mail className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
                     id="loginEmail"
                     type="email"
                     required
                     autoComplete="email"
-                    className="pl-10"
+                    className="ps-10"
                     placeholder="you@hospital.gov"
                     value={email}
                     error={!!formErrors.email}

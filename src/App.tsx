@@ -10,6 +10,10 @@ import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { Toaster } from './components/ui/Toaster';
+import { I18nProvider, type Language } from './i18n';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from './lib/firebase';
+import { toastError } from './lib/toast';
 import { StagingRibbon } from './components/layout/StagingRibbon';
 import { SkeletonGroup, Skeleton } from './components/ui/Skeleton';
 
@@ -134,10 +138,23 @@ const AppRoutes = () => {
   );
 };
 
+/** The signed-in user's language comes from, and is saved to, their own profile. */
+const LanguageFromProfile: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const userId = user?.id;
+  const save = React.useCallback(async (language: Language) => {
+    if (!userId) return;
+    // Only this field: language is not a privilege field, so the rules accept a self-update.
+    await updateDoc(doc(db, 'users', userId), { language }).catch(err => toastError(err, 'Could not save your language.'));
+  }, [userId]);
+  return <I18nProvider savedLanguage={user?.language} onSave={userId ? save : undefined}>{children}</I18nProvider>;
+};
+
 export default function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="app-theme">
       <AuthProvider>
+        <LanguageFromProfile>
         <DataProvider>
           <Router>
             <AppRoutes />
@@ -147,6 +164,7 @@ export default function App() {
           <Toaster />
           <StagingRibbon />
         </DataProvider>
+        </LanguageFromProfile>
       </AuthProvider>
     </ThemeProvider>
   );

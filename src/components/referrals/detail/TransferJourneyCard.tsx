@@ -22,7 +22,7 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-col gap-4 relative">
-          <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-800" />
+          <div className="absolute start-4 top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-800" />
           
           <div className="relative flex gap-4">
             <div className="z-10 rounded p-1.5 bg-blue-100 text-blue-700 ring-2 ring-white dark:ring-slate-900">

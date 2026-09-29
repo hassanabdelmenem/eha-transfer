@@ -116,7 +116,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
         <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 px-3.5 text-[14.5px] font-semibold text-ink dark:text-paper [&::-webkit-details-marker]:hidden">
           <span>
             More patient details
-            <span className="ml-1.5 font-normal text-slate-500 dark:text-white/60">optional</span>
+            <span className="ms-1.5 font-normal text-slate-500 dark:text-white/60">optional</span>
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
         </summary>

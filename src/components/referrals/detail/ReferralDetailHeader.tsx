@@ -89,7 +89,7 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
                 aria-label="Go back"
                 className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-slate-300 text-ink hover:bg-slate-100 dark:border-white/25 dark:text-paper dark:hover:bg-white/10"
               >
-                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                <ChevronLeft className="h-5 w-5 rtl:-scale-x-100" aria-hidden="true" />
               </button>
               )}
               <div className="min-w-0">
@@ -100,7 +100,7 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
                 <p className="mt-1 text-[13.5px] text-slate-700 dark:text-white/65">{deskFacts}</p>
                 {fullPageHref && (
                   <Link to={fullPageHref} className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300">
-                    Open full page <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    Open full page <ArrowUpRight className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden="true" />
                   </Link>
                 )}
               </div>
@@ -120,7 +120,7 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
               aria-label="Go back"
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-white/25 hover:bg-white/10"
             >
-              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+              <ChevronLeft className="h-5 w-5 rtl:-scale-x-100" aria-hidden="true" />
             </button>
             <div className="min-w-0">
               <h1 className="truncate font-sans text-[15px] font-semibold leading-[1.25] tracking-normal">{name}</h1>

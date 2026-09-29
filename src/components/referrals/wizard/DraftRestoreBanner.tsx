@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatClock } from '../../../i18n/format';
 import { RotateCcw, X } from 'lucide-react';
 
 interface DraftRestoreBannerProps {
@@ -10,9 +11,9 @@ interface DraftRestoreBannerProps {
 /** Shown once when the wizard reopens on a saved draft: say so, offer a clean start. */
 export const DraftRestoreBanner: React.FC<DraftRestoreBannerProps> = ({ lastSaved, onDiscard, onDismiss }) => {
   const t = Date.parse(lastSaved || '');
-  const when = Number.isNaN(t) ? null : new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const when = Number.isNaN(t) ? null : formatClock(new Date(t));
   return (
-    <div role="status" className="flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white py-1.5 pr-1.5 pl-3.5 dark:border-white/12 dark:bg-white/5">
+    <div role="status" className="flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white py-1.5 pe-1.5 ps-3.5 dark:border-white/12 dark:bg-white/5">
       <RotateCcw className="h-4 w-4 shrink-0 text-slate-700 dark:text-white/70" aria-hidden="true" />
       <p className="min-w-0 flex-1 text-[14px] leading-snug text-ink dark:text-paper">
         <span className="font-semibold">Draft referral restored</span>

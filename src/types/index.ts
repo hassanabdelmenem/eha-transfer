@@ -42,6 +42,8 @@ export interface User {
   verified?: boolean;
   profileCompleted?: boolean;
   monthlySchedule?: string;
+  /** Interface language, set in the profile; absent means follow the device. */
+  language?: 'en' | 'ar';
 }
 
 export type ReferralPriority = 'routine' | 'urgent' | 'emergency';

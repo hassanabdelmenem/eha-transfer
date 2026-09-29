@@ -81,12 +81,12 @@ export const Onboarding: React.FC = () => {
               <div>
                 <label htmlFor="onboardName" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
+                  <User className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
                     id="onboardName"
                     type="text"
                     required
-                    className="pl-10"
+                    className="ps-10"
                     placeholder="Dr. Ahmed Ali"
                     value={name}
                     error={!!formErrors.name}
@@ -102,12 +102,12 @@ export const Onboarding: React.FC = () => {
               <div>
                 <label htmlFor="onboardPhone" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Phone Number</label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
+                  <Phone className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
                     id="onboardPhone"
                     type="tel"
                     required
-                    className="pl-10"
+                    className="ps-10"
                     placeholder="+20 100 000 0000"
                     value={phoneNumber}
                     error={!!formErrors.phoneNumber}
@@ -149,7 +149,7 @@ export const Onboarding: React.FC = () => {
                 <div>
                   <label htmlFor="onboardFacility" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Hospital</label>
                   <div className="relative">
-                    <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
+                    <Building2 className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                     <select
                       id="onboardFacility"
                       required
@@ -159,7 +159,7 @@ export const Onboarding: React.FC = () => {
                         setDepartment(''); 
                         if (formErrors.facilityId) setFormErrors(prev => ({ ...prev, facilityId: '' }));
                       }}
-                      className={`w-full min-h-[48px] pl-10 rounded-xl border ${formErrors.facilityId ? 'border-critical-500' : 'border-slate-200 dark:border-slate-800'} bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900`}
+                      className={`w-full min-h-[48px] ps-10 rounded-xl border ${formErrors.facilityId ? 'border-critical-500' : 'border-slate-200 dark:border-slate-800'} bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900`}
                     >
                       <option value="">Select a Hospital</option>
                       {facilities.map(f => (

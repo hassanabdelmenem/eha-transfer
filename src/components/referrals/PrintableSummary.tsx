@@ -31,7 +31,7 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
             <h1 className="text-3xl font-bold mb-1">Clinical Summary</h1>
             <p className="text-gray-600 font-mono text-xs">ID: {referral.id}</p>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <p className="text-xs font-semibold text-gray-500">Generated On</p>
             <p>{format(new Date(), 'PPpp')}</p>
           </div>
@@ -107,7 +107,7 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
         {Array.isArray(patientData.attachments) && patientData.attachments.length > 0 && (
           <div className="mb-6">
             <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3">Attachments</h2>
-            <ul className="list-disc pl-5">
+            <ul className="list-disc ps-5">
               {patientData.attachments.map(att => (
                 <li key={att.id} className="text-sm">{att.name} ({att.type?.toUpperCase() || 'FILE'})</li>
               ))}
@@ -118,7 +118,7 @@ export const PrintableSummary = forwardRef<HTMLDivElement, PrintableSummaryProps
         {/* Timeline (Text-based for print) */}
         <div className="mb-6">
           <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3">Event Timeline</h2>
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-start border-collapse">
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="py-2 text-xs text-gray-500">Date/Time</th>

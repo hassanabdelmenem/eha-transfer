@@ -86,7 +86,7 @@ export const AdmitPatientPage: React.FC = () => {
           to="/bed-management"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline w-fit"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft className="w-3.5 h-3.5 rtl:-scale-x-100" />
           Back to Bed Management & Capacity Hub
         </Link>
         <div className="flex items-center justify-between">
