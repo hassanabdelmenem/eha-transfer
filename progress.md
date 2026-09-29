@@ -2,6 +2,24 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-29: Owner decisions live; redesign phase 6
+
+- #39 merged and deployed (a156de1): createdAtMs required, escalation e2e, handover without sign-out,
+  old design removed. Checklist ticks b4, d1, d2, w4, w5, w6.
+- Owner chose the two-pane desktop (a code comment recorded that an earlier two-pane attempt had been
+  reverted as confusing on laptops; asked first). Built at >=1280px only, a case always open, selection
+  in the URL, "Open full page" link, one h1 per page.
+- Found and fixed: the manager's "Decline" rejected without the mandatory reason (phones since phase 2).
+- Finish review (impeccable-finish-reviewer): "ship with fixes"; 9 material + 3 minor findings, all
+  addressed except the rail count badge and moving the manager's analytics (both recorded above).
+  DESIGN.md + `.impeccable/design.json` rewritten by impeccable-documenter from the shipped build.
+- Verified: vitest 926/926, Playwright 11/11, workspace unit tests (6), detector 0 findings, captures at
+  1440/1280/1120/390 in light and dark.
+- Incident: the old redesign worktree was deleted by another session between 27 and 29 Sep, so a
+  `cd` into it failed and a branch checkout ran in the main checkout (second time). No work lost;
+  restored. All commands now use `cd <dir> || exit 1`. Phase 6 lives in `.claude/worktrees/phase6`;
+  the capture harness was rebuilt there (`.capture/`, git-ignored).
+
 ## 2026-09-27 (afternoon): Merged, deployed, owner decisions
 
 - Repo made public by the owner; Actions runs again. Merged #32 → #30 → #38 → #31 → #33 → #37 with merge
