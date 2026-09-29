@@ -90,9 +90,14 @@ export const NotificationsPage: React.FC = () => {
             return (
               <li key={notif.id} className={cn('rounded-xl border p-[14px]', notif.read ? READ_CLASSES : TINT_CLASSES[notif.type])}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className={cn('text-[11px] font-bold uppercase tracking-[0.09em]', notif.read ? 'text-slate-500 dark:text-white/60' : LABEL_TEXT_CLASSES[notif.type])}>
-                    {kind.label}
-                    {!notif.read && <span className="sr-only"> · unread</span>}
+                  <span className="flex items-center gap-2">
+                    <span className={cn('text-[11px] font-bold uppercase tracking-[0.09em]', notif.read ? 'text-slate-500 dark:text-white/60' : LABEL_TEXT_CLASSES[notif.type])}>
+                      {kind.label}
+                    </span>
+                    {/* Unread is said in words, not only by the tint. */}
+                    {!notif.read && (
+                      <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-bold text-paper dark:bg-paper dark:text-ink">New</span>
+                    )}
                   </span>
                   <time dateTime={notif.createdAt} className="font-mono text-[12px] font-medium text-slate-700 dark:text-white/65">{stamp(notif.createdAt)}</time>
                 </div>
@@ -111,6 +116,15 @@ export const NotificationsPage: React.FC = () => {
                     )}
                   >
                     {kind.action}
+                  </button>
+                )}
+                {!notif.referralId && !notif.read && (
+                  <button
+                    type="button"
+                    onClick={() => markNotificationRead(notif.id)}
+                    className="mt-3 min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white text-[15px] font-semibold text-ink transition-colors hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10"
+                  >
+                    Mark as read
                   </button>
                 )}
               </li>

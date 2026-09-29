@@ -94,8 +94,8 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
               <div className="min-w-0">
                 {/* In the workspace the queue's headline is the page's h1; the case is a section of it. */}
                 {fullPageHref
-                  ? <h2 className="text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h2>
-                  : <h1 className="text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h1>}
+                  ? <h2 className="font-heading text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h2>
+                  : <h1 className="font-heading text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h1>}
                 <p className="mt-1 text-[13.5px] text-slate-700 dark:text-white/65">{deskFacts}</p>
                 {fullPageHref && (
                   <Link to={fullPageHref} className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300">

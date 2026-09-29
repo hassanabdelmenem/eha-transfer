@@ -2,6 +2,21 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-29 (evening): Finish-review fixes for the remaining screens (PR #40)
+
+- Dependabot: #41 merged (firebase-tools ^15.32.0, stream-json override removed); alerts #11/#12 cleared.
+- All 8 material + 7 minor findings for 1d, 2d, 2e, 2f, 3a, 3b, 3c fixed on `redesign/6-desktop-panes`:
+  heading rule moved into `@layer base`; handover names the computed next shift, carries
+  `manager_approved` over, "On the move" is neutral, title "End of shift" + shift window, no Done pill;
+  settings facilities flattened under "Network and contracted facilities" with a full-width add button,
+  48px controls, capacity in ICU/CCU/PICU/Ward order; admin order tiles → escalations → waitlist →
+  heatmap (heatmap no longer forces 340px); wizard is a full-height column with the footer at the
+  bottom, no validation toast, toasts cleared on step change, reason is a textarea with a Reason row
+  in "Ready to send"; inbox shows a visible "New" chip and "Mark as read" for link-less notices;
+  Directory title for everyone; archive line has no trailing "admitted ".
+- Verified: tsc clean, vitest 927/927, Playwright 11/11, phone captures of wizard, settings, admin.
+- Left: owner review and merge of #40; owner confirms the email on the second owner login.
+
 ## 2026-09-29: Owner decisions live; redesign phase 6
 
 - #39 merged and deployed (a156de1): createdAtMs required, escalation e2e, handover without sign-out,

@@ -99,7 +99,7 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 - Firestore rules are the only server-side authorization; change rules and the matching queries together, run `npm run test:rules`.
 - No fabricated data or claims in the UI (no invented distances, scores, defaults presented as measurements).
 
-## Finish review of the remaining screens (29 Sep, not yet fixed)
+## Finish review of the remaining screens (29 Sep, all fixed on PR #40)
 
 Verdict "ship with fixes" for 1d, 2d, 2e, 2f, 3a, 3b, 3c. Material, in order:
 1. `src/index.css:249` global `h1…h6` font/tracking rule is unlayered and beats utilities: wrap in `@layer base` (MicroLabel h2s render in Poppins at −0.02em instead of 11px sans at 0.09em).

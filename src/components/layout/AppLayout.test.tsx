@@ -256,7 +256,7 @@ describe('AppLayout', () => {
 
       expect(logoutMock).toHaveBeenCalled();
       expect(addShiftLogMock).not.toHaveBeenCalled();
-      expect(screen.queryByText('End of Shift Clinical Handover')).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'End of shift' })).not.toBeInTheDocument();
     });
 
     it('offers "End of shift" only to roles that write a shift log', () => {
@@ -271,7 +271,7 @@ describe('AppLayout', () => {
       await act(async () => { screen.getByTitle('Log out').click(); });
 
       expect(logoutMock).toHaveBeenCalled();
-      expect(screen.queryByText('End of Shift Clinical Handover')).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'End of shift' })).not.toBeInTheDocument();
     });
   });
 
@@ -291,37 +291,52 @@ describe('AppLayout', () => {
       renderLayout();
       await act(async () => { screen.getByRole('button', { name: /^End of shift$/ }).click(); });
 
-      expect(screen.getByText('End of Shift Clinical Handover')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'End of shift' })).toBeInTheDocument();
       expect(screen.getByText(/2 active transfers in progress for Cardiology/)).toBeInTheDocument();
       expect(screen.getByText(/Carry Case/)).toBeInTheDocument();
       expect(screen.getByText(/Watch Case —/)).toBeInTheDocument();
       expect(screen.queryByText(/Other Dept Case/)).not.toBeInTheDocument();
       // 1 direct admission + 1 discharged referral in this facility/department.
       expect(screen.getByText(/2 patient admissions\/discharges recorded\./)).toBeInTheDocument();
-      expect(screen.getByText('2 Done')).toBeInTheDocument();
+      expect(screen.queryByText('2 Done')).not.toBeInTheDocument();
+    });
+
+    it('carries a manager-approved case over (still waiting), and names the shift and the next one', async () => {
+      mockReferrals = [
+        makeReferral({ id: 'r-mgr', status: 'manager_approved', receivingFacilityId: 'f1', referringFacilityId: 'f9', receivingDepartments: ['Cardiology'], patientData: { ...makeReferral().patientData, name: 'Manager Case' } }),
+      ];
+      renderLayout();
+      await act(async () => { screen.getByRole('button', { name: /^End of shift$/ }).click(); });
+
+      expect(screen.getByText(/Manager Case — still waiting/)).toBeInTheDocument();
+      expect(screen.queryByText('On the move')).not.toBeInTheDocument();
+      const hour = new Date().getHours();
+      const [current, next] = hour >= 20 || hour < 8 ? ['Night', 'day'] : ['Day', 'night'];
+      expect(screen.getByText(new RegExp(`^${current} shift · `))).toBeInTheDocument();
+      expect(screen.getByText(`Send handover to the ${next} shift`)).toBeInTheDocument();
     });
 
     it('sends the handover, calls addShiftLog, and leaves the user signed in', async () => {
       renderLayout();
       await act(async () => { screen.getByRole('button', { name: /^End of shift$/ }).click(); });
-      await act(async () => { screen.getByText(/send handover to the day shift/i).click(); });
+      await act(async () => { screen.getByText(/send handover to the (day|night) shift/i).click(); });
 
       expect(addShiftLogMock).toHaveBeenCalledWith(expect.objectContaining({
         userId: 'u1', facilityId: 'f1', department: 'Cardiology', pendingTransfersCount: 1, admittedPatientsCount: 2,
       }));
       // Signing out is a separate, manual act.
       expect(logoutMock).not.toHaveBeenCalled();
-      expect(screen.queryByText('End of Shift Clinical Handover')).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'End of shift' })).not.toBeInTheDocument();
     });
 
     it('keeps the handover open and the user signed in if saving the shift log fails', async () => {
       addShiftLogMock.mockRejectedValueOnce(new Error('offline'));
       renderLayout();
       await act(async () => { screen.getByRole('button', { name: /^End of shift$/ }).click(); });
-      await act(async () => { screen.getByText(/send handover to the day shift/i).click(); });
+      await act(async () => { screen.getByText(/send handover to the (day|night) shift/i).click(); });
 
       expect(logoutMock).not.toHaveBeenCalled();
-      expect(screen.getByText('End of Shift Clinical Handover')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'End of shift' })).toBeInTheDocument();
     });
 
     it('can be cancelled, leaving the user signed in', async () => {
@@ -329,14 +344,14 @@ describe('AppLayout', () => {
       await act(async () => { screen.getByRole('button', { name: /^End of shift$/ }).click(); });
       act(() => { screen.getByLabelText('Close the handover').click(); });
 
-      expect(screen.queryByText('End of Shift Clinical Handover')).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'End of shift' })).not.toBeInTheDocument();
       expect(logoutMock).not.toHaveBeenCalled();
     });
 
     it('falls back to the no-handover message, and closes without writing, once the user loses their facility mid-dialog', async () => {
       const { rerender } = renderLayout();
       await act(async () => { screen.getByRole('button', { name: /^End of shift$/ }).click(); });
-      expect(screen.getByText('End of Shift Clinical Handover')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'End of shift' })).toBeInTheDocument();
 
       mockUser = makeUser({ role: 'resident', facilityId: undefined });
       rerender(<MemoryRouter initialEntries={['/referrals']}><AppLayout /></MemoryRouter>);
@@ -344,7 +359,7 @@ describe('AppLayout', () => {
       expect(screen.getByText('No active clinical handover summary required for your role.')).toBeInTheDocument();
 
       // Nothing to hand over: the button says what it does.
-      expect(screen.queryByText(/send handover to the day shift/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/send handover to the (day|night) shift/i)).not.toBeInTheDocument();
       await act(async () => { screen.getByRole('button', { name: /^Close$/ }).click(); });
       expect(addShiftLogMock).not.toHaveBeenCalled();
       expect(logoutMock).not.toHaveBeenCalled();
@@ -354,7 +369,7 @@ describe('AppLayout', () => {
       mockUser = makeUser({ role: 'owner' });
       renderLayout();
       await act(async () => { screen.getByRole('button', { name: /^End of shift$/ }).click(); });
-      expect(screen.getByText('End of Shift Clinical Handover')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'End of shift' })).toBeInTheDocument();
     });
 
     it('counts a referral this facility is referring out (not just receiving) toward the handover', async () => {
@@ -390,7 +405,7 @@ describe('AppLayout', () => {
       await act(async () => { screen.getByRole('button', { name: /^End of shift$/ }).click(); });
 
       expect(screen.getByText(/for General department/)).toBeInTheDocument();
-      await act(async () => { screen.getByText(/send handover to the day shift/i).click(); });
+      await act(async () => { screen.getByText(/send handover to the (day|night) shift/i).click(); });
       expect(addShiftLogMock).toHaveBeenCalledWith(expect.objectContaining({ userName: 'Unknown', department: undefined }));
     });
 
@@ -412,14 +427,14 @@ describe('AppLayout', () => {
     it('skips saving a shift log if the role stops generating one before the handover is confirmed, but still logs out', async () => {
       const { rerender } = renderLayout();
       await act(async () => { screen.getByRole('button', { name: /^End of shift$/ }).click(); });
-      expect(screen.getByText('End of Shift Clinical Handover')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'End of shift' })).toBeInTheDocument();
 
       mockUser = makeUser({ role: 'hospital_manager', facilityId: 'f1' });
       rerender(<MemoryRouter initialEntries={['/referrals']}><AppLayout /></MemoryRouter>);
       expect(screen.getByText('No active clinical handover summary required for your role.')).toBeInTheDocument();
 
       // Nothing to hand over: the button says what it does.
-      expect(screen.queryByText(/send handover to the day shift/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/send handover to the (day|night) shift/i)).not.toBeInTheDocument();
       await act(async () => { screen.getByRole('button', { name: /^Close$/ }).click(); });
       expect(addShiftLogMock).not.toHaveBeenCalled();
       expect(logoutMock).not.toHaveBeenCalled();

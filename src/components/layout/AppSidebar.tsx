@@ -150,7 +150,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         {(isNurse || isLeadership) && navLink("/bed-management", Bed, "Bed Management")}
         {isNurse && navLink("/admissions/new", ClipboardList, "Direct Admit")}
         {isHeadOfDept && navLink("/department", Activity, "Department")}
-        {navLink("/directory", BookOpen, "Network Directory")}
+        {navLink("/directory", BookOpen, "Directory")}
         {navLink("/archive", Archive, "Archive")}
         {isLeadership && navLink("/facility-settings", Settings, "Facility Settings")}
         <button type="button" onClick={onOpenHotline} className={cn(row(false), 'text-left')}>

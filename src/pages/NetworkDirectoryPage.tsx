@@ -155,7 +155,7 @@ export const NetworkDirectoryPage: React.FC = () => {
 
   return (
     <div className="max-w-[640px]">
-      <ScreenHeader title={canViewNetwork ? 'Directory' : 'Hospital directory'}>
+      <ScreenHeader title="Directory">
         <label htmlFor="directory-search" className="sr-only">Search the directory</label>
         <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-paper/60 lg:text-slate-500 dark:lg:text-white/55" aria-hidden="true" />

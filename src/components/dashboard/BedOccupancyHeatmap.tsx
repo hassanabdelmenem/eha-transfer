@@ -52,14 +52,14 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
         </p>
       ) : (
         <div className="overflow-x-auto px-[14px] pt-3 pb-[14px]">
-          <table className="w-full min-w-[340px] border-separate border-spacing-[3px] text-left">
+          <table className="w-full border-separate border-spacing-[3px] text-left">
             <thead>
               <tr>
                 <th scope="col" className="pb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">
                   <span className="sr-only">Facility</span>
                 </th>
                 {BED_TYPES.map(bed => (
-                  <th key={bed} scope="col" className="w-[54px] pb-1 text-center text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">
+                  <th key={bed} scope="col" className="w-[46px] pb-1 text-center min-[420px]:w-[54px] text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">
                     {bed}
                   </th>
                 ))}
@@ -69,7 +69,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
               {displayFacilities.map(facility => (
                 <tr key={facility.id}>
                   <th scope="row" className="pr-2 align-middle font-normal">
-                    <span className="block text-[13.5px] font-semibold leading-tight text-ink dark:text-paper">{facility.name}</span>
+                    <span className="block text-[13.5px] font-semibold leading-tight break-words text-ink dark:text-paper">{facility.name}</span>
                     <span className="block text-[12px] capitalize leading-tight text-slate-500 dark:text-white/60">{(facility.type || '').replace('_', ' ')}</span>
                   </th>
                   {BED_TYPES.map(bed => {
