@@ -143,14 +143,14 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       )}
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-1">
-        {navLink("/dashboard", LayoutDashboard, "Dashboard")}
+        {navLink("/dashboard", LayoutDashboard, isNurseRole(user.role) ? "Beds" : "Waiting on you")}
         {navLink("/referrals", Users, "Referrals", activeReferralsCount)}
         {isDoctor && navLink("/referrals/new", Plus, "New Referral")}
         {navLink("/notifications", Bell, "Inbox", unreadNotifsCount)}
         {(isNurse || isLeadership) && navLink("/bed-management", Bed, "Bed Management")}
         {isNurse && navLink("/admissions/new", ClipboardList, "Direct Admit")}
         {isHeadOfDept && navLink("/department", Activity, "Department")}
-        {navLink("/directory", BookOpen, "Network Directory")}
+        {navLink("/directory", BookOpen, "Directory")}
         {navLink("/archive", Archive, "Archive")}
         {isLeadership && navLink("/facility-settings", Settings, "Facility Settings")}
         <button type="button" onClick={onOpenHotline} className={cn(row(false), 'text-left')}>

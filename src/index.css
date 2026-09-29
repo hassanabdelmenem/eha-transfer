@@ -246,10 +246,13 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-  letter-spacing: -0.02em;
-  text-wrap: balance;
+/* In the base layer so a utility on a heading (font-body, tracking-*) wins. */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
 }
 
 /* The parts the browser draws still belong to the world. */

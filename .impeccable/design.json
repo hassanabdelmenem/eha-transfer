@@ -1,27 +1,501 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-18T00:00:00.000Z",
+  "generatedAt": "2026-09-29T18:49:26+00:00",
   "title": "Design System: Ismailia Health Connect",
   "extensions": {
     "colorMeta": {
-      "command-blue": { "role": "primary", "displayName": "Command Blue", "canonical": "#1e3a8a", "tonalRamp": ["#0a1230", "#132456", "#1e3a8a", "#1e40af", "#2563eb", "#60a5fa", "#bfdbfe", "#eff6ff"] },
-      "command-blue-soft": { "role": "primary-soft", "displayName": "Command Blue Soft", "canonical": "#dbeafe", "tonalRamp": ["#1e3a8a", "#1e40af", "#2563eb", "#3b82f6", "#93c5fd", "#dbeafe", "#eff6ff", "#f8fafc"] },
-      "neutral-canvas": { "role": "neutral", "displayName": "Canvas", "canonical": "#ffffff", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#ffffff"] },
-      "critical-600": { "role": "status-critical", "displayName": "Critical Red", "canonical": "#dc2626", "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#fecaca", "#fee2e2"] },
-      "warning-600": { "role": "status-warning", "displayName": "Warning Amber", "canonical": "#d97706", "tonalRamp": ["#451a03", "#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fde68a", "#fef3c7"] },
-      "success-600": { "role": "status-success", "displayName": "Success Green", "canonical": "#16a34a", "tonalRamp": ["#052e16", "#14532d", "#166534", "#15803d", "#16a34a", "#22c55e", "#bbf7d0", "#dcfce7"] },
-      "info-600": { "role": "status-info", "displayName": "Info Blue", "canonical": "#2563eb", "tonalRamp": ["#172554", "#1e3a8a", "#1e40af", "#1d4ed8", "#2563eb", "#3b82f6", "#bfdbfe", "#dbeafe"] }
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#faf9f5",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "desk": {
+        "role": "neutral",
+        "displayName": "Desk",
+        "canonical": "#f4f2ed",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Ink",
+        "canonical": "#141413",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "night-pane": {
+        "role": "neutral",
+        "displayName": "Night Pane",
+        "canonical": "#1a1a19",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e8e6dc",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "wash": {
+        "role": "neutral",
+        "displayName": "Wash",
+        "canonical": "#f0eee6",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Rule Strong",
+        "canonical": "#b0aea5",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "decorative-grey": {
+        "role": "neutral",
+        "displayName": "Decorative Grey (icons and borders only)",
+        "canonical": "#8a8779",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "muted-text": {
+        "role": "neutral",
+        "displayName": "Muted Text",
+        "canonical": "#78766d",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "secondary-text": {
+        "role": "neutral",
+        "displayName": "Secondary Text",
+        "canonical": "#5f5d54",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "ink-hover": {
+        "role": "primary",
+        "displayName": "Ink Hover",
+        "canonical": "#3a392f",
+        "tonalRamp": [
+          "#141413",
+          "#221f1a",
+          "#3a392f",
+          "#5f5d54",
+          "#78766d",
+          "#b0aea5",
+          "#e8e6dc",
+          "#faf9f5"
+        ]
+      },
+      "brick": {
+        "role": "status-critical",
+        "displayName": "Brick",
+        "canonical": "#b91c1c",
+        "tonalRamp": [
+          "#450a0a",
+          "#7f1d1d",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#f87171",
+          "#fecaca",
+          "#fee2e2"
+        ]
+      },
+      "brick-tint": {
+        "role": "status-critical",
+        "displayName": "Brick Tint",
+        "canonical": "#fee2e2",
+        "tonalRamp": [
+          "#450a0a",
+          "#7f1d1d",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#f87171",
+          "#fecaca",
+          "#fee2e2"
+        ]
+      },
+      "brick-wash": {
+        "role": "status-critical",
+        "displayName": "Brick Wash",
+        "canonical": "#fef2f2",
+        "tonalRamp": [
+          "#450a0a",
+          "#7f1d1d",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#f87171",
+          "#fecaca",
+          "#fee2e2"
+        ]
+      },
+      "amber-brown": {
+        "role": "status-warning",
+        "displayName": "Amber-Brown",
+        "canonical": "#854d0e",
+        "tonalRamp": [
+          "#451a03",
+          "#713f12",
+          "#854d0e",
+          "#a16207",
+          "#d97706",
+          "#fbbf24",
+          "#fde68a",
+          "#fef3c7"
+        ]
+      },
+      "amber-fill": {
+        "role": "status-warning",
+        "displayName": "Amber Fill",
+        "canonical": "#a16207",
+        "tonalRamp": [
+          "#451a03",
+          "#713f12",
+          "#854d0e",
+          "#a16207",
+          "#d97706",
+          "#fbbf24",
+          "#fde68a",
+          "#fef3c7"
+        ]
+      },
+      "amber-tint": {
+        "role": "status-warning",
+        "displayName": "Amber Tint",
+        "canonical": "#fef3c7",
+        "tonalRamp": [
+          "#451a03",
+          "#713f12",
+          "#854d0e",
+          "#a16207",
+          "#d97706",
+          "#fbbf24",
+          "#fde68a",
+          "#fef3c7"
+        ]
+      },
+      "olive": {
+        "role": "secondary",
+        "displayName": "Olive",
+        "canonical": "#4c573c",
+        "tonalRamp": [
+          "#1f211b",
+          "#353c2c",
+          "#4c573c",
+          "#62714d",
+          "#788c5d",
+          "#acb89a",
+          "#c6cdb8",
+          "#e0e3d7"
+        ]
+      },
+      "olive-deep": {
+        "role": "secondary",
+        "displayName": "Olive Deep",
+        "canonical": "#353c2c",
+        "tonalRamp": [
+          "#1f211b",
+          "#353c2c",
+          "#4c573c",
+          "#62714d",
+          "#788c5d",
+          "#acb89a",
+          "#c6cdb8",
+          "#e0e3d7"
+        ]
+      },
+      "olive-tint": {
+        "role": "secondary",
+        "displayName": "Olive Tint",
+        "canonical": "#e0e3d7",
+        "tonalRamp": [
+          "#1f211b",
+          "#353c2c",
+          "#4c573c",
+          "#62714d",
+          "#788c5d",
+          "#acb89a",
+          "#c6cdb8",
+          "#e0e3d7"
+        ]
+      },
+      "dusty-blue": {
+        "role": "status-info",
+        "displayName": "Dusty Blue",
+        "canonical": "#6a9bcc",
+        "tonalRamp": [
+          "#1e2328",
+          "#314151",
+          "#445f7a",
+          "#577da3",
+          "#6a9bcc",
+          "#a4c1dc",
+          "#c0d3e5",
+          "#dde6ed"
+        ]
+      },
+      "action-blue": {
+        "role": "status-info",
+        "displayName": "Action Blue",
+        "canonical": "#445f7a",
+        "tonalRamp": [
+          "#1e2328",
+          "#314151",
+          "#445f7a",
+          "#577da3",
+          "#6a9bcc",
+          "#a4c1dc",
+          "#c0d3e5",
+          "#dde6ed"
+        ]
+      },
+      "dusty-blue-tint": {
+        "role": "status-info",
+        "displayName": "Dusty Blue Tint",
+        "canonical": "#dde6ed",
+        "tonalRamp": [
+          "#1e2328",
+          "#314151",
+          "#445f7a",
+          "#577da3",
+          "#6a9bcc",
+          "#a4c1dc",
+          "#c0d3e5",
+          "#dde6ed"
+        ]
+      },
+      "violet": {
+        "role": "tertiary",
+        "displayName": "Violet",
+        "canonical": "#4e3c68",
+        "tonalRamp": [
+          "#211a2e",
+          "#37294a",
+          "#4e3c68",
+          "#654f85",
+          "#7c66a0",
+          "#b09ec8",
+          "#cabddb",
+          "#e4dcee"
+        ]
+      },
+      "violet-tint": {
+        "role": "tertiary",
+        "displayName": "Violet Tint",
+        "canonical": "#e4dcee",
+        "tonalRamp": [
+          "#211a2e",
+          "#37294a",
+          "#4e3c68",
+          "#654f85",
+          "#7c66a0",
+          "#b09ec8",
+          "#cabddb",
+          "#e4dcee"
+        ]
+      },
+      "chart-blue": {
+        "role": "chart",
+        "displayName": "Chart Blue",
+        "canonical": "#3f6fa6"
+      },
+      "chart-rust": {
+        "role": "chart",
+        "displayName": "Chart Rust",
+        "canonical": "#c2613f"
+      },
+      "chart-violet": {
+        "role": "chart",
+        "displayName": "Chart Violet",
+        "canonical": "#7a55a8"
+      },
+      "chart-blue-night": {
+        "role": "chart",
+        "displayName": "Chart Blue (dark)",
+        "canonical": "#5b8fd0"
+      },
+      "chart-rust-night": {
+        "role": "chart",
+        "displayName": "Chart Rust (dark)",
+        "canonical": "#d8704a"
+      },
+      "chart-violet-night": {
+        "role": "chart",
+        "displayName": "Chart Violet (dark)",
+        "canonical": "#9a79d6"
+      }
     },
     "typographyMeta": {
-      "heading": { "displayName": "Heading (Manrope)", "purpose": "All h1-h6 and card titles; authority and scanability." },
-      "body": { "displayName": "Body (Inter)", "purpose": "Body copy, labels, form fields, and dense clinical data." }
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Role home count, desktop screen title, wizard step question."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Patient name in the desktop case header."
+      },
+      "card-name": {
+        "displayName": "Card Name",
+        "purpose": "Patient name and age on queue and escalation cards; phone screen title."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text; action sentences, banner sentences, card buttons."
+      },
+      "context": {
+        "displayName": "Context",
+        "purpose": "The one context line under a card name."
+      },
+      "label": {
+        "displayName": "Micro-label",
+        "purpose": "Group headings, priority chips, banner labels, escalation strip."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Phone numbers and IDs; tabular numerals for clinical numbers."
+      }
     },
     "shadows": [
-      { "name": "floating", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "purpose": "Modals, dialogs, popovers, toasts, the ECG quick-viewer overlay — the only elements allowed real elevation." }
+      {
+        "name": "toast-lift",
+        "value": "0 8px 24px rgba(20,20,19,0.14)",
+        "purpose": "Toasts."
+      },
+      {
+        "name": "sheet-rise",
+        "value": "0 -8px 30px rgba(20,20,19,0.18)",
+        "purpose": "Bottom summary sheet."
+      },
+      {
+        "name": "tooltip",
+        "value": "0 4px 16px rgba(20,20,19,0.12)",
+        "purpose": "Chart tooltips."
+      }
     ],
-    "motion": [],
+    "motion": [
+      {
+        "name": "sheet-up",
+        "value": "220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Summary sheet entrance; all other state changes are instant apart from colour transitions."
+      }
+    ],
     "breakpoints": [
-      { "name": "lg", "value": "1024px" }
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "workspace",
+        "value": "1280px"
+      },
+      {
+        "name": "wide",
+        "value": "1440px"
+      }
     ]
   },
   "components": [
@@ -29,74 +503,156 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Default call-to-action button; one per view.",
-      "html": "<button class=\"ds-btn ds-btn-primary\">Submit Referral</button>",
-      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 700; min-height: 48px; padding: 0 16px; font-size: 14px; transition: background-color 0.2s; border: none; cursor: pointer; } .ds-btn-primary { background-color: #1e3a8a; color: #ffffff; } .ds-btn-primary:hover { background-color: #1e40af; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #2563eb; }"
+      "description": "Ink action bar primary; 52px, the action that finishes a screen.",
+      "html": "<button class=\"ds-btn-primary\">Approve all 3</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 16px;border:0;border-radius:12px;background:var(--color-ink, #141413);color:var(--color-paper, #faf9f5);font:600 16px/1.2 ui-sans-serif,system-ui,sans-serif;cursor:pointer;transition:background-color .15s}.ds-btn-primary:hover{background:var(--color-slate-800, #3a392f)}.ds-btn-primary:focus-visible{outline:2px solid var(--color-info-700, #445f7a);outline-offset:2px}"
     },
     {
-      "name": "Destructive Button",
+      "name": "Approve Button",
       "kind": "button",
-      "refersTo": "button-destructive",
-      "description": "Reject / cancel / delete actions only.",
-      "html": "<button class=\"ds-btn ds-btn-destructive\">Reject Transfer</button>",
-      "css": ".ds-btn-destructive { background-color: #dc2626; color: #ffffff; border-radius: 12px; font-weight: 700; min-height: 48px; padding: 0 16px; font-size: 14px; border: none; cursor: pointer; transition: background-color 0.2s; } .ds-btn-destructive:hover { background-color: #b91c1c; }"
+      "refersTo": "button-approve",
+      "description": "Olive decision button, HoD approve only.",
+      "html": "<button class=\"ds-btn-approve\">Approve</button>",
+      "css": ".ds-btn-approve{min-height:48px;padding:0 12px;border:0;border-radius:10px;background:var(--color-success-700, #4c573c);color:#fff;font:600 15px/1.2 ui-sans-serif,system-ui,sans-serif;cursor:pointer;transition:background-color .15s}.ds-btn-approve:hover{background:var(--color-success-800, #353c2c)}.ds-btn-approve:focus-visible{outline:2px solid var(--color-info-700, #445f7a);outline-offset:2px}"
     },
     {
-      "name": "Status Badge",
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary card action such as Summary.",
+      "html": "<button class=\"ds-btn-outline\">Summary</button>",
+      "css": ".ds-btn-outline{min-height:48px;padding:0 12px;border:1px solid var(--color-slate-300, #b0aea5);border-radius:10px;background:#fff;color:var(--color-ink, #141413);font:600 15px/1.2 ui-sans-serif,system-ui,sans-serif;cursor:pointer;transition:background-color .15s}.ds-btn-outline:hover{background:var(--color-slate-50, #faf9f5)}.ds-btn-outline:focus-visible{outline:2px solid var(--color-info-700, #445f7a);outline-offset:2px}"
+    },
+    {
+      "name": "Priority Chip",
       "kind": "chip",
-      "refersTo": "badge",
-      "description": "Referral/bed state indicator; variant maps 1:1 to the status scale.",
-      "html": "<span class=\"ds-badge ds-badge-warning\">Pending</span>",
-      "css": ".ds-badge { display: inline-flex; align-items: center; border-radius: 9999px; padding: 2px 8px; font-size: 12px; font-weight: 700; } .ds-badge-warning { background-color: #fef3c7; color: #92400e; } .ds-badge-success { background-color: #dcfce7; color: #15803d; } .ds-badge-danger { background-color: #fee2e2; color: #b91c1c; } .ds-badge-info { background-color: #dbeafe; color: #1d4ed8; }"
+      "refersTo": "chip-emergency",
+      "description": "Text chip paired with the 6px rail; emergency, urgent, routine.",
+      "html": "<span class=\"ds-chip ds-chip-em\">EMERGENCY</span> <span class=\"ds-chip ds-chip-ur\">URGENT</span> <span class=\"ds-chip ds-chip-ro\">ROUTINE</span>",
+      "css": ".ds-chip{display:inline-block;padding:4px 8px;border-radius:6px;font:700 11px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;white-space:nowrap}.ds-chip-em{background:var(--color-critical-700, #b91c1c);color:#fff}.ds-chip-ur{background:var(--color-warning-100, #fef3c7);color:var(--color-warning-800, #854d0e)}.ds-chip-ro{background:var(--color-slate-200, #e8e6dc);color:var(--color-slate-700, #5f5d54)}"
     },
     {
-      "name": "Card",
+      "name": "Queue Card",
       "kind": "card",
-      "refersTo": "card",
-      "description": "Standard content container; flat at rest, border-separated.",
-      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\">Referral #1042</div><div class=\"ds-card-content\">Content goes here.</div></div>",
-      "css": ".ds-card { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; } .ds-card-header { padding: 24px; border-bottom: 1px solid #e2e8f0; font-weight: 700; font-size: 12px; color: #334155; } .ds-card-content { padding: 24px; }"
+      "refersTo": "card-queue",
+      "description": "ReferralCockpitCard: 6px rail, 17px/600 name, context line, chip, action sentence, one action.",
+      "html": "<article class=\"ds-card\"><span class=\"ds-card-rail\"></span><div class=\"ds-card-body\"><div class=\"ds-card-top\"><div><p class=\"ds-card-name\">Mona Farouk, 64</p><p class=\"ds-card-line\">ICU · Cardiology</p></div><span class=\"ds-card-chip\">URGENT</span></div><p class=\"ds-card-ask\">Send the ECG the department asked for</p><button class=\"ds-card-btn\">Add ECG</button></div></article>",
+      "css": ".ds-card{display:flex;overflow:hidden;border:1px solid var(--color-slate-200, #e8e6dc);border-radius:12px;background:#fff;max-width:420px}.ds-card-rail{width:6px;flex-shrink:0;background:var(--color-warning-800, #854d0e)}.ds-card-body{flex:1;padding:14px;font-family:ui-sans-serif,system-ui,sans-serif}.ds-card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.ds-card-name{margin:0;font-size:17px;font-weight:600;line-height:1.25;color:var(--color-ink, #141413)}.ds-card-line{margin:3px 0 0;font-size:13.5px;line-height:1.4;color:var(--color-slate-700, #5f5d54)}.ds-card-chip{padding:4px 8px;border-radius:6px;background:var(--color-warning-100, #fef3c7);color:var(--color-warning-800, #854d0e);font-size:11px;font-weight:700;letter-spacing:.06em;line-height:1}.ds-card-ask{margin:10px 0 0;font-size:15px;font-weight:600;line-height:1.4;color:var(--color-warning-800, #854d0e)}.ds-card-btn{margin-top:12px;width:100%;min-height:52px;border:0;border-radius:10px;background:var(--color-ink, #141413);color:var(--color-paper, #faf9f5);font:600 16px/1.2 inherit;cursor:pointer}.ds-card-btn:hover{background:var(--color-slate-800, #3a392f)}.ds-card-btn:focus-visible{outline:2px solid var(--color-info-700, #445f7a);outline-offset:2px}"
     },
     {
-      "name": "Input Field",
+      "name": "Escalation Card",
+      "kind": "custom",
+      "refersTo": "card-escalation",
+      "description": "Pinned escalated case: 2px brick border, solid brick header strip naming reason and wait.",
+      "html": "<section class=\"ds-esc\"><p class=\"ds-esc-strip\">Escalated · no response 34 min</p><div class=\"ds-esc-body\"><p class=\"ds-esc-name\">Ahmed Saleh, 51</p><p class=\"ds-esc-line\">CCU bed · chest pain · from Fayed Central</p><button class=\"ds-esc-btn\">Review now</button></div></section>",
+      "css": ".ds-esc{overflow:hidden;max-width:420px;border:2px solid var(--color-critical-700, #b91c1c);border-radius:12px;background:var(--color-critical-100, #fee2e2);font-family:ui-sans-serif,system-ui,sans-serif}.ds-esc-strip{margin:0;padding:8px 14px;background:var(--color-critical-700, #b91c1c);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.ds-esc-body{padding:12px 14px 14px}.ds-esc-name{margin:0;font-size:17px;font-weight:600;color:var(--color-ink, #141413)}.ds-esc-line{margin:3px 0 0;font-size:13.5px;color:var(--color-critical-900, #7f1d1d)}.ds-esc-btn{margin-top:12px;width:100%;min-height:52px;border:0;border-radius:10px;background:var(--color-ink, #141413);color:var(--color-paper, #faf9f5);font:600 15px/1.2 inherit;cursor:pointer}.ds-esc-btn:hover{background:var(--color-slate-800, #3a392f)}.ds-esc-btn:focus-visible{outline:2px solid var(--color-info-700, #445f7a);outline-offset:2px}"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "nav",
+      "refersTo": "segment-active",
+      "description": "Equal-width 52px segments carrying their own case counts.",
+      "html": "<div class=\"ds-seg\"><button class=\"ds-seg-b on\" aria-pressed=\"true\"><span>Incoming</span><small>4 cases</small></button><button class=\"ds-seg-b\" aria-pressed=\"false\"><span>Outgoing</span><small>2 cases</small></button></div>",
+      "css": ".ds-seg{display:flex;gap:8px;max-width:420px;font-family:ui-sans-serif,system-ui,sans-serif}.ds-seg-b{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52px;border:1px solid var(--color-slate-200, #e8e6dc);border-radius:10px;background:#fff;color:var(--color-ink, #141413);cursor:pointer;transition:background-color .15s}.ds-seg-b span{font-size:14.5px;font-weight:600}.ds-seg-b small{margin-top:2px;font-size:11.5px;color:var(--color-slate-500, #78766d)}.ds-seg-b:hover{background:var(--color-slate-50, #faf9f5)}.ds-seg-b.on{background:var(--color-ink, #141413);border-color:var(--color-ink, #141413);color:var(--color-paper, #faf9f5)}.ds-seg-b.on small{color:rgba(250,249,245,.7)}.ds-seg-b:focus-visible{outline:2px solid var(--color-info-700, #445f7a);outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
       "kind": "input",
-      "refersTo": "input",
-      "description": "Standard text field for clinical/patient data entry.",
-      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Hospital ID\" />",
-      "css": ".ds-input { min-height: 48px; width: 100%; border-radius: 12px; border: 1px solid #cbd5e1; background-color: #ffffff; padding: 0 12px; font-size: 14px; color: #1e293b; } .ds-input::placeholder { color: #94a3b8; } .ds-input:focus { outline: none; box-shadow: 0 0 0 1px #3b82f6; border-color: #3b82f6; }"
+      "refersTo": "input-field",
+      "description": "54px wizard field with 12.5px/600 label; 16px text.",
+      "html": "<label class=\"ds-field\"><span>Patient name</span><input placeholder=\"Full name as on ID\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px;max-width:420px;font-family:ui-sans-serif,system-ui,sans-serif}.ds-field span{font-size:12.5px;font-weight:600;color:var(--color-slate-700, #5f5d54)}.ds-field input{min-height:54px;padding:0 14px;border:1px solid var(--color-slate-300, #b0aea5);border-radius:10px;background:#fff;color:var(--color-ink, #141413);font-size:16px;transition:border-color .15s,box-shadow .15s}.ds-field input::placeholder{color:var(--color-slate-500, #78766d)}.ds-field input:focus{outline:none;border-color:var(--color-info-700, #445f7a);box-shadow:0 0 0 2px rgba(68,95,122,.3)}"
+    },
+    {
+      "name": "Phone Screen Header",
+      "kind": "nav",
+      "refersTo": "header-bar-phone",
+      "description": "Full-bleed ink title bar on phones with the 48px menu square.",
+      "html": "<header class=\"ds-hdr\"><div><h1>Notifications</h1><p>3 unread</p></div><button class=\"ds-hdr-sq\" aria-label=\"Open menu\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M4 6h16M4 12h16M4 18h16\"/></svg></button></header>",
+      "css": ".ds-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 16px;background:var(--color-ink, #141413);color:var(--color-paper, #faf9f5);font-family:ui-sans-serif,system-ui,sans-serif}.ds-hdr h1{margin:0;font-size:17px;font-weight:600;line-height:1.2}.ds-hdr p{margin:2px 0 0;font-size:13px;color:rgba(250,249,245,.65)}.ds-hdr-sq{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border:1px solid rgba(250,249,245,.25);border-radius:10px;background:transparent;color:inherit;cursor:pointer}.ds-hdr-sq:hover{background:rgba(250,249,245,.1)}.ds-hdr-sq:focus-visible{outline:2px solid var(--color-info-300, #a4c1dc);outline-offset:2px}"
+    },
+    {
+      "name": "Role Banner",
+      "kind": "custom",
+      "refersTo": "role-banner-warning",
+      "description": "Detail-screen banner: one uppercase label and one 15px sentence on a status tint.",
+      "html": "<section class=\"ds-banner\"><p class=\"ds-banner-l\">Your action</p><p class=\"ds-banner-t\">The department sent this back: add the latest troponin.</p></section>",
+      "css": ".ds-banner{max-width:420px;padding:13px;border:1px solid var(--color-warning-300, #fcd34d);border-radius:11px;background:var(--color-warning-100, #fef3c7);font-family:ui-sans-serif,system-ui,sans-serif}.ds-banner-l{margin:0;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-warning-800, #854d0e)}.ds-banner-t{margin:5px 0 0;font-size:15px;font-weight:500;line-height:1.4;color:var(--color-ink, #141413)}"
     }
   ],
   "narrative": {
-    "northStar": "The Clinical Command Center",
-    "overview": "This is instrument-panel software, not a marketing surface: a deep institutional blue (command-blue, #1e3a8a) anchors every screen as the one color that means \"this is the primary action\" or \"this is the app,\" while slate neutrals carry everything else. Status color exists only to answer \"what state is this referral or this bed in\" at a glance, and must always resolve to exactly one unambiguous meaning per screen. Touch targets run 44-56px across every interactive control, because the real device is a shared hospital tablet or a phone operated one-handed, sometimes with gloves on. A dedicated night-shift filter exists as a first-class mode: this system was built assuming someone will read it under ER lighting at 3am. Depth is moving toward flat/tonal, away from drop shadows, reserving shadow strictly for genuinely floating elements.",
+    "northStar": "The Queue Is the Interface",
+    "overview": "**Creative North Star: \"The Queue Is the Interface\"**\n\nEvery authenticated screen opens on the cases blocked on the person looking at it, billed in workflow order: escalated, then emergency, then urgent, then routine, oldest first within a tier. Each card carries one sentence naming what is needed and one button whose label is that action. Hierarchy is carried by billing order and type size; no tile, chart or decoration is allowed to compete with the order of the queue. This replaces the KPI-tile dashboard shown identically to every role.\n\nThe material is ink and paper. A warm off-white page, white cards resting on it with hairline edges, near-black ink for primary buttons and dark chrome, warm greys for text. Status colour is muted and clinical (brick, amber-brown, olive, dusty blue, violet) and always travels with a word. Density is phone-first and thumb-first: 18px gutters, 48px minimum targets, 52 to 56px primaries, a sticky action bar at the bottom of the phone screen. On wide desktops (1280px and up) the same queue becomes a fixed column beside the open case.\n\nDark mode follows the device and is a full inversion onto ink, not a filter. The earlier command-blue \"Clinical Command Center\" world (Manrope/Inter, #1e3a8a) and the sepia night-shift filter are retired.",
     "keyCharacteristics": [
-      "One brand color (Command Blue), used sparingly and only for primary actions and identity.",
-      "Semantic status colors mapped onto a named critical/warning/success/info scale, never referenced by raw hue.",
-      "Large, unambiguous touch targets everywhere (44px minimum, up to 56px).",
-      "A first-class night-shift mode (sepia/dark filter) as a designed-for lighting reality.",
-      "Confident, unambiguous component states: primary vs. destructive vs. disabled must read instantly."
+      "Paper page, white cards, hairline borders; depth by tone, not shadow.",
+      "Ink is the single action colour; olive is the one alternative, reserved for approval.",
+      "Priority is a 6px rail plus a text chip, never colour alone.",
+      "Poppins 600 at -0.02em for headings; the system UI sans for everything else; tabular numerals for clinical numbers.",
+      "48px floor on every target; 52 to 56px on the action that ends a screen.",
+      "One queue column on phones; queue plus case pane at 1280px and up, with the selection in the URL."
     ],
     "rules": [
-      { "name": "The Status-Scale Rule", "body": "Status meaning is always expressed through the named critical/warning/success/info scale, never through a raw Tailwind hue referenced directly in a component. warning and critical must never collapse to the same rendered color.", "section": "colors" },
-      { "name": "The One Accent Rule", "body": "Command Blue is the only non-status color allowed to carry meaning. A second arbitrary accent color appearing outside the status scale is drift, not a new feature.", "section": "colors" },
-      { "name": "The Legible-at-Distance Rule", "body": "Every clinical data point must be legible glanced at from arm's length on a shared tablet — no font size below 12px for anything carrying clinical meaning, no weight below 700 for anything that signals state.", "section": "typography" },
-      { "name": "The Floating-Only Rule", "body": "Shadow means \"this is temporarily above the page and will go away.\" If it's not a modal, popover, dropdown, or toast, it doesn't get a shadow.", "section": "elevation" },
-      { "name": "The One Radius Per Tier Rule", "body": "A given component tier (control / card / floating surface) always uses the same radius everywhere it appears.", "section": "shapes" }
+      {
+        "name": "The Never Colour Alone Rule",
+        "body": "Every status tint carries a word. Priority is the rail plus the chip's text; bed capacity is the bar plus the stated count; an abnormal vital is a brick tint plus a warning icon plus a spoken \"(abnormal)\"; a role banner is a tint plus its uppercase label.",
+        "section": "colors"
+      },
+      {
+        "name": "The Muted Floor Rule",
+        "body": "Informational text is Muted Text (#78766d) or darker. The 400 step of the neutral scale is for icons and borders; it never carries a word someone needs to read.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Meaning per Hue Rule",
+        "body": "Brick and amber never collapse: a rejected referral and a pending one never share a colour. Capacity has one threshold everywhere (`src/lib/capacityTone.ts`): brick at zero free beds, amber-brown under 20% free, olive above.",
+        "section": "colors"
+      },
+      {
+        "name": "The Clinical Fifteen Rule",
+        "body": "The clinical ask is never below 15px: patient identity (17px), the sentence naming what is needed, banner sentences, vitals values (16px) and every action label. Only secondary context and labels go smaller, and labels are always 11px/700 or heavier.",
+        "section": "typography"
+      },
+      {
+        "name": "The Label Names a Group Rule",
+        "body": "An uppercase micro-label names the group of cards or the state beneath it (\"Escalated\", \"Your action\"). It is never a decorative kicker above a headline.",
+        "section": "typography"
+      },
+      {
+        "name": "The Thumb Floor Rule",
+        "body": "Every interactive target is at least 48px in both dimensions; the action that finishes a screen is 52 to 56px (sticky footer primary 54px, action bar primary and squares 52px). Choice pills stretch a transparent native input over the whole pill so the full 48px is the real target.",
+        "section": "layout"
+      },
+      {
+        "name": "The Logical Direction Rule",
+        "body": "New layout uses logical properties (inline start/end, not left/right) so the Arabic RTL pass does not re-architect shipped screens. The Arabic toggle stays hidden until the RTL layout is designed; do not ship a toggle that flips to an undrawn layout.",
+        "section": "layout"
+      },
+      {
+        "name": "The Resting Card Rule",
+        "body": "A card in the queue never carries a shadow. If it needs to stand out, it moves up the billing order or takes the 2px brick border; it does not lift.",
+        "section": "elevation"
+      }
     ],
     "dos": [
-      "Do keep Command Blue as the only non-status accent color; resist adding a second arbitrary brand color.",
-      "Do use the named status scale for every state signal, never a raw Tailwind hue.",
-      "Do keep every interactive control at 44px minimum height, 48px default.",
-      "Do use logical CSS properties in new layout work so the pending RTL/Arabic pass doesn't require rework.",
-      "Do converge shape usage onto the four-tier radius scale (8/12/16/full).",
-      "Do reserve shadow for modals, popovers, dropdowns, and toasts only."
+      "Do bill every queue escalated, then emergency, urgent, routine, oldest first within a tier, and let that order carry the hierarchy.",
+      "Do pair every status colour with a word: rail plus chip, bar plus count, tint plus label, abnormal tint plus icon and spoken word.",
+      "Do make every target at least 48px, and the action that finishes a screen 52 to 56px.",
+      "Do use Muted Text (#78766d) or darker for anything a person must read.",
+      "Do keep the clinical ask (name, needed action, vitals, banner sentence, button labels) at 15px or larger.",
+      "Do follow the device for dark mode with a full inversion onto ink (#141413).",
+      "Do use the semantic scales (`critical`, `warning`, `success`, `info`, `purple`) in new code.",
+      "Do build with logical properties so the Arabic RTL pass is a layout change, not a rewrite.",
+      "Do preserve the E2E DOM contract: the ids, selectors and accessible names listed under \"Interface & DOM Test Contracts\" in PROJECT.md stay intact unless the user explicitly signs off on changing them."
     ],
     "donts": [
-      "Don't let warning and critical render as visually indistinguishable states.",
-      "Don't add drop shadow to resting cards or buttons; use a border and tonal background instead.",
-      "Don't shrink any interactive control below 44px height to fit more on screen.",
-      "Don't hardcode left/right-specific CSS in new work; the bilingual RTL requirement makes this a real future break.",
-      "Don't introduce a second brand accent color outside Command Blue and the status scale."
+      "Don't signal priority, status or capacity with colour alone.",
+      "Don't use the 400 neutral (#8a8779) or lighter for informational text.",
+      "Don't put a shadow on a resting card; shadows are for toasts, sheets and tooltips.",
+      "Don't reintroduce the sepia night-shift filter or any colour filter over the UI; dark mode is the inversion.",
+      "Don't show the Arabic toggle until the RTL layout is designed.",
+      "Don't fabricate data in the UI: no default vitals, no invented scores, distances or counts. When a value is unknown, say so (\"no clock\", \"Department approved\").",
+      "Don't reference raw Tailwind hues (`red-600`, `amber-500`, `blue-700`) in new code.",
+      "Don't bring back KPI tiles or a newest-first grid as a role home."
     ]
   }
 }

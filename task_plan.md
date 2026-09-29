@@ -12,17 +12,16 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
 
 ## Next Step
 
-Everything through redesign phase 5 is merged and live (27 Sep, `main` 8847c7b); the repo is public, so
-GitHub Actions runs again. Owner decisions d1–d5 were answered the same day and are being shipped in the
-"owner decisions" PR (createdAtMs backfill + rules, escalation e2e, handover without sign-out, old-design
-cleanup). **Now: redesign phase 6** (desktop panes, DESIGN.md rewrite, finish review).
+Redesign phase 6 is built and in review (PR on `redesign/6-desktop-panes`): the desktop two-pane
+workspace (3d), the finish-review fixes, and DESIGN.md rewritten from the shipped build. Owner: review
+and merge it. Then the follow-ups under Phase 3 below, and Phase 5 (pilot readiness).
 
-Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg); since
-#32 it lands on the verify screen until confirmed. Two moderate Dependabot alerts on `main` are unreviewed.
+Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg);
+two moderate Dependabot alerts on `main` are unreviewed.
 
 ## Current Phase
 
-Phase 3: Mobile-workflow redesign (phases 1–5 live; phase 6 in progress)
+Phase 3: Mobile-workflow redesign (phases 1–5 live; phase 6 in review)
 
 ## Phases
 
@@ -56,11 +55,15 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 - [x] 4 Five-step intake wizard (1d) — **#36**; order chosen by the owner: identity → vitals → complaint →
       diagnosis/ECG → "Where it goes & send"; removed pre-filled vitals and the random-distance "AI Triage"
 - [x] 5 Inbox, directory, handover, admin console, archive, settings (2d–2f, 3a–3c) — **#37**; safe CSV export
-- [ ] 6 Unified desktop panes (3d): 228px rail + 436px queue + detail pane on #f4f2ed, the role's actions
-      top-right; merge desktop header actions with the action console; rewrite DESIGN.md with the
-      impeccable documenter (the committed DESIGN.md still describes the old command-blue world);
-      finish review against the direction contract
-- **Status:** phases 1–5 merged and live 27 Sep; phase 6 in progress
+- [x] 6 Unified desktop panes (3d) at >=1280px: 436px queue + case pane on the desk, selection in
+      `?case=`, the role's actions top-right (console skips duplicates), DESIGN.md rewritten by the
+      impeccable documenter, finish review run and its 9 material findings fixed (29 Sep)
+- [ ] Follow-ups from the finish review / documenter: review the wizard, inbox, directory, archive,
+      settings, admin and handover screens (the reviewer ran out of budget before them); rail count
+      badges; 9px stage-rail labels on phones; older modals still on stock `shadow-xl`/zoom animations;
+      the stale comment at the top of `src/index.css` about which hues are remapped; manager analytics
+      sit under the queue column on desktop (not in 1c; placement undecided)
+- **Status:** phases 1–5 live 27 Sep; phase 6 in review 29 Sep
 
 ### Phase 4: Known gaps (NEXT_STEPS_PROMPT.md phase 2)
 
@@ -95,3 +98,16 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 - Keep the E2E DOM contract in PROJECT.md; changing it needs the owner's sign-off.
 - Firestore rules are the only server-side authorization; change rules and the matching queries together, run `npm run test:rules`.
 - No fabricated data or claims in the UI (no invented distances, scores, defaults presented as measurements).
+
+## Finish review of the remaining screens (29 Sep, all fixed on PR #40)
+
+Verdict "ship with fixes" for 1d, 2d, 2e, 2f, 3a, 3b, 3c. Material, in order:
+1. `src/index.css:249` global `h1…h6` font/tracking rule is unlayered and beats utilities: wrap in `@layer base` (MicroLabel h2s render in Poppins at −0.02em instead of 11px sans at 0.09em).
+2. 2f: "Send handover to the day shift" + toast are hardcoded; use the computed next shift (`buildHandover` knows Day/Night).
+3. 2f: `manager_approved` lands in "Watch · accepted or on the move" (false); move it to carry-over; relabel Watch "On the move", neutral tone, no triangle.
+4. 3c: facilities list nested in a card under the wrong label ("Staff roles and transfers"); flatten, label "Network and contracted facilities".
+5. 3a: kicker label above "Free beds across the network"; order tiles → escalations → waitlist → heatmap; heatmap WARD column clips at 390px.
+6. 1d: wizard footer floats mid-screen on short steps; make the page a full-height flex column with the footer `mt-auto`.
+7. 1d: the "Fill in the required fields" toast covers the wizard header; drop it from `goNext` (inline errors + focus already say it), dismiss toasts on step change.
+8. 1d: "Why this transfer" is a single-line input; make it a textarea (keep `#reasonForReferral`); add a Reason row to "Ready to send".
+Minor: Auto-Route row 44→48px; 3c controls 44→48px; 3b "admitted " trailing text with no history entry; 2d visible "New" marker + mark-read for link-less notices; 2f title "End of shift" + shift window, drop "{n} Done" pill and the icon on "Close"; 2e title "Directory" for everyone; 3c capacity order ICU, CCU, PICU, Ward.

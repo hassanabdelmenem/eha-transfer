@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { User, Role, FacilityType, BedType } from '../types';
-import { X, Plus, Trash2, Building, Edit2 } from 'lucide-react';
+import { X, Plus, Trash2, Edit2 } from 'lucide-react';
 import { ScreenHeader } from '../components/layout/ScreenHeader';
 import { RoleHomeHeadline, MicroLabel } from '../components/dashboard/RoleHome';
 import { ROLE_CONFIGS } from '../components/layout/RoleBadge';
@@ -220,13 +220,13 @@ export const FacilitySettingsPage: React.FC = () => {
             <MicroLabel id="departments">Departments · {facility.departments.length}</MicroLabel>
             <ul className="flex flex-wrap gap-2">
               {facility.departments.map(dept => (
-                <li key={dept} className="inline-flex min-h-[44px] items-center rounded-full border border-slate-300 bg-white pl-4 text-[14px] font-medium text-ink dark:border-white/25 dark:bg-white/5 dark:text-paper">
+                <li key={dept} className="inline-flex min-h-[48px] items-center rounded-full border border-slate-300 bg-white pl-4 text-[14px] font-medium text-ink dark:border-white/25 dark:bg-white/5 dark:text-paper">
                   {dept}
                   <button
                     type="button"
                     onClick={() => removeFacilityDepartment(facility.id, dept)}
                     aria-label={`Remove ${dept}`}
-                    className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:text-critical-700 dark:text-white/55 dark:hover:text-critical-300"
+                    className="flex h-12 w-12 items-center justify-center rounded-full text-slate-500 hover:text-critical-700 dark:text-white/55 dark:hover:text-critical-300"
                   >
                     <X className="h-4 w-4" aria-hidden="true" />
                   </button>
@@ -240,7 +240,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     value={newDepartment}
                     onChange={e => setNewDepartment(e.target.value)}
                     placeholder="+ Add"
-                    className="min-h-[44px] w-32 rounded-full border border-dashed border-slate-400 bg-transparent px-4 text-[14px] text-ink placeholder:text-slate-700 focus:w-48 focus:border-solid focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/35 dark:text-paper dark:placeholder:text-white/65"
+                    className="min-h-[48px] w-32 rounded-full border border-dashed border-slate-400 bg-transparent px-4 text-[14px] text-ink placeholder:text-slate-700 focus:w-48 focus:border-solid focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/35 dark:text-paper dark:placeholder:text-white/65"
                   />
                 </form>
               </li>
@@ -252,7 +252,7 @@ export const FacilitySettingsPage: React.FC = () => {
           <section aria-labelledby="configured-capacity" className="flex flex-col gap-2.5">
             <MicroLabel id="configured-capacity">Configured capacity</MicroLabel>
             <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.05]">
-              {(Object.keys(facility.capacity) as BedType[]).map(bed => (
+              {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).filter(bed => facility.capacity[bed]).map(bed => (
                 <li key={bed} className="flex min-h-[48px] items-center justify-between px-[14px]">
                   <span className="text-[15px] font-semibold text-ink dark:text-paper">{bed}</span>
                   <span className="text-[14px] tabular-nums text-slate-700 dark:text-white/65">
@@ -266,35 +266,29 @@ export const FacilitySettingsPage: React.FC = () => {
       </div>
 
       <div className="mt-8 space-y-6">
-      <MicroLabel>{isGlobalAdmin ? 'Network and staff management' : 'Staff roles and transfers'}</MicroLabel>
 
-      {/* Network Facilities Management -- restyled to match the redesign's
-          card language (rounded-xl, bold  micro-labels, larger
-          touch targets) while keeping the CRUD form unchanged. */}
+      {/* 3c: facilities are a flat list under one label, with one full-width way to add one. */}
       {(isGlobalAdmin || ['hospital_manager', 'medical_director', 'owner'].includes(user.role)) && (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-[14px] py-3 dark:border-white/10">
-            <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">
-              <Building className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-              Network facilities · {facilities.length}
-            </p>
-            <button
-              onClick={() => {
-                if (showAddFacility) {
-                  setShowAddFacility(false);
-                  setEditingFacilityId(null);
-                } else {
-                  setFacName(''); setFacLocation(''); setFacIsExternal(false); setFacContractedServices(''); setFacDepts('Emergency, ICU, Surgery, Internal Medicine'); setIcuTotal(10); setCcuTotal(5); setPicuTotal(5); setWardTotal(50);
-                  setShowAddFacility(true);
-                }
-              }}
-              className="inline-flex min-h-[48px] items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-ink px-3.5 text-[14px] font-semibold text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200"
-            >
-              <Plus className="w-4 h-4" />
-              {showAddFacility ? 'Cancel' : 'Add a contracted facility'}
-            </button>
-          </div>
-          <div className="p-4 sm:p-6 space-y-4">
+        <section aria-labelledby="facilities-label" className="flex flex-col gap-2.5">
+          <p id="facilities-label" className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">
+            Network and contracted facilities · {facilities.length}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              if (showAddFacility) {
+                setShowAddFacility(false);
+                setEditingFacilityId(null);
+              } else {
+                setFacName(''); setFacLocation(''); setFacIsExternal(false); setFacContractedServices(''); setFacDepts('Emergency, ICU, Surgery, Internal Medicine'); setIcuTotal(10); setCcuTotal(5); setPicuTotal(5); setWardTotal(50);
+                setShowAddFacility(true);
+              }
+            }}
+            className="inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-[10px] bg-ink px-3.5 text-[15px] font-semibold text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200"
+          >
+            {!showAddFacility && <Plus className="w-4 h-4" aria-hidden="true" />}
+            {showAddFacility ? 'Cancel' : 'Add a contracted facility'}
+          </button>
             {showAddFacility && (
               <form onSubmit={handleAddFacilitySubmit} className="space-y-4 rounded-xl border border-slate-200 bg-paper p-4 dark:border-white/12 dark:bg-white/[0.03]">
                 <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">{editingFacilityId ? 'Edit Facility' : 'Add New Facility'}</h4>
@@ -406,9 +400,9 @@ export const FacilitySettingsPage: React.FC = () => {
               </form>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.05]">
               {facilities.map(f => (
-                <div key={f.id} className="flex items-start justify-between gap-2 rounded-xl border border-slate-200 bg-white p-[14px] dark:border-white/12 dark:bg-white/[0.05]">
+                <li key={f.id} className="flex items-start justify-between gap-2 px-[14px] py-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">{f.name}</h4>
@@ -432,25 +426,24 @@ export const FacilitySettingsPage: React.FC = () => {
                     <div className="flex gap-1 shrink-0">
                       <button
                         aria-label={`Edit ${f.name}`}
-                        className="h-11 w-11 rounded-lg flex items-center justify-center text-info-700 hover:bg-info-50 dark:text-info-300 dark:hover:bg-white/10"
+                        className="h-12 w-12 rounded-lg flex items-center justify-center text-info-700 hover:bg-info-50 dark:text-info-300 dark:hover:bg-white/10"
                         onClick={() => handleEditFacilityClick(f)}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         aria-label={`Remove ${f.name}`}
-                        className="h-11 w-11 rounded-lg flex items-center justify-center text-critical-700 hover:bg-critical-50 dark:text-critical-300 dark:hover:bg-critical-950/40"
+                        className="h-12 w-12 rounded-lg flex items-center justify-center text-critical-700 hover:bg-critical-50 dark:text-critical-300 dark:hover:bg-critical-950/40"
                         onClick={() => handleRemoveFacility(f.id, f.name)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   )}
-                </div>
+                </li>
               ))}
-            </div>
-          </div>
-        </div>
+            </ul>
+        </section>
       )}
 
       {/* Staff Roles & Facility Transfer -- restyled wrapper, same table
@@ -482,7 +475,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">
                       <select
-                        className="min-h-[44px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper max-w-[180px]"
+                        className="min-h-[48px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper max-w-[180px]"
                         value={u.facilityId || ''}
                         onChange={(e) => {
                           const newFacId = e.target.value;
@@ -497,7 +490,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">
                        <select
-                         className="min-h-[44px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+                         className="min-h-[48px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
                          value={u.role}
                          disabled={user.role !== 'owner' && u.role === 'owner'}
                          onChange={(e) => updateUserRole(u.id, e.target.value as Role, u.department)}
@@ -527,7 +520,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     <td className="px-4 py-3">
                        {['consultant', 'specialist', 'resident', 'head_of_department', 'nurse', 'nursing_supervisor'].includes(u.role) ? (
                          <select
-                           className="min-h-[44px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+                           className="min-h-[48px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
                            value={u.department || ''}
                            onChange={(e) => updateUserRole(u.id, u.role, e.target.value)}
                          >
@@ -544,7 +537,7 @@ export const FacilitySettingsPage: React.FC = () => {
                        <button
                          aria-label={`Remove ${u.name}`}
                          title="Remove User Completely"
-                         className="h-11 w-11 rounded-lg inline-flex items-center justify-center text-critical-700 hover:bg-critical-50 dark:text-critical-300 dark:hover:bg-critical-950/40"
+                         className="h-12 w-12 rounded-lg inline-flex items-center justify-center text-critical-700 hover:bg-critical-50 dark:text-critical-300 dark:hover:bg-critical-950/40"
                          onClick={() => handleRemoveUser(u)}
                        >
                          <Trash2 className="w-4 h-4" />

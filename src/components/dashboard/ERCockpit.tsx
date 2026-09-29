@@ -6,6 +6,7 @@ import { sortByWorkflow } from '../../lib/referralPriority';
 import { showToast, toastError } from '../../lib/toast';
 import { Skeleton, SkeletonGroup } from '../ui/Skeleton';
 import { ReferralCockpitCard } from './ReferralCockpitCard';
+import { useReportQueue } from '../layout/Workspace';
 import { RoleHomeHeadline } from './RoleHome';
 import { cn } from '../../lib/utils';
 
@@ -57,6 +58,7 @@ export const ERCockpit: React.FC = () => {
 
   const outboundQueue = useMemo(() => sortByWorkflow(awaitingTransport), [awaitingTransport]);
   const inboundQueue = useMemo(() => sortByWorkflow(inboundArriving), [inboundArriving]);
+  useReportQueue([...outboundQueue, ...inboundQueue].map(r => r.id));
 
   const handleRequestAmbulance = async (id: string) => {
     try {

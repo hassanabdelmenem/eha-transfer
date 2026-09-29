@@ -21,7 +21,7 @@ import { ClinicalAttachmentsCard } from '../components/referrals/detail/Clinical
 import { DepartmentReviewCard } from '../components/referrals/detail/DepartmentReviewCard';
 import { PatientCard } from '../components/referrals/PatientCard';
 import { TransferJourneyCard } from '../components/referrals/detail/TransferJourneyCard';
-import { MobileActionFooter, FooterAction } from '../components/referrals/detail/MobileActionFooter';
+import { MobileActionFooter, FooterAction, InlineDetailActions } from '../components/referrals/detail/MobileActionFooter';
 import { ReferralActionConsole } from '../components/referrals/actions/ReferralActionConsole';
 import { RejectionModal } from '../components/referrals/actions/RejectionModal';
 import { ReferralStatus, DeptApprovalStatus } from '../types';
@@ -29,8 +29,16 @@ import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataCon
 import { showToast, toastError } from '../lib/toast';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
 
-export const ReferralDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+export interface ReferralDetailPageProps {
+  /** Open this referral instead of the one in the URL (the desktop workspace pane). */
+  referralId?: string;
+  /** Rendered inside the desktop workspace: no back button, no page-width cap. */
+  embedded?: boolean;
+}
+
+export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referralId, embedded = false }) => {
+  const params = useParams<{ id: string }>();
+  const id = referralId ?? params.id;
   const navigate = useNavigate();
   const {
     referrals,
@@ -165,6 +173,9 @@ export const ReferralDetailPage: React.FC = () => {
     }
     if (isFacilityManager && referral.status === 'dept_approved') {
       return { label: 'Needs your signature', text: `${receivingDepts.join(', ') || 'The department'} approved it. Accept the transfer or decline it.`, tint: 'critical' };
+    }
+    if (isFacilityManager && referral.status === 'pending') {
+      return { label: 'Waiting on the department', text: "It comes to you for signature after the department's review.", tint: 'info' };
     }
     if (isFacilityManager) return { label: 'Manager oversight', text: 'Nothing on this referral is waiting on you right now.', tint: 'info' };
     if (isErRoom && referral.status === 'accepted') {
@@ -341,6 +352,8 @@ export const ReferralDetailPage: React.FC = () => {
 
   let footerPrimary: FooterAction | null = null;
   let footerSecondary: FooterAction | null = null;
+  // Desktop header only (3d): a third decision where the handoff shows one.
+  let footerTertiary: FooterAction | null = null;
 
   switch (roleVariant) {
     case 'dept-head':
@@ -348,7 +361,8 @@ export const ReferralDetailPage: React.FC = () => {
         // Decide from here: approve (the same write as the queue's Approve), or
         // say what the department needs before it can.
         footerPrimary = { label: `Approve for ${user.department || 'your department'}`, onClick: handleDeptApprove, disabled: deptBusy, tone: successFill };
-        footerSecondary = { label: 'Need requirements', onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), tone: neutralOutline };
+        footerSecondary = { label: 'Need requirements', onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), tone: 'warning-tint' };
+        footerTertiary = { label: 'Decline', onClick: () => setShowRejectModal(true), tone: criticalOutline };
       } else if (['dept_approved', 'manager_approved', 'accepted'].includes(referral.status)) {
         footerPrimary = { label: 'Send back with requirements', onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), tone: warningFill };
         footerSecondary = { label: 'Add a note', onClick: () => focusSection('dept-review-section', () => setDeptAction('no_role')), tone: neutralOutline };
@@ -359,7 +373,8 @@ export const ReferralDetailPage: React.FC = () => {
     case 'manager':
       if (referral.status === 'dept_approved') {
         footerPrimary = { label: 'Accept the transfer', onClick: () => handleStatusUpdate('manager_approved'), tone: successFill };
-        footerSecondary = { label: 'Decline', onClick: () => handleStatusUpdate('rejected'), tone: criticalOutline };
+        // A rejection always needs a reason: open the same dialog the console uses.
+        footerSecondary = { label: 'Decline', onClick: () => setShowRejectModal(true), tone: criticalOutline };
       } else {
         footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), tone: darkFill };
       }
@@ -411,23 +426,107 @@ export const ReferralDetailPage: React.FC = () => {
   const remitLabel = roleVariant ? REMIT_LABEL[roleVariant] : undefined;
   const hasPinnedFooter = !isDesktop && Boolean(footerPrimary);
 
+  // The review form, the journey and the action console. Phones keep them in
+  // the column; desktop gives the right column to History (3d) and sets these
+  // out full-width under the grid. Rendered once either way, so ids stay unique.
+  const decisionForms = (
+    <>
+            <DepartmentReviewCard
+              referral={referral}
+              usersById={usersById}
+              isTargetDeptHead={isTargetDeptHead}
+              isAdmin={isAdmin}
+              deptAction={deptAction}
+              setDeptAction={setDeptAction}
+              deptCommentText={deptCommentText}
+              setDeptCommentText={setDeptCommentText}
+              onSubmitDeptComment={submitDeptComment}
+            />
+            <TransferJourneyCard
+              referral={referral}
+              fromFacility={fromFacility}
+              toFacility={toFacility}
+              usersById={usersById}
+            />
+
+            <ReferralActionConsole
+              headerActions={isDesktop ? [footerPrimary?.label, footerSecondary?.label, footerTertiary?.label].filter((l): l is string => !!l).map(l => l.toLowerCase()) : []}
+              referral={referral}
+              user={user}
+              isAdmin={isAdmin}
+              isReceiving={isReceiving}
+              isReferring={isReferring}
+              isFacilityManager={isFacilityManager}
+              isErRoom={isErRoom}
+              canCancel={canCancel}
+              notes={notes}
+              setNotes={setNotes}
+              facilities={facilities}
+              toFacility={toFacility}
+              contractedFacilityId={contractedFacilityId}
+              setContractedFacilityId={setContractedFacilityId}
+              overrideFacilityId={overrideFacilityId}
+              setOverrideFacilityId={setOverrideFacilityId}
+              showDeclineForm={showDeclineForm}
+              setShowDeclineForm={setShowDeclineForm}
+              declineReason={declineReason}
+              setDeclineReason={setDeclineReason}
+              consentBusy={consentBusy}
+              escortName={escortName}
+              setEscortName={setEscortName}
+              escortPhone={escortPhone}
+              setEscortPhone={setEscortPhone}
+              escortBusy={escortBusy}
+              showCancelConfirm={showCancelConfirm}
+              setShowCancelConfirm={setShowCancelConfirm}
+              cancelReason={cancelReason}
+              setCancelReason={setCancelReason}
+              cancelError={cancelError}
+              setCancelError={setCancelError}
+              cancelBusy={cancelBusy}
+              onStatusUpdate={handleStatusUpdate}
+              onDirectApprove={async () => {
+                try {
+                  if (contractedFacilityId) {
+                    await overrideReferralDestination(referral.id, contractedFacilityId);
+                  }
+                } catch (e: any) {
+                  toastError(e, 'Could not move the referral to that facility.');
+                  return;
+                }
+                handleStatusUpdate('manager_approved');
+              }}
+              onDestinationOverride={handleDestinationOverride}
+              onPatientConsent={handlePatientConsent}
+              onPatientDecline={handlePatientDecline}
+              onSetAccompanyingDoctor={handleSetAccompanyingDoctor}
+              onCancelReferral={handleCancelReferral}
+              onOpenRejectModal={() => setShowRejectModal(true)}
+            />
+    </>
+  );
+
   const sectionLabel = 'mb-2 text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60';
 
   return (
-    <div className={`max-w-5xl mx-auto ${hasPinnedFooter ? 'pb-48' : 'pb-4'} print:max-w-none print:pb-0 print:m-0`}>
+    <div className={`${embedded ? '' : 'max-w-5xl mx-auto'} ${hasPinnedFooter ? 'pb-48' : 'pb-4'} print:max-w-none print:pb-0 print:m-0`}>
       <ReferralDetailHeader
         referral={referral}
         onBack={() => navigate(-1)}
         isDesktop={isDesktop}
-        // Desktop keeps the role's actions in the action console for now: the
-        // same buttons inline here would duplicate it. The unified desktop phase
-        // merges the two.
+        fullPageHref={embedded ? `/referrals/${referral.id}` : undefined}
+        fromName={(fromFacility as { name?: string } | undefined)?.name}
+        // Desktop: the role's next action sits top-right (3d); the console below
+        // skips any button the header already shows, so each exists once.
+        actions={isDesktop ? (
+          <InlineDetailActions footerPrimary={footerPrimary} footerSecondary={footerSecondary} footerTertiary={footerTertiary} footerCallNumber={footerCallNumber} />
+        ) : undefined}
       />
 
-      <div className="grid grid-cols-1 gap-[15px] lg:mt-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-8 print:hidden">
+      <div className={`grid grid-cols-1 gap-[15px] lg:mt-6 lg:gap-8 print:hidden ${embedded ? 'min-[1440px]:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]' : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]'}`}>
         {/* What is happening and what the patient looks like */}
         <div className="flex min-w-0 flex-col gap-[15px]">
-          <EscalationAlertBanner referral={referral} />
+          {!embedded && <EscalationAlertBanner referral={referral} />}
           <RoleBanner label={mobileBanner.label} text={mobileBanner.text} tint={mobileBanner.tint} />
           <PatientCard patient={referral.patientData} />
           <ClinicalAttachmentsCard referral={referral} onSelectECG={(url) => setSelectedECGUrl(url)} />
@@ -450,79 +549,15 @@ export const ReferralDetailPage: React.FC = () => {
               <ReferralTimeline referral={referral} usersById={usersById} />
             </section>
           )}
-          <DepartmentReviewCard
-            referral={referral}
-            usersById={usersById}
-            isTargetDeptHead={isTargetDeptHead}
-            isAdmin={isAdmin}
-            deptAction={deptAction}
-            setDeptAction={setDeptAction}
-            deptCommentText={deptCommentText}
-            setDeptCommentText={setDeptCommentText}
-            onSubmitDeptComment={submitDeptComment}
-          />
-          <TransferJourneyCard
-            referral={referral}
-            fromFacility={fromFacility}
-            toFacility={toFacility}
-            usersById={usersById}
-          />
-
-          <ReferralActionConsole
-            referral={referral}
-            user={user}
-            isAdmin={isAdmin}
-            isReceiving={isReceiving}
-            isReferring={isReferring}
-            isFacilityManager={isFacilityManager}
-            isErRoom={isErRoom}
-            canCancel={canCancel}
-            notes={notes}
-            setNotes={setNotes}
-            facilities={facilities}
-            toFacility={toFacility}
-            contractedFacilityId={contractedFacilityId}
-            setContractedFacilityId={setContractedFacilityId}
-            overrideFacilityId={overrideFacilityId}
-            setOverrideFacilityId={setOverrideFacilityId}
-            showDeclineForm={showDeclineForm}
-            setShowDeclineForm={setShowDeclineForm}
-            declineReason={declineReason}
-            setDeclineReason={setDeclineReason}
-            consentBusy={consentBusy}
-            escortName={escortName}
-            setEscortName={setEscortName}
-            escortPhone={escortPhone}
-            setEscortPhone={setEscortPhone}
-            escortBusy={escortBusy}
-            showCancelConfirm={showCancelConfirm}
-            setShowCancelConfirm={setShowCancelConfirm}
-            cancelReason={cancelReason}
-            setCancelReason={setCancelReason}
-            cancelError={cancelError}
-            setCancelError={setCancelError}
-            cancelBusy={cancelBusy}
-            onStatusUpdate={handleStatusUpdate}
-            onDirectApprove={async () => {
-              try {
-                if (contractedFacilityId) {
-                  await overrideReferralDestination(referral.id, contractedFacilityId);
-                }
-              } catch (e: any) {
-                toastError(e, 'Could not move the referral to that facility.');
-                return;
-              }
-              handleStatusUpdate('manager_approved');
-            }}
-            onDestinationOverride={handleDestinationOverride}
-            onPatientConsent={handlePatientConsent}
-            onPatientDecline={handlePatientDecline}
-            onSetAccompanyingDoctor={handleSetAccompanyingDoctor}
-            onCancelReferral={handleCancelReferral}
-            onOpenRejectModal={() => setShowRejectModal(true)}
-          />
+          {!isDesktop && decisionForms}
         </div>
       </div>
+
+      {isDesktop && (
+        <div className="mt-8 grid grid-cols-1 gap-6 min-[1440px]:grid-cols-2 print:hidden">
+          {decisionForms}
+        </div>
+      )}
 
       <div className="mt-6">
         <ReferralUtilityBar referral={referral} copied={copied} onCopyId={handleCopyId} onToggleEscalation={handleToggleEscalation} onPrint={() => handlePrint()} />
