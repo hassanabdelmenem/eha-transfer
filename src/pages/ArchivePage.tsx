@@ -89,7 +89,7 @@ export const ArchivePage: React.FC = () => {
     if (r.status === 'admitted') {
       const entry = endedEntry(r);
       const by = entry ? usersById.get(entry.userId)?.name : undefined;
-      return `${r.requiredBedType} · admitted ${entry ? formatDateTime(entry.timestamp) : ''}${by ? ` by ${by}` : ''}`;
+      return [`${r.requiredBedType} · admitted`, entry && formatDateTime(entry.timestamp), by && `by ${by}`].filter(Boolean).join(' ');
     }
     const by = r.cancelledBy ? usersById.get(r.cancelledBy)?.name : undefined;
     return `${r.cancelReason || 'Cancelled'}${by ? ` · closed by ${by}` : ''}`;

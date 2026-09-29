@@ -16,13 +16,15 @@ import {
   Bell,
   WifiOff,
   CheckCircle2,
-  AlertTriangle,
   Clock,
   Send,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+
+/** Day runs 08:00–20:00; the handover goes to whichever shift comes next. */
+const nextShift = (shiftType: string) => (shiftType === 'Day' ? 'night' : 'day');
 
 export const AppLayout: React.FC = () => {
   const { user, logout, updateUserProfile } = useAuth();
@@ -149,6 +151,7 @@ export const AppLayout: React.FC = () => {
     if (hour >= 20 || hour < 8) shiftType = 'Night';
 
     const handover = {
+      shiftType,
       summary: `${shiftType} shift ending. ${pendingTransfersCount} active transfers in progress for ${user.department || 'General'} department.`,
       doneThisShift: 0,
       carryOver: [] as string[],
@@ -156,7 +159,8 @@ export const AppLayout: React.FC = () => {
     };
 
     pendingTransfers.forEach(r => {
-      const isWaitlist = r.status === 'pending' || r.status === 'dept_approved';
+      // Still waiting on a decision carries over; accepted or moving is watched.
+      const isWaitlist = r.status === 'pending' || r.status === 'dept_approved' || r.status === 'manager_approved';
       if (isWaitlist) {
         handover.carryOver.push(r.patientData.name);
       } else {
@@ -189,7 +193,7 @@ export const AppLayout: React.FC = () => {
         admittedPatientsCount: handover.doneThisShift
       });
       setShowEndOfShift(false);
-      showToast('Handover sent to the day shift. You are still signed in.', 'success');
+      showToast(`Handover sent to the ${nextShift(handover.shiftType)} shift. You are still signed in.`, 'success');
     } catch (err: any) {
       toastError(err, 'Could not send the handover. Check the connection and try again.');
     } finally {
@@ -413,10 +417,15 @@ export const AppLayout: React.FC = () => {
             aria-labelledby="eos-title"
             tabIndex={-1}
           >
-            {/* 2f: the handover is written for you; sending it signs you out. */}
+            {/* 2f: the handover is written for you; sending it keeps you signed in. */}
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-paper/12 px-[18px] pt-[max(14px,env(safe-area-inset-top))] pb-4">
               <div className="min-w-0">
-                <h2 id="eos-title" className="text-[17px] font-semibold leading-tight">End of Shift Clinical Handover</h2>
+                <h2 id="eos-title" className="text-[17px] font-semibold leading-tight">End of shift</h2>
+                {handover && (
+                  <p className="mt-0.5 text-[13px] font-semibold tabular-nums text-paper/80">
+                    {handover.shiftType} shift · {handover.shiftType === 'Day' ? '08:00–20:00' : '20:00–08:00'}
+                  </p>
+                )}
                 <p className="mt-0.5 truncate text-[13px] text-paper/65">
                   {user.name}{user.department ? ` · ${user.department}` : ''}{facility ? ` · ${facility.name}` : ''}
                 </p>
@@ -453,21 +462,16 @@ export const AppLayout: React.FC = () => {
 
                   {handover.watch.length > 0 && (
                     <div className={card}>
-                      <p className={cn(kind, 'flex items-center gap-1.5 text-critical-300')}><AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />Watch · accepted or on the move</p>
+                      <p className={cn(kind, 'text-paper/60')}>On the move</p>
                       <p className="mt-1.5 text-[15px] leading-[1.5]">{handover.watch.join(', ')} — accepted, in transit or arrived; the next shift sees them through.</p>
                     </div>
                   )}
 
-                  <div className={cn(card, 'flex items-center justify-between gap-3')}>
-                    <div>
-                      <p className={cn(kind, 'text-success-300')}>On record</p>
-                      <p className="mt-1 text-[15px]">
-                        {handover.doneThisShift} patient admission{handover.doneThisShift === 1 ? '' : 's'}/discharge{handover.doneThisShift === 1 ? '' : 's'} recorded.
-                      </p>
-                    </div>
-                    <span className="shrink-0 rounded-full border border-success-500/40 bg-success-500/15 px-3 py-1 text-[12px] font-bold text-success-200">
-                      {handover.doneThisShift} Done
-                    </span>
+                  <div className={card}>
+                    <p className={cn(kind, 'text-success-300')}>On record</p>
+                    <p className="mt-1 text-[15px]">
+                      {handover.doneThisShift} patient admission{handover.doneThisShift === 1 ? '' : 's'}/discharge{handover.doneThisShift === 1 ? '' : 's'} recorded.
+                    </p>
                   </div>
                 </>
               ) : (
@@ -484,8 +488,8 @@ export const AppLayout: React.FC = () => {
                 disabled={sendingHandover}
                 className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-xl bg-paper text-[16px] font-semibold text-ink transition-colors hover:bg-slate-200 disabled:opacity-60"
               >
-                <Send className="h-4 w-4" aria-hidden="true" />
-                <span>{sendingHandover ? 'Sending…' : handover ? 'Send handover to the day shift' : 'Close'}</span>
+                {handover && <Send className="h-4 w-4" aria-hidden="true" />}
+                <span>{sendingHandover ? 'Sending…' : handover ? `Send handover to the ${nextShift(handover.shiftType)} shift` : 'Close'}</span>
               </button>
             </div>
           </div>
