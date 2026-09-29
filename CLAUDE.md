@@ -8,7 +8,8 @@ React 19 + TypeScript 7 + Vite 8 + Tailwind 4 + React Router 7, on Firebase Auth
 Cloud Firestore, with IndexedDB (`idb`) for offline drafts and sync. Cloud Functions live in
 `functions/` (separate package, Node 20).
 
-Firebase project: **`eha-transfer-1785622025`** → https://eha-transfer.web.app.
+Firebase project: **`eha-transfer-1785622025`** → https://eha-transfer.web.app (production);
+staging: `eha-transfer-staging` → https://eha-transfer-staging.web.app.
 This repo shares nothing with `imc-er` or `er-app-final`. `main` is production.
 
 ## Project memory (read first)
@@ -25,9 +26,12 @@ significant change, update them and the published pages below if the change affe
 
 ## Production data warning
 
-`npm run dev` and PR previews talk to the **production** Firebase project; there is no staging.
-Never test destructive actions locally unless `VITE_USE_FIREBASE_EMULATORS=true`
-(Auth :9099, Firestore :8080). Never commit `.env*` (except `.env.example`) or Auth/Firestore exports.
+`npm run dev` and PR previews talk to the **staging** project `eha-transfer-staging` (test data,
+"STAGING" label on every screen); `npm run build` and the deploy pipeline use **production**. See
+`docs/DEPLOYMENT.md`. `VITE_FIREBASE_TARGET=production npm run dev` reaches real patient data: never
+test destructive actions that way. Emulators (`VITE_USE_FIREBASE_EMULATORS=true`, Auth :9099,
+Firestore :8080) remain the place for destructive tests. After a rules change, also deploy the
+rules to staging. Never commit `.env*` (except `.env.example`) or Auth/Firestore exports.
 
 ## Commands
 
