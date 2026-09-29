@@ -12,17 +12,16 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
 
 ## Next Step
 
-Everything through redesign phase 5 is merged and live (27 Sep, `main` 8847c7b); the repo is public, so
-GitHub Actions runs again. Owner decisions d1–d5 were answered the same day and are being shipped in the
-"owner decisions" PR (createdAtMs backfill + rules, escalation e2e, handover without sign-out, old-design
-cleanup). **Now: redesign phase 6** (desktop panes, DESIGN.md rewrite, finish review).
+Redesign phase 6 is built and in review (PR on `redesign/6-desktop-panes`): the desktop two-pane
+workspace (3d), the finish-review fixes, and DESIGN.md rewritten from the shipped build. Owner: review
+and merge it. Then the follow-ups under Phase 3 below, and Phase 5 (pilot readiness).
 
-Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg); since
-#32 it lands on the verify screen until confirmed. Two moderate Dependabot alerts on `main` are unreviewed.
+Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg);
+two moderate Dependabot alerts on `main` are unreviewed.
 
 ## Current Phase
 
-Phase 3: Mobile-workflow redesign (phases 1–5 live; phase 6 in progress)
+Phase 3: Mobile-workflow redesign (phases 1–5 live; phase 6 in review)
 
 ## Phases
 
@@ -56,11 +55,15 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 - [x] 4 Five-step intake wizard (1d) — **#36**; order chosen by the owner: identity → vitals → complaint →
       diagnosis/ECG → "Where it goes & send"; removed pre-filled vitals and the random-distance "AI Triage"
 - [x] 5 Inbox, directory, handover, admin console, archive, settings (2d–2f, 3a–3c) — **#37**; safe CSV export
-- [ ] 6 Unified desktop panes (3d): 228px rail + 436px queue + detail pane on #f4f2ed, the role's actions
-      top-right; merge desktop header actions with the action console; rewrite DESIGN.md with the
-      impeccable documenter (the committed DESIGN.md still describes the old command-blue world);
-      finish review against the direction contract
-- **Status:** phases 1–5 merged and live 27 Sep; phase 6 in progress
+- [x] 6 Unified desktop panes (3d) at >=1280px: 436px queue + case pane on the desk, selection in
+      `?case=`, the role's actions top-right (console skips duplicates), DESIGN.md rewritten by the
+      impeccable documenter, finish review run and its 9 material findings fixed (29 Sep)
+- [ ] Follow-ups from the finish review / documenter: review the wizard, inbox, directory, archive,
+      settings, admin and handover screens (the reviewer ran out of budget before them); rail count
+      badges; 9px stage-rail labels on phones; older modals still on stock `shadow-xl`/zoom animations;
+      the stale comment at the top of `src/index.css` about which hues are remapped; manager analytics
+      sit under the queue column on desktop (not in 1c; placement undecided)
+- **Status:** phases 1–5 live 27 Sep; phase 6 in review 29 Sep
 
 ### Phase 4: Known gaps (NEXT_STEPS_PROMPT.md phase 2)
 
