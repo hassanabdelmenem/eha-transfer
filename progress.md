@@ -2,6 +2,20 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-30: Escalation sweep on a GitHub Actions timer
+
+- Owner chose a GitHub Actions timer over Blaze. `scripts/overnight-sweep.ts` was stale (history in a
+  subcollection, every escalation "system", notifications without createdAtMs) and is removed.
+- `src/lib/escalationSweep.ts`: the rules and the exact update/notification, now used by both the
+  in-app sweep (DataContext) and `scripts/escalation-sweep.ts`.
+- Credentials: production forbids service-account keys (org policy), so the workflow is keyless:
+  Workload Identity Federation pool `github`, provider `eha-transfer` (repo + refs/heads/main only),
+  service account `escalation-sweep@` with roles/datastore.user.
+- Verified: vitest (8 new rule tests), emulator run: dry run writes nothing; the run escalates at
+  facility level with one history entry and notifications carrying createdAtMs; a second run is a no-op.
+- The timer only runs from main: first real run after merge; check the Actions tab, or run it by hand
+  with "dry run".
+
 ## 2026-09-29 (night): Design follow-ups
 
 - Phone stage labels 9px uppercase -> 11px sentence case (uppercase kept from lg).
