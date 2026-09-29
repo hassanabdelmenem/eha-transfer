@@ -78,7 +78,6 @@ describe('AppSidebar', () => {
           referrals={mockReferrals}
           isOnline={true}
           pendingSyncCount={0}
-          unreadNotifsCount={0}
           onLogoutClick={onLogout}
           onOpenProfile={onOpenProfile}
           onOpenHotline={onOpenHotline}
@@ -101,5 +100,28 @@ describe('AppSidebar', () => {
     expect(logoutBtn).toBeInTheDocument();
     fireEvent.click(logoutBtn);
     expect(onLogout).toHaveBeenCalled();
+  });
+
+  it('shows one count, on "Waiting on you", matching the role home; Referrals and Inbox stay plain', () => {
+    const needsMe: Referral = { ...mockReferrals[0], id: 'ref-2', status: 'postponed' };
+    render(
+      <BrowserRouter>
+        <AppSidebar
+          user={mockUser}
+          facility={mockFacility}
+          referrals={[...mockReferrals, needsMe]}
+          isOnline={true}
+          pendingSyncCount={0}
+          onLogoutClick={vi.fn()}
+          onOpenProfile={vi.fn()}
+          onOpenHotline={vi.fn()}
+          theme="light"
+          onToggleTheme={vi.fn()}
+        />
+      </BrowserRouter>
+    );
+    expect(screen.getByRole('link', { name: /^Waiting on you,\s?1$/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Referrals' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Inbox' })).toBeInTheDocument();
   });
 });

@@ -51,7 +51,7 @@ export const AppLayout: React.FC = () => {
   // The intake wizard does the same: its header names the patient and the step.
   const onWizard = location.pathname === '/referrals/new';
   // Secondary screens draw a ScreenHeader (title + action + menu) instead.
-  const onTitledScreen = ['/notifications', '/directory', '/archive', '/facility-settings'].includes(location.pathname);
+  const onTitledScreen = ['/notifications', '/directory', '/archive', '/facility-settings', '/reports'].includes(location.pathname);
   const ownHeader = onReferralDetail || onWizard || onTitledScreen;
   // 3d: the role home on a wide screen is a two-pane workspace that scrolls per pane.
   const wide = useMediaQuery(WORKSPACE_QUERY);
@@ -234,7 +234,6 @@ export const AppLayout: React.FC = () => {
           referrals={referrals}
           isOnline={isOnline}
           pendingSyncCount={pendingSyncCount}
-          unreadNotifsCount={unreadNotifs}
           onOpenProfile={openProfile}
           onOpenHotline={openHotline}
           onOpenHandover={generatesShiftLog ? openHandover : undefined}
@@ -266,7 +265,6 @@ export const AppLayout: React.FC = () => {
           referrals={referrals}
           isOnline={isOnline}
           pendingSyncCount={pendingSyncCount}
-          unreadNotifsCount={unreadNotifs}
           isMobile={true}
           onCloseMobile={() => setMobileMenuOpen(false)}
           onOpenProfile={openProfile}
