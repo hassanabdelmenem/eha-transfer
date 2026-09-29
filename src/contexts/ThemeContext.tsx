@@ -37,7 +37,7 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement;
     const apply = (resolved: 'light' | 'dark') => {
-      root.classList.remove('night-shift-mode', 'light', 'dark');
+      root.classList.remove('light', 'dark');
       root.classList.add(resolved);
     };
 

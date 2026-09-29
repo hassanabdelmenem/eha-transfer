@@ -306,7 +306,3 @@ time,
   }
 }
 
-.night-shift-mode {
-  filter: sepia(0.4) hue-rotate(-10deg) contrast(1.05) brightness(0.85);
-  background-color: var(--color-ink);
-}

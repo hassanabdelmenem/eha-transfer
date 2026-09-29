@@ -193,7 +193,7 @@ export const BedManagementPage: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 h-full overflow-auto pb-12">
-      {/* Page Header (No duplicate RoleHomeHeader) */}
+      {/* Page Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
