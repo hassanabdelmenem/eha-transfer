@@ -98,3 +98,16 @@ Source: `~/Documents/Projects/Mobile app redesign workflow.zip`. Direction contr
 - Keep the E2E DOM contract in PROJECT.md; changing it needs the owner's sign-off.
 - Firestore rules are the only server-side authorization; change rules and the matching queries together, run `npm run test:rules`.
 - No fabricated data or claims in the UI (no invented distances, scores, defaults presented as measurements).
+
+## Finish review of the remaining screens (29 Sep, not yet fixed)
+
+Verdict "ship with fixes" for 1d, 2d, 2e, 2f, 3a, 3b, 3c. Material, in order:
+1. `src/index.css:249` global `h1…h6` font/tracking rule is unlayered and beats utilities: wrap in `@layer base` (MicroLabel h2s render in Poppins at −0.02em instead of 11px sans at 0.09em).
+2. 2f: "Send handover to the day shift" + toast are hardcoded; use the computed next shift (`buildHandover` knows Day/Night).
+3. 2f: `manager_approved` lands in "Watch · accepted or on the move" (false); move it to carry-over; relabel Watch "On the move", neutral tone, no triangle.
+4. 3c: facilities list nested in a card under the wrong label ("Staff roles and transfers"); flatten, label "Network and contracted facilities".
+5. 3a: kicker label above "Free beds across the network"; order tiles → escalations → waitlist → heatmap; heatmap WARD column clips at 390px.
+6. 1d: wizard footer floats mid-screen on short steps; make the page a full-height flex column with the footer `mt-auto`.
+7. 1d: the "Fill in the required fields" toast covers the wizard header; drop it from `goNext` (inline errors + focus already say it), dismiss toasts on step change.
+8. 1d: "Why this transfer" is a single-line input; make it a textarea (keep `#reasonForReferral`); add a Reason row to "Ready to send".
+Minor: Auto-Route row 44→48px; 3c controls 44→48px; 3b "admitted " trailing text with no history entry; 2d visible "New" marker + mark-read for link-less notices; 2f title "End of shift" + shift window, drop "{n} Done" pill and the icon on "Close"; 2e title "Directory" for everyone; 3c capacity order ICU, CCU, PICU, Ward.
