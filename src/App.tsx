@@ -10,6 +10,7 @@ import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { Toaster } from './components/ui/Toaster';
+import { StagingRibbon } from './components/layout/StagingRibbon';
 import { SkeletonGroup, Skeleton } from './components/ui/Skeleton';
 
 // Each page is imported by its named export.
@@ -142,6 +143,7 @@ export default function App() {
           {/* Above the router so it also covers Login and Onboarding, which render
               outside AppLayout. */}
           <Toaster />
+          <StagingRibbon />
         </DataProvider>
       </AuthProvider>
     </ThemeProvider>
