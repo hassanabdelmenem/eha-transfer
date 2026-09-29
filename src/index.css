@@ -7,12 +7,14 @@
 
    Tailwind's own colour scales are remapped here rather than replaced call site
    by call site, so every existing utility lands in the palette at once:
-     slate / gray / zinc / neutral / stone  -> warm neutrals (paper to ink)
-     red / rose                             -> the critical scale
-     amber / yellow / orange                -> the warning scale
-     green / emerald / lime                 -> the success scale (olive)
-     blue / indigo / sky / cyan             -> the info scale (dusty blue)
-     purple / violet                        -> an independent violet
+     slate (defined here) / gray  -> warm neutrals (paper to ink)
+     red / rose                   -> the critical scale
+     amber / yellow               -> the warning scale
+     green / emerald              -> the success scale (olive)
+     blue / indigo                -> the info scale (dusty blue)
+     purple (defined here)        -> an independent violet
+   Other Tailwind hues (zinc, orange, sky, violet...) are not remapped and are
+   not used; keep it that way.
    Each raw hue maps onto the status colour it already meant, so red and amber
    stay distinguishable: a rejected referral and a pending one never share a
    colour. New code uses the semantic names (critical / warning / success /

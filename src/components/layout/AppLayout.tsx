@@ -221,7 +221,7 @@ export const AppLayout: React.FC = () => {
       {/* Accessibility Skip Link */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:bg-paper focus:text-ink focus:px-4 focus:py-3 focus:rounded-[10px] focus:shadow-xl font-semibold text-sm"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:bg-paper focus:text-ink focus:px-4 focus:py-3 focus:rounded-[10px] focus:shadow-[0_8px_24px_rgba(20,20,19,0.14)] font-semibold text-sm"
       >
         Skip to main content
       </a>
@@ -255,7 +255,7 @@ export const AppLayout: React.FC = () => {
       )}
       {!isDesktop && <div
         className={cn(
-          'fixed inset-y-0 left-0 z-[90] w-[85vw] max-w-[320px] shadow-2xl transition-transform duration-200 ease-out motion-reduce:transition-none',
+          'fixed inset-y-0 left-0 z-[90] w-[85vw] max-w-[320px] shadow-[8px_0_30px_rgba(20,20,19,0.18)] transition-transform duration-200 ease-out motion-reduce:transition-none',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
         inert={!mobileMenuOpen}
@@ -347,7 +347,7 @@ export const AppLayout: React.FC = () => {
           aria-labelledby="profile-title"
           tabIndex={-1}
         >
-          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-[0_8px_24px_rgba(20,20,19,0.14)] flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div>
                 <h2 id="profile-title" className="text-lg font-bold text-slate-900 dark:text-white">

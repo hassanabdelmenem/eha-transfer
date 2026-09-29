@@ -37,7 +37,7 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
         aria-modal="true"
         aria-labelledby="rejection-modal-title"
         tabIndex={-1}
-        className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-lg w-full max-w-md relative border border-slate-200 dark:border-slate-800"
+        className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-[0_8px_24px_rgba(20,20,19,0.14)] w-full max-w-md relative border border-slate-200 dark:border-slate-800"
       >
         <div className="flex items-center justify-between mb-4">
           <h2 id="rejection-modal-title" className="text-xl font-bold text-slate-900 dark:text-slate-100">Reject Transfer</h2>
