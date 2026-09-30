@@ -8,6 +8,7 @@ import { ActiveInpatientCensus } from '../components/beds/ActiveInpatientCensus'
 import { showToast, toastError } from '../lib/toast';
 import { ArrowLeft, BedDouble } from 'lucide-react';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
+import { useI18n } from '../i18n';
 
 export const AdmitPatientPage: React.FC = () => {
   // 1. All hooks called unconditionally at top
@@ -22,6 +23,7 @@ export const AdmitPatientPage: React.FC = () => {
 
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(user?.facilityId || '');
   const [dischargingId, setDischargingId] = useState<string | null>(null);
+  const { t } = useI18n();
 
   const isAdmin = checkIsAdmin(user);
 
@@ -51,9 +53,9 @@ export const AdmitPatientPage: React.FC = () => {
         hospitalId: data.hospitalId,
         admittedBy: user.id,
       });
-      showToast(`Admitted ${data.patientName} directly to ${data.department} (${data.bedType})`, 'success');
+      showToast(t('admission.toastAdmitted', { name: data.patientName, dept: data.department, bed: data.bedType }), 'success');
     } catch (err: any) {
-      toastError(err, 'Could not record admission.');
+      toastError(err, t('admission.toastFailed'));
     }
   };
 
@@ -61,9 +63,9 @@ export const AdmitPatientPage: React.FC = () => {
     setDischargingId(id);
     try {
       await dischargeDirectAdmission(id);
-      showToast('Patient discharged successfully.', 'success');
+      showToast(t('beds.toastDischarged'), 'success');
     } catch (err: any) {
-      toastError(err, 'Could not discharge patient.');
+      toastError(err, t('admission.toastDischargeFailed'));
     } finally {
       setDischargingId(null);
     }
@@ -73,7 +75,7 @@ export const AdmitPatientPage: React.FC = () => {
   if (!user || (!user.facilityId && !isAdmin)) {
     return (
       <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-        Facility ID not found.
+        {t('admission.noFacility')}
       </div>
     );
   }
@@ -87,15 +89,15 @@ export const AdmitPatientPage: React.FC = () => {
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline w-fit"
         >
           <ArrowLeft className="w-3.5 h-3.5 rtl:-scale-x-100" />
-          Back to Bed Management & Capacity Hub
+          {t('admission.back')}
         </Link>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-              Direct Patient Admission
+              {t('admission.title')}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Record already admitted patients (walk-ins or ER admissions) to update bed capacity tracking across the network.
+              {t('admission.subtitle')}
             </p>
           </div>
           <div className="hidden sm:flex items-center gap-2">
@@ -104,7 +106,7 @@ export const AdmitPatientPage: React.FC = () => {
               className="inline-flex items-center gap-2 min-h-[44px] px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               <BedDouble className="w-4 h-4" />
-              View Bed Census
+              {t('admission.viewCensus')}
             </Link>
           </div>
         </div>
@@ -133,7 +135,7 @@ export const AdmitPatientPage: React.FC = () => {
         </div>
       ) : (
         <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
-          Please select a facility above to manage direct admissions.
+          {t('admission.pickFacility')}
         </Card>
       )}
     </div>

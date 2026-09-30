@@ -19,7 +19,7 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
    auto mode may not write staging accounts or store the password).
 3. Arabic translation PRs, one per surface (see "Arabic and right-to-left" below). Role homes (#49)
    referral detail (#50), intake wizard (#51) and inbox/list/directory/archive/reports/department
-   done; next: settings, admin console, beds, app shell; then sign-in and onboarding.
+   done, then settings/admin/beds; next: the app shell, then sign-in and onboarding.
 
 Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg).
 
@@ -90,8 +90,10 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
       vital findings translated from stable codes (30 Sep)
 - [x] Inbox, referrals list, directory, archive, reports (charts stay left-to-right), HoD department
       page (delegation, internal transfer); role and facility-type labels (30 Sep)
-- [ ] Translate: facility settings, admin console, beds (census, admit, direct admission), app shell
-      (profile, hotline, end-of-shift handover, sidebar role line); sign-in, onboarding
+- [x] Facility settings, admin console, beds (capacity grid, steppers, arrivals, census), direct
+      admission page and dialog (30 Sep)
+- [ ] Translate: app shell (profile, hotline, end-of-shift handover, header and sidebar role line);
+      sign-in, onboarding, pending verification
 - [ ] Notification text is stored in English by DataContext (13 call sites) and the sweep, so inbox
       messages stay English in Arabic. Fix: store a message key + params on each notification and
       render in the reader's language (needs a rules change for the new fields). Owner decision.
