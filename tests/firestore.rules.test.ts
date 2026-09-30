@@ -469,6 +469,35 @@ describe('notification shape constraints', () => {
       createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1',
     }));
   });
+
+  // Notifications carry a catalogue key + values so the inbox renders in the
+  // reader's language (src/i18n/notifications.ts). Both are bounded.
+  const base = (id: string) => ({
+    id, userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false,
+    createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1',
+  });
+
+  it('allows a notification with a catalogue key and a small map of values', async () => {
+    await assertSucceeds(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'k1'), {
+      ...base('k1'), key: 'statusUpdated', vars: { patient: 'Omar Farid', status: '@status.in_transit' },
+    }));
+  });
+
+  it('blocks a key that is not a plain identifier', async () => {
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'k2'), { ...base('k2'), key: 'status Updated!' }));
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'k3'), { ...base('k3'), key: 'x'.repeat(65) }));
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'k4'), { ...base('k4'), key: 42 }));
+  });
+
+  it('blocks values that are not a map, or too many of them', async () => {
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'k5'), { ...base('k5'), key: 'consented', vars: 'patient' }));
+    const many = Object.fromEntries(Array.from({ length: 13 }, (_, i) => [`v${i}`, 'x']));
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'k6'), { ...base('k6'), key: 'consented', vars: many }));
+  });
+
+  it('blocks fields outside the notification shape', async () => {
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'k7'), { ...base('k7'), payload: 'x'.repeat(5000) }));
+  });
 });
 
 describe('notification relatedness (security review follow-up)', () => {

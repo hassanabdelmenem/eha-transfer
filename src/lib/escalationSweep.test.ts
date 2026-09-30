@@ -64,6 +64,18 @@ describe('escalationUpdate and escalationNotice', () => {
     expect(n.facilityIds).toEqual([]);
   });
 
+  it('notices carry a catalogue key and values, and the same English they always had', () => {
+    const sla = escalationNotice(ref(), { kind: 'sla' });
+    expect(sla.key).toBe('escalationSla');
+    expect(sla.vars).toMatchObject({ patient: 'Test Patient', priority: '@priorityWord.emergency', bed: 'ICU', minutes: 30 });
+    expect(sla.title).toBe('Referral Escalated — No Response in 30 Minutes');
+    expect(sla.message).toMatch(/^Test Patient \(emergency ICU\) has had no response since .+ and has been escalated for intervention\.$/);
+
+    const beds = escalationNotice(ref(), { kind: 'capacity', reason: 'no_beds_available' });
+    expect(beds.key).toBe('escalationNoBeds');
+    expect(beds.message).toBe('Test Patient needs Cardiology (ICU). Every matching facility is at full capacity for the required bed type. Administrative placement required.');
+  });
+
   it('the in-transaction re-check stops a case accepted since it was read', () => {
     expect(stillEscalates(ref({ status: 'dept_approved' }), { kind: 'capacity', reason: 'no_beds_available' }, now)).toBe(false);
     expect(stillEscalates(ref({ status: 'dept_approved', createdAt: new Date(now - 60 * MIN).toISOString() }), { kind: 'sla' }, now)).toBe(false);

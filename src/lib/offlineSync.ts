@@ -2,13 +2,14 @@ import { doc, runTransaction } from 'firebase/firestore';
 import { db } from './firebase';
 import { Notification, Referral, Role } from '../types';
 import { getOfflineReferrals, deleteOfflineReferral } from './db';
+import type { NotificationKey, NotificationVars } from '../i18n/notifications';
 
 // Matches the shape of DataContext's createNotification exactly (not a
 // widened `string`/`string[]`), so that callback can be passed here directly
 // without a TS2322 mismatch on `type`/`targetRoles`.
 export type CreateNotificationFn = (params: {
-  title: string;
-  message: string;
+  key: NotificationKey;
+  vars: NotificationVars;
   type: Notification['type'];
   referralId: string;
   facilityId: string;
@@ -90,11 +91,16 @@ export async function syncOfflineReferrals(options: {
   }
 
   for (const ref of synced) {
+    const vars = {
+      priority: `@priority.${ref.priority}`,
+      facility: facilitiesById.get(ref.referringFacilityId)?.name || '@notif.facility',
+      depts: ref.receivingDepartments.join(', '),
+    };
     if (ref.receivingFacilityId === 'auto' && ref.candidateFacilityIds) {
       for (const candidateId of ref.candidateFacilityIds) {
         createNotification({
-          title: `New ${ref.priority.toUpperCase()} Referral (Auto-Routed - Synced)`,
-          message: `Referral from ${facilitiesById.get(ref.referringFacilityId)?.name || 'Facility'} for ${ref.receivingDepartments.join(', ')}`,
+          key: 'newReferralAutoSynced',
+          vars,
           type: ref.priority === 'emergency' ? 'urgent' : 'info',
           referralId: ref.id,
           facilityId: candidateId,
@@ -104,8 +110,8 @@ export async function syncOfflineReferrals(options: {
       }
     } else {
       createNotification({
-        title: `New ${ref.priority.toUpperCase()} Referral (Synced)`,
-        message: `Referral from ${facilitiesById.get(ref.referringFacilityId)?.name || 'Facility'} for ${ref.receivingDepartments.join(', ')}`,
+        key: 'newReferralSynced',
+        vars,
         type: ref.priority === 'emergency' ? 'urgent' : 'info',
         referralId: ref.id,
         facilityId: ref.receivingFacilityId,

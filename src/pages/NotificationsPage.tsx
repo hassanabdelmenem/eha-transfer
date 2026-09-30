@@ -9,6 +9,7 @@ import { ScreenHeader, headerActionClass } from '../components/layout/ScreenHead
 import { EmptyQueue } from '../components/dashboard/RoleHome';
 import { cn } from '../lib/utils';
 import { useI18n, type Language } from '../i18n';
+import { renderNotification } from '../i18n/notifications';
 
 // 2d inbox: a kind micro-label and an action label carrying the actual next
 // step, layered on top of the real `type` (which still drives the tint) via
@@ -108,8 +109,9 @@ export const NotificationsPage: React.FC = () => {
                   </span>
                   <time dateTime={notif.createdAt} className="font-mono text-[12px] font-medium text-slate-700 dark:text-white/65">{stamp(notif.createdAt, lang)}</time>
                 </div>
-                {/* Stored text (English today): its own direction, whatever the page's. */}
-                <p dir="auto" className="mt-1.5 text-[15.5px] leading-[1.45] text-ink dark:text-paper">{notif.message}</p>
+                {/* In the reader's language when the notification carries a catalogue key;
+                    older ones keep their stored English, laid out in its own direction. */}
+                <p dir="auto" className="mt-1.5 text-[15.5px] leading-[1.45] text-ink dark:text-paper">{renderNotification(lang, notif).message}</p>
                 {notif.referralId && (
                   <button
                     type="button"
