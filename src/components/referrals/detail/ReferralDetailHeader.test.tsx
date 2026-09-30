@@ -59,7 +59,8 @@ describe('ReferralDetailHeader & StageRail', () => {
     const onBack = vi.fn();
     const { rerender } = render(<ReferralDetailHeader referral={createMockReferral()} onBack={onBack} isDesktop={false} />);
     expect(screen.getByText(/Nadia Ibrahim, 40/i)).toBeInTheDocument();
-    expect(screen.getByText('H-555 · ICU · emergency')).toBeInTheDocument();
+    // Each fact is its own <bdi>, so match on the line's full text.
+    expect(screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'H-555 · ICU · emergency')).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText(/go back/i));
     expect(onBack).toHaveBeenCalledTimes(1);
 

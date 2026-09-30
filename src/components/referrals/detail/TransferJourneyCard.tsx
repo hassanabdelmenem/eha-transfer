@@ -2,6 +2,7 @@ import React from 'react';
 import { Building, Truck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/Card';
 import { Referral, Facility, User } from '../../../types';
+import { useI18n } from '../../../i18n';
 
 export interface TransferJourneyCardProps {
   referral: Referral;
@@ -15,10 +16,11 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
   fromFacility,
   toFacility,
 }) => {
+  const { t } = useI18n();
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Transfer Journey</CardTitle>
+        <CardTitle>{t('cards.journey')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-col gap-4 relative">
@@ -30,7 +32,7 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{fromFacility?.name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Origin</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('cards.origin')}</p>
             </div>
           </div>
 
@@ -39,9 +41,9 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
               <Truck className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">Outbound Transfer</p>
+              <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t('cards.outbound')}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {referral.status === 'in_transit' ? 'Currently in transit' : 'Pending'}
+                {referral.status === 'in_transit' ? t('cards.inTransit') : t('cards.pending')}
               </p>
             </div>
           </div>
@@ -55,12 +57,12 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
                 <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{toFacility?.name}</p>
                 {toFacility && Boolean(toFacility.isExternal) && (
                   <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200 font-semibold">
-                    External
+                    {t('cards.external')}
                   </span>
                 )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Destination ({referral.requiredBedType})
+                {t('cards.destination', { bed: referral.requiredBedType })}
               </p>
             </div>
           </div>
@@ -72,8 +74,8 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
                   <Truck className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">Return Transfer</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Pending Return</p>
+                  <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{t('cards.returnTransfer')}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('cards.pendingReturn')}</p>
                 </div>
               </div>
               
@@ -83,7 +85,7 @@ export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{fromFacility?.name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Final Return</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('cards.finalReturn')}</p>
                 </div>
               </div>
             </>

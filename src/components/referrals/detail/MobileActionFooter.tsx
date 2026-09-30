@@ -1,6 +1,7 @@
 import React from 'react';
 import { Phone } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { useI18n } from '../../../i18n';
 
 export type FooterTone = 'ink' | 'success' | 'warning' | 'warning-tint' | 'critical-outline' | 'outline';
 
@@ -34,6 +35,7 @@ export interface MobileActionFooterProps {
 
 /** Pinned to the bottom of the phone screen: one primary, one secondary, one call. */
 export const MobileActionFooter: React.FC<MobileActionFooterProps> = ({ footerPrimary, footerSecondary, footerCallNumber, remitLabel }) => {
+  const { t } = useI18n();
   if (!footerPrimary) return null;
 
   return (
@@ -67,7 +69,7 @@ export const MobileActionFooter: React.FC<MobileActionFooterProps> = ({ footerPr
           {footerCallNumber && (
             <a
               href={`tel:${footerCallNumber}`}
-              aria-label="Call the referring doctor"
+              aria-label={t('card.callReferrer')}
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-white/25 dark:text-white/80 dark:hover:bg-white/10"
             >
               <Phone className="h-5 w-5" aria-hidden="true" />
@@ -81,13 +83,14 @@ export const MobileActionFooter: React.FC<MobileActionFooterProps> = ({ footerPr
 
 /** The same actions, inline at the top right of the desktop header. */
 export const InlineDetailActions: React.FC<MobileActionFooterProps & { footerTertiary?: FooterAction | null }> = ({ footerPrimary, footerSecondary, footerTertiary, footerCallNumber }) => {
+  const { t } = useI18n();
   if (!footerPrimary) return null;
   return (
     <>
       {footerCallNumber && (
         <a
           href={`tel:${footerCallNumber}`}
-          aria-label="Call the referring doctor"
+          aria-label={t('card.callReferrer')}
           className="flex h-12 w-12 items-center justify-center rounded-[10px] border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-white/25 dark:text-white/80"
         >
           <Phone className="h-5 w-5" aria-hidden="true" />

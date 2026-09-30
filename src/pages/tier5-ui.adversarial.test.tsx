@@ -593,7 +593,7 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
       })];
       renderDetailPage();
 
-      expect(screen.getByText(/Dr\. Khaled Mostafa — 01234567890/i)).toBeInTheDocument();
+      expect(screen.getByText((_, el) => el?.tagName === 'P' && /Dr\. Khaled Mostafa — 01234567890/i.test(el.textContent ?? ''))).toBeInTheDocument();
 
       const dispatchBtns = screen.getAllByRole('button', { name: /dispatch ambulance/i });
       expect(dispatchBtns[0]).not.toBeDisabled();
