@@ -9,7 +9,7 @@ import { PatientConsentCard } from './PatientConsentCard';
 import { EscortAssignmentForm } from './EscortAssignmentForm';
 import { CancellationDialog } from './CancellationDialog';
 import { Facility, Referral, ReferralStatus, User } from '../../../types';
-import { useI18n } from '../../../i18n';
+import { useI18n, typedDir } from '../../../i18n';
 
 export interface ReferralActionConsoleProps {
   /** Action labels the desktop header already shows (lower-case); the console skips those buttons so each exists once. */
@@ -117,7 +117,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
             {t('console.notes')}
           </label>
           <VoiceTextarea
-            dir="auto"
+            dir={typedDir(notes)}
             className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
             rows={2}
             value={notes}

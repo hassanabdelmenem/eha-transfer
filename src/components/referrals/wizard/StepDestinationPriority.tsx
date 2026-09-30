@@ -5,6 +5,7 @@ import { NETWORK_DEPARTMENTS, BED_TYPES } from './types';
 import { ChoicePill, FieldError, FieldHint, FieldLabel, StepHeading, inputClass, textareaClass } from './fields';
 import { cn } from '../../../lib/utils';
 import { isSlaTracked, SLA_MINUTES } from '../../../lib/sla';
+import { useI18n, typedDir } from '../../../i18n';
 
 interface StepDestinationPriorityProps {
   receivingDepartments: string[];
@@ -32,16 +33,17 @@ interface StepDestinationPriorityProps {
   fieldErrors?: { departments?: string; facility?: string; reason?: string };
 }
 
-const PRIORITIES: { value: ReferralPriority; label: string; sub: string; tone: 'critical' | 'warning' | 'ink' }[] = [
-  { value: 'emergency', label: 'Emergency', sub: 'Immediate', tone: 'critical' },
-  { value: 'urgent', label: 'Urgent', sub: '2–6 hours', tone: 'warning' },
-  { value: 'routine', label: 'Routine', sub: '24–48 hours', tone: 'ink' },
+// Words: destinationStep.<value> and destinationStep.<value>Sub.
+const PRIORITIES: { value: ReferralPriority; tone: 'critical' | 'warning' | 'ink' }[] = [
+  { value: 'emergency', tone: 'critical' },
+  { value: 'urgent', tone: 'warning' },
+  { value: 'routine', tone: 'ink' },
 ];
 
-const TRANSFER: { value: ReferralTransferType; label: string }[] = [
-  { value: 'one_way', label: 'One way' },
-  { value: 'service_and_return', label: 'Service and return' },
-  { value: 'assessment_with_return', label: 'Assessment' },
+const TRANSFER: { value: ReferralTransferType; key: 'oneWay' | 'serviceReturn' | 'assessment' }[] = [
+  { value: 'one_way', key: 'oneWay' },
+  { value: 'service_and_return', key: 'serviceReturn' },
+  { value: 'assessment_with_return', key: 'assessment' },
 ];
 
 const freeBeds = (f: Facility, bed: BedType) => {
@@ -97,6 +99,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
   isOnline,
   fieldErrors,
 }) => {
+  const { t } = useI18n();
   const toggleDepartment = (dept: string) => {
     setReceivingDepartments(prev => (prev.includes(dept) ? prev.filter(d => d !== dept) : [...prev, dept]));
     setReceivingFacilityId('');
@@ -107,6 +110,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
   const withBeds = ranked.filter(f => freeBeds(f, requiredBedType) > 0).length;
 
   const v = patientData.vitalSigns;
+  // Vital abbreviations as monitors print them (T for temperature).
   const vitalsLine = [
     v?.hr !== undefined && `HR ${v.hr}`,
     v?.bp && `BP ${v.bp}`,
@@ -115,45 +119,47 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
     v?.rr !== undefined && `RR ${v.rr}`,
     v?.gcs !== undefined && `GCS ${v.gcs}`,
   ].filter(Boolean).join(' · ');
+  const notEntered = t('destinationStep.notEntered');
+  const gender = t(`gender.${patientData.gender === 'female' ? 'female' : patientData.gender === 'other' ? 'unspecified' : 'male'}`);
   const review: { label: string; value: string; step: number }[] = [
-    { label: 'Patient', value: patientData.name ? `${patientData.name}${patientData.age !== undefined ? `, ${patientData.age}` : ''}, ${patientData.gender || 'male'} · ${patientData.hospitalId || 'no hospital ID'}` : 'Not entered', step: 1 },
-    { label: 'Vitals', value: vitalsLine || 'None recorded', step: 2 },
-    { label: 'Complaint', value: patientData.complaint || 'Not entered', step: 3 },
-    { label: 'Diagnosis', value: [patientData.diagnosis, (patientData.attachments?.length ?? 0) > 0 && `${patientData.attachments!.length} attachment${patientData.attachments!.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ') || 'Not entered', step: 4 },
+    { label: t('destinationStep.rowPatient'), value: patientData.name ? `${patientData.name}${patientData.age !== undefined ? `, ${patientData.age}` : ''}, ${gender} · ${patientData.hospitalId || t('destinationStep.noHospitalId')}` : notEntered, step: 1 },
+    { label: t('destinationStep.rowVitals'), value: vitalsLine || t('destinationStep.noneRecorded'), step: 2 },
+    { label: t('destinationStep.rowComplaint'), value: patientData.complaint || notEntered, step: 3 },
+    { label: t('destinationStep.rowDiagnosis'), value: [patientData.diagnosis, (patientData.attachments?.length ?? 0) > 0 && t('destinationStep.attachmentsCount', { count: patientData.attachments!.length })].filter(Boolean).join(' · ') || notEntered, step: 4 },
     // The reason is on this step, so Edit takes the focus to it rather than changing step.
-    { label: 'Reason', value: reasonForReferral.trim() || 'Not entered', step: 5 },
+    { label: t('destinationStep.rowReason'), value: reasonForReferral.trim() || notEntered, step: 5 },
   ];
   const editRow = (step: number) => (step === 5 ? document.getElementById('reasonForReferral')?.focus() : onEditStep(step));
 
   return (
     <div className="space-y-6">
-      <StepHeading>Where it goes</StepHeading>
+      <StepHeading>{t('destinationStep.heading')}</StepHeading>
 
       <fieldset>
         <legend className="mb-1.5 text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
-          Priority<span className="sr-only"> (required)</span>
+          {t('destinationStep.priority')}<span className="sr-only"> {t('wizard.required')}</span>
         </legend>
         <div className="grid grid-cols-3 gap-2">
           {PRIORITIES.map(p => (
-            <ChoicePill key={p.value} type="radio" name="priority" checked={priority === p.value} onChange={() => setPriority(p.value)} sub={p.sub} tone={p.tone} className="min-h-[60px]">
-              {p.label}
+            <ChoicePill key={p.value} type="radio" name="priority" checked={priority === p.value} onChange={() => setPriority(p.value)} sub={t(`destinationStep.${p.value}Sub`)} tone={p.tone} className="min-h-[60px]">
+              {t(`destinationStep.${p.value}`)}
             </ChoicePill>
           ))}
         </div>
         <FieldHint>
           {isSlaTracked({ status: 'pending', priority, requiredBedType })
-            ? `If nobody responds in ${SLA_MINUTES} minutes it escalates itself — the clock starts when it reaches the server.`
-            : 'No response clock for this priority and bed type.'}
+            ? t('destinationStep.clockHint', { minutes: SLA_MINUTES })
+            : t('destinationStep.noClock')}
         </FieldHint>
       </fieldset>
 
       <div>
         <FieldLabel id="departments-label" required aside={
           <span className="text-[12.5px] text-slate-500 dark:text-white/60">
-            {receivingDepartments.length === 0 ? 'Pick at least one' : `${receivingDepartments.length} selected`}
+            {receivingDepartments.length === 0 ? t('destinationStep.pickOne') : t('destinationStep.selected', { count: receivingDepartments.length })}
           </span>
         }>
-          Receiving departments
+          {t('destinationStep.departments')}
         </FieldLabel>
         <div
           role="group"
@@ -188,10 +194,10 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
       </div>
 
       <div>
-        <FieldLabel htmlFor="requiredBedType" required>Bed needed</FieldLabel>
+        <FieldLabel htmlFor="requiredBedType" required>{t('destinationStep.bedNeeded')}</FieldLabel>
         <select id="requiredBedType" required value={requiredBedType} onChange={e => setRequiredBedType(e.target.value as BedType)} className={inputClass(false, 'appearance-auto')}>
           {BED_TYPES.map(b => (
-            <option key={b.value} value={b.value}>{b.label}</option>
+            <option key={b.value} value={b.value}>{t(`destinationStep.bed.${b.value}`)}</option>
           ))}
         </select>
       </div>
@@ -199,7 +205,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-3">
           <label htmlFor="receivingFacility" className="text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
-            Destination<span className="sr-only"> (required)</span>
+            {t('destinationStep.destination')}<span className="sr-only"> {t('wizard.required')}</span>
           </label>
           <label className="flex min-h-[48px] cursor-pointer items-center gap-2 text-[14px] font-semibold text-ink dark:text-paper">
             <input
@@ -208,15 +214,15 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
               onChange={e => setIsAutoRouting(e.target.checked)}
               className="h-5 w-5 rounded-[5px] accent-ink dark:accent-paper"
             />
-            Auto-Route
+            {t('destinationStep.autoRoute')}
           </label>
         </div>
         {isAutoRouting ? (
           <>
             <p className="rounded-[10px] border border-slate-200 bg-white px-3.5 py-3 text-[14.5px] leading-[1.45] text-ink dark:border-white/12 dark:bg-white/5 dark:text-paper">
               {receivingDepartments.length === 0
-                ? 'Pick a department and the matching hospitals are notified together.'
-                : `Notifies ${availableFacilities.length} matching ${availableFacilities.length === 1 ? 'hospital' : 'hospitals'} together — ${withBeds} with a free ${requiredBedType} bed now.`}
+                ? t('destinationStep.autoPickFirst')
+                : t('destinationStep.autoNotifies', { hospitals: t('wizard.matchingHospitals', { count: availableFacilities.length }), withBeds, bed: requiredBedType })}
             </p>
             {/* Kept for keyboard users who pick a hospital straight from the list. */}
             <select
@@ -232,7 +238,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
               }}
               className="sr-only"
             >
-              <option value="auto">Auto-Route</option>
+              <option value="auto">{t('destinationStep.autoRoute')}</option>
               {ranked.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
             </select>
           </>
@@ -248,40 +254,41 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
               aria-describedby={fieldErrors?.facility ? 'receivingFacility-error' : 'receivingFacility-hint'}
               className={inputClass(!!fieldErrors?.facility, 'appearance-auto disabled:opacity-50')}
             >
-              <option value="">{receivingDepartments.length === 0 ? 'Pick a department first' : 'Choose a hospital'}</option>
+              <option value="">{receivingDepartments.length === 0 ? t('destinationStep.pickDeptFirst') : t('destinationStep.chooseHospital')}</option>
               {ranked.map(f => (
                 <option key={f.id} value={f.id}>
-                  {f.name} · {freeBeds(f, requiredBedType)} {requiredBedType} free
+                  {t('destinationStep.hospitalOption', { name: f.name, free: freeBeds(f, requiredBedType), bed: requiredBedType })}
                 </option>
               ))}
             </select>
             {fieldErrors?.facility ? (
               <FieldError id="receivingFacility-error">{fieldErrors.facility}</FieldError>
             ) : (
-              <FieldHint id="receivingFacility-hint">Listed by free {requiredBedType} beds right now, most first.</FieldHint>
+              <FieldHint id="receivingFacility-hint">{t('destinationStep.rankedHint', { bed: requiredBedType })}</FieldHint>
             )}
           </>
         )}
       </div>
 
       <fieldset>
-        <legend className="mb-1.5 text-[12.5px] font-semibold text-slate-700 dark:text-white/70">Transfer type</legend>
+        <legend className="mb-1.5 text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('destinationStep.transferType')}</legend>
         <div className="grid grid-cols-3 gap-2">
-          {TRANSFER.map(t => (
-            <ChoicePill key={t.value} type="radio" name="transferType" checked={transferType === t.value} onChange={() => setTransferType(t.value)}>
-              <span className="text-[13.5px]">{t.label}</span>
+          {TRANSFER.map(tt => (
+            <ChoicePill key={tt.value} type="radio" name="transferType" checked={transferType === tt.value} onChange={() => setTransferType(tt.value)}>
+              <span className="text-[13.5px]">{t(`destinationStep.${tt.key}`)}</span>
             </ChoicePill>
           ))}
         </div>
       </fieldset>
 
       <div>
-        <FieldLabel htmlFor="reasonForReferral" required>Why this transfer</FieldLabel>
+        <FieldLabel htmlFor="reasonForReferral" required>{t('destinationStep.why')}</FieldLabel>
         <textarea
           id="reasonForReferral"
           required
           rows={3}
-          placeholder="e.g. Needs primary PCI — only cath lab in network"
+          dir={typedDir(reasonForReferral)}
+          placeholder={t('destinationStep.whyPlaceholder')}
           value={reasonForReferral}
           onChange={e => setReasonForReferral(e.target.value)}
           aria-invalid={!!fieldErrors?.reason}
@@ -296,34 +303,34 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
           id="requires-accompanying-doctor"
           checked={requiresAccompanyingDoctor}
           onChange={setRequiresAccompanyingDoctor}
-          title="Doctor escort required"
-          sub="The ambulance cannot leave until your ER names the escorting doctor."
+          title={t('destinationStep.escortTitle')}
+          sub={t('destinationStep.escortSub')}
         />
         <ToggleRow
           id="critical-alert"
           checked={sendCriticalAlert}
           onChange={setSendCriticalAlert}
-          title="Send a critical alert"
-          sub="Pushes an alert to the receiving hospital's leadership as well as the department."
+          title={t('destinationStep.alertTitle')}
+          sub={t('destinationStep.alertSub')}
         />
       </div>
 
       <section aria-labelledby="review-heading" className="pt-2">
-        <h3 id="review-heading" className="font-heading text-[20px] font-semibold tracking-[-0.02em] text-ink dark:text-paper">Ready to send</h3>
+        <h3 id="review-heading" className="font-heading text-[20px] font-semibold tracking-[-0.02em] text-ink dark:text-paper">{t('destinationStep.ready')}</h3>
         <ul className="mt-3 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.04]">
           {review.map(r => (
             <li key={r.label} className="flex items-center gap-3 py-2.5 pe-1.5 ps-3.5">
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">{r.label}</p>
-                <p className="mt-0.5 text-[14.5px] leading-[1.4] text-ink dark:text-paper">{r.value}</p>
+                <p dir="auto" className="mt-0.5 text-[14.5px] leading-[1.4] text-ink dark:text-paper">{r.value}</p>
               </div>
               <button
                 type="button"
                 onClick={() => editRow(r.step)}
-                aria-label={`Edit ${r.label.toLowerCase()}`}
+                aria-label={t('destinationStep.editRow', { row: r.label.toLowerCase() })}
                 className="min-h-[48px] shrink-0 rounded-[8px] px-3 text-[14px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300"
               >
-                Edit
+                {t('destinationStep.edit')}
               </button>
             </li>
           ))}
@@ -333,7 +340,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
       {!isOnline && (
         <p className="flex items-start gap-2.5 rounded-[10px] border border-warning-700 bg-warning-100 px-3.5 py-3 text-[14px] font-medium leading-[1.45] text-warning-900 dark:border-warning-600/60 dark:bg-warning-900/40 dark:text-warning-100">
           <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          You are offline. This referral is stored on the phone and sends the moment you have signal — the 30-minute response clock starts then.
+          {t('destinationStep.offline', { minutes: SLA_MINUTES })}
         </p>
       )}
     </div>

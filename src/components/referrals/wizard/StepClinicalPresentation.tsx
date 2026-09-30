@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { PatientData } from '../../../types';
 import { VoiceTextarea } from '../../ui/VoiceTextarea';
 import { FieldError, FieldLabel, StepHeading, inputClass, textareaClass } from './fields';
+import { useI18n, typedDir } from '../../../i18n';
 
 interface StepClinicalPresentationProps {
   patientData: Partial<PatientData>;
@@ -16,6 +17,7 @@ export const StepClinicalPresentation: React.FC<StepClinicalPresentationProps> =
   setPatientData,
   fieldErrors,
 }) => {
+  const { t } = useI18n();
   // Stable identity: VoiceTextarea rebuilds its speech engine whenever this
   // changes, which would cut dictation off on every keystroke.
   const onPresentation = useCallback(
@@ -24,15 +26,16 @@ export const StepClinicalPresentation: React.FC<StepClinicalPresentationProps> =
   );
   return (
   <div className="space-y-5">
-    <StepHeading>Complaint and presentation</StepHeading>
+    <StepHeading>{t('presentationStep.heading')}</StepHeading>
 
     <div>
-      <FieldLabel htmlFor="complaint" required>Chief complaint</FieldLabel>
+      <FieldLabel htmlFor="complaint" required>{t('presentationStep.complaint')}</FieldLabel>
       <input
         id="complaint"
         required
         autoComplete="off"
-        placeholder="e.g. Crushing chest pain, 90 min"
+        dir={typedDir(patientData.complaint)}
+        placeholder={t('presentationStep.complaintPlaceholder')}
         value={patientData.complaint || ''}
         onChange={e => setPatientData(prev => ({ ...prev, complaint: e.target.value }))}
         aria-invalid={!!fieldErrors?.complaint}
@@ -43,11 +46,12 @@ export const StepClinicalPresentation: React.FC<StepClinicalPresentationProps> =
     </div>
 
     <div>
-      <FieldLabel htmlFor="presentation" required>Presentation</FieldLabel>
+      <FieldLabel htmlFor="presentation" required>{t('presentationStep.presentation')}</FieldLabel>
       <VoiceTextarea
         id="presentation"
         required
-        placeholder="What you found, what you gave, how they responded"
+        dir={typedDir(patientData.presentation)}
+        placeholder={t('presentationStep.presentationPlaceholder')}
         value={patientData.presentation || ''}
         onValueChange={onPresentation}
         aria-invalid={!!fieldErrors?.presentation}
