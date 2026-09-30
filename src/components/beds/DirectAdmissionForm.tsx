@@ -3,6 +3,7 @@ import { BedType, Facility } from '../../types';
 import { Button } from '../ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { UserPlus, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { useI18n, typedDir } from '../../i18n';
 
 export interface DirectAdmissionFormData {
   facilityId: string;
@@ -44,6 +45,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
   hideAdminSelector = false,
   className = '',
 }) => {
+  const { t } = useI18n();
   const [patientName, setPatientName] = useState('');
   const [hospitalId, setHospitalId] = useState('');
   const [department, setDepartment] = useState('');
@@ -62,19 +64,19 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
   const validate = () => {
     const errors: Record<string, string> = {};
     if (!patientName.trim()) {
-      errors.patientName = 'Patient name is required.';
+      errors.patientName = t('admission.errors.patientName');
     }
     if (!hospitalId.trim()) {
-      errors.hospitalId = 'Hospital ID (HID) is required.';
+      errors.hospitalId = t('admission.errors.hospitalId');
     }
     if (!department) {
-      errors.department = 'Please select an admitting department.';
+      errors.department = t('admission.errors.department');
     }
     if (!bedType) {
-      errors.bedType = 'Please select a bed type.';
+      errors.bedType = t('admission.errors.bedType');
     }
     if (age && (Number(age) < 0 || Number(age) > 125 || isNaN(Number(age)))) {
-      errors.age = 'Please enter a valid age between 0 and 125.';
+      errors.age = t('admission.errors.age');
     }
     return errors;
   };
@@ -126,7 +128,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
               htmlFor="admitFacility"
               className="text-sm font-semibold text-slate-700 dark:text-slate-300 shrink-0"
             >
-              Admin View:
+              {t('beds.adminView')}
             </label>
             <select
               id="admitFacility"
@@ -134,7 +136,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
               onChange={(e) => onSelectFacility(e.target.value)}
               className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[44px]"
             >
-              <option value="">Select Facility to Manage...</option>
+              <option value="">{t('beds.selectToManage')}</option>
               {facilities.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
@@ -150,7 +152,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
           <CardHeader className="pb-3">
             <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Admission Details
+              {t('admission.details')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -160,7 +162,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                 className="p-3 rounded-xl bg-critical-50 dark:bg-critical-950/40 border border-critical-200 dark:border-critical-800 text-critical-700 dark:text-critical-300 text-xs font-medium flex items-center gap-2"
               >
                 <AlertCircle className="w-4 h-4 shrink-0 text-critical-500" />
-                <span>Please correct the highlighted fields below before submitting.</span>
+                <span>{t('admission.fixFields')}</span>
               </div>
             )}
 
@@ -171,13 +173,14 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   htmlFor="admitPatientName"
                   className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
                 >
-                  Patient Name <span className="text-critical-500">*</span>
+                  {t('admission.patientName')} <span className="text-critical-500">*</span>
                 </label>
                 <input
                   id="admitPatientName"
                   type="text"
                   required
-                  placeholder="Full Name"
+                  dir={typedDir(patientName)}
+                  placeholder={t('admission.fullName')}
                   className={`w-full rounded-xl border ${
                     formErrors.patientName
                       ? 'border-critical-500 focus:ring-critical-500'
@@ -203,13 +206,13 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   htmlFor="admitHospitalId"
                   className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
                 >
-                  Hospital ID (HID) <span className="text-critical-500">*</span>
+                  {t('admission.hospitalId')} <span className="text-critical-500">*</span>
                 </label>
                 <input
                   id="admitHospitalId"
                   type="text"
                   required
-                  placeholder="e.g. H-12345"
+                  placeholder={t('admission.hospitalIdPlaceholder')}
                   className={`w-full rounded-xl border ${
                     formErrors.hospitalId
                       ? 'border-critical-500 focus:ring-critical-500'
@@ -238,7 +241,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   htmlFor="admitDepartment"
                   className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
                 >
-                  Admitting Department <span className="text-critical-500">*</span>
+                  {t('admission.department')} <span className="text-critical-500">*</span>
                 </label>
                 <select
                   id="admitDepartment"
@@ -256,7 +259,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     }
                   }}
                 >
-                  <option value="">Select Department...</option>
+                  <option value="">{t('admission.selectDepartment')}</option>
                   {facility.departments.map((d) => (
                     <option key={d} value={d}>
                       {d}
@@ -275,7 +278,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   htmlFor="admitBedType"
                   className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
                 >
-                  Bed Type <span className="text-critical-500">*</span>
+                  {t('admission.bedType')} <span className="text-critical-500">*</span>
                 </label>
                 <select
                   id="admitBedType"
@@ -293,10 +296,9 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     }
                   }}
                 >
-                  <option value="Ward">General Ward</option>
-                  <option value="ICU">ICU (Intensive Care)</option>
-                  <option value="CCU">CCU (Cardiac Care)</option>
-                  <option value="PICU">PICU (Pediatric ICU)</option>
+                  {(['Ward', 'ICU', 'CCU', 'PICU'] as BedType[]).map(b => (
+                    <option key={b} value={b}>{t(`admission.bed.${b}`)}</option>
+                  ))}
                 </select>
                 {formErrors.bedType && (
                   <p className="text-[11px] text-critical-600 dark:text-critical-400 mt-1 font-medium">
@@ -313,14 +315,14 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   htmlFor="admitPatientAge"
                   className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
                 >
-                  Age (years)
+                  {t('admission.age')}
                 </label>
                 <input
                   id="admitPatientAge"
                   type="number"
                   min="0"
                   max="125"
-                  placeholder="e.g. 45"
+                  placeholder={t('admission.agePlaceholder')}
                   className={`w-full rounded-xl border ${
                     formErrors.age
                       ? 'border-critical-500 focus:ring-critical-500'
@@ -343,10 +345,10 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
 
               <div className="sm:col-span-9">
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Gender
+                  {t('admission.gender')}
                 </label>
                 <div className="flex flex-wrap gap-4 items-center min-h-[44px]">
-                  {['male', 'female', 'other'].map(g => (
+                  {(['male', 'female', 'other'] as const).map(g => (
                     <label key={g} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
@@ -356,7 +358,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                         onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'other')}
                         className="w-5 h-5 text-blue-600 focus:ring-blue-500 border-slate-300"
                       />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">{g}</span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">{t(`gender.${g === 'other' ? 'unspecified' : g}`)}</span>
                     </label>
                   ))}
                 </div>
@@ -373,12 +375,12 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                 {showClinicalDetails ? (
                   <>
                     <ChevronUp className="w-4 h-4" />
-                    Hide Additional Clinical Details
+                    {t('admission.hideDetails')}
                   </>
                 ) : (
                   <>
                     <ChevronDown className="w-4 h-4" />
-                    Add Clinical Notes & Identifiers (Optional)
+                    {t('admission.showDetails')}
                   </>
                 )}
               </button>
@@ -392,12 +394,12 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                       htmlFor="admitNationalId"
                       className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
                     >
-                      National ID
+                      {t('admission.nationalId')}
                     </label>
                     <input
                       id="admitNationalId"
                       type="text"
-                      placeholder="14-digit National ID"
+                      placeholder={t('admission.nationalIdPlaceholder')}
                       className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[44px]"
                       value={nationalId}
                       onChange={(e) => setNationalId(e.target.value)}
@@ -409,12 +411,12 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                       htmlFor="admitPhoneNumber"
                       className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
                     >
-                      Phone Number
+                      {t('admission.phone')}
                     </label>
                     <input
                       id="admitPhoneNumber"
                       type="tel"
-                      placeholder="e.g. 01012345678"
+                      placeholder={t('admission.phonePlaceholder')}
                       className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[44px]"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
@@ -427,12 +429,13 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     htmlFor="admitDiagnosis"
                     className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
                   >
-                    Admission Diagnosis
+                    {t('admission.diagnosis')}
                   </label>
                   <input
                     id="admitDiagnosis"
                     type="text"
-                    placeholder="e.g. Acute STEMI / Respiratory Distress"
+                    dir={typedDir(diagnosis)}
+                    placeholder={t('admission.diagnosisPlaceholder')}
                     className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[44px]"
                     value={diagnosis}
                     onChange={(e) => setDiagnosis(e.target.value)}
@@ -444,12 +447,13 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     htmlFor="admitChiefComplaint"
                     className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
                   >
-                    Chief Complaint & Clinical Presentation
+                    {t('admission.complaint')}
                   </label>
                   <textarea
                     id="admitChiefComplaint"
                     rows={2}
-                    placeholder="Presenting symptoms and triage assessment..."
+                    dir={typedDir(chiefComplaint)}
+                    placeholder={t('admission.complaintPlaceholder')}
                     className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden"
                     value={chiefComplaint}
                     onChange={(e) => setChiefComplaint(e.target.value)}
@@ -461,12 +465,13 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     htmlFor="admitNotes"
                     className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
                   >
-                    Nursing / Admission Notes
+                    {t('admission.notes')}
                   </label>
                   <textarea
                     id="admitNotes"
                     rows={2}
-                    placeholder="Initial orders, isolation requirements, or notes..."
+                    dir={typedDir(notes)}
+                    placeholder={t('admission.notesPlaceholder')}
                     className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -485,7 +490,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   disabled={isSubmitting}
                   className="w-full sm:w-auto"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               )}
               <Button
@@ -495,7 +500,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
               >
                 <UserPlus className="w-4 h-4 me-2" />
                 {/* Accessible text matching `/Admit Patient & Update Capacity/i` and `/Admit Patient/i` */}
-                Admit Patient & Update Capacity
+                {t('admission.submit')}
               </Button>
             </div>
           </CardContent>

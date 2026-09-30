@@ -2,6 +2,7 @@ import React from 'react';
 import { Referral, BedType } from '../../types';
 import { Badge } from '../ui/Badge';
 import { HeartPulse, ArrowRight, UserCheck, Clock, Hospital } from 'lucide-react';
+import { useI18n } from '../../i18n';
 
 export interface ArrivedTransfersQueueProps {
   referrals: Referral[];
@@ -16,6 +17,7 @@ export const ArrivedTransfersQueue: React.FC<ArrivedTransfersQueueProps> = ({
   admittingId = null,
   facilityNameMap,
 }) => {
+  const { t } = useI18n();
   if (referrals.length === 0) {
     return null;
   }
@@ -25,20 +27,20 @@ export const ArrivedTransfersQueue: React.FC<ArrivedTransfersQueueProps> = ({
       <div className="flex items-center justify-between">
         <h2 className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-warning-500 motion-safe:animate-pulse" />
-          Arrived · waiting to be admitted ({referrals.length})
+          {t('beds.arrivedQueue', { count: referrals.length })}
         </h2>
       </div>
 
       <div className="space-y-2.5">
         {referrals.map((r) => {
-          const patientName = r.patientData?.name || 'Unknown patient';
+          const patientName = r.patientData?.name || t('beds.unknownPatient');
           const age = r.patientData?.age ?? 0;
           const bedType: BedType = r.requiredBedType || 'Ward';
           const isBusy = admittingId === r.id;
           const originFacility =
             (facilityNameMap && facilityNameMap.get(r.referringFacilityId)) ||
             r.referringFacilityId ||
-            'Referring Facility';
+            t('beds.referringFacility');
 
           return (
             <div
@@ -61,32 +63,32 @@ export const ArrivedTransfersQueue: React.FC<ArrivedTransfersQueueProps> = ({
                         : 'info'
                     }
                   >
-                    {r.priority.toUpperCase()}
+                    {t(`priority.${r.priority}`)}
                   </Badge>
                   <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md">
-                    HID: {r.patientData?.hospitalId || 'N/A'}
+                    {t('referralList.hid', { id: r.patientData?.hospitalId || t('common.notApplicable') })}
                   </span>
                 </div>
 
                 <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
-                  Arrived · waiting to be admitted
+                  {t('beds.arrived')}
                 </p>
 
                 <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400 flex-wrap pt-1">
                   <span className="flex items-center gap-1">
                     <Hospital className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                    From: <strong className="text-slate-700 dark:text-slate-200">{originFacility}</strong>
+                    {t('beds.from')} <strong className="text-slate-700 dark:text-slate-200"><bdi>{originFacility}</bdi></strong>
                   </span>
                   {r.patientData?.vitalSigns && (
-                    <span className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/60 px-2 py-0.5 rounded text-[11px] font-mono">
+                    <span dir="ltr" className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/60 px-2 py-0.5 rounded text-[11px] font-mono">
                       <HeartPulse className="w-3 h-3 text-critical-500" />
                       HR: {r.patientData.vitalSigns.hr ?? '--'} | BP: {r.patientData.vitalSigns.bp || '--'} | SpO2: {r.patientData.vitalSigns.spo2 ? `${r.patientData.vitalSigns.spo2}%` : '--'}
                     </span>
                   )}
                   {r.patientData?.diagnosis && (
                     <span className="truncate max-w-xs text-slate-500">
-                      Dx: {r.patientData.diagnosis}
+                      {t('beds.dx', { diagnosis: r.patientData.diagnosis })}
                     </span>
                   )}
                 </div>
@@ -95,7 +97,7 @@ export const ArrivedTransfersQueue: React.FC<ArrivedTransfersQueueProps> = ({
               <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
                 <div className="hidden sm:flex flex-col items-end text-end">
                   <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    Allocated Unit
+                    {t('beds.allocatedUnit')}
                   </span>
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     {bedType}
@@ -110,7 +112,7 @@ export const ArrivedTransfersQueue: React.FC<ArrivedTransfersQueueProps> = ({
                 >
                   <UserCheck className="w-4 h-4" />
                   {/* Exact text: "Admit to {bedType} bed" matches /Admit to (ICU|CCU|PICU|Ward) bed/i */}
-                  Admit to {bedType} bed
+                  {t('card.admitTo', { bed: bedType })}
                 </button>
               </div>
             </div>

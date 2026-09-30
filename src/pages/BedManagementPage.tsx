@@ -12,6 +12,7 @@ import { ActiveInpatientCensus } from '../components/beds/ActiveInpatientCensus'
 import { DirectAdmissionModal } from '../components/beds/DirectAdmissionModal';
 import { UserPlus, Settings } from 'lucide-react';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
+import { useI18n } from '../i18n';
 
 export const BedManagementPage: React.FC = () => {
   // 1. All hooks called unconditionally at the top
@@ -34,6 +35,7 @@ export const BedManagementPage: React.FC = () => {
   const [admittingId, setAdmittingId] = useState<string | null>(null);
   const [dischargingId, setDischargingId] = useState<string | null>(null);
   const [isDirectAdmitOpen, setIsDirectAdmitOpen] = useState<boolean>(false);
+  const { t } = useI18n();
 
   const isAdmin = checkIsAdmin(user);
   const isLeadership =
@@ -161,9 +163,9 @@ export const BedManagementPage: React.FC = () => {
     setAdmittingId(referralId);
     try {
       await updateReferralStatus(referralId, 'admitted');
-      showToast('Patient admitted successfully to bed.', 'success');
+      showToast(t('beds.toastAdmitted'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not admit this patient.');
+      toastError(e, t('nurse.toastAdmitFailed'));
     } finally {
       setAdmittingId(null);
     }
@@ -174,9 +176,9 @@ export const BedManagementPage: React.FC = () => {
     setDischargingId(admissionId);
     try {
       await dischargeDirectAdmission(admissionId);
-      showToast('Patient discharged successfully.', 'success');
+      showToast(t('beds.toastDischarged'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not discharge this patient.');
+      toastError(e, t('beds.toastDischargeFailed'));
     } finally {
       setDischargingId(null);
     }
@@ -184,11 +186,11 @@ export const BedManagementPage: React.FC = () => {
 
   // 2. Early return guards after all hooks
   if (!user || (!['nurse', 'nursing_supervisor', 'head_of_department', 'er_room', 'hospital_manager', 'medical_director', 'deputy_manager'].includes(user.role) && !isAdmin)) {
-    return <div className="p-8 text-center text-slate-500">Access Denied. Nursing staff privileges required.</div>;
+    return <div className="p-8 text-center text-slate-500">{t('beds.accessDenied')}</div>;
   }
 
   if (!user.facilityId && !isAdmin) {
-    return <div className="p-8 text-center text-slate-500">Facility configuration missing.</div>;
+    return <div className="p-8 text-center text-slate-500">{t('beds.missingFacility')}</div>;
   }
 
   return (
@@ -197,10 +199,10 @@ export const BedManagementPage: React.FC = () => {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-            Bulk Bed Management
+            {t('beds.title')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1 mb-3">
-            Quickly update bed occupancy across {facility?.name || 'the facility'}. Total bed counts are configured under Facility Settings.
+            {t('beds.subtitle', { facility: facility?.name || t('beds.theFacility') })}
           </p>
           {isAdmin && (
             <select
@@ -208,7 +210,7 @@ export const BedManagementPage: React.FC = () => {
               onChange={(e) => setSelectedFacilityId(e.target.value)}
               className="w-full sm:w-72 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">-- Select Facility --</option>
+              <option value="">{t('beds.selectFacility')}</option>
               {facilities.map(f => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
@@ -223,7 +225,7 @@ export const BedManagementPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               <Settings className="w-4 h-4" />
-              Edit total capacity
+              {t('beds.editTotal')}
             </Link>
           )}
 
@@ -233,14 +235,14 @@ export const BedManagementPage: React.FC = () => {
             className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95"
           >
             <UserPlus className="w-4 h-4" />
-            Direct admit a walk-in
+            {t('beds.directAdmit')}
           </button>
         </div>
       </div>
 
       {loading ? (
         <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
-          <span className="sr-only">Loading facility data…</span>
+          <span className="sr-only">{t('beds.loading')}</span>
           <Skeleton className="h-10 w-64 rounded-xl" />
           <Skeleton className="h-48 w-full rounded-2xl" />
           <Skeleton className="h-96 w-full rounded-2xl" />
@@ -293,7 +295,7 @@ export const BedManagementPage: React.FC = () => {
         </div>
       ) : (
         <Card className="p-8 text-center text-slate-500 dark:text-slate-400">
-          Please select a facility above to manage beds.
+          {t('beds.pickFacility')}
         </Card>
       )}
     </div>

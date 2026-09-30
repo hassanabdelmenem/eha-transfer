@@ -2,6 +2,20 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-30: Arabic, facility settings, admin console, beds
+
+- #52 (inbox and secondary screens, part 1) merged at 8d0def3; CI's Playwright install hung again on one run
+  (cancelled and re-run).
+- Translated facility settings (verification queue, departments, capacity, facilities form and list,
+  staff table and its role picker), the admin console (system-level escalations, placement, waitlist
+  letters ط/ع/ر, free-bed tiles), bed management (KPIs, capacity cards and steppers, arrivals queue,
+  direct-admission census), the direct-admission page, form and dialog. ~260 new strings.
+- The "cannot grant role" toast now names the role by its label ("Hospital Manager", not
+  "hospital manager").
+- Verified: tsc, vitest 979/979 (new: settings with the add-facility form open, admin console, bed
+  management with the direct-admission dialog and its optional section open, admit page, all in
+  Arabic with no English interface words), Playwright 11/11, Arabic captures.
+
 ## 2026-09-30: Arabic, inbox and secondary screens (part 1)
 
 - #51 (intake wizard) merged at b4647be.
