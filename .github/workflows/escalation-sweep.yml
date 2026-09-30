@@ -8,7 +8,9 @@ name: Escalation sweep
 #
 # Owner decision (30 Sep 2026): a GitHub Actions timer instead of the Blaze
 # plan's scheduled Cloud Function. Known limits of GitHub timers:
-# - runs can start late under load (often minutes, sometimes more);
+# - runs can start late under load; on 30 Sep 2026 the */5 timer fired about
+#   every six hours, so the real 5-minute cadence is an external caller of
+#   workflow_dispatch (docs/DEPLOYMENT.md, "Escalation sweep");
 # - GitHub disables scheduled workflows after 60 days with no repository
 #   activity; re-enable from the Actions tab if that happens.
 #
