@@ -11,6 +11,7 @@ import { useReportQueue } from '../layout/Workspace';
 import { RoleHomeHeadline, MicroLabel, EmptyQueue } from './RoleHome';
 import { capacityTone } from '../../lib/capacityTone';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../i18n';
 
 const BED_TYPES: BedType[] = ['ICU', 'CCU', 'PICU', 'Ward'];
 
@@ -23,6 +24,7 @@ const BedStepperWidget: React.FC<{
   occupied: number;
   onChange: (occupied: number) => void;
 }> = ({ bedType, total, occupied, onChange }) => {
+  const { t } = useI18n();
   const free = Math.max(0, total - occupied);
   const tone = capacityTone(free, total);
   const stepBtn = 'flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[10px] border border-slate-300 bg-white text-ink transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10';
@@ -33,7 +35,7 @@ const BedStepperWidget: React.FC<{
         <div className="min-w-0">
           <p className="text-[17px] font-semibold leading-tight text-ink dark:text-paper">{bedType}</p>
           <p className={cn('mt-1 text-[13px] font-semibold leading-snug', tone.text)}>
-            {free} of {total} free · {occupied} occupied
+            {t('nurse.freeOccupied', { free, total, occupied })}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -41,19 +43,19 @@ const BedStepperWidget: React.FC<{
             type="button"
             onClick={() => onChange(Math.min(total, occupied + 1))}
             disabled={occupied >= total}
-            aria-label={`One more ${bedType} bed occupied`}
+            aria-label={t('nurse.oneMore', { bed: bedType })}
             className={stepBtn}
           >
             <Minus className="h-5 w-5" aria-hidden="true" />
           </button>
-          <output aria-live="polite" aria-label={`${bedType} beds free`} className="w-10 text-center text-[20px] font-semibold tabular-nums text-ink dark:text-paper">
+          <output aria-live="polite" aria-label={t('nurse.bedsFree', { bed: bedType })} className="w-10 text-center text-[20px] font-semibold tabular-nums text-ink dark:text-paper">
             {free}
           </output>
           <button
             type="button"
             onClick={() => onChange(Math.max(0, occupied - 1))}
             disabled={occupied <= 0}
-            aria-label={`One fewer ${bedType} bed occupied`}
+            aria-label={t('nurse.oneFewer', { bed: bedType })}
             className={stepBtn}
           >
             <Plus className="h-5 w-5" aria-hidden="true" />
@@ -69,6 +71,7 @@ const BedStepperWidget: React.FC<{
 
 export const NurseCockpit: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const {
     facilitiesById,
     updateFacilityCapacity,
@@ -124,9 +127,9 @@ export const NurseCockpit: React.FC = () => {
     setAdmittingId(referralId);
     try {
       await updateReferralStatus(referralId, 'admitted');
-      showToast('Patient admitted.', 'success');
+      showToast(t('nurse.toastAdmitted'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not admit this patient.');
+      toastError(e, t('nurse.toastAdmitFailed'));
     } finally {
       setAdmittingId(null);
     }
@@ -145,8 +148,8 @@ export const NurseCockpit: React.FC = () => {
   return (
     <div className="flex flex-col gap-3">
       <RoleHomeHeadline
-        title={scarcest ? `${scarcestFree} ${scarcest} bed${scarcestFree === 1 ? '' : 's'} free` : 'Beds'}
-        rationale="Every change publishes to the network immediately — that is what stops referrals being routed to a full unit."
+        title={scarcest ? t('nurse.title', { count: scarcestFree, bed: scarcest }) : t('nurse.beds')}
+        rationale={t('nurse.rationale')}
       />
 
       {configured.length > 0 ? (
@@ -162,15 +165,15 @@ export const NurseCockpit: React.FC = () => {
           ))}
         </div>
       ) : (
-        <EmptyQueue>No bed capacity configured for this facility yet.</EmptyQueue>
+        <EmptyQueue>{t('nurse.noCapacity')}</EmptyQueue>
       )}
 
       <section aria-labelledby="nurse-arrived" className="mt-4 flex flex-col gap-3">
-        <MicroLabel id="nurse-arrived">Arrived · waiting to be admitted</MicroLabel>
+        <MicroLabel id="nurse-arrived">{t('nurse.arrived')}</MicroLabel>
         {loading ? (
-          <SkeletonGroup label="Loading arrivals…"><Skeleton className="h-32 w-full rounded-xl" /></SkeletonGroup>
+          <SkeletonGroup label={t('nurse.loadingArrivals')}><Skeleton className="h-32 w-full rounded-xl" /></SkeletonGroup>
         ) : arrivedReferrals.length === 0 ? (
-          <p className="text-[14.5px] text-slate-700 dark:text-white/65">No transferred patients waiting for a bed.</p>
+          <p className="text-[14.5px] text-slate-700 dark:text-white/65">{t('nurse.noneArrived')}</p>
         ) : (
           arrivedReferrals.map(r => (
             <ReferralCockpitCard
@@ -187,13 +190,13 @@ export const NurseCockpit: React.FC = () => {
           to="/admissions/new"
           className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-[15px] font-semibold text-ink transition-colors hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10"
         >
-          <UserPlus className="h-5 w-5" aria-hidden="true" /> Direct admit a walk-in
+          <UserPlus className="h-5 w-5" aria-hidden="true" /> {t('nurse.directAdmit')}
         </Link>
         <Link
           to="/bed-management"
           className="self-center py-2 text-[14px] font-semibold text-slate-700 underline underline-offset-4 hover:text-ink dark:text-white/70 dark:hover:text-paper"
         >
-          Inpatient census and discharges
+          {t('nurse.census')}
         </Link>
       </section>
     </div>

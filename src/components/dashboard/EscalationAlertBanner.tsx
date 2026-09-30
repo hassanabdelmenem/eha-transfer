@@ -1,19 +1,16 @@
 import React from 'react';
 import { AlertTriangle, Phone } from 'lucide-react';
-import { describeCapacityEscalation } from '../../lib/routing';
 import { EscalationAlertBannerProps } from './types';
 import { cn } from '../../lib/utils';
 import { useWorkspace } from '../layout/Workspace';
+import { useI18n } from '../../i18n';
+import { en } from '../../i18n/en';
 
 // Why the case escalated, in the words the strip uses ("Escalated · no
-// response 34 min"). Lower-case: the strip sets its own case.
-const REASON_WORDS: Record<string, string> = {
-  sla_breach: 'no response',
-  no_beds_available: 'no beds in network',
-  no_matching_facility: 'no matching facility',
-  requirements_needed: 'requirements outstanding',
-  manual: 'raised by hand',
-};
+// response 34 min"): escalation.reason.* in the catalogue. Lower-case: the
+// strip sets its own case.
+type ReasonKey = keyof typeof en.escalation.reason;
+const isKnownReason = (k: string): k is ReasonKey => k in en.escalation.reason;
 
 const minutesSince = (iso: string | undefined): number | null => {
   const t = Date.parse(iso || '');
@@ -30,30 +27,37 @@ const minutesSince = (iso: string | undefined): number | null => {
 export const EscalationAlertBanner: React.FC<EscalationAlertBannerProps> = ({
   referral,
   onAction,
-  actionLabel = 'Review now',
+  actionLabel,
   secondaryAction,
   referrerPhone,
   referringFacilityName,
 }) => {
   // In the desktop workspace, mark the pinned case when it is the one open beside the queue.
+  const { t } = useI18n();
   const ws = useWorkspace();
   const selected = !!ws && ws.selectedId === referral.id;
   const reasonKey = referral.escalationReason || 'manual';
-  const reason = REASON_WORDS[reasonKey] || reasonKey.replace(/_/g, ' ');
+  const reason = isKnownReason(reasonKey) ? t(`escalation.reason.${reasonKey}`) : String(reasonKey).replace(/_/g, ' '); // legacy values outside the union
   const systemLevel = referral.escalationLevel === 'system';
   const mins = minutesSince(referral.escalatedAt || referral.createdAt);
   const strip = systemLevel
-    ? `System level · ${reason}`
-    : `Escalated · ${reason}${mins === null ? '' : ` ${mins} min`}`;
+    ? t('escalation.systemLevel', { reason })
+    : mins === null
+      ? t('escalation.escalated', { reason })
+      : t('escalation.escalatedFor', { reason, mins });
 
+  // Same sentences as lib/routing describeCapacityEscalation, which stays
+  // English because the sweep stores it in the referral's history.
   const capacitySentence =
-    reasonKey === 'no_beds_available' || reasonKey === 'no_matching_facility'
-      ? describeCapacityEscalation(reasonKey)
-      : null;
+    reasonKey === 'no_matching_facility'
+      ? t('escalation.noMatchingFacility')
+      : reasonKey === 'no_beds_available'
+        ? t('escalation.allFull')
+        : null;
 
   return (
     <section
-      aria-label="Escalated case"
+      aria-label={t('escalation.label')}
       aria-current={selected ? 'true' : undefined}
       className={cn('shrink-0 overflow-hidden rounded-xl border-2 border-critical-700 bg-critical-100 dark:border-critical-400/70 dark:bg-critical-950/45', selected && 'ring-4 ring-critical-700/25 dark:ring-critical-400/30')}
     >
@@ -64,14 +68,14 @@ export const EscalationAlertBanner: React.FC<EscalationAlertBannerProps> = ({
       <div className="px-[14px] pt-3 pb-[14px]">
         <p className="text-[17px] font-semibold leading-[1.25] text-ink dark:text-paper">
           {referral.patientData.name}, {referral.patientData.age}
-          {systemLevel && <span> · {referral.requiredBedType}</span>}
+          {systemLevel && <span> · <bdi>{referral.requiredBedType}</bdi></span>}
         </p>
         <p className="mt-[3px] text-[13.5px] leading-[1.4] text-slate-700 dark:text-white/70">
           {capacitySentence ?? (
             <>
-              {referral.requiredBedType} bed
-              {referral.reasonForReferral ? ` · ${referral.reasonForReferral}` : ''}
-              {referringFacilityName ? ` · from ${referringFacilityName}` : ''}
+              {t('escalation.bed', { bed: referral.requiredBedType })}
+              {referral.reasonForReferral ? <> · <bdi>{referral.reasonForReferral}</bdi></> : null}
+              {referringFacilityName ? ` · ${t('card.from', { facility: referringFacilityName })}` : ''}
             </>
           )}
         </p>
@@ -85,7 +89,7 @@ export const EscalationAlertBanner: React.FC<EscalationAlertBannerProps> = ({
                 onClick={() => onAction(referral)}
                 className="min-h-[52px] flex-1 rounded-[10px] bg-ink px-3 text-[15px] font-semibold text-paper transition-colors hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200"
               >
-                {actionLabel}
+                {actionLabel ?? t('home.reviewNow')}
               </button>
             )}
             {secondaryAction && (
@@ -100,7 +104,7 @@ export const EscalationAlertBanner: React.FC<EscalationAlertBannerProps> = ({
             {referrerPhone && (
               <a
                 href={`tel:${referrerPhone}`}
-                aria-label="Call the referring doctor"
+                aria-label={t('card.callReferrer')}
                 className={cn(
                   'flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[10px] border border-critical-700 bg-white text-critical-700 transition-colors hover:bg-critical-50',
                   'dark:border-critical-400/70 dark:bg-transparent dark:text-critical-300 dark:hover:bg-critical-950/60'

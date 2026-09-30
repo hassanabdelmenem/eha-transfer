@@ -13,12 +13,14 @@ import { ClinicianSegment } from './types';
 import { RoleHomeHeadline, SegmentedControl, Segment, EmptyQueue, MicroLabel, HomeActionBar, actionBarPrimary, actionBarSquare } from './RoleHome';
 import { standingPhrase } from '../../lib/referralStage';
 import { DraftReferralCard, readReferralDraft } from './DraftReferralCard';
+import { useI18n } from '../../i18n';
 
 export const ClinicianCockpit: React.FC = () => {
   const { user } = useAuth();
   const { referrals, directAdmissions, shiftLogs, facilitiesById } = useData();
   const navigate = useNavigate();
   const openCase = useOpenCase();
+  const { t } = useI18n();
 
   const [segment, setSegment] = useState<ClinicianSegment>('you');
   const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
@@ -107,18 +109,19 @@ export const ClinicianCockpit: React.FC = () => {
       const lastComment = [...(r.deptComments || [])]
         .reverse()
         .find(c => c.status === 'requirements_needed');
+      const dept = r.receivingDepartments?.[0] || t('clinician.theDepartment');
       return lastComment?.comment
-        ? `${r.receivingDepartments?.[0] || 'The department'} needs: ${lastComment.comment}`
-        : `${r.receivingDepartments?.[0] || 'The department'} sent this back with requirements.`;
+        ? t('clinician.deptNeeds', { dept, comment: lastComment.comment })
+        : t('clinician.deptSentBack', { dept });
     }
     if (r.requiresAccompanyingDoctor && !r.accompanyingDoctor) {
-      return 'ER cannot dispatch until an escorting doctor is named.';
+      return t('clinician.escortNeeded');
     }
     return undefined;
   };
 
   const youActionLabel = (r: Referral) =>
-    r.status === 'postponed' ? 'Answer requirements' : 'Name the escort';
+    r.status === 'postponed' ? t('clinician.answerRequirements') : t('clinician.nameEscort');
 
   const activeReferralsAdmitted = user
     ? referrals.filter(
@@ -144,48 +147,41 @@ export const ClinicianCockpit: React.FC = () => {
   if (!user) return null;
 
   const youCount = youBucket.length + (draft && canCreateReferral ? 1 : 0);
-  const facilityName = (id: string) => facilitiesById.get(id)?.name || 'the receiving hospital';
+  const facilityName = (id: string) => facilitiesById.get(id)?.name || t('clinician.theReceivingHospital');
   const segments: Segment<ClinicianSegment>[] = [
-    { key: 'you', label: 'You', count: youCount },
-    { key: 'them', label: 'Them', count: themBucket.length },
-    { key: 'moving', label: 'Moving', count: movingBucket.length },
+    { key: 'you', label: t('clinician.segment.you'), count: youCount },
+    { key: 'them', label: t('clinician.segment.them'), count: themBucket.length },
+    { key: 'moving', label: t('clinician.segment.moving'), count: movingBucket.length },
   ];
   // Inbound is for clinicians in a receiving department; it only takes a
   // segment when something is actually coming their way.
   if (inboundBucket.length > 0 || segment === 'inbound') {
-    segments.push({ key: 'inbound', label: 'Inbound', count: inboundBucket.length });
+    segments.push({ key: 'inbound', label: t('clinician.segment.inbound'), count: inboundBucket.length });
   }
-
-  const emptyCopy: Record<ClinicianSegment, string> = {
-    you: 'Nothing is blocked on you. Anything that needs your answer will appear here first.',
-    them: 'No referrals waiting on another team.',
-    moving: 'No patients on the road right now.',
-    inbound: 'Nothing on its way to your department.',
-  };
 
   return (
     <div className="flex flex-col gap-3">
       <RoleHomeHeadline
-        title={`${youCount} need${youCount === 1 ? 's' : ''} you`}
-        rationale="Blocked on something only you can do. Emergency first."
+        title={t('clinician.title', { count: youCount })}
+        rationale={t('clinician.rationale')}
       />
 
       <div className="mt-2">
-        <SegmentedControl label="Your referrals by who they wait on" segments={segments} value={segment} onChange={setSegment} />
+        <SegmentedControl label={t('clinician.segmentsLabel')} segments={segments} value={segment} onChange={setSegment} />
       </div>
 
       <div className="mt-1 flex flex-col gap-3">
         {activeSegmentReferrals.length === 0 ? (
           segment === 'you' && draft && canCreateReferral ? null :
-          <EmptyQueue>{emptyCopy[segment]}</EmptyQueue>
+          <EmptyQueue>{t(`clinician.empty.${segment}`)}</EmptyQueue>
         ) : (
           activeSegmentReferrals.map(r => (
             <ReferralCockpitCard
               key={r.id}
               referral={r}
               variant="clinician"
-              contextLine={<>{r.requiredBedType} · {standingPhrase(r, facilityName(r.receivingFacilityId))}</>}
-              actionLabel={segment === 'you' ? youActionLabel(r) : 'Open referral'}
+              contextLine={<><bdi>{r.requiredBedType}</bdi> · {standingPhrase(r, facilityName(r.receivingFacilityId), t)}</>}
+              actionLabel={segment === 'you' ? youActionLabel(r) : t('clinician.openReferral')}
               actionSentence={segment === 'you' ? youActionSentence(r) : undefined}
               onAction={() => openCase(r.id)}
               onSummary={() => setSummaryReferral(r)}
@@ -198,9 +194,9 @@ export const ClinicianCockpit: React.FC = () => {
 
       {/* Below the queue: context for the shift, never competing with it. */}
       <section aria-labelledby="clinician-admitted" className="mt-6">
-        <MicroLabel id="clinician-admitted">Admitted to your unit · {totalAdmittedInUnit}</MicroLabel>
+        <MicroLabel id="clinician-admitted">{t('clinician.admitted', { count: totalAdmittedInUnit })}</MicroLabel>
         {totalAdmittedInUnit === 0 ? (
-          <p className="mt-2.5 text-[14px] text-slate-700 dark:text-white/65">No patients currently admitted in your unit.</p>
+          <p className="mt-2.5 text-[14px] text-slate-700 dark:text-white/65">{t('clinician.noneAdmitted')}</p>
         ) : (
           <ul className="mt-2.5 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.04]">
             {departmentReferralAdmissions.map(r => (
@@ -212,7 +208,7 @@ export const ClinicianCockpit: React.FC = () => {
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-[15px] font-semibold text-ink dark:text-paper">{r.patientData.name}, {r.patientData.age}</span>
-                    <span className="block truncate text-[13px] text-slate-700 dark:text-white/65">{r.requiredBedType} · referral · <span className="font-mono">{r.patientData.hospitalId}</span></span>
+                    <span className="block truncate text-[13px] text-slate-700 dark:text-white/65"><bdi>{r.requiredBedType}</bdi> · {t('clinician.viaReferral')} · <bdi className="font-mono">{r.patientData.hospitalId}</bdi></span>
                   </span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-slate-500 rtl:-scale-x-100" aria-hidden="true" />
                 </button>
@@ -222,7 +218,7 @@ export const ClinicianCockpit: React.FC = () => {
               <li key={a.id} className="flex min-h-[52px] items-center px-[14px] py-2.5">
                 <span className="min-w-0">
                   <span className="block truncate text-[15px] font-semibold text-ink dark:text-paper">{a.patientName}</span>
-                  <span className="block truncate text-[13px] text-slate-700 dark:text-white/65">{a.bedType} · direct admission · <span className="font-mono">{a.hospitalId}</span></span>
+                  <span className="block truncate text-[13px] text-slate-700 dark:text-white/65"><bdi>{a.bedType}</bdi> · {t('clinician.directAdmission')} · <bdi className="font-mono">{a.hospitalId}</bdi></span>
                 </span>
               </li>
             ))}
@@ -240,13 +236,13 @@ export const ClinicianCockpit: React.FC = () => {
       <HomeActionBar>
         {canCreateReferral && (
           <button type="button" onClick={() => navigate('/referrals/new')} className={actionBarPrimary}>
-            <Plus className="h-5 w-5" aria-hidden="true" /> New referral
+            <Plus className="h-5 w-5" aria-hidden="true" /> {t('clinician.newReferral')}
           </button>
         )}
-        <button type="button" onClick={() => navigate('/referrals')} aria-label="Search referrals" className={actionBarSquare}>
+        <button type="button" onClick={() => navigate('/referrals')} aria-label={t('clinician.searchReferrals')} className={actionBarSquare}>
           <Search className="h-5 w-5" aria-hidden="true" />
         </button>
-        <button type="button" onClick={() => navigate('/directory')} aria-label="Directory and hotlines" className={actionBarSquare}>
+        <button type="button" onClick={() => navigate('/directory')} aria-label={t('clinician.directory')} className={actionBarSquare}>
           <Phone className="h-5 w-5" aria-hidden="true" />
         </button>
       </HomeActionBar>
