@@ -2,6 +2,7 @@ import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { PatientData } from '../../../types';
 import { ChoicePill, FieldError, FieldHint, FieldLabel, StepHeading, inputClass, textareaClass } from './fields';
+import { useI18n, typedDir } from '../../../i18n';
 
 interface StepPatientDemographicsProps {
   patientData: Partial<PatientData>;
@@ -34,6 +35,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
   setPatientData,
   fieldErrors,
 }) => {
+  const { t } = useI18n();
   const set = (patch: Partial<PatientData>) => setPatientData(prev => ({ ...prev, ...patch }));
   const parseAge = (val: string): number | undefined => {
     const n = parseInt(val, 10);
@@ -43,15 +45,16 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
 
   return (
     <div className="space-y-5">
-      <StepHeading>Who is the patient?</StepHeading>
+      <StepHeading>{t('identity.heading')}</StepHeading>
 
       <div>
-        <FieldLabel htmlFor="patientName" required>Full name</FieldLabel>
+        <FieldLabel htmlFor="patientName" required>{t('identity.fullName')}</FieldLabel>
         <input
           id="patientName"
           required
           autoComplete="off"
-          placeholder="e.g. Sayed Abdel-Rahman"
+          dir={typedDir(patientData.name)}
+          placeholder={t('identity.namePlaceholder')}
           value={patientData.name || ''}
           onChange={e => set({ name: e.target.value })}
           aria-invalid={!!fieldErrors?.name}
@@ -63,7 +66,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
 
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-3">
         <div>
-          <FieldLabel htmlFor="patientAge" required>Age</FieldLabel>
+          <FieldLabel htmlFor="patientAge" required>{t('identity.age')}</FieldLabel>
           <input
             id="patientAge"
             type="number"
@@ -71,7 +74,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
             required
             min={0}
             max={130}
-            placeholder="Years"
+            placeholder={t('identity.agePlaceholder')}
             value={patientData.age ?? ''}
             onChange={e => set({ age: parseAge(e.target.value) })}
             aria-invalid={!!fieldErrors?.age}
@@ -82,21 +85,21 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
         </div>
         <fieldset>
           <legend className="mb-1.5 text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
-            Sex<span className="sr-only"> (required)</span>
+            {t('identity.sex')}<span className="sr-only"> {t('wizard.required')}</span>
           </legend>
           <div className="grid grid-cols-2 gap-2">
             <ChoicePill type="radio" name="gender" checked={patientData.gender === 'male' || !patientData.gender} onChange={() => set({ gender: 'male' })} className="min-h-[54px]">
-              Male
+              {t('identity.male')}
             </ChoicePill>
             <ChoicePill type="radio" name="gender" checked={patientData.gender === 'female'} onChange={() => set({ gender: 'female' })} className="min-h-[54px]">
-              Female
+              {t('identity.female')}
             </ChoicePill>
           </div>
         </fieldset>
       </div>
 
       <div>
-        <FieldLabel htmlFor="hospitalId" required>Hospital ID</FieldLabel>
+        <FieldLabel htmlFor="hospitalId" required>{t('identity.hospitalId')}</FieldLabel>
         <input
           id="hospitalId"
           required
@@ -115,19 +118,19 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
       <details className="group rounded-[10px] border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.04]">
         <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 px-3.5 text-[14.5px] font-semibold text-ink dark:text-paper [&::-webkit-details-marker]:hidden">
           <span>
-            More patient details
-            <span className="ms-1.5 font-normal text-slate-500 dark:text-white/60">optional</span>
+            {t('identity.more')}
+            <span className="ms-1.5 font-normal text-slate-500 dark:text-white/60">{t('identity.optional')}</span>
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
         </summary>
         <div className="space-y-4 border-t border-slate-200 px-3.5 pt-4 pb-4 dark:border-white/10">
           <div>
-            <FieldLabel htmlFor="nationalId">National ID</FieldLabel>
+            <FieldLabel htmlFor="nationalId">{t('identity.nationalId')}</FieldLabel>
             <input
               id="nationalId"
               inputMode="numeric"
               autoComplete="off"
-              placeholder="14 digits"
+              placeholder={t('identity.nationalIdPlaceholder')}
               value={patientData.nationalId || ''}
               onChange={e => {
                 const nid = e.target.value;
@@ -137,24 +140,26 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
               className={inputClass(false, 'font-mono tabular-nums')}
             />
             <FieldHint id="nationalId-hint">
-              {decoded ? 'Age and sex filled in from the National ID.' : 'A valid 14-digit ID fills in age and sex.'}
+              {decoded ? t('identity.nationalIdFilled') : t('identity.nationalIdHint')}
             </FieldHint>
           </div>
           <div>
-            <FieldLabel htmlFor="pastHistory">Past medical history</FieldLabel>
+            <FieldLabel htmlFor="pastHistory">{t('identity.pastHistory')}</FieldLabel>
             <textarea
               id="pastHistory"
-              placeholder="Chronic illnesses, prior surgeries, allergies"
+              dir={typedDir(patientData.pastHistory)}
+              placeholder={t('identity.pastHistoryPlaceholder')}
               value={patientData.pastHistory || ''}
               onChange={e => set({ pastHistory: e.target.value })}
               className={textareaClass(false, 'min-h-[88px]')}
             />
           </div>
           <div>
-            <FieldLabel htmlFor="medications">Medications given or current</FieldLabel>
+            <FieldLabel htmlFor="medications">{t('identity.medications')}</FieldLabel>
             <textarea
               id="medications"
-              placeholder="Emergency drugs given, infusions, regular medicines"
+              dir={typedDir(patientData.medications)}
+              placeholder={t('identity.medicationsPlaceholder')}
               value={patientData.medications || ''}
               onChange={e => set({ medications: e.target.value })}
               className={textareaClass(false, 'min-h-[88px]')}

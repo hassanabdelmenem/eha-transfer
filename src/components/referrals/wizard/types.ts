@@ -43,9 +43,9 @@ export const BED_TYPES: { label: string; value: BedType }[] = [
  * is decided last, with the whole clinical picture already written.
  */
 export const WIZARD_STEPS = [
-  { id: 1, title: 'Patient identity' },
-  { id: 2, title: 'Vitals' },
-  { id: 3, title: 'Complaint & presentation' },
-  { id: 4, title: 'Diagnosis, workup & ECG' },
-  { id: 5, title: 'Where it goes & send' },
+  { id: 1, key: 'identity', title: 'Patient identity' },
+  { id: 2, key: 'vitals', title: 'Vitals' },
+  { id: 3, key: 'presentation', title: 'Complaint & presentation' },
+  { id: 4, key: 'workup', title: 'Diagnosis, workup & ECG' },
+  { id: 5, key: 'destination', title: 'Where it goes & send' },
 ] as const;

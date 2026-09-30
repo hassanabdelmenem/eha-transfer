@@ -2,6 +2,22 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-30: Arabic, intake wizard
+
+- #50 (referral detail) merged at f0e6d77.
+- Translated the five-step intake wizard: header and stepper, every field, placeholder, hint and
+  error, the vitals high/low flags and their findings, attachments, destination and review list,
+  toasts, the draft banner and the offline "queued" screen. ~170 new strings (review sheet: 712 rows).
+- Vital findings now carry a stable `code` (evaluateVital keeps its English label for tests); the
+  high/low word comes from the code, no longer from a regex over the English label.
+- Fixed from #50: `dir="auto"` on an empty field lays it out left-to-right, pushing Arabic
+  placeholders to the left. New `typedDir(value)` in src/i18n: page direction while empty, the
+  text's own once typed; applied to every typed field (wizard and detail dialogs).
+- Units beside vital labels are `<bdi>` (°C rendered as C° in Arabic).
+- Department names in the picker stay as stored data (the same names appear across the app).
+- Verified: tsc, vitest 977/977 (new: the whole wizard walked in Arabic, errors included, with no
+  English interface words), Playwright 11/11, Arabic captures of all five steps (.capture/wizard.mjs).
+
 ## 2026-09-30: Arabic, referral detail and actions
 
 - #49 (role homes) merged at b3d6497.

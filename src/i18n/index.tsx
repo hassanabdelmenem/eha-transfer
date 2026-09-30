@@ -85,6 +85,15 @@ function lookup(messages: Messages, key: string): string | PluralForms | undefin
   return node as string | PluralForms | undefined;
 }
 
+/**
+ * `dir` for a field people type into. While empty it follows the page, so an
+ * Arabic placeholder sits on the right; once typed it follows the text, so an
+ * English note keeps its punctuation in place. (dir="auto" on an empty field
+ * resolves to left-to-right, which pushed Arabic placeholders to the left.)
+ */
+export const typedDir = (value: unknown): 'auto' | undefined =>
+  typeof value === 'string' && value.length > 0 ? 'auto' : undefined;
+
 /** Pure translation, usable outside React (tests, the review-sheet script). */
 export function translate(lang: Language, key: MessageKey, vars?: MessageVars): string {
   let entry = lookup(CATALOGUE[lang], key) ?? lookup(CATALOGUE.en, key);
