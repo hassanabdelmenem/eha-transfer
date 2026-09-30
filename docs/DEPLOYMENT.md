@@ -169,6 +169,32 @@ is why the roster is not facility-scoped. Moving fan-out into a Cloud Function
 (requires Blaze billing) would let `/users` be narrowed to one facility and is
 the recommended next hardening step.
 
+## Escalation sweep
+
+`.github/workflows/escalation-sweep.yml` escalates referrals when nobody is signed in (rules in
+`src/lib/escalationSweep.ts`). It authenticates keylessly and only from `main`.
+
+Its `*/5` schedule is a fallback only: GitHub starts scheduled workflows late under load, and on
+30 Sep 2026 it ran them about every six hours. The 5-minute cadence comes from an external caller
+that starts the workflow through the API:
+
+1. GitHub → Settings → Developer settings → Fine-grained tokens → new token. Resource owner your
+   account, repository access **only `eha-transfer`**, permission **Actions: Read and write**,
+   nothing else. Set an expiry and a calendar reminder to rotate it.
+2. On https://cron-job.org (free), create a job, every 5 minutes:
+   - URL `https://api.github.com/repos/hassanabdelmenem/eha-transfer/actions/workflows/escalation-sweep.yml/dispatches`
+   - Method `POST`, body `{"ref":"main"}`
+   - Headers `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`,
+     `X-GitHub-Api-Version: 2022-11-28`, `Content-Type: application/json`
+   - Enable failure notifications by email.
+3. Check it: a successful call returns `204`, and new "workflow_dispatch" runs appear under
+   Actions → Escalation sweep every 5 minutes.
+
+The token can start, re-run and cancel workflow runs in this repository, but cannot change code,
+read secrets or reach Firebase; the sweep still runs from `main` as the `escalation-sweep` service
+account. Overlapping calls do not stack: one run executes and at most one waits (concurrency group
+`escalation-sweep`). Public-repository Actions minutes are free.
+
 ## Manual deploy (escape hatch)
 
 Prefer the pipeline. If you must deploy by hand:

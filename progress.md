@@ -2,6 +2,17 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-30: Merges, staging Auth, sweep cadence
+
+- 29 Sep ~23:25 UTC, on the owner's request: #44, #45, #46, #47 merged; production deployed at c2c2d01.
+- Staging Auth enabled in the console (Email/Password + Google). Staging not seeded yet: the owner
+  runs `scripts/seed-staging.mjs --apply` with their own `STAGING_SEED_PASSWORD`.
+- Escalation sweep: the manual dry run from main passed with keyless WIF. Scheduled runs succeed, but
+  GitHub starts the `*/5` timer only every few hours (30 Sep: 02:02, 08:23, 15:02 UTC). The 15:02 run
+  reported "1 pending, 0 to escalate". Documented an external 5-minute trigger (`workflow_dispatch`
+  from cron-job.org with a fine-grained token) in docs/DEPLOYMENT.md; production has no billing, so
+  Cloud Scheduler is not an option.
+
 ## 2026-09-30: Arabic and right-to-left, foundation
 
 - Owner decisions: profile setting with device default; Western digits; IBM Plex Sans Arabic; Claude
