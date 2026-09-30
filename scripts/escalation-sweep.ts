@@ -93,6 +93,9 @@ async function main() {
           userId: u.id,
           title: notice.title,
           message: notice.message,
+          // Rendered in each reader's language by the inbox (src/i18n/notifications.ts).
+          key: notice.key,
+          vars: notice.vars,
           type: notice.type,
           read: false,
           createdAt,

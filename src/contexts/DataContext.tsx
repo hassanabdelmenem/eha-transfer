@@ -9,6 +9,7 @@ import { needsAutoEscalation } from '../lib/sla';
 import { capacityEscalationReason } from '../lib/routing';
 import { isNotificationRecipient } from '../lib/notificationRecipients';
 import { escalationNotice, escalationUpdate, stillEscalates } from '../lib/escalationSweep';
+import { notificationText, type NotificationKey, type NotificationVars } from '../i18n/notifications';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
 // Type-only: `isolatedModules` is on, so esbuild transpiles this file without
 // cross-file type information and would emit a runtime import for a binding that
@@ -429,7 +430,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // call to every owner/system_admin, since they match unconditionally on the line
   // below. Escalation needs to reach the referring facility and every candidate at
   // once, so the recipient set is built in a single pass instead.
-  const createNotification = useCallback((params: { title: string, message: string, type: Notification['type'], referralId: string, facilityId: string, facilityIds?: string[], targetRoles?: Role[], departments?: string[], targetUserIds?: string[] }) => {
+  // Each notification names a catalogue entry (notif.<key>) and its values; the
+  // stored title/message are that entry in English, for older app versions and
+  // for the inbox's kind matching. The inbox renders key + vars in the reader's
+  // language (src/i18n/notifications.ts).
+  const createNotification = useCallback((params: { key: NotificationKey, vars: NotificationVars, type: Notification['type'], referralId: string, facilityId: string, facilityIds?: string[], targetRoles?: Role[], departments?: string[], targetUserIds?: string[] }) => {
+    const { title, message } = notificationText('en', params.key, params.vars);
     const targetFacilityIds = params.facilityIds ?? [params.facilityId];
     const relevantUsers = users.filter(u => isNotificationRecipient(
       u,
@@ -447,8 +453,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const notif: Notification = {
         id,
         userId: u.id,
-        title: params.title,
-        message: params.message,
+        title,
+        message,
+        key: params.key,
+        vars: params.vars,
         type: params.type,
         read: false,
         createdAt,
@@ -709,11 +717,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Generate notification for receiving facility managers/heads
+    const newReferralVars = {
+      priority: `@priority.${newReferral.priority}`,
+      bed: newReferral.requiredBedType,
+      facility: facilitiesById.get(newReferral.referringFacilityId)?.name || '@notif.facility',
+      depts: newReferral.receivingDepartments.join(', '),
+    };
     if (newReferral.receivingFacilityId === 'auto' && newReferral.candidateFacilityIds) {
       newReferral.candidateFacilityIds.forEach(candidateId => {
         createNotification({
-          title: sendCriticalAlert ? `CRITICAL ALERT: ${newReferral.priority.toUpperCase()} ${newReferral.requiredBedType} Transfer` : `New ${newReferral.priority.toUpperCase()} Referral (Auto-Routed)`,
-          message: `Referral from ${facilitiesById.get(newReferral.referringFacilityId)?.name || 'Facility'} for ${newReferral.receivingDepartments.join(', ')}`,
+          key: sendCriticalAlert ? 'criticalAlert' : 'newReferralAuto',
+          vars: newReferralVars,
           type: sendCriticalAlert || newReferral.priority === 'emergency' ? 'urgent' : 'info',
           referralId: newReferral.id,
           facilityId: candidateId,
@@ -723,8 +737,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } else {
       createNotification({
-        title: sendCriticalAlert ? `CRITICAL ALERT: ${newReferral.priority.toUpperCase()} ${newReferral.requiredBedType} Transfer` : `New ${newReferral.priority.toUpperCase()} Referral`,
-        message: `Referral from ${facilitiesById.get(newReferral.referringFacilityId)?.name || 'Facility'} for ${newReferral.receivingDepartments.join(', ')}`,
+        key: sendCriticalAlert ? 'criticalAlert' : 'newReferral',
+        vars: newReferralVars,
         type: sendCriticalAlert || newReferral.priority === 'emergency' ? 'urgent' : 'info',
         referralId: newReferral.id,
         facilityId: newReferral.receivingFacilityId,
@@ -846,8 +860,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Notify referring facility
     createNotification({
-      title: `Referral Status Updated: ${status.toUpperCase()}`,
-      message: `Referral for ${patientName} is now ${status}.`,
+      key: 'statusUpdated',
+      vars: { patient: patientName, status: `@status.${status}` },
       type: status === 'rejected' ? 'warning' : 'success',
       referralId: id,
       facilityId: referringFacilityId,
@@ -857,8 +871,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Notify receiving facility members if approved or arrived
     if (['manager_approved', 'accepted', 'arrived'].includes(status) && finalReceivingFacilityId !== 'auto') {
       createNotification({
-        title: `Referral ${status.toUpperCase()}`,
-        message: `Patient ${patientName} referral is now ${(status || "").replace('_', ' ')}.`,
+        key: 'receivingStatus',
+        vars: { patient: patientName, status: `@status.${status}` },
         type: 'info',
         referralId: id,
         facilityId: finalReceivingFacilityId
@@ -967,8 +981,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (claimedReceivingFacilityId) {
       createNotification({
-        title: `Department Approved - Needs Final Approval`,
-        message: `Dr. ${user.name} approved referral ${referralId}. Needs manager approval.`,
+        key: 'deptApproved',
+        vars: { name: user.name, id: referralId },
         type: 'info',
         referralId,
         facilityId: claimedReceivingFacilityId,
@@ -978,14 +992,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (requirementsSentBack) {
       const { referringFacilityId, receivingFacilityId, referringUserId, patientName } = requirementsSentBack;
-      const fromName = facilitiesById.get(referringFacilityId)?.name || 'the referring facility';
+      const fromName = facilitiesById.get(referringFacilityId)?.name || '@notif.theReferringFacility';
       // One fan-out covers everyone the feature calls for: the initiating
       // doctor by name (targetUserIds, regardless of their role) plus medical
       // director / deputy managers / managers at BOTH facilities (facilityIds +
       // targetRoles). Owners and system_admins are always included as well.
       createNotification({
-        title: 'Referral Postponed — Requirements Needed',
-        message: `${patientName}'s referral (from ${fromName}) was sent back with requirements${comment ? `: "${comment}"` : ''}. Returned directly, without administrative approval, and escalated automatically.`,
+        key: comment ? 'requirementsComment' : 'requirements',
+        vars: comment ? { patient: patientName, facility: fromName, comment } : { patient: patientName, facility: fromName },
         type: 'purple',
         referralId,
         facilityId: referringFacilityId,
@@ -1052,8 +1066,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (receivingFacilityId && receivingFacilityId !== 'auto') {
       createNotification({
-        title: 'Patient Consented to Transfer',
-        message: `Patient ${patientName} has consented; dispatch can proceed.`,
+        key: 'consented',
+        vars: { patient: patientName },
         type: 'success',
         referralId: id,
         facilityId: receivingFacilityId
@@ -1135,8 +1149,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     createNotification({
-      title: 'Patient Declined Transfer — Re-routing',
-      message: `Patient ${patientName} declined the proposed facility; referral is back in review.`,
+      key: 'declined',
+      vars: { patient: patientName },
       type: 'warning',
       referralId: id,
       facilityId: referringFacilityId,
@@ -1145,8 +1159,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     remainingCandidateIds.forEach(candidateId => {
       createNotification({
-        title: 'Referral Re-routed After Patient Decline',
-        message: `Patient ${patientName} declined another facility; this referral is active again.`,
+        key: 'rerouted',
+        vars: { patient: patientName },
         type: 'info',
         referralId: id,
         facilityId: candidateId,
@@ -1201,8 +1215,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     createNotification({
-      title: 'Referral Cancelled',
-      message: `The referral for ${patientName} was cancelled by ${user.name}.`,
+      key: 'cancelled',
+      vars: { patient: patientName, name: user.name },
       type: 'warning',
       referralId: id,
       facilityId: referringFacilityId,
@@ -1210,8 +1224,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     if (receivingFacilityId && receivingFacilityId !== 'auto' && receivingFacilityId !== referringFacilityId) {
       createNotification({
-        title: 'Referral Cancelled',
-        message: `The referral for ${patientName} was cancelled by the referring facility.`,
+        key: 'cancelledByReferrer',
+        vars: { patient: patientName },
         type: 'warning',
         referralId: id,
         facilityId: receivingFacilityId

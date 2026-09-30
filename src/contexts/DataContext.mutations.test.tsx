@@ -148,6 +148,18 @@ describe('DataContext referral mutations', () => {
     expect(notifs.some(n => n.message.includes('Referral from Facility for'))).toBe(true);
   });
 
+  it('stores the catalogue key and values, so the inbox can render the reader\'s language', async () => {
+    renderProvider();
+    await act(async () => { screen.getByText('AddDirectRoutineUnknownFacility').click(); });
+    await waitFor(() => expect(Object.keys(fsState.stores['notifications'] || {}).length).toBeGreaterThan(0));
+
+    const n: any = Object.values(fsState.stores['notifications'] || {})[0];
+    expect(n.key).toBe('newReferral');
+    // The unknown referrer and the priority are catalogue references, not English words.
+    expect(n.vars).toMatchObject({ priority: '@priority.routine', facility: '@notif.facility' });
+    expect(n.title).toBe('New ROUTINE Referral');
+  });
+
   it('sends a critical alert for a directly-routed referral', async () => {
     renderProvider();
     await act(async () => { screen.getByText('AddDirectCritical').click(); });

@@ -1195,4 +1195,46 @@ export const en = {
       age: 'Please enter a valid age between 0 and 125.',
     },
   },
+  // ---- Notifications ------------------------------------------------------------
+  // Written with a key + values (DataContext, offlineSync, the escalation sweep);
+  // the stored English title/message is rendered from these same templates. A
+  // value "@some.key" is another catalogue string; "#date:<iso>" is a date.
+  notif: {
+    aPatient: 'A patient',
+    facility: 'Facility',
+    theReferringFacility: 'the referring facility',
+    newReferral: { title: 'New {priority} Referral', message: 'Referral from {facility} for {depts}' },
+    newReferralAuto: { title: 'New {priority} Referral (Auto-Routed)', message: 'Referral from {facility} for {depts}' },
+    newReferralSynced: { title: 'New {priority} Referral (Synced)', message: 'Referral from {facility} for {depts}' },
+    newReferralAutoSynced: { title: 'New {priority} Referral (Auto-Routed - Synced)', message: 'Referral from {facility} for {depts}' },
+    criticalAlert: { title: 'CRITICAL ALERT: {priority} {bed} Transfer', message: 'Referral from {facility} for {depts}' },
+    statusUpdated: { title: 'Referral Status Updated: {status}', message: 'Referral for {patient} is now {status}.' },
+    receivingStatus: { title: 'Referral {status}', message: 'Patient {patient} referral is now {status}.' },
+    deptApproved: { title: 'Department Approved - Needs Final Approval', message: 'Dr. {name} approved referral {id}. Needs manager approval.' },
+    requirements: {
+      title: 'Referral Postponed — Requirements Needed',
+      message: '{patient}\'s referral (from {facility}) was sent back with requirements. Returned directly, without administrative approval, and escalated automatically.',
+    },
+    requirementsComment: {
+      title: 'Referral Postponed — Requirements Needed',
+      message: '{patient}\'s referral (from {facility}) was sent back with requirements: "{comment}". Returned directly, without administrative approval, and escalated automatically.',
+    },
+    consented: { title: 'Patient Consented to Transfer', message: 'Patient {patient} has consented; dispatch can proceed.' },
+    declined: { title: 'Patient Declined Transfer — Re-routing', message: 'Patient {patient} declined the proposed facility; referral is back in review.' },
+    rerouted: { title: 'Referral Re-routed After Patient Decline', message: 'Patient {patient} declined another facility; this referral is active again.' },
+    cancelled: { title: 'Referral Cancelled', message: 'The referral for {patient} was cancelled by {name}.' },
+    cancelledByReferrer: { title: 'Referral Cancelled', message: 'The referral for {patient} was cancelled by the referring facility.' },
+    escalationSla: {
+      title: 'Referral Escalated — No Response in {minutes} Minutes',
+      message: '{patient} ({priority} {bed}) has had no response since {since} and has been escalated for intervention.',
+    },
+    escalationNoMatch: {
+      title: 'ESCALATION: No Matching Facility',
+      message: '{patient} needs {depts} ({bed}). {capacity} Administrative placement required.',
+    },
+    escalationNoBeds: {
+      title: 'ESCALATION: No Beds Available',
+      message: '{patient} needs {depts} ({bed}). {capacity} Administrative placement required.',
+    },
+  },
 } as const;
