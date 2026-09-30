@@ -12,16 +12,18 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
 
 ## Next Step
 
-Redesign phase 6 is built and in review (PR on `redesign/6-desktop-panes`): the desktop two-pane
-workspace (3d), the finish-review fixes, and DESIGN.md rewritten from the shipped build. Owner: review
-and merge it. Then the follow-ups under Phase 3 below, and Phase 5 (pilot readiness).
+1. Escalation sweep cadence: GitHub runs the `*/5` timer only every few hours (30 Sep: 02:02, 08:23,
+   15:02 UTC). Owner sets up an external 5-minute trigger for the workflow (docs/DEPLOYMENT.md,
+   "Escalation sweep"); until then escalation when nobody is signed in can be hours late.
+2. Seed staging: owner runs `scripts/seed-staging.mjs --apply` with a password they choose (Claude's
+   auto mode may not write staging accounts or store the password).
+3. Arabic translation PRs, one per surface (see "Arabic and right-to-left" below).
 
-Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg);
-two moderate Dependabot alerts on `main` are unreviewed.
+Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg).
 
 ## Current Phase
 
-Phase 3: Mobile-workflow redesign (phases 1–5 live; phase 6 in review)
+Phase 5: Launch readiness (redesign complete; staging live; Arabic foundation merged)
 
 ## Phases
 
@@ -87,6 +89,7 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
 - [x] 2a Escalation when nobody is signed in: `.github/workflows/escalation-sweep.yml` every 5 min (keyless
       WIF, `escalation-sweep` SA with datastore.user) runs `scripts/escalation-sweep.ts`; rules shared with the
       in-app sweep in `src/lib/escalationSweep.ts`. Stale `overnight-sweep.ts` removed (30 Sep)
+- [ ] 2a' GitHub throttles the timer to every few hours; external 5-minute trigger (owner sets it up)
 - [ ] 2c `statusHistory` as a subcollection (not started)
 - [ ] 2d `useIdleTimeout` exists; wiring and duration unverified
 - [ ] 2e small text / 28px buttons (largely superseded by the redesign; re-audit after phase 6)
@@ -95,10 +98,12 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
 
 ### Phase 5: Launch readiness
 
-- [ ] Arabic + RTL (the ع toggle is deliberately not shipped until RTL is designed; build with logical properties)
+- [ ] Arabic + RTL: foundation merged (#47); translation per surface open (section above)
 - [ ] Pilot plan with one referring and one receiving facility; real non-admin accounts per role
-- [ ] Staging project (today `npm run dev` and PR previews talk to production)
-- **Status:** not started
+- [x] Staging project `eha-transfer-staging` (#44): dev server and PR previews use it; Auth enabled
+      (Email/Password + Google) 29 Sep
+- [ ] Seed staging with test accounts and synthetic referrals (`scripts/seed-staging.mjs`)
+- **Status:** in progress
 
 ## Decisions (owner, answered 27 Sep)
 
