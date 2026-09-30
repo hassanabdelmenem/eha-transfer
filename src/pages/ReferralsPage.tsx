@@ -6,6 +6,7 @@ import { ReferralList } from '../components/referrals/ReferralList';
 import { Input } from '../components/ui/Input';
 import { Search, Filter, Activity, Clock, CheckCircle, Download, ArrowDownUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { useI18n } from '../i18n';
 
 export const ReferralsPage: React.FC = () => {
   const { user } = useAuth();
@@ -16,6 +17,7 @@ export const ReferralsPage: React.FC = () => {
   const [deptFilter, setDeptFilter] = useState("all");
   const [bedFilter, setBedFilter] = useState("all");
   const [prioritySort, setPrioritySort] = useState(false);
+  const { t } = useI18n();
 
   const stats = useMemo(() => {
     if (!user) return { active: 0, pending: 0, completed: 0 };
@@ -63,12 +65,12 @@ export const ReferralsPage: React.FC = () => {
     <div className="h-full flex flex-col space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Referrals</h1>
-          <p className="text-gray-500 dark:text-gray-400">Manage all incoming and outgoing patient transfers.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('referralsPage.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400">{t('referralsPage.subtitle')}</p>
         </div>
         <Button onClick={handleExportCSV} variant="outline" className="bg-white dark:bg-slate-900">
           <Download className="w-4 h-4 me-2" />
-          Export CSV
+          {t('screen.exportCsv')}
         </Button>
       </div>
 
@@ -78,7 +80,7 @@ export const ReferralsPage: React.FC = () => {
             <Activity className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Active Cases</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t('referralsPage.active')}</p>
             <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.active}</p>
           </div>
         </div>
@@ -87,7 +89,7 @@ export const ReferralsPage: React.FC = () => {
             <Clock className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Pending Review</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t('referralsPage.pendingReview')}</p>
             <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.pending}</p>
           </div>
         </div>
@@ -96,7 +98,7 @@ export const ReferralsPage: React.FC = () => {
             <CheckCircle className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Completed</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t('referralsPage.completed')}</p>
             <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.completed}</p>
           </div>
         </div>
@@ -109,7 +111,7 @@ export const ReferralsPage: React.FC = () => {
           </div>
           <Input 
             className="ps-9" 
-            placeholder="Search by Patient ID, Facility, or Department..." 
+            placeholder={t('referralsPage.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -119,30 +121,26 @@ export const ReferralsPage: React.FC = () => {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
-          <option value="all">All Statuses</option>
-          <option value="active">Active Cases</option>
-          <option value="pending">Pending</option>
-          <option value="accepted">Accepted / In Transit</option>
-          <option value="completed">Completed / Discharged</option>
-          <option value="cancelled">Cancelled (Archive)</option>
-          <option value="archived">Admitted & Cancelled (Archive)</option>
+          {(['all', 'active', 'pending', 'accepted', 'completed', 'cancelled', 'archived'] as const).map(v => (
+            <option key={v} value={v}>{t(`referralsPage.status.${v}`)}</option>
+          ))}
         </select>
         <select 
           className="min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value)}
         >
-          <option value="all">All Priorities</option>
-          <option value="emergency">Emergency</option>
-          <option value="urgent">Urgent</option>
-          <option value="routine">Routine</option>
+          <option value="all">{t('referralsPage.allPriorities')}</option>
+          {(['emergency', 'urgent', 'routine'] as const).map(p => (
+            <option key={p} value={p}>{t(`destinationStep.${p}`)}</option>
+          ))}
         </select>
         <select 
           className="min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
           value={deptFilter}
           onChange={(e) => setDeptFilter(e.target.value)}
         >
-          <option value="all">All Departments</option>
+          <option value="all">{t('referralsPage.allDepartments')}</option>
           <option value="Emergency">Emergency</option>
           <option value="ICU">ICU</option>
           <option value="CCU">CCU</option>
@@ -155,7 +153,7 @@ export const ReferralsPage: React.FC = () => {
           value={bedFilter}
           onChange={(e) => setBedFilter(e.target.value)}
         >
-          <option value="all">All Beds</option>
+          <option value="all">{t('referralsPage.allBeds')}</option>
           <option value="Ward">Ward</option>
           <option value="ICU">ICU</option>
           <option value="CCU">CCU</option>
@@ -165,13 +163,13 @@ export const ReferralsPage: React.FC = () => {
 
       <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex flex-col overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">All Referrals Grid</h3>
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('referralsPage.grid')}</h3>
           <button 
             onClick={() => setPrioritySort(!prioritySort)}
             className={`flex items-center gap-2 px-3 min-h-[44px] text-xs font-bold rounded-xl transition-colors ${prioritySort ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
           >
             <ArrowDownUp className="w-3.5 h-3.5" />
-            Priority Sort
+            {t('referralsPage.prioritySort')}
           </button>
         </div>
         <div className="flex-1 overflow-auto">

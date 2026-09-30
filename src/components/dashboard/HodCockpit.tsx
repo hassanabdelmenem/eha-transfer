@@ -16,7 +16,7 @@ import { useOpenCase, useReportQueue } from '../layout/Workspace';
 import { isAdmin as checkIsAdmin } from '../../lib/permissions';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
 import { RoleHomeHeadline, MicroLabel, EmptyQueue, useSecondTick } from './RoleHome';
-import { useI18n } from '../../i18n';
+import { useI18n, typedDir } from '../../i18n';
 
 interface HodCockpitProps {
   isDepartmentRoute?: boolean;
@@ -73,8 +73,8 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
   );
 
   const onDutyDoctorName = currentAssignment?.assignedUserId
-    ? usersById.get(currentAssignment.assignedUserId)?.name || 'Assigned'
-    : 'None assigned (Default: HoD)';
+    ? usersById.get(currentAssignment.assignedUserId)?.name || t('department.assigned')
+    : t('department.noneAssigned');
 
   // Memoized like the equivalent derivations in ManagerCockpit/ClinicianCockpit --
   // these re-ran on every re-render regardless of whether referrals/admissions
@@ -196,9 +196,9 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
     try {
       await assignShift(facilityId, department, assignedDoctorId);
       setAssignedDoctorId('');
-      showToast('Shift assigned.', 'success');
+      showToast(t('department.toastShift'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not assign shift.');
+      toastError(e, t('department.toastShiftFailed'));
     } finally {
       setShiftSaving(false);
     }
@@ -211,7 +211,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
         <Card className="border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl">
           <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
-              Admin View:
+              {t('department.adminView')}
             </span>
             <select
               value={selectedFacilityId}
@@ -221,7 +221,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
               }}
               className="w-full sm:flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-xs font-medium focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
             >
-              <option value="">Select Facility...</option>
+              <option value="">{t('department.selectFacility')}</option>
               {facilities.map(f => (
                 <option key={f.id} value={f.id}>
                   {f.name}
@@ -234,7 +234,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                 onChange={e => setSelectedDepartment(e.target.value)}
                 className="w-full sm:flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-xs font-medium focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               >
-                <option value="">Select Department...</option>
+                <option value="">{t('department.selectDepartment')}</option>
                 {facilitiesById
                   .get(selectedFacilityId)
                   ?.departments?.map(d => (
@@ -301,12 +301,12 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-3.5 px-5 bg-slate-50/50 dark:bg-slate-800/40">
             <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
               <UserCircle className="w-4 h-4 text-blue-500" />
-              On-Call Shift Delegation
+              {t('department.delegation')}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-4 flex-1">
             <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Currently On-Duty:</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('department.onDuty')}</p>
               <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1">
                 {onDutyDoctorName}
               </p>
@@ -314,7 +314,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
 
             <div className="space-y-2">
               <label htmlFor="shiftDoctorSelect" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                Delegate On-Call to Doctor:
+                {t('department.delegateTo')}
               </label>
               <div className="flex gap-2">
                 <select
@@ -323,10 +323,10 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                   onChange={e => setAssignedDoctorId(e.target.value)}
                   className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-xs focus:ring-2 focus:ring-blue-600 outline-none"
                 >
-                  <option value="">Select Department Doctor...</option>
+                  <option value="">{t('department.selectDoctor')}</option>
                   {availableDoctors.map(doc => (
                     <option key={doc.id} value={doc.id}>
-                      {doc.name} ({doc.role})
+                      {doc.name} ({t(`role.${doc.role}`)})
                     </option>
                   ))}
                 </select>
@@ -336,7 +336,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                   disabled={!assignedDoctorId || shiftSaving}
                   className="rounded-xl text-xs font-bold px-4"
                 >
-                  Assign
+                  {t('department.assign')}
                 </Button>
               </div>
             </div>
@@ -349,17 +349,17 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                 <ArrowRightLeft className="w-4 h-4 text-slate-500" />
-                Active Unit Inpatients ({department || 'Department'})
+                {t('department.inpatients', { dept: department || t('department.departmentFallback') })}
               </CardTitle>
               <Badge variant="info" className="text-[11px]">
-                {patientsInDept.length} Inpatients
+                {t('department.inpatientCount', { count: patientsInDept.length })}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0 overflow-auto max-h-[320px] flex-1">
             {patientsInDept.length === 0 ? (
               <div className="p-8 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs">
-                No inpatients currently admitted to this department.
+                {t('department.noInpatients')}
               </div>
             ) : (
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -373,7 +373,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                         {patient.name}
                       </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                        {patient.bedType || 'General'} Bed · MRN: {patient.hospitalId}
+                        {t('department.bedLine', { bed: patient.bedType || t('department.general'), mrn: patient.hospitalId })}
                       </p>
                     </div>
                     {otherDepartments.length > 0 && (
@@ -383,7 +383,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                         className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5"
                       >
                         <ArrowRightLeft className="w-3 h-3" />
-                        Transfer
+                        {t('department.transfer')}
                       </button>
                     )}
                   </div>
@@ -407,12 +407,12 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-[0_8px_24px_rgba(20,20,19,0.14)] border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 space-y-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150">
             <div className="flex items-center justify-between">
               <h3 id="transferModalTitle" className="text-base font-bold text-slate-900 dark:text-slate-100">
-                Transfer Patient to Another Unit
+                {t('department.transferTitle')}
               </h3>
               <button
                 type="button"
                 onClick={() => setTransferModalOpen(false)}
-                aria-label="Close transfer dialog"
+                aria-label={t('department.closeTransfer')}
                 className="min-h-[44px] min-w-[44px] flex items-center justify-center -me-2 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -421,13 +421,13 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
 
             <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-xs space-y-1">
               <p className="font-bold text-slate-800 dark:text-slate-200">{selectedPatient.name}</p>
-              <p className="text-slate-500 dark:text-slate-400">MRN: {selectedPatient.hospitalId}</p>
+              <p className="text-slate-500 dark:text-slate-400">{t('department.mrn', { mrn: selectedPatient.hospitalId })}</p>
             </div>
 
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 block">
-                  Target Department:
+                  {t('department.targetDept')}
                 </label>
                 <select
                   value={targetDepartment}
@@ -444,12 +444,13 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
 
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 block">
-                  Transfer Clinical Notes:
+                  {t('department.notes')}
                 </label>
                 <textarea
                   value={transferNotes}
                   onChange={e => setTransferNotes(e.target.value)}
-                  placeholder="Reason for internal departmental transfer..."
+                  dir={typedDir(transferNotes)}
+                  placeholder={t('department.notesPlaceholder')}
                   className="w-full h-24 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-xs focus:ring-2 focus:ring-blue-600 outline-none resize-none"
                 />
               </div>
@@ -461,7 +462,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                 onClick={() => setTransferModalOpen(false)}
                 className="rounded-xl text-xs font-bold"
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -469,7 +470,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                 disabled={!targetDepartment}
                 className="rounded-xl text-xs font-bold"
               >
-                Confirm Transfer
+                {t('department.confirmTransfer')}
               </Button>
             </div>
           </div>
