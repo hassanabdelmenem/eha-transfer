@@ -377,7 +377,8 @@ describe('UrgencyTimer (via ReferralList)', () => {
       patientData: { ...ref().patientData, name: 'Escalated Pt' },
     })];
     renderList();
-    expect(screen.getByText(/Escalated \+/)).toBeInTheDocument();
+    // The overdue time is its own <bdi>, so match on the badge's full text.
+    expect(screen.getAllByText((_, el) => el?.tagName === 'SPAN' && /^Escalated \+\d+:\d{2}$/.test(el.textContent ?? '')).length).toBeGreaterThan(0);
     expect(screen.getByText(/escalated to administrator/)).toBeInTheDocument();
   });
 

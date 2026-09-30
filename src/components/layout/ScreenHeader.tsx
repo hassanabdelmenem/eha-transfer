@@ -1,6 +1,7 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
 import { useShell } from './ShellContext';
+import { useI18n } from '../../i18n';
 
 interface ScreenHeaderProps {
   title: string;
@@ -22,6 +23,7 @@ export const headerActionClass =
  */
 export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, action, children }) => {
   const { openMenu, isDesktop } = useShell();
+  const { t } = useI18n();
   return (
     <header className="-mx-[18px] mb-5 bg-ink px-[18px] pt-[max(14px,env(safe-area-inset-top))] pb-4 text-paper lg:mx-0 lg:mb-6 lg:bg-transparent lg:px-0 lg:pt-0 lg:pb-0 lg:text-ink dark:lg:text-paper">
       <div className="flex items-center justify-between gap-3">
@@ -35,7 +37,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, subtitle, act
             <button
               type="button"
               onClick={openMenu}
-              aria-label="Open menu"
+              aria-label={t('screen.openMenu')}
               className="flex h-12 w-12 items-center justify-center rounded-[10px] border border-paper/25 hover:bg-paper/10"
             >
               <Menu className="h-5 w-5" aria-hidden="true" />

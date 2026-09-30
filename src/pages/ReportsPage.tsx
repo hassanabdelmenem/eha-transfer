@@ -5,6 +5,7 @@ import { useData } from '../contexts/DataContext';
 import { ScreenHeader } from '../components/layout/ScreenHeader';
 import { BedOccupancyHeatmap } from '../components/dashboard/BedOccupancyHeatmap';
 import { FacilityAnalyticsCharts } from '../components/dashboard/FacilityAnalyticsCharts';
+import { useI18n } from '../i18n';
 
 export const MANAGER_ROLES = ['hospital_manager', 'deputy_manager', 'medical_director'] as const;
 export const isManagerRole = (role: string | undefined) => (MANAGER_ROLES as readonly string[]).includes(role ?? '');
@@ -16,6 +17,7 @@ export const isManagerRole = (role: string | undefined) => (MANAGER_ROLES as rea
 export const ReportsPage: React.FC = () => {
   const { user } = useAuth();
   const { referrals, facilities, directAdmissions } = useData();
+  const { t } = useI18n();
 
   const facilityReferrals = useMemo(() => {
     const fid = user?.facilityId;
@@ -38,7 +40,7 @@ export const ReportsPage: React.FC = () => {
 
   return (
     <div className="max-w-[960px]">
-      <ScreenHeader title="Reports" subtitle="Network free beds and your facility's activity" />
+      <ScreenHeader title={t('reports.title')} subtitle={t('reports.subtitle')} />
       <div className="space-y-4">
         <BedOccupancyHeatmap facilities={facilities} />
         <FacilityAnalyticsCharts
