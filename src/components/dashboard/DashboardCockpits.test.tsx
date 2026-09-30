@@ -19,6 +19,10 @@ import { Dashboard } from '../../pages/Dashboard';
 import { DepartmentPage } from '../../pages/DepartmentPage';
 import { ERDashboard } from '../../pages/ERDashboard';
 import { I18nProvider } from '../../i18n';
+import { NotificationsPage } from '../../pages/NotificationsPage';
+import { ReferralsPage } from '../../pages/ReferralsPage';
+import { NetworkDirectoryPage } from '../../pages/NetworkDirectoryPage';
+import { ArchivePage } from '../../pages/ArchivePage';
 
 // Mock contexts
 let mockUser: User | null = null;
@@ -33,6 +37,7 @@ let mockShiftLogs: ShiftLog[] = [];
 let mockLoading = false;
 let mockIsOnline = true;
 let mockPendingSyncCount = 0;
+let mockNotifications: any[] = [];
 
 const mockUpdateReferralStatus = vi.fn();
 const mockAddDeptComment = vi.fn();
@@ -60,6 +65,10 @@ vi.mock('../../contexts/DataContext', () => ({
     directAdmissions: mockDirectAdmissions,
     shiftAssignmentsByFacility: mockShiftAssignmentsByFacility,
     shiftLogs: mockShiftLogs,
+    shiftAssignments: [],
+    notifications: mockNotifications,
+    markNotificationRead: vi.fn(),
+    markAllNotificationsRead: vi.fn(),
     loading: mockLoading,
     isOnline: mockIsOnline,
     pendingSyncCount: mockPendingSyncCount,
@@ -662,6 +671,30 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       ];
       const { container } = renderAr(<ERCockpit />);
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('1 للإرسال، 1 في الطريق إلينا');
+      expect(englishLeaks(container)).toEqual([]);
+    });
+
+    it('inbox, referrals, directory, archive, reports, department page', () => {
+      mockUser = { ...mockUsers[0], role: 'head_of_department' };
+      mockNotifications = [
+        { id: 'n1', userId: mockUser.id, title: 'New URGENT Referral', message: 'Referral from Ismailia General Hospital for Cardiology', type: 'info', read: false, createdAt: new Date().toISOString(), referralId: 'ref-1' },
+        { id: 'n2', userId: mockUser.id, title: 'Shift note', message: 'Handover saved', type: 'success', read: false, createdAt: new Date(Date.now() - 3 * 86400000).toISOString() },
+      ];
+      mockReferrals = [
+        testReferral,
+        { ...testReferral, id: 'ref-2', status: 'admitted', isEscalated: false, statusHistory: [{ status: 'admitted', timestamp: new Date().toISOString(), userId: 'doc-1' }] },
+        { ...testReferral, id: 'ref-3', status: 'cancelled', isEscalated: false, cancelReason: 'Patient improved' },
+      ];
+      // Notification messages are stored English sentences: data, like names.
+      const extra = ['Handover', 'saved', 'Referral', 'from', 'for', 'Patient', 'improved', 'CSV', 'Pediatrics', 'Internal', 'Medicine', 'Surgery'];
+      for (const ui of [<NotificationsPage />, <ReferralsPage />, <NetworkDirectoryPage />, <ArchivePage />, <DepartmentPage />]) {
+        const { container, unmount } = renderAr(ui);
+        expect(englishLeaks(container).filter(w => !extra.includes(w))).toEqual([]);
+        unmount();
+      }
+      mockUser = { ...mockUsers[0], role: 'hospital_manager' };
+      const { container } = renderAr(<ReportsPage />);
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('التقارير');
       expect(englishLeaks(container)).toEqual([]);
     });
 

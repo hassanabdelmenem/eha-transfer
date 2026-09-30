@@ -2,6 +2,20 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-30: Arabic, inbox and secondary screens (part 1)
+
+- #51 (intake wizard) merged at b4647be.
+- Translated: inbox (kinds and actions), referrals list and its filters, directory (roles, facility
+  kinds, capacity hints), archive, reports (heatmap and charts; day and month names via Intl, chart
+  area pinned left-to-right), HoD department page (delegation card, inpatients, internal transfer).
+  Added role and facility-type labels to the catalogue. ~200 new strings (review sheet: 912 rows).
+- Gap found: notification titles and messages are written to Firestore in English (13 call sites
+  in DataContext plus the sweep), so the inbox's messages stay English in Arabic. Proposed fix
+  (message key + params per notification, needs a rules change) is an owner decision in task_plan.
+- CSV exports keep English headers (spreadsheets, audit).
+- Verified: tsc, vitest 978/978 (new: inbox, referrals, directory, archive, department page and
+  reports rendered in Arabic with no English interface words), Playwright 11/11, Arabic captures.
+
 ## 2026-09-30: Arabic, intake wizard
 
 - #50 (referral detail) merged at f0e6d77.

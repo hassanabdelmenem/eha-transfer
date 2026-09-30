@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { subDays, subWeeks, subMonths, subQuarters, format } from 'date-fns';
+import { subDays, subWeeks, subMonths, subQuarters } from 'date-fns';
 import { FacilityAnalyticsChartsProps } from './types';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../i18n';
 
 type Period = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 type Row = { name: string; incoming: number; outgoing: number; oneWay: number; serviceReturn: number; assessmentReturn: number };
@@ -18,22 +19,20 @@ const PALETTE = {
   dark: ['#5b8fd0', '#d8704a', '#9a79d6'],
 } as const;
 
-const FLOW: { key: SeriesKey; label: string; slot: 0 | 1 | 2 }[] = [
-  { key: 'incoming', label: 'Incoming', slot: 0 },
-  { key: 'outgoing', label: 'Outgoing', slot: 1 },
+// Series and period names are reports.<key> in the catalogue. Charts stay
+// left-to-right in Arabic (time runs left to right on an axis); only words change.
+type Series = { key: SeriesKey; label: string; slot: 0 | 1 | 2 }[];
+const FLOW_KEYS: { key: SeriesKey; slot: 0 | 1 | 2 }[] = [
+  { key: 'incoming', slot: 0 },
+  { key: 'outgoing', slot: 1 },
 ];
-const TYPES: { key: SeriesKey; label: string; slot: 0 | 1 | 2 }[] = [
-  { key: 'oneWay', label: 'One way', slot: 0 },
-  { key: 'serviceReturn', label: 'Service and return', slot: 1 },
-  { key: 'assessmentReturn', label: 'Assessment and return', slot: 2 },
+const TYPE_KEYS: { key: SeriesKey; slot: 0 | 1 | 2 }[] = [
+  { key: 'oneWay', slot: 0 },
+  { key: 'serviceReturn', slot: 1 },
+  { key: 'assessmentReturn', slot: 2 },
 ];
 
-const PERIODS: { key: Period; label: string }[] = [
-  { key: 'weekly', label: 'Weekly' },
-  { key: 'monthly', label: 'Monthly' },
-  { key: 'quarterly', label: 'Quarterly' },
-  { key: 'yearly', label: 'Yearly' },
-];
+const PERIODS: Period[] = ['weekly', 'monthly', 'quarterly', 'yearly'];
 
 function useChartTheme() {
   const { theme } = useTheme();
@@ -53,7 +52,7 @@ function useChartTheme() {
   };
 }
 
-const Legend: React.FC<{ series: typeof FLOW; colors: readonly string[] }> = ({ series, colors }) => (
+const Legend: React.FC<{ series: Series; colors: readonly string[] }> = ({ series, colors }) => (
   <ul className="flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px] text-slate-700 dark:text-white/70">
     {series.map(s => (
       <li key={s.key} className="flex items-center gap-1.5">
@@ -90,10 +89,12 @@ const ChartTooltip: React.FC<{
 };
 
 /** The same numbers as a table, for screen readers and for anyone who prefers them. */
-const TableView: React.FC<{ caption: string; rows: Row[]; series: typeof FLOW; rowHeader: string }> = ({ caption, rows, series, rowHeader }) => (
+const TableView: React.FC<{ caption: string; rows: Row[]; series: Series; rowHeader: string }> = ({ caption, rows, series, rowHeader }) => {
+  const { t } = useI18n();
+  return (
   <details className="group mt-2">
     <summary className="inline-flex min-h-[44px] cursor-pointer items-center text-[13px] font-semibold text-slate-700 underline-offset-4 hover:underline dark:text-white/70">
-      View as table
+      {t('reports.viewTable')}
     </summary>
     <div className="overflow-x-auto">
       <table className="w-full text-start text-[13px]">
@@ -115,12 +116,13 @@ const TableView: React.FC<{ caption: string; rows: Row[]; series: typeof FLOW; r
       </table>
     </div>
   </details>
-);
+  );
+};
 
 const ChartBlock: React.FC<{
   title: string;
   rows: Row[];
-  series: typeof FLOW;
+  series: Series;
   stacked?: boolean;
   horizontal?: boolean;
   rowHeader: string;
@@ -137,7 +139,8 @@ const ChartBlock: React.FC<{
         <span className="text-[14px] font-semibold text-ink dark:text-paper">{title}</span>
         <Legend series={series} colors={t.series} />
       </figcaption>
-      <div className="mt-3 w-full" style={{ height }}>
+      {/* Axes read left to right in either language. */}
+      <div dir="ltr" className="mt-3 w-full" style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={rows}
@@ -192,6 +195,12 @@ export const FacilityAnalyticsCharts: React.FC<FacilityAnalyticsChartsProps> = (
   userFacilityId,
 }) => {
   const [chartPeriod, setChartPeriod] = useState<Period>('weekly');
+  const { t, lang } = useI18n();
+  const FLOW: Series = FLOW_KEYS.map(s => ({ ...s, label: t(`reports.${s.key}`) }));
+  const TYPES: Series = TYPE_KEYS.map(s => ({ ...s, label: t(`reports.${s.key}`) }));
+  const locale = lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB';
+  const dayName = (d: Date) => d.toLocaleDateString(locale, { weekday: 'short' });
+  const monthName = (d: Date) => d.toLocaleDateString(locale, { month: 'short' });
 
   const dynamicChartData = useMemo(() => {
     const today = new Date();
@@ -218,29 +227,29 @@ export const FacilityAnalyticsCharts: React.FC<FacilityAnalyticsChartsProps> = (
       const d = subDays(today, i);
       const start = new Date(d.setHours(0, 0, 0, 0));
       const end = new Date(d.setHours(23, 59, 59, 999));
-      data.weekly.push({ name: format(d, 'EEE'), ...countData(start, end) });
+      data.weekly.push({ name: dayName(d), ...countData(start, end) });
     }
     // Monthly: last 4 weeks
     for (let i = 3; i >= 0; i--) {
       const end = subWeeks(today, i);
       const start = subWeeks(today, i + 1);
-      data.monthly.push({ name: `W${4 - i}`, ...countData(start, end) });
+      data.monthly.push({ name: t('reports.week', { n: 4 - i }), ...countData(start, end) });
     }
     // Quarterly: last 3 months
     for (let i = 2; i >= 0; i--) {
       const d = subMonths(today, i);
       const start = new Date(d.getFullYear(), d.getMonth(), 1);
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-      data.quarterly.push({ name: format(d, 'MMM'), ...countData(start, end) });
+      data.quarterly.push({ name: monthName(d), ...countData(start, end) });
     }
     // Yearly: last 4 quarters
     for (let i = 3; i >= 0; i--) {
       const end = subQuarters(today, i);
       const start = subQuarters(today, i + 1);
-      data.yearly.push({ name: `Q${4 - i}`, ...countData(start, end) });
+      data.yearly.push({ name: t('reports.quarter', { n: 4 - i }), ...countData(start, end) });
     }
     return data;
-  }, [facilityReferrals, facilityAdmissions, userFacilityId]);
+  }, [facilityReferrals, facilityAdmissions, userFacilityId, t, lang]);
 
   const departmentChartData = useMemo(() => {
     const deptMap = new Map<string, Row>();
@@ -255,7 +264,7 @@ export const FacilityAnalyticsCharts: React.FC<FacilityAnalyticsChartsProps> = (
       const isOutgoing = ref.referringFacilityId === userFacilityId;
       const isIncoming =
         !isOutgoing && (ref.receivingFacilityId === userFacilityId || ref.receivingFacilityId === 'auto');
-      const depts = ref.receivingDepartments && ref.receivingDepartments.length > 0 ? ref.receivingDepartments : ['Unspecified'];
+      const depts = ref.receivingDepartments && ref.receivingDepartments.length > 0 ? ref.receivingDepartments : [t('reports.unspecified')];
       depts.forEach(dept => {
         const entry = getOrAdd(dept);
         if (isIncoming) entry.incoming++;
@@ -268,7 +277,7 @@ export const FacilityAnalyticsCharts: React.FC<FacilityAnalyticsChartsProps> = (
     });
 
     return Array.from(deptMap.values()).sort((a, b) => b.incoming + b.outgoing - (a.incoming + a.outgoing));
-  }, [facilityReferrals, userFacilityId]);
+  }, [facilityReferrals, userFacilityId, t]);
 
   const periodRows = dynamicChartData[chartPeriod];
 
@@ -276,42 +285,42 @@ export const FacilityAnalyticsCharts: React.FC<FacilityAnalyticsChartsProps> = (
     <div className="grid grid-cols-1 gap-3">
       <section aria-labelledby="transfer-flow" className={panel}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="transfer-flow" className={panelTitle}>Transfer flow</h3>
+          <h3 id="transfer-flow" className={panelTitle}>{t('reports.transferFlow')}</h3>
           {/* The period filter sits above both charts it controls. */}
-          <div role="group" aria-label="Period" className="flex rounded-[10px] border border-slate-200 bg-paper p-0.5 dark:border-white/12 dark:bg-white/5">
+          <div role="group" aria-label={t('reports.period')} className="flex rounded-[10px] border border-slate-200 bg-paper p-0.5 dark:border-white/12 dark:bg-white/5">
             {PERIODS.map(p => (
               <button
-                key={p.key}
+                key={p}
                 type="button"
-                aria-pressed={chartPeriod === p.key}
-                onClick={() => setChartPeriod(p.key)}
+                aria-pressed={chartPeriod === p}
+                onClick={() => setChartPeriod(p)}
                 className={cn(
                   'min-h-[40px] rounded-[8px] px-2.5 text-[12.5px] font-semibold transition-colors',
-                  chartPeriod === p.key
+                  chartPeriod === p
                     ? 'bg-ink text-paper dark:bg-paper dark:text-ink'
                     : 'text-slate-700 hover:text-ink dark:text-white/70 dark:hover:text-paper'
                 )}
               >
-                {p.label}
+                {t(`reports.${p}`)}
               </button>
             ))}
           </div>
         </div>
         <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-1">
-          <ChartBlock title="Referrals in and out" rows={periodRows} series={FLOW} rowHeader="Period" />
-          <ChartBlock title="By transfer type" rows={periodRows} series={TYPES} stacked rowHeader="Period" />
+          <ChartBlock title={t('reports.inOut')} rows={periodRows} series={FLOW} rowHeader={t('reports.periodCol')} />
+          <ChartBlock title={t('reports.byType')} rows={periodRows} series={TYPES} stacked rowHeader={t('reports.periodCol')} />
         </div>
       </section>
 
       <section aria-labelledby="dept-demand" className={panel}>
-        <h3 id="dept-demand" className={panelTitle}>Demand by department</h3>
-        <p className="mt-0.5 text-[13px] text-slate-700 dark:text-white/65">All time, busiest first</p>
+        <h3 id="dept-demand" className={panelTitle}>{t('reports.demand')}</h3>
+        <p className="mt-0.5 text-[13px] text-slate-700 dark:text-white/65">{t('reports.demandSub')}</p>
         {departmentChartData.length === 0 ? (
-          <p className="mt-3 text-[14px] text-slate-700 dark:text-white/65">No referrals recorded yet.</p>
+          <p className="mt-3 text-[14px] text-slate-700 dark:text-white/65">{t('reports.noReferrals')}</p>
         ) : (
           <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-1">
-            <ChartBlock title="Referrals in and out" rows={departmentChartData} series={FLOW} horizontal rowHeader="Department" />
-            <ChartBlock title="By transfer type" rows={departmentChartData} series={TYPES} stacked horizontal rowHeader="Department" />
+            <ChartBlock title={t('reports.inOut')} rows={departmentChartData} series={FLOW} horizontal rowHeader={t('reports.departmentCol')} />
+            <ChartBlock title={t('reports.byType')} rows={departmentChartData} series={TYPES} stacked horizontal rowHeader={t('reports.departmentCol')} />
           </div>
         )}
       </section>
