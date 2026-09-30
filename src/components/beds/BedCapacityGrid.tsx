@@ -4,6 +4,7 @@ import { Bed, Settings, Building2, CheckCircle2, AlertTriangle, Activity } from 
 import { BedType, Facility } from '../../types';
 import { BedCapacityCard } from './BedCapacityCard';
 import { Card, CardContent } from '../ui/Card';
+import { useI18n } from '../../i18n';
 
 export interface BedCapacityGridProps {
   facility: Facility;
@@ -30,6 +31,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
   canEditTotal = false,
   disabled = false,
 }) => {
+  const { t } = useI18n();
   // Aggregate statistics across all bed types
   const configuredBedTypes = BED_TYPES.filter(
     (bt) => (capacities[bt]?.total ?? 0) > 0
@@ -57,7 +59,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
               htmlFor="bedMgmtFacility"
               className="text-sm font-semibold text-slate-700 dark:text-slate-300 shrink-0"
             >
-              Admin View:
+              {t('beds.adminView')}
             </label>
             <select
               id="bedMgmtFacility"
@@ -65,7 +67,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
               onChange={(e) => onSelectFacility(e.target.value)}
               className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[44px]"
             >
-              <option value="">Select Facility to Manage...</option>
+              <option value="">{t('beds.selectToManage')}</option>
               {facilities.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
@@ -81,7 +83,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Total Beds
+              {t('beds.totalBeds')}
             </span>
             <Building2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           </div>
@@ -89,14 +91,14 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
             {totalBeds}
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            Across {configuredBedTypes.length} configured units
+            {t('beds.acrossUnits', { count: configuredBedTypes.length })}
           </p>
         </div>
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Occupied Beds
+              {t('beds.occupiedBeds')}
             </span>
             <Activity className="w-4 h-4 text-blue-500" />
           </div>
@@ -104,14 +106,14 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
             {totalOccupied}
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            Inpatient census
+            {t('beds.census')}
           </p>
         </div>
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Available Beds
+              {t('beds.availableBeds')}
             </span>
             <CheckCircle2 className="w-4 h-4 text-success-500" />
           </div>
@@ -119,14 +121,14 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
             {totalAvailable}
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            Ready for intake
+            {t('beds.readyIntake')}
           </p>
         </div>
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Overall Occupancy
+              {t('beds.overall')}
             </span>
             <AlertTriangle
               className={`w-4 h-4 ${
@@ -142,7 +144,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
             {overallOccupancyRate}%
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-            Facility utilization
+            {t('beds.utilization')}
           </p>
         </div>
       </div>
@@ -152,7 +154,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              Unit Capacity & Live Steppers
+              {t('beds.steppers')}
             </h2>
             {canEditTotal && (
               <Link
@@ -160,7 +162,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
               >
                 <Settings className="w-3.5 h-3.5" />
-                Edit total capacity
+                {t('beds.editTotal')}
               </Link>
             )}
           </div>
@@ -180,13 +182,13 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
       ) : (
         <Card className="p-8 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center gap-3">
           <Bed className="w-8 h-8 text-slate-300 dark:text-slate-700" />
-          <p>No bed capacity configured for {facility.name} yet.</p>
+          <p>{t('beds.noCapacity', { facility: facility.name })}</p>
           {canEditTotal && (
             <Link
               to="/facility-settings"
               className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
             >
-              Set up bed capacity in Facility Settings &rarr;
+              {t('beds.setUp')} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
             </Link>
           )}
         </Card>

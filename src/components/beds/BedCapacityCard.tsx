@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bed, Minus, Plus } from 'lucide-react';
 import { BedType } from '../../types';
+import { useI18n } from '../../i18n';
 
 export interface BedCapacityCardProps {
   bedType: BedType;
@@ -17,13 +18,14 @@ export const BedCapacityCard: React.FC<BedCapacityCardProps> = ({
   onChange,
   disabled = false,
 }) => {
+  const { t } = useI18n();
   const safeTotal = Math.max(0, total);
   const safeOccupied = Math.min(safeTotal, Math.max(0, occupied));
   const free = Math.max(0, safeTotal - safeOccupied);
   const ratio = safeTotal > 0 ? free / safeTotal : 0;
   const occupancyPercentage = safeTotal > 0 ? (safeOccupied / safeTotal) * 100 : 0;
 
-  const label = free <= 0 ? 'Full' : ratio < 0.2 ? 'Low' : 'Available';
+  const label = free <= 0 ? t('beds.full') : ratio < 0.2 ? t('beds.low') : t('beds.available');
   const labelColor =
     free <= 0
       ? 'text-critical-600 dark:text-critical-400 bg-critical-50 dark:bg-critical-950/40 border-critical-200 dark:border-critical-800'
@@ -53,7 +55,7 @@ export const BedCapacityCard: React.FC<BedCapacityCardProps> = ({
               {bedType}
             </span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              {safeOccupied} of {safeTotal} occupied
+              {t('beds.occupiedOf', { occupied: safeOccupied, total: safeTotal })}
             </span>
           </div>
         </div>
@@ -69,7 +71,7 @@ export const BedCapacityCard: React.FC<BedCapacityCardProps> = ({
           type="button"
           onClick={() => onChange(Math.min(safeTotal, safeOccupied + 1))}
           disabled={disabled || safeOccupied >= safeTotal}
-          aria-label={`One more ${bedType} bed occupied`}
+          aria-label={t('nurse.oneMore', { bed: bedType })}
           className="h-12 w-12 shrink-0 rounded-xl border-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-center transition-colors disabled:opacity-40 disabled:pointer-events-none active:scale-95"
         >
           <Minus className="w-5 h-5" />
@@ -80,7 +82,7 @@ export const BedCapacityCard: React.FC<BedCapacityCardProps> = ({
             {free}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
-            free of {safeTotal}
+            {t('beds.freeOf', { total: safeTotal })}
           </p>
         </div>
 
@@ -88,7 +90,7 @@ export const BedCapacityCard: React.FC<BedCapacityCardProps> = ({
           type="button"
           onClick={() => onChange(Math.max(0, safeOccupied - 1))}
           disabled={disabled || safeOccupied <= 0}
-          aria-label={`One fewer ${bedType} bed occupied`}
+          aria-label={t('nurse.oneFewer', { bed: bedType })}
           className="h-12 w-12 shrink-0 rounded-xl border-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-center transition-colors disabled:opacity-40 disabled:pointer-events-none active:scale-95"
         >
           <Plus className="w-5 h-5" />
@@ -97,7 +99,7 @@ export const BedCapacityCard: React.FC<BedCapacityCardProps> = ({
 
       <div>
         <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1.5 font-medium">
-          <span>Occupancy</span>
+          <span>{t('beds.occupancy')}</span>
           <span className="tabular-nums font-semibold">{Math.round(occupancyPercentage)}%</span>
         </div>
         <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">

@@ -10,25 +10,13 @@ import { RoleHomeHeadline, MicroLabel, EmptyQueue } from '../components/dashboar
 import { BedOccupancyHeatmap } from '../components/dashboard/BedOccupancyHeatmap';
 import { capacityTone } from '../lib/capacityTone';
 import { cn } from '../lib/utils';
+import { useI18n } from '../i18n';
+import { SLA_MINUTES } from '../lib/sla';
 
-const ESCALATION_LABEL: Record<string, string> = {
-  no_beds_available: 'No beds available',
-  no_matching_facility: 'No matching facility',
-  sla_breach: 'No response',
-  requirements_needed: 'Requirements needed',
-  manual: 'Escalated',
-};
-const ESCALATION_DESC: Record<string, string> = {
-  no_beds_available: 'Every matching facility is at full capacity for the required bed type. Chasing the receiving facilities will not help.',
-  no_matching_facility: 'No facility in the network provides the required departments and bed type. This referral cannot route itself.',
-  sla_breach: 'No facility responded within 30 minutes of this referral being raised.',
-  requirements_needed: 'Sent back to the referring facility with requirements before it can proceed.',
-  manual: 'A human judged this referral needs administrative attention.',
-};
-const ESCALATION_PRIMARY: Record<string, string> = {
-  no_beds_available: 'Place at a contracted facility',
-  no_matching_facility: 'Override the destination',
-};
+// Reason labels and descriptions: admin.reason.* and admin.desc.* in the catalogue.
+const REASONS = ['no_beds_available', 'no_matching_facility', 'sla_breach', 'requirements_needed', 'manual'] as const;
+type Reason = (typeof REASONS)[number];
+const isReason = (r: string): r is Reason => (REASONS as readonly string[]).includes(r);
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -37,9 +25,10 @@ export const AdminDashboard: React.FC = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [placingId, setPlacingId] = useState<string | null>(null);
   const [placementFacilityId, setPlacementFacilityId] = useState('');
+  const { t } = useI18n();
 
   if (!user || (user.role !== 'system_admin' && user.role !== 'owner')) {
-    return <div className="p-8">Access Denied. Admin privileges required.</div>;
+    return <div className="p-8">{t('admin.accessDenied')}</div>;
   }
 
   const calculateTotalCapacity = () => {
@@ -73,14 +62,14 @@ export const AdminDashboard: React.FC = () => {
   );
   const escalationAge = (r: Referral) => {
     const mins = Math.max(0, Math.round((Date.now() - Date.parse(r.escalatedAt || r.createdAt)) / 60000));
-    return `${mins} min`;
+    return t('admin.minutes', { m: mins });
   };
   const handlePostpone = async (id: string) => {
     setBusyId(id);
     try {
       await updateReferralStatus(id, 'postponed', 'Postponed by system administrator.');
     } catch (e: any) {
-      toastError(e, 'Could not postpone this referral.');
+      toastError(e, t('admin.toastPostponeFailed'));
     } finally {
       setBusyId(null);
     }
@@ -90,7 +79,7 @@ export const AdminDashboard: React.FC = () => {
     try {
       await toggleReferralEscalation(id, false);
     } catch (e: any) {
-      toastError(e, 'Could not de-escalate this referral.');
+      toastError(e, t('admin.toastDeEscalateFailed'));
     } finally {
       setBusyId(null);
     }
@@ -103,7 +92,7 @@ export const AdminDashboard: React.FC = () => {
       setPlacingId(null);
       setPlacementFacilityId('');
     } catch (e: any) {
-      toastError(e, 'Could not place this referral at that facility.');
+      toastError(e, t('admin.toastPlaceFailed'));
     } finally {
       setBusyId(null);
     }
@@ -138,52 +127,53 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="max-w-[760px] flex flex-col gap-3">
       <RoleHomeHeadline
-        title={n === 0 ? 'Nothing only you can fix' : `${n} only you can fix`}
-        rationale="System-level means chasing the hospitals will not help — the capacity does not exist."
+        title={n === 0 ? t('admin.none') : t('admin.title', { count: n })}
+        rationale={t('admin.rationale')}
       />
 
       {/* Network free beds: tertiary and district hospitals, primary care excluded. */}
-      <ul aria-label="Free beds across the network" className="mt-1 grid grid-cols-4 gap-2">
+      <ul aria-label={t('admin.freeBeds')} className="mt-1 grid grid-cols-4 gap-2">
         {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => {
           const tone = capacityTone(free(bed), globalTotals[bed].total);
           return (
             <li key={bed} className="rounded-[10px] border border-slate-200 bg-white px-1 py-2.5 text-center dark:border-white/12 dark:bg-white/[0.05]">
               <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">{bed}</p>
               <p className={cn('mt-0.5 font-heading text-[22px] font-semibold leading-none tabular-nums', tone.text)}>{free(bed)}</p>
-              <p className="mt-1 text-[11.5px] text-slate-700 dark:text-white/60">of {globalTotals[bed].total}</p>
+              <p className="mt-1 text-[11.5px] text-slate-700 dark:text-white/60">{t('admin.of', { total: globalTotals[bed].total })}</p>
             </li>
           );
         })}
       </ul>
 
       {n === 0 ? (
-        <EmptyQueue>Nothing needs administrative placement right now.</EmptyQueue>
+        <EmptyQueue>{t('admin.empty')}</EmptyQueue>
       ) : (
         <ul className="mt-1 flex flex-col gap-3">
           {systemEscalations.map(r => {
-            const reason = r.escalationReason || 'manual';
-            const fromFacility = facilitiesById.get(r.referringFacilityId)?.name || 'referring facility';
+            const reason: string = r.escalationReason || 'manual';
+            const known = isReason(reason) ? reason : null;
+            const fromFacility = facilitiesById.get(r.referringFacilityId)?.name || t('admin.referringFacility');
             const capacityReason = reason === 'no_beds_available' || reason === 'no_matching_facility';
             const placing = placingId === r.id;
             return (
               <li key={r.id} className="overflow-hidden rounded-xl border-2 border-critical-700 bg-critical-100 dark:border-critical-400/70 dark:bg-critical-950/45">
                 <p className="flex items-center justify-between gap-3 bg-critical-700 px-[14px] py-2 text-[11.5px] font-bold uppercase tracking-[0.08em] text-white dark:bg-transparent dark:pb-0 dark:pt-3 dark:text-critical-300">
-                  <span className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />System level · {ESCALATION_LABEL[reason] || reason}</span>
+                  <span className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />{t('admin.systemLevel', { reason: known ? t(`admin.reason.${known}`) : reason })}</span>
                   <span className="font-mono normal-case tracking-normal">{escalationAge(r)}</span>
                 </p>
                 <div className="px-[14px] pt-3 pb-[14px]">
                   <p className="text-[17px] font-semibold leading-[1.25] text-ink dark:text-paper">{r.patientData.name}, {r.patientData.age}</p>
                   <p className="mt-[3px] text-[13.5px] text-critical-900 dark:text-white/70">
-                    {r.requiredBedType}{r.receivingDepartments?.length ? ` · ${r.receivingDepartments.join(' + ')}` : ''} · {r.priority} · from {fromFacility}
+                    <bdi>{r.requiredBedType}</bdi>{r.receivingDepartments?.length ? <> · <bdi>{r.receivingDepartments.join(' + ')}</bdi></> : null} · {t(`priorityWord.${r.priority}`)} · {t('card.from', { facility: fromFacility })}
                   </p>
                   <p className="mt-2.5 rounded-[10px] bg-white/70 px-3 py-2.5 text-[14px] leading-[1.45] text-ink dark:bg-white/5 dark:text-white/85">
-                    {ESCALATION_DESC[reason] || ESCALATION_DESC.manual}
+                    {t(`admin.desc.${known ?? 'manual'}`, { minutes: SLA_MINUTES })}
                   </p>
 
                   {placing ? (
                     <div className="mt-3 space-y-2">
                       <label htmlFor={`place-${r.id}`} className="block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
-                        {reason === 'no_matching_facility' ? 'New destination' : 'Contracted facility'}
+                        {reason === 'no_matching_facility' ? t('admin.newDestination') : t('admin.contractedFacility')}
                       </label>
                       <select
                         id={`place-${r.id}`}
@@ -191,23 +181,23 @@ export const AdminDashboard: React.FC = () => {
                         onChange={e => setPlacementFacilityId(e.target.value)}
                         className="min-h-[52px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-ink dark:text-paper"
                       >
-                        <option value="">Choose a facility</option>
+                        <option value="">{t('admin.chooseFacility')}</option>
                         {facilities
                           .filter(f => f.id !== r.referringFacilityId)
                           .map(f => ({ f, free: Math.max(0, (f.capacity?.[r.requiredBedType]?.total ?? 0) - (f.capacity?.[r.requiredBedType]?.occupied ?? 0)) }))
                           .sort((x, y) => Number(!!y.f.isExternal) - Number(!!x.f.isExternal) || y.free - x.free)
                           .map(({ f, free }) => (
                             <option key={f.id} value={f.id}>
-                              {f.name}{f.isExternal ? ' · contracted' : ''} · {free} {r.requiredBedType} free
+                              {t('admin.facilityOption', { name: f.name, contracted: f.isExternal ? t('admin.contractedSuffix') : '', free, bed: r.requiredBedType })}
                             </option>
                           ))}
                       </select>
                       <div className="grid grid-cols-2 gap-2">
                         <button type="button" onClick={() => { setPlacingId(null); setPlacementFacilityId(''); }} className={outlineBtn}>
-                          Cancel
+                          {t('common.cancel')}
                         </button>
                         <button type="button" onClick={() => handleConfirmPlacement(r.id)} disabled={!placementFacilityId || busyId === r.id} className={cn(primaryBtn, 'disabled:opacity-50')}>
-                          Confirm placement
+                          {t('admin.confirmPlacement')}
                         </button>
                       </div>
                     </div>
@@ -220,16 +210,16 @@ export const AdminDashboard: React.FC = () => {
                       }}
                       className={cn(primaryBtn, 'mt-3 w-full min-h-[54px] text-[16px]')}
                     >
-                      {ESCALATION_PRIMARY[reason] || 'Review now'}
+                      {reason === 'no_beds_available' ? t('admin.placeContracted') : reason === 'no_matching_facility' ? t('admin.overrideDestination') : t('home.reviewNow')}
                     </button>
                   )}
 
                   <div className="mt-2.5 grid grid-cols-2 gap-2.5">
                     <button type="button" onClick={() => handlePostpone(r.id)} disabled={busyId === r.id} className={outlineBtn}>
-                      Postpone
+                      {t('adminActions.postpone')}
                     </button>
                     <button type="button" onClick={() => handleDeEscalate(r.id)} disabled={busyId === r.id} className={outlineBtn}>
-                      De-escalate
+                      {t('detail.deEscalate')}
                     </button>
                   </div>
                 </div>
@@ -241,15 +231,15 @@ export const AdminDashboard: React.FC = () => {
 
       {waitlistByFacility.length > 0 && (
         <section aria-labelledby="waitlist" className="mt-5 flex flex-col gap-2.5">
-          <MicroLabel id="waitlist">Waitlist pressure by facility</MicroLabel>
+          <MicroLabel id="waitlist">{t('admin.waitlist')}</MicroLabel>
           <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.05]">
             {waitlistByFacility.map(f => (
               <li key={f.facilityId} className="flex min-h-[48px] items-center justify-between gap-3 px-[14px] py-2">
                 <span className="truncate text-[15px] text-ink dark:text-paper">{f.name}</span>
                 <span className="flex shrink-0 items-center gap-1.5">
-                  {f.emergency > 0 && <WaitDot className="bg-critical-700" letter="E" count={f.emergency} label="emergency" />}
-                  {f.urgent > 0 && <WaitDot className="bg-warning-700" letter="U" count={f.urgent} label="urgent" />}
-                  {f.routine > 0 && <WaitDot className="bg-info-700" letter="R" count={f.routine} label="routine" />}
+                  {f.emergency > 0 && <WaitDot className="bg-critical-700" letter={t('admin.letter.emergency')} count={f.emergency} label={t('priorityWord.emergency')} />}
+                  {f.urgent > 0 && <WaitDot className="bg-warning-700" letter={t('admin.letter.urgent')} count={f.urgent} label={t('priorityWord.urgent')} />}
+                  {f.routine > 0 && <WaitDot className="bg-info-700" letter={t('admin.letter.routine')} count={f.routine} label={t('priorityWord.routine')} />}
                 </span>
               </li>
             ))}
