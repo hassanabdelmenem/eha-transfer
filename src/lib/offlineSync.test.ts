@@ -1,3 +1,4 @@
+import { notificationText } from '../i18n/notifications';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { runTransaction } from 'firebase/firestore';
 import { syncOfflineReferrals } from './offlineSync';
@@ -148,11 +149,16 @@ describe('offlineSync', () => {
     const notifications: any[] = [];
     await syncOfflineReferrals({ createNotification: (p) => notifications.push(p), facilities: [] });
 
+    // createNotification gets the catalogue key and values; the English it stores is
+    // rendered from them, and still reads exactly as before.
     expect(notifications).toEqual([expect.objectContaining({
-      title: 'New ROUTINE Referral (Synced)',
+      key: 'newReferralSynced',
       type: 'info',
       facilityId: 'f9',
-      message: expect.stringContaining('Referral from Facility for'),
+      vars: expect.objectContaining({ facility: '@notif.facility', priority: '@priority.routine' }),
     })]);
+    const { title, message } = notificationText('en', notifications[0].key, notifications[0].vars);
+    expect(title).toBe('New ROUTINE Referral (Synced)');
+    expect(message).toBe('Referral from Facility for Cardiology');
   });
 });

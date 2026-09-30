@@ -237,6 +237,10 @@ export interface Notification {
   // Optional only for notifications created before the field existed.
   createdAtMs?: number;
   referralId?: string;
+  /** notif.<key> in the i18n catalogue; the inbox renders it in the reader's language. */
+  key?: string;
+  /** Values for that key ("@other.key" for catalogue text, "#date:<iso>" for a date). */
+  vars?: Record<string, string | number>;
 }
 
 export const DOCTOR_ROLES: Role[] = ['consultant', 'specialist', 'resident', 'clinician', 'head_of_department', 'medical_director', 'owner'];

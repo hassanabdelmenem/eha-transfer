@@ -2,6 +2,24 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-01: Notifications in the reader's language; CI install fix; staging seeded
+
+- #53 merged. CI's intermittent 20+ minute "Install Playwright Browsers": it installed Firefox and
+  WebKit as well (181 apt packages, 130 MB) and the Azure Ubuntu mirror ran at ~170 KB/s. Now
+  Chromium only (10 packages, 35 MB) with a 6-minute step timeout (#54).
+- Staging seeded (scripts/seed-staging.mjs --apply): 3 facilities, 7 accounts, 3 referrals; sign-in
+  verified. The shared test password is with the owner.
+- Owner decisions d6 (notifications in the reader's language) and d7 (printout stays English).
+- Notifications: every writer (13 in DataContext, 2 in offlineSync, the sweep) passes a key + values;
+  createNotification renders the stored English from the same template, so English readers and
+  older app versions see the same sentences (statuses now read "in transit", not "IN_TRANSIT").
+  Values can be "@catalogue.key" or "#date:<iso>". The inbox renders key + vars via
+  renderNotification, falling back to the stored English.
+- Rules: key must be letters only (<= 64), vars a map of <= 12 entries, and a notification may carry
+  only its known fields (hasOnly), closing a gap where any extra field was accepted.
+- Verified: tsc, vitest 988/988 (renderer, escalation notices, DataContext writes, inbox in Arabic),
+  rules 106/106 (4 new), sweep module loads and renders under tsx.
+
 ## 2026-09-30: Arabic, facility settings, admin console, beds
 
 - #52 (inbox and secondary screens, part 1) merged at 8d0def3; CI's Playwright install hung again on one run

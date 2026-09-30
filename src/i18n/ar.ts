@@ -1181,4 +1181,42 @@ export const ar: Messages = {
       age: 'أدخل سنًا صحيحًا بين 0 و125.',
     },
   },
+  notif: {
+    aPatient: 'مريض',
+    facility: 'منشأة',
+    theReferringFacility: 'المنشأة المُحيلة',
+    newReferral: { title: 'إحالة {priority} جديدة', message: 'إحالة من {facility} إلى {depts}' },
+    newReferralAuto: { title: 'إحالة {priority} جديدة (توجيه تلقائي)', message: 'إحالة من {facility} إلى {depts}' },
+    newReferralSynced: { title: 'إحالة {priority} جديدة (أُرسلت بعد عودة الاتصال)', message: 'إحالة من {facility} إلى {depts}' },
+    newReferralAutoSynced: { title: 'إحالة {priority} جديدة (توجيه تلقائي، أُرسلت بعد عودة الاتصال)', message: 'إحالة من {facility} إلى {depts}' },
+    criticalAlert: { title: 'تنبيه حرج: تحويل {priority} إلى {bed}', message: 'إحالة من {facility} إلى {depts}' },
+    statusUpdated: { title: 'تحديث حالة الإحالة: {status}', message: 'إحالة {patient} الآن: {status}.' },
+    receivingStatus: { title: 'الإحالة: {status}', message: 'إحالة المريض {patient} الآن: {status}.' },
+    deptApproved: { title: 'وافق القسم، تحتاج الموافقة النهائية', message: 'وافق د. {name} على الإحالة {id}. تحتاج موافقة المدير.' },
+    requirements: {
+      title: 'أُجّلت الإحالة: مطلوب متطلبات',
+      message: 'أُعيدت إحالة {patient} (من {facility}) مع متطلبات، مباشرة ودون موافقة إدارية، وصُعّدت تلقائيًا.',
+    },
+    requirementsComment: {
+      title: 'أُجّلت الإحالة: مطلوب متطلبات',
+      message: 'أُعيدت إحالة {patient} (من {facility}) مع متطلبات: «{comment}»، مباشرة ودون موافقة إدارية، وصُعّدت تلقائيًا.',
+    },
+    consented: { title: 'وافق المريض على التحويل', message: 'وافق المريض {patient}؛ يمكن إرسال الإسعاف.' },
+    declined: { title: 'رفض المريض التحويل: إعادة توجيه', message: 'رفض المريض {patient} المنشأة المقترحة؛ عادت الإحالة للمراجعة.' },
+    rerouted: { title: 'أُعيد توجيه الإحالة بعد رفض المريض', message: 'رفض المريض {patient} منشأة أخرى؛ عادت هذه الإحالة نشطة.' },
+    cancelled: { title: 'أُلغيت الإحالة', message: 'ألغى {name} إحالة {patient}.' },
+    cancelledByReferrer: { title: 'أُلغيت الإحالة', message: 'ألغت المنشأة المُحيلة إحالة {patient}.' },
+    escalationSla: {
+      title: 'صُعّدت الإحالة: لا استجابة خلال {minutes} دقيقة',
+      message: 'لا استجابة لإحالة {patient} ({priority}، {bed}) منذ {since}، وصُعّدت للتدخل.',
+    },
+    escalationNoMatch: {
+      title: 'تصعيد: لا منشأة مناسبة',
+      message: '{patient} يحتاج {depts} ({bed}). {capacity} مطلوب تسكين إداري.',
+    },
+    escalationNoBeds: {
+      title: 'تصعيد: لا أسرّة متاحة',
+      message: '{patient} يحتاج {depts} ({bed}). {capacity} مطلوب تسكين إداري.',
+    },
+  },
 };
