@@ -9,9 +9,11 @@ import { ReferralCockpitCard } from './ReferralCockpitCard';
 import { useReportQueue } from '../layout/Workspace';
 import { RoleHomeHeadline } from './RoleHome';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../i18n';
 
 export const ERCockpit: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const { referrals, facilitiesById, usersById, updateReferralStatus, setAccompanyingDoctor, loading } = useData();
 
   const getFacilityName = (id: string) => facilitiesById.get(id)?.name || id;
@@ -63,27 +65,27 @@ export const ERCockpit: React.FC = () => {
   const handleRequestAmbulance = async (id: string) => {
     try {
       await updateReferralStatus(id, 'in_transit', 'Ambulance dispatched by ER team');
-      showToast('Ambulance dispatched.', 'success');
+      showToast(t('er.toastDispatched'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not dispatch the ambulance.');
+      toastError(e, t('er.toastDispatchFailed'));
     }
   };
 
   const handleConfirmArrival = async (id: string) => {
     try {
       await updateReferralStatus(id, 'arrived', 'Patient arrived at ER');
-      showToast('Arrival confirmed.', 'success');
+      showToast(t('er.toastArrived'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not confirm arrival.');
+      toastError(e, t('er.toastArriveFailed'));
     }
   };
 
   const handleSaveEscort = async (id: string, name: string, phone: string) => {
     try {
       await setAccompanyingDoctor(id, name, phone);
-      showToast('Escort details saved.', 'success');
+      showToast(t('er.toastEscortSaved'), 'success');
     } catch (e: any) {
-      toastError(e, "Could not save the accompanying doctor's details.");
+      toastError(e, t('er.toastEscortFailed'));
     }
   };
 
@@ -95,16 +97,17 @@ export const ERCockpit: React.FC = () => {
   return (
     <div className="flex flex-col gap-3">
       <RoleHomeHeadline
-        title={`${toSend} to send, ${arriving} arriving`}
-        rationale="Outbound first — the patient is waiting on you."
+        title={t('er.title', { toSend, arriving })}
+        rationale={t('er.rationale')}
       />
 
       <ErSection
         tone="warning"
         icon={<Truck className="h-4 w-4 shrink-0" aria-hidden="true" />}
-        label="Outbound · awaiting ambulance"
+        label={t('er.outbound')}
         loading={loading}
-        empty="No outbound patients awaiting transport."
+        loadingLabel={t('er.loading')}
+        empty={t('er.outboundEmpty')}
       >
         {outboundQueue.map(r => (
           <ReferralCockpitCard
@@ -122,9 +125,10 @@ export const ERCockpit: React.FC = () => {
       <ErSection
         tone="info"
         icon={<Clock className="h-4 w-4 shrink-0" aria-hidden="true" />}
-        label="Inbound · in transit"
+        label={t('er.inbound')}
         loading={loading}
-        empty="No incoming patients currently in transit."
+        loadingLabel={t('er.loading')}
+        empty={t('er.inboundEmpty')}
       >
         {inboundQueue.map(r => (
           <ReferralCockpitCard
@@ -150,9 +154,10 @@ const ErSection: React.FC<{
   icon: React.ReactNode;
   label: string;
   loading: boolean;
+  loadingLabel: string;
   empty: string;
   children: React.ReactNode[];
-}> = ({ tone, icon, label, loading, empty, children }) => (
+}> = ({ tone, icon, label, loading, loadingLabel, empty, children }) => (
   <section aria-label={label} className="mt-2 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
     <h2 className={cn(
       'flex items-center gap-2 px-[14px] py-2.5 text-[11.5px] font-bold uppercase leading-tight tracking-[0.08em]',
@@ -164,7 +169,7 @@ const ErSection: React.FC<{
       {label}
     </h2>
     {loading ? (
-      <SkeletonGroup label="Loading transfers…" className="p-[14px]">
+      <SkeletonGroup label={loadingLabel} className="p-[14px]">
         <Skeleton className="h-36 w-full rounded-[10px]" />
       </SkeletonGroup>
     ) : children.length === 0 ? (

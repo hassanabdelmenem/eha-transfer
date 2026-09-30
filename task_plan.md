@@ -17,7 +17,8 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
    "Escalation sweep"); until then escalation when nobody is signed in can be hours late.
 2. Seed staging: owner runs `scripts/seed-staging.mjs --apply` with a password they choose (Claude's
    auto mode may not write staging accounts or store the password).
-3. Arabic translation PRs, one per surface (see "Arabic and right-to-left" below).
+3. Arabic translation PRs, one per surface (see "Arabic and right-to-left" below). Role homes done;
+   next: referral detail and actions.
 
 Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg).
 
@@ -79,8 +80,11 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
       `lang`/`dir`, profile language choice, logical start/end classes app-wide (96), mirrored icons and
       drawer, Arabic font and zero tracking, explicit-locale clock/date helpers (fixes ٠-٩ digits on
       Arabic phones in production today), rail translated
-- [ ] Translate: role homes and cards; referral detail and actions; intake wizard; inbox, directory,
-      archive, settings, admin; sign-in, onboarding; toasts and errors; status/role/priority labels
+- [x] Role homes and queue cards (clinician, HoD, manager, ER, nurse): headlines, segments, cards,
+      escalation banner, draft card, handover feed, their toasts, priority chips (30 Sep)
+- [ ] Translate: referral detail and actions (also the desktop case pane); intake wizard; inbox,
+      directory, archive, settings, admin, HoD department page (delegation, internal transfer); sign-in,
+      onboarding; remaining toasts and errors; status/role labels (the phone header's role line)
 - [ ] Dates in Arabic (date-fns `ar` locale with Western digits); charts stay left-to-right
 - [ ] Clinician review of the sheet; then enable Arabic in production
 

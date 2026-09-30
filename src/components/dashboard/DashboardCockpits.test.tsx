@@ -18,6 +18,7 @@ import { ShiftHandoverFeed } from './ShiftHandoverFeed';
 import { Dashboard } from '../../pages/Dashboard';
 import { DepartmentPage } from '../../pages/DepartmentPage';
 import { ERDashboard } from '../../pages/ERDashboard';
+import { I18nProvider } from '../../i18n';
 
 // Mock contexts
 let mockUser: User | null = null;
@@ -604,6 +605,72 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
 
       expect(screen.getByRole('heading', { level: 1, name: /to sign$/i })).toBeVisible();
       expect(screen.queryByRole('heading', { name: /overview/i })).not.toBeInTheDocument();
+    });
+  });
+
+  // Arabic role homes: every word of interface text comes from the catalogue.
+  // Latin words left on screen must be data (names, facilities, departments,
+  // bed types, clinical text), which stays as entered.
+  describe('role homes in Arabic', () => {
+    const dataWords = () =>
+      new Set(
+        JSON.stringify([mockReferrals, mockFacilities, mockUsers, mockDirectAdmissions, mockShiftLogs]).match(/[A-Za-z]+/g) ?? []
+      );
+    const englishLeaks = (container: HTMLElement) => {
+      const allowed = dataWords();
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      const words: string[] = [];
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) words.push(...(n.textContent?.match(/[A-Za-z]{2,}/g) ?? []));
+      const labels = [...container.querySelectorAll('[aria-label],[placeholder]')].flatMap(el =>
+        [el.getAttribute('aria-label'), el.getAttribute('placeholder')].flatMap(v => v?.match(/[A-Za-z]{2,}/g) ?? [])
+      );
+      return [...new Set([...words, ...labels])].filter(w => !allowed.has(w));
+    };
+    const renderAr = (ui: React.ReactElement) =>
+      render(<I18nProvider arabicAvailable savedLanguage="ar"><MemoryRouter>{ui}</MemoryRouter></I18nProvider>);
+
+    it('clinician home', () => {
+      mockUser = { ...mockUsers[0], id: 'doc-1' };
+      mockReferrals = [{ ...testReferral, status: 'postponed', isEscalated: false }];
+      const { container } = renderAr(<ClinicianCockpit />);
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('حالة واحدة تحتاجك');
+      expect(englishLeaks(container)).toEqual([]);
+    });
+
+    it('head of department home', () => {
+      mockUser = { ...mockUsers[0], role: 'head_of_department' };
+      mockReferrals = [testReferral, { ...testReferral, id: 'ref-2', isEscalated: false, priority: 'urgent', escalationReason: null }];
+      const { container } = renderAr(<HodCockpit />);
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('حالتان في انتظارك');
+      expect(screen.getByRole('region', { name: 'حالة مُصعَّدة' })).toHaveTextContent('مُصعَّدة · لا استجابة');
+      expect(englishLeaks(container)).toEqual([]);
+    });
+
+    it('manager home', () => {
+      mockUser = { ...mockUsers[0], role: 'hospital_manager' };
+      mockReferrals = [testReferral, { ...testReferral, id: 'ref-2', status: 'dept_approved', isEscalated: false, escalationReason: null }];
+      const { container } = renderAr(<ManagerCockpit />);
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('تصعيد واحد، 1 للتوقيع');
+      expect(englishLeaks(container)).toEqual([]);
+    });
+
+    it('ER home', () => {
+      mockUser = { ...mockUsers[0], role: 'er_official' };
+      mockReferrals = [
+        { ...testReferral, status: 'accepted', isEscalated: false },
+        { ...testReferral, id: 'ref-2', status: 'in_transit', isEscalated: false },
+      ];
+      const { container } = renderAr(<ERCockpit />);
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('1 للإرسال، 1 في الطريق إلينا');
+      expect(englishLeaks(container)).toEqual([]);
+    });
+
+    it('nurse home', () => {
+      mockUser = { ...mockUsers[0], role: 'nurse' };
+      mockReferrals = [{ ...testReferral, status: 'arrived', isEscalated: false }];
+      const { container } = renderAr(<NurseCockpit />);
+      expect(screen.getByRole('button', { name: /^إدخال إلى سرير \W?CCU\W?$/ })).toBeInTheDocument();
+      expect(englishLeaks(container)).toEqual([]);
     });
   });
 });
