@@ -16,6 +16,7 @@ import { useOpenCase, useReportQueue } from '../layout/Workspace';
 import { isAdmin as checkIsAdmin } from '../../lib/permissions';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
 import { RoleHomeHeadline, MicroLabel, EmptyQueue, useSecondTick } from './RoleHome';
+import { useI18n } from '../../i18n';
 
 interface HodCockpitProps {
   isDepartmentRoute?: boolean;
@@ -37,6 +38,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
   } = useData();
   const navigate = useNavigate();
   const openCase = useOpenCase();
+  const { t } = useI18n();
 
   const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
@@ -147,7 +149,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
   if (!user || (user.role !== 'head_of_department' && !isAdmin)) {
     return (
       <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-        Access Denied. Head of Department privileges required.
+        {t('hod.accessDenied')}
       </div>
     );
   }
@@ -158,9 +160,9 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
       await addDeptComment(id, 'direct_approval', '');
       const name = referrals.find(r => r.id === id)?.patientData.name;
       if (name) setApprovedNames(prev => (prev.includes(name) ? prev : [...prev, name]));
-      showToast('Referral approved.', 'success');
+      showToast(t('hod.toastApproved'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not approve this referral.');
+      toastError(e, t('hod.toastApproveFailed'));
     } finally {
       setApprovingId(null);
     }
@@ -248,8 +250,8 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
 
       {!isDepartmentRoute && (
         <RoleHomeHeadline
-          title={`${pendingReview.length} waiting on you`}
-          rationale="Escalated cases stay pinned on top. Everything else is ordered emergency → urgent → routine."
+          title={t('hod.title', { count: pendingReview.length })}
+          rationale={t('hod.rationale')}
         />
       )}
 
@@ -258,17 +260,17 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
         <EscalationAlertBanner
           key={r.id}
           referral={r}
-          actionLabel="Review now"
+          actionLabel={t('home.reviewNow')}
           onAction={() => openCase(r.id)}
           referrerPhone={usersById.get(r.referringUserId)?.phoneNumber}
           referringFacilityName={facilitiesById.get(r.referringFacilityId)?.name}
         />
       ))}
 
-      <section aria-label={`Department review queue${department ? ` · ${department}` : ''}`} className="flex flex-col gap-3">
-        {isDepartmentRoute && <MicroLabel>Department review queue · {department || 'All'} · {pendingReview.length} pending</MicroLabel>}
+      <section aria-label={department ? t('hod.queueFor', { dept: department }) : t('hod.queue')} className="flex flex-col gap-3">
+        {isDepartmentRoute && <MicroLabel>{t('hod.queueCount', { dept: department || t('hod.all'), count: pendingReview.length })}</MicroLabel>}
         {pendingReview.length === 0 ? (
-          <EmptyQueue>Your department review queue is completely clear.</EmptyQueue>
+          <EmptyQueue>{t('hod.empty')}</EmptyQueue>
         ) : (
           queue.map(r => (
             <ReferralCockpitCard
@@ -287,7 +289,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
         {approvedNames.map(name => (
           <p key={name} role="status" className="flex items-center gap-2 rounded-[10px] border border-success-300 bg-success-100 px-3 py-3 text-[14px] font-semibold text-success-800 dark:border-success-700 dark:bg-success-900/50 dark:text-success-200">
             <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
-            Approved {name} · sent to the manager for signature
+            {t('hod.approvedLine', { name })}
           </p>
         ))}
       </section>
@@ -479,7 +481,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
           referral={summaryReferral}
           onClose={() => setSummaryReferral(null)}
           primary={{
-            label: department ? `Approve for ${department}` : 'Approve',
+            label: department ? t('hod.approveFor', { dept: department }) : t('card.approve'),
             tone: 'success',
             onClick: async () => {
               const r = summaryReferral;
@@ -488,8 +490,8 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
             },
           }}
           secondary={[
-            { label: 'Need requirements', tone: 'warning', onClick: () => navigate(`/referrals/${summaryReferral.id}#dept-review-section`) },
-            { label: 'Decline', tone: 'critical-outline', onClick: () => navigate(`/referrals/${summaryReferral.id}#dept-review-section`) },
+            { label: t('hod.needRequirements'), tone: 'warning', onClick: () => navigate(`/referrals/${summaryReferral.id}#dept-review-section`) },
+            { label: t('home.decline'), tone: 'critical-outline', onClick: () => navigate(`/referrals/${summaryReferral.id}#dept-review-section`) },
           ]}
         />
       )}

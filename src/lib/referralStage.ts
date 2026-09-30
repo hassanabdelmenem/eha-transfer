@@ -1,4 +1,5 @@
 import { Referral } from '../types';
+import { translate, type MessageKey, type MessageVars } from '../i18n';
 
 /**
  * The 6-segment stage rail shown on the shared referral detail screen, and on
@@ -45,33 +46,36 @@ export function stageIndexForStatus(status: Referral['status']): number | null {
 /**
  * Where a referral stands, in the words a clinician card's context line uses
  * ("Qassasin asked for requirements", "consent recorded, escort needed").
- * Display only, like the rail above.
+ * Display only, like the rail above. Pass the screen's `t` for its language;
+ * without one it speaks English.
  */
 export function standingPhrase(
   referral: Pick<Referral, 'status' | 'receivingDepartments' | 'requiresAccompanyingDoctor' | 'accompanyingDoctor'>,
-  receivingName: string
+  receivingName: string,
+  t: (key: MessageKey, vars?: MessageVars) => string = (key, vars) => translate('en', key, vars)
 ): string {
   const dept = referral.receivingDepartments?.[0];
+  const facility = receivingName;
   switch (referral.status) {
     case 'pending':
-      return dept ? `waiting on ${dept} at ${receivingName}` : `waiting on ${receivingName}`;
+      return dept ? t('standing.pendingDept', { dept, facility }) : t('standing.pending', { facility });
     case 'postponed':
-      return `${receivingName} asked for requirements`;
+      return t('standing.postponed', { facility });
     case 'dept_approved':
-      return `${dept ?? 'department'} approved · waiting on the manager`;
+      return t('standing.deptApproved', { dept: dept ?? t('standing.department') });
     case 'manager_approved':
     case 'accepted':
-      return `accepted by ${receivingName} · consent next`;
+      return t('standing.accepted', { facility });
     case 'patient_consented':
       return referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor
-        ? 'consent recorded, escort needed'
-        : 'consent recorded · waiting on the ambulance';
+        ? t('standing.consentEscort')
+        : t('standing.consentAmbulance');
     case 'in_transit':
-      return `in transit to ${receivingName}`;
+      return t('standing.inTransit', { facility });
     case 'arrived':
-      return `arrived at ${receivingName}`;
+      return t('standing.arrived', { facility });
     case 'admitted':
-      return `admitted at ${receivingName}`;
+      return t('standing.admitted', { facility });
     default:
       return receivingName;
   }

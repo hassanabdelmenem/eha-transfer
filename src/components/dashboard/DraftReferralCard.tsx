@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { formatClock } from '../../i18n/format';
+import { useI18n, type MessageKey } from '../../i18n';
 import { useNavigate } from 'react-router-dom';
 import { DRAFT_STORAGE_KEY, WizardDraft, WIZARD_STEPS } from '../referrals/wizard/types';
 
@@ -18,32 +19,31 @@ export function readReferralDraft(): WizardDraft | null {
 }
 
 /** What still stands between the draft and "Submit", in the order of the steps. */
-function stillMissing(d: WizardDraft): string[] {
+function stillMissing(d: WizardDraft): MessageKey[] {
   const p = d.patientData || {};
-  const gaps: string[] = [];
-  if (!p.name || !p.hospitalId || p.age === undefined) gaps.push('Patient details');
-  if (!p.complaint || !p.presentation) gaps.push('Presentation');
-  if (!p.diagnosis) gaps.push('Diagnosis');
-  if (!(p.attachments?.length)) gaps.push('ECG');
-  if (!d.receivingDepartments?.length || !d.reasonForReferral) gaps.push('Destination');
+  const gaps: MessageKey[] = [];
+  if (!p.name || !p.hospitalId || p.age === undefined) gaps.push('draft.gap.patient');
+  if (!p.complaint || !p.presentation) gaps.push('draft.gap.presentation');
+  if (!p.diagnosis) gaps.push('draft.gap.diagnosis');
+  if (!(p.attachments?.length)) gaps.push('draft.gap.ecg');
+  if (!d.receivingDepartments?.length || !d.reasonForReferral) gaps.push('draft.gap.destination');
   return gaps;
 }
-
-const join = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 // Same anatomy as a queue card: neutral rail, DRAFT chip, one sentence naming
 // what is missing, one action. It sits in the clinician's "You" bucket because
 // an unsent referral is blocked on nobody else.
 export const DraftReferralCard: React.FC<{ draft: WizardDraft }> = ({ draft }) => {
   const navigate = useNavigate();
-  const [savedAt] = useState(() => {
-    const t = Date.parse(draft.lastSaved || '');
-    return Number.isNaN(t) ? null : formatClock(new Date(t));
-  });
+  const { t, lang } = useI18n();
+  const savedMs = Date.parse(draft.lastSaved || '');
+  const savedAt = Number.isNaN(savedMs) ? null : formatClock(new Date(savedMs), lang);
   const p = draft.patientData || {};
   const step = Math.min(WIZARD_STEPS.length, Math.max(1, draft.step || 1));
-  const gaps = stillMissing(draft);
-  const name = p.name?.trim() ? `${p.name.trim()}${p.age !== undefined ? `, ${p.age}` : ''}` : 'Unnamed draft';
+  const gaps = stillMissing(draft).map(k => t(k));
+  // "A, B and C" / "أ، ب وج".
+  const list = gaps.length <= 1 ? gaps.join('') : t('draft.listAnd', { list: gaps.slice(0, -1).join(t('punct.comma')), last: gaps[gaps.length - 1] });
+  const name = p.name?.trim() ? `${p.name.trim()}${p.age !== undefined ? `, ${p.age}` : ''}` : t('draft.unnamed');
 
   return (
     <div className="flex shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
@@ -53,22 +53,22 @@ export const DraftReferralCard: React.FC<{ draft: WizardDraft }> = ({ draft }) =
           <div className="min-w-0">
             <p className="text-[17px] font-semibold leading-[1.25] text-ink dark:text-paper">{name}</p>
             <p className="mt-[3px] text-[13.5px] leading-[1.4] text-slate-700 dark:text-white/65">
-              {savedAt ? `Saved ${savedAt} · ` : ''}step {step} of {WIZARD_STEPS.length}
+              {savedAt ? `${t('draft.saved', { time: savedAt })} · ` : ''}{t('draft.step', { step, total: WIZARD_STEPS.length })}
             </p>
           </div>
           <span className="shrink-0 rounded-[6px] bg-slate-200 px-2 py-1 text-[11px] font-bold leading-none tracking-[0.06em] text-slate-700 dark:bg-white/10 dark:text-white/75">
-            DRAFT
+            {t('draft.chip')}
           </span>
         </div>
         <p className="mt-2.5 text-[15px] font-semibold leading-[1.4] text-slate-700 dark:text-white/75">
-          Not sent yet.{gaps.length > 0 ? ` ${join(gaps)} still missing.` : ' Ready to review and send.'}
+          {t('draft.notSent')} {gaps.length > 0 ? t('draft.missing', { list }) : t('draft.ready')}
         </p>
         <button
           type="button"
           onClick={() => navigate('/referrals/new')}
           className="mt-3 inline-flex min-h-[52px] w-full items-center justify-center rounded-[10px] bg-ink px-3 text-[16px] font-semibold text-paper transition-colors hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200"
         >
-          Resume draft
+          {t('draft.resume')}
         </button>
       </div>
     </div>

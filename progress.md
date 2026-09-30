@@ -2,6 +2,25 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-30: Arabic, role homes and queue cards
+
+- #48 merged (sweep trigger docs; memory refresh). CI's Playwright browser install hung ~20 min on
+  both runs; cancelled and re-run, then green.
+- Translated the five role homes and everything on them: headlines with Arabic plurals (zero, one,
+  two, few, many, other), segments, empty states, every card variant, escalation banner, draft card,
+  handover feed, their toasts; priority chips (طارئ / عاجل / روتيني). `standingPhrase` takes the
+  screen's `t` (English by default). New `timeAgo` replaces date-fns' English-only relative time.
+- Bidi: Latin data inside Arabic sentences (facility, department, reason typed in English) came out
+  scrambled. `translate()` now wraps Latin values in FSI/PDI isolates in Arabic, and data joined in
+  JSX is wrapped in `<bdi>`.
+- Fixed a foundation bug: date helpers read `<html lang>`, which the provider sets after children
+  render, so the first render after a language switch used the old language. They now take `lang`.
+- Counts in catalogue strings get thousands separators ("99,999"); two adversarial tests updated.
+- Review sheet and key-parity test now understand plurals (one row per Arabic form).
+- Verified: tsc, vitest 970/970 (new: Arabic role homes render with no English interface words;
+  placeholder safety; capacity sentences match what the sweep stores), Playwright 11/11, Arabic
+  captures (phone + desktop, five roles).
+
 ## 2026-09-30: Merges, staging Auth, sweep cadence
 
 - 29 Sep ~23:25 UTC, on the owner's request: #44, #45, #46, #47 merged; production deployed at c2c2d01.
