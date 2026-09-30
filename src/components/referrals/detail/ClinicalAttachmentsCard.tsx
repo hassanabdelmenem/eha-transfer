@@ -2,6 +2,7 @@ import React from 'react';
 import { Download, FileText, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/Card';
 import { Referral } from '../../../types';
+import { useI18n } from '../../../i18n';
 
 interface ClinicalAttachmentsCardProps {
   referral: Referral;
@@ -9,6 +10,7 @@ interface ClinicalAttachmentsCardProps {
 }
 
 export const ClinicalAttachmentsCard: React.FC<ClinicalAttachmentsCardProps> = ({ referral, onSelectECG }) => {
+  const { t } = useI18n();
   const attachments = Array.isArray(referral.patientData?.attachments)
     ? referral.patientData.attachments
     : [];
@@ -21,7 +23,7 @@ export const ClinicalAttachmentsCard: React.FC<ClinicalAttachmentsCardProps> = (
     <Card>
       <CardHeader>
         <CardTitle>
-          Clinical Attachments
+          {t('cards.attachments')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -43,7 +45,7 @@ export const ClinicalAttachmentsCard: React.FC<ClinicalAttachmentsCardProps> = (
                   className="absolute inset-0 bg-slate-900/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <Activity className="w-5 h-5 mb-1" />
-                  <span className="text-xs font-semibold">Quick View</span>
+                  <span className="text-xs font-semibold">{t('cards.quickView')}</span>
                 </button>
               ) : (
                 <a
@@ -53,7 +55,7 @@ export const ClinicalAttachmentsCard: React.FC<ClinicalAttachmentsCardProps> = (
                   className="absolute inset-0 bg-slate-900/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <Download className="w-5 h-5 mb-1" />
-                  <span className="text-xs font-semibold">Download</span>
+                  <span className="text-xs font-semibold">{t('cards.download')}</span>
                 </a>
               )}
             </div>

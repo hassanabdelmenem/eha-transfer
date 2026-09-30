@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ZoomIn, ZoomOut, RefreshCcw, Contrast, Activity } from 'lucide-react';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
+import { useI18n } from '../../i18n';
 
 interface ECGViewerOverlayProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface ECGViewerOverlayProps {
 }
 
 export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imageUrl, onClose }) => {
+  const { t } = useI18n();
   const [scale, setScale] = useState(1);
   const [highContrast, setHighContrast] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -55,7 +57,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           role="dialog"
-          aria-label="ECG Diagnostic Viewer"
+          aria-label={t('ecg.viewer')}
           aria-modal="true"
           tabIndex={-1}
           className="fixed inset-0 z-[100] bg-slate-950/95 flex flex-col backdrop-blur-sm"
@@ -64,7 +66,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
           <div className="flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 text-white shrink-0 z-10">
             <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
               <Activity className="w-5 h-5 text-blue-500" />
-              ECG Quick-Viewer
+              {t('ecg.title')}
             </h2>
             <div className="flex items-center gap-1 sm:gap-2">
               <button
@@ -73,18 +75,18 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
                 className={`flex items-center px-3 py-1.5 text-xs font-bold rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                   highContrast ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
-                aria-label="Toggle high contrast"
+                aria-label={t('ecg.toggleContrast')}
                 aria-pressed={highContrast}
               >
                 <Contrast className="w-4 h-4 sm:me-2" aria-hidden="true" />
-                <span className="hidden sm:inline">High Contrast</span>
+                <span className="hidden sm:inline">{t('ecg.highContrast')}</span>
               </button>
               <div className="w-px h-6 bg-slate-700 mx-1 sm:mx-2"></div>
               <button
                 onClick={handleZoomOut}
                 disabled={isControlsDisabled || scale <= 0.5}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                aria-label="Zoom out"
+                aria-label={t('ecg.zoomOut')}
               >
                 <ZoomOut className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -92,13 +94,13 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
                 {Math.round(scale * 100)}%
               </span>
               <span className="sr-only" role="status">
-                {Math.round(scale * 100)}% zoom
+                {t('ecg.zoomStatus', { percent: Math.round(scale * 100) })}
               </span>
               <button
                 onClick={handleZoomIn}
                 disabled={isControlsDisabled || scale >= 5}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                aria-label="Zoom in"
+                aria-label={t('ecg.zoomIn')}
               >
                 <ZoomIn className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -106,8 +108,8 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
                 onClick={handleReset}
                 disabled={isControlsDisabled}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Reset View"
-                aria-label="Reset view"
+                title={t('ecg.resetTitle')}
+                aria-label={t('ecg.reset')}
               >
                 <RefreshCcw className="w-4 h-4" aria-hidden="true" />
               </button>
@@ -115,7 +117,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
               <button
                 onClick={onClose}
                 className="p-2 text-critical-400 hover:text-critical-300 hover:bg-slate-800 rounded transition-colors"
-                aria-label="Close ECG viewer"
+                aria-label={t('ecg.close')}
               >
                 <X className="w-6 h-6" aria-hidden="true" />
               </button>
@@ -126,9 +128,9 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
           <div className="flex-1 overflow-hidden relative flex items-center justify-center p-4 touch-none">
             {!hasValidUrl ? (
               <div role="alert" aria-live="assertive" className="p-6 rounded-2xl bg-slate-900 border border-slate-800 text-center max-w-md text-slate-300 space-y-3">
-                <h3 className="text-base font-semibold text-critical-400">ECG Image Unavailable</h3>
+                <h3 className="text-base font-semibold text-critical-400">{t('ecg.unavailable')}</h3>
                 <p className="text-sm text-slate-400">
-                  No valid image URL was provided for this clinical attachment.
+                  {t('ecg.noUrl')}
                 </p>
                 <div>
                   <button
@@ -136,15 +138,15 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
                     onClick={onClose}
                     className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-sm font-semibold transition-colors"
                   >
-                    Close
+                    {t('ecg.closeButton')}
                   </button>
                 </div>
               </div>
             ) : loadError ? (
               <div role="alert" aria-live="assertive" className="p-6 rounded-2xl bg-slate-900 border border-slate-800 text-center max-w-md text-slate-300 space-y-3">
-                <h3 className="text-base font-semibold text-critical-400">Image Load Failed</h3>
+                <h3 className="text-base font-semibold text-critical-400">{t('ecg.loadFailed')}</h3>
                 <p className="text-sm text-slate-400">
-                  The ECG / diagnostic image could not be loaded.
+                  {t('ecg.loadFailedText')}
                 </p>
                 <div>
                   <button
@@ -155,7 +157,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
                     }}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-semibold transition-colors"
                   >
-                    Retry
+                    {t('ecg.retry')}
                   </button>
                 </div>
               </div>
@@ -169,7 +171,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
               >
                 <motion.img 
                   src={imageUrl!} 
-                  alt="ECG Diagnostic View" 
+                  alt={t('ecg.imageAlt')} 
                   draggable={false}
                   animate={{ scale }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}

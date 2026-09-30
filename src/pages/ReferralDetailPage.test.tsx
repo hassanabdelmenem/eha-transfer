@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ReferralDetailPage } from './ReferralDetailPage';
 import { Referral } from '../types';
+import { I18nProvider } from '../i18n';
 
 let mockUser: any = null;
 let mockReferrals: Referral[] = [];
@@ -178,5 +179,59 @@ describe('ReferralDetailPage - Rejection, Cancellation & ECG Viewer', () => {
 
     expect(screen.getByRole('dialog', { name: /ecg diagnostic viewer/i })).toBeInTheDocument();
     expect(screen.getByAltText(/ecg diagnostic view/i)).toBeInTheDocument();
+  });
+});
+
+// Arabic: every word of interface text comes from the catalogue. Latin words
+// left on screen must be data (names, facilities, departments, clinical text,
+// vital-sign abbreviations). The hidden print summary stays English by design.
+describe('ReferralDetailPage in Arabic', () => {
+  const VITAL_ABBREVIATIONS = ['HR', 'BP', 'SpO', 'RR', 'GCS', 'PDF', 'ECG', 'bpm', 'min'];
+  const englishLeaks = (container: HTMLElement) => {
+    const allowed = new Set([
+      ...(JSON.stringify([mockReferrals, mockUser]).match(/[A-Za-z]+/g) ?? []),
+      ...'Referring Primary Care Receiving Hospital Ismailia General Emergency ICU CCU PICU Ward Dr Hospital Manager'.split(' '),
+      ...VITAL_ABBREVIATIONS,
+    ]);
+    const words: string[] = [];
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (n.parentElement?.closest('[style*="display: none"]')) continue;
+      words.push(...(n.textContent?.match(/[A-Za-z]{2,}/g) ?? []));
+    }
+    container.querySelectorAll('[aria-label],[placeholder],[title]').forEach(el => {
+      if (el.closest('[style*="display: none"]')) return;
+      for (const attr of ['aria-label', 'placeholder', 'title']) words.push(...(el.getAttribute(attr)?.match(/[A-Za-z]{2,}/g) ?? []));
+    });
+    return [...new Set(words)].filter(w => !allowed.has(w));
+  };
+  const renderAr = () =>
+    render(
+      <I18nProvider arabicAvailable savedLanguage="ar">
+        <MemoryRouter initialEntries={['/referrals/r1']}>
+          <Routes>
+            <Route path="/referrals/:id" element={<ReferralDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </I18nProvider>
+    );
+
+  const cases: Array<[string, any, Partial<Referral>]> = [
+    ['manager, waiting on signature', { id: 'u2', name: 'Hospital Manager', role: 'hospital_manager', facilityId: 'f2', verified: true }, { status: 'dept_approved' }],
+    ['referring clinician, consent next', { id: 'u1', name: 'Dr. Referring', role: 'clinician', facilityId: 'f1', verified: true }, { status: 'accepted' }],
+    ['ER, escort missing', { id: 'u5', name: 'Dr. ER', role: 'er_official', facilityId: 'f1', verified: true }, { status: 'patient_consented', requiresAccompanyingDoctor: true }],
+    ['nurse, patient arrived', { id: 'u6', name: 'Nurse', role: 'nurse', facilityId: 'f2', verified: true }, { status: 'arrived' }],
+    ['admin, escalated and pending', { id: 'u7', name: 'Admin', role: 'system_admin', facilityId: 'f2', verified: true },
+      { status: 'pending', isEscalated: true, escalationReason: 'sla_breach', escalatedAt: new Date(Date.now() - 45 * 60000).toISOString(), escalatedBy: 'system',
+        statusHistory: [{ status: 'pending', timestamp: new Date().toISOString(), userId: 'u1' }],
+        deptComments: [{ id: 'c1', userId: 'u9', status: 'requirements_needed', comment: 'Need CT first', timestamp: new Date().toISOString() }] as any }],
+  ];
+
+  it.each(cases)('%s', (_name, user, overrides) => {
+    mockUser = user;
+    mockReferrals = [makeReferral(overrides)];
+    const { container } = renderAr();
+    expect(document.documentElement.dir).toBe('rtl');
+    expect(englishLeaks(container)).toEqual([]);
   });
 });

@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { format } from 'date-fns';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useData } from '../contexts/DataContext';
@@ -28,6 +27,8 @@ import { ReferralStatus, DeptApprovalStatus } from '../types';
 import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataContext';
 import { showToast, toastError } from '../lib/toast';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
+import { useI18n } from '../i18n';
+import { formatClock } from '../i18n/format';
 
 export interface ReferralDetailPageProps {
   /** Open this referral instead of the one in the URL (the desktop workspace pane). */
@@ -59,6 +60,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     loading,
   } = useData();
   const { user } = useAuth();
+  const { t, lang } = useI18n();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const [notes, setNotes] = useState('');
@@ -115,12 +117,12 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
         <div className="w-14 h-14 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
           <FileText className="w-6 h-6 text-slate-500 dark:text-slate-400" />
         </div>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Referral not found</h2>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t('detail.notFound')}</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          This referral may have been cancelled, or the link is no longer valid.
+          {t('detail.notFoundText')}
         </p>
         <Button variant="outline" className="mt-6 bg-white dark:bg-slate-900" onClick={() => navigate('/referrals')}>
-          <ArrowLeft className="h-4 w-4 me-2 rtl:-scale-x-100" /> Back to Referrals
+          <ArrowLeft className="h-4 w-4 me-2 rtl:-scale-x-100" /> {t('detail.backToReferrals')}
         </Button>
       </div>
     );
@@ -128,7 +130,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
 
   const fromFacility = facilitiesById.get(referral.referringFacilityId);
   const toFacility = referral.receivingFacilityId === 'auto'
-    ? { name: 'Auto-Routed (Pending Destination)' }
+    ? { name: t('detail.autoRouted') }
     : facilitiesById.get(referral.receivingFacilityId);
   const referringUser = usersById.get(referral.referringUserId);
 
@@ -162,50 +164,45 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
   // What this referral means to the viewer: a label and one sentence. The
   // escalation has its own card above this, so it is not repeated here.
   const mobileBanner: { label: string; text: string; tint: BannerTint } = (() => {
-    if (isAdmin) return { label: 'System administrator', text: 'You can act on this referral at any stage, including placing it at another facility.', tint: 'info' };
-    if (isTargetDeptHead && referral.status === 'pending') {
-      return { label: 'Waiting on your department review', text: 'Approve it, or send it back with what your department needs first.', tint: 'warning' };
-    }
+    // label/text pairs from banner.* in the catalogue.
+    const b = (key: 'admin' | 'deptPending' | 'deptApproved' | 'deptReviewed' | 'managerSign' | 'managerWaiting' | 'managerOversight' | 'erConsent' | 'erEscort' | 'erArrival' | 'erReady' | 'erNotYet' | 'nurseBed' | 'requirements' | 'referrerReady' | 'referrerConsent' | 'referrerWaiting' | 'following',
+      tint: BannerTint, vars?: Record<string, string>) => ({ label: t(`banner.${key}.label`, vars), text: t(`banner.${key}.text`, vars), tint });
+    if (isAdmin) return b('admin', 'info');
+    if (isTargetDeptHead && referral.status === 'pending') return b('deptPending', 'warning');
     if (isTargetDeptHead) {
       return latestOwnDeptComment
-        ? { label: `You approved this · ${format(new Date(latestOwnDeptComment.timestamp), 'HH:mm')}`, text: 'Sent up to the hospital manager. You can still send it back if something changed.', tint: 'success' }
-        : { label: 'You reviewed this for your department', text: "It has moved past your department's review.", tint: 'success' };
+        ? b('deptApproved', 'success', { time: formatClock(new Date(latestOwnDeptComment.timestamp), lang) })
+        : b('deptReviewed', 'success');
     }
     if (isFacilityManager && referral.status === 'dept_approved') {
-      return { label: 'Needs your signature', text: `${receivingDepts.join(', ') || 'The department'} approved it. Accept the transfer or decline it.`, tint: 'critical' };
+      return b('managerSign', 'critical', { dept: receivingDepts.join(t('punct.comma')) || t('banner.theDepartment') });
     }
-    if (isFacilityManager && referral.status === 'pending') {
-      return { label: 'Waiting on the department', text: "It comes to you for signature after the department's review.", tint: 'info' };
-    }
-    if (isFacilityManager) return { label: 'Manager oversight', text: 'Nothing on this referral is waiting on you right now.', tint: 'info' };
-    if (isErRoom && referral.status === 'accepted') {
-      return { label: 'Record patient consent before dispatch', text: 'The receiving hospital accepted. Ask the patient, then record their answer.', tint: 'warning' };
-    }
+    if (isFacilityManager && referral.status === 'pending') return b('managerWaiting', 'info');
+    if (isFacilityManager) return b('managerOversight', 'info');
+    if (isErRoom && referral.status === 'accepted') return b('erConsent', 'warning');
     if (isErRoom && referral.requiresAccompanyingDoctor && referral.status === 'patient_consented' && !referral.accompanyingDoctor) {
-      return { label: 'Record the escort before dispatch', text: "The ambulance can't leave until the escorting doctor is named.", tint: 'warning' };
+      return b('erEscort', 'warning');
     }
-    if (isErRoom && referral.status === 'in_transit') return { label: 'Confirm arrival when the patient lands', text: 'Mark the patient as arrived as soon as they reach the ER.', tint: 'info' };
-    if (isErRoom && referral.status === 'patient_consented') return { label: 'Ready to dispatch', text: 'Consent is recorded. The ambulance can leave.', tint: 'info' };
-    if (isErRoom) return { label: 'Not yours yet', text: 'The ER room acts once the receiving hospital accepts and the patient consents.', tint: 'warning' };
+    if (isErRoom && referral.status === 'in_transit') return b('erArrival', 'info');
+    if (isErRoom && referral.status === 'patient_consented') return b('erReady', 'info');
+    if (isErRoom) return b('erNotYet', 'warning');
     if (isNurse && ['arrived', 'accepted', 'manager_approved'].includes(referral.status)) {
-      return { label: 'Prepare a bed', text: `This patient needs a ${referral.requiredBedType} bed. Reserve one before they arrive.`, tint: 'info' };
+      return b('nurseBed', 'info', { bed: referral.requiredBedType });
     }
     // Sent back with requirements: the next move is the referring clinician's,
     // and the banner says what the department asked for.
     const latestDeptComment = [...(referral.deptComments || [])].reverse()[0];
     if (isReferring && referral.status === 'postponed' && latestDeptComment?.status === 'requirements_needed') {
-      const asker = usersById.get(latestDeptComment.userId)?.department || receivingDepts[0] || 'The department';
-      return { label: `Waiting on you — ${asker} needs requirements`, text: latestDeptComment.comment || 'Answer what the department asked for, then it can continue.', tint: 'warning' };
+      const asker = usersById.get(latestDeptComment.userId)?.department || receivingDepts[0] || t('banner.theDepartment');
+      const req = b('requirements', 'warning', { asker });
+      return latestDeptComment.comment ? { ...req, text: latestDeptComment.comment } : req;
     }
-    if (isReferring && referral.status === 'patient_consented') return { label: 'Ready to dispatch', text: 'Consent is recorded. The ER room dispatches the ambulance.', tint: 'info' };
-    if (isReferring && referral.status === 'accepted') {
-      return { label: 'Waiting on you — confirm patient consent', text: 'Ask the patient whether they agree to the transfer, then record it.', tint: 'warning' };
-    }
+    if (isReferring && referral.status === 'patient_consented') return b('referrerReady', 'info');
+    if (isReferring && referral.status === 'accepted') return b('referrerConsent', 'warning');
     if (isReferring && ['pending', 'dept_approved', 'manager_approved', 'postponed'].includes(referral.status)) {
-      return { label: `Waiting on ${toName || 'the receiving hospital'}`, text: 'Sent. Nothing is needed from you until they respond.', tint: 'info' };
+      return b('referrerWaiting', 'info', { facility: toName || t('clinician.theReceivingHospital') });
     }
-    if (isReferring) return { label: 'Following this case', text: 'Nothing on this referral is waiting on you right now.', tint: 'info' };
-    return { label: 'Following this case', text: 'Nothing on this referral is waiting on you right now.', tint: 'info' };
+    return b('following', 'info');
   })();
 
   const handleCopyId = () => {
@@ -218,9 +215,9 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     try {
       await updateReferralStatus(referral.id, status, overrideNotes || notes);
       setNotes('');
-      showToast('Referral updated.', 'success');
+      showToast(t('action.toastUpdated'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not update the referral status.');
+      toastError(e, t('action.toastUpdateFailed'));
     }
   };
 
@@ -235,9 +232,9 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     setDeptBusy(true);
     try {
       await addDeptComment(referral.id, 'direct_approval', '');
-      showToast('Approved for your department.', 'success');
+      showToast(t('action.toastDeptApproved'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not record the approval.');
+      toastError(e, t('action.toastApprovalFailed'));
     } finally {
       setDeptBusy(false);
     }
@@ -248,18 +245,18 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     try {
       await overrideReferralDestination(referral.id, overrideFacilityId);
       setOverrideFacilityId('');
-      showToast('Destination updated.', 'success');
+      showToast(t('action.toastDestination'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not override the destination.');
+      toastError(e, t('action.toastDestinationFailed'));
     }
   };
 
   const handleToggleEscalation = async () => {
     try {
       await toggleReferralEscalation(referral.id, !referral.isEscalated);
-      showToast(referral.isEscalated ? 'Escalation cleared.' : 'Referral escalated.', 'success');
+      showToast(referral.isEscalated ? t('action.toastEscalationCleared') : t('action.toastEscalated'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not update the escalation flag.');
+      toastError(e, t('action.toastEscalationFailed'));
     }
   };
 
@@ -267,9 +264,9 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     setConsentBusy(true);
     try {
       await recordPatientConsent(referral.id);
-      showToast('Patient consent recorded.', 'success');
+      showToast(t('action.toastConsent'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not record patient consent.');
+      toastError(e, t('action.toastConsentFailed'));
     } finally {
       setConsentBusy(false);
     }
@@ -281,9 +278,9 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
       await setAccompanyingDoctor(referral.id, escortName, escortPhone);
       setEscortName('');
       setEscortPhone('');
-      showToast('Escort details saved.', 'success');
+      showToast(t('er.toastEscortSaved'), 'success');
     } catch (e: any) {
-      toastError(e, "Could not save the accompanying doctor's details.");
+      toastError(e, t('er.toastEscortFailed'));
     } finally {
       setEscortBusy(false);
     }
@@ -295,9 +292,9 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
       await recordPatientDecline(referral.id, declineReason);
       setShowDeclineForm(false);
       setDeclineReason('');
-      showToast('Patient decline recorded.', 'success');
+      showToast(t('action.toastDecline'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not record patient decline.');
+      toastError(e, t('action.toastDeclineFailed'));
     } finally {
       setConsentBusy(false);
     }
@@ -312,7 +309,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
       setShowCancelConfirm(false);
       setCancelReason('');
     } catch (e: any) {
-      setCancelError(e?.message || 'Could not cancel this referral.');
+      setCancelError(e?.message || t('action.cancelFailed'));
     } finally {
       setCancelBusy(false);
     }
@@ -327,13 +324,6 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     : isReferring ? 'clinician'
     : null;
 
-  const ROLE_VARIANT_LABEL: Record<NonNullable<typeof roleVariant>, string> = {
-    'dept-head': 'Head of Department',
-    manager: 'Facility Manager',
-    'er-room': 'ER Room Official',
-    nurse: 'Nurse',
-    clinician: 'Referring Clinician',
-  };
 
   const dispatchBlocked = Boolean(referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor);
 
@@ -360,68 +350,68 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
       if (referral.status === 'pending') {
         // Decide from here: approve (the same write as the queue's Approve), or
         // say what the department needs before it can.
-        footerPrimary = { label: `Approve for ${user.department || 'your department'}`, onClick: handleDeptApprove, disabled: deptBusy, tone: successFill };
-        footerSecondary = { label: 'Need requirements', onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), tone: 'warning-tint' };
-        footerTertiary = { label: 'Decline', onClick: () => setShowRejectModal(true), tone: criticalOutline };
+        footerPrimary = { label: t('hod.approveFor', { dept: user.department || t('action.yourDepartment') }), onClick: handleDeptApprove, disabled: deptBusy, tone: successFill };
+        footerSecondary = { label: t('hod.needRequirements'), onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), tone: 'warning-tint' };
+        footerTertiary = { label: t('home.decline'), onClick: () => setShowRejectModal(true), tone: criticalOutline };
       } else if (['dept_approved', 'manager_approved', 'accepted'].includes(referral.status)) {
-        footerPrimary = { label: 'Send back with requirements', onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), tone: warningFill };
-        footerSecondary = { label: 'Add a note', onClick: () => focusSection('dept-review-section', () => setDeptAction('no_role')), tone: neutralOutline };
+        footerPrimary = { label: t('action.sendBack'), onClick: () => focusSection('dept-review-section', () => setDeptAction('requirements_needed')), tone: warningFill };
+        footerSecondary = { label: t('action.addNote'), onClick: () => focusSection('dept-review-section', () => setDeptAction('no_role')), tone: neutralOutline };
       } else {
-        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), tone: darkFill };
+        footerPrimary = { label: t('action.printSummary'), onClick: () => handlePrint(), tone: darkFill };
       }
       break;
     case 'manager':
       if (referral.status === 'dept_approved') {
-        footerPrimary = { label: 'Accept the transfer', onClick: () => handleStatusUpdate('manager_approved'), tone: successFill };
+        footerPrimary = { label: t('manager.acceptTransfer'), onClick: () => handleStatusUpdate('manager_approved'), tone: successFill };
         // A rejection always needs a reason: open the same dialog the console uses.
-        footerSecondary = { label: 'Decline', onClick: () => setShowRejectModal(true), tone: criticalOutline };
+        footerSecondary = { label: t('home.decline'), onClick: () => setShowRejectModal(true), tone: criticalOutline };
       } else {
-        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), tone: darkFill };
+        footerPrimary = { label: t('action.printSummary'), onClick: () => handlePrint(), tone: darkFill };
       }
       break;
     case 'er-room':
       if (referral.status === 'accepted' && (isReferring || isAdmin)) {
-        footerPrimary = { label: 'Record patient consent', onClick: handlePatientConsent, disabled: consentBusy, tone: successFill };
-        footerSecondary = { label: 'Decline this facility', onClick: () => setShowDeclineForm(true), tone: criticalOutline };
+        footerPrimary = { label: t('action.recordConsent'), onClick: handlePatientConsent, disabled: consentBusy, tone: successFill };
+        footerSecondary = { label: t('action.declineFacility'), onClick: () => setShowDeclineForm(true), tone: criticalOutline };
       } else if (referral.requiresAccompanyingDoctor && referral.status === 'patient_consented' && !referral.accompanyingDoctor) {
-        footerPrimary = { label: 'Save escort', onClick: () => focusSection('escort-form-section'), tone: darkFill };
+        footerPrimary = { label: t('card.saveEscort'), onClick: () => focusSection('escort-form-section'), tone: darkFill };
       } else if (referral.status === 'patient_consented') {
-        footerPrimary = { label: 'Dispatch ambulance', onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? 'Blocked: record the escorting doctor first' : undefined, tone: darkFill };
+        footerPrimary = { label: t('card.dispatch'), onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? t('card.blockedEscort') : undefined, tone: darkFill };
       } else if (referral.status === 'in_transit') {
-        footerPrimary = { label: 'Mark as arrived', onClick: () => handleStatusUpdate('arrived'), tone: successFill };
+        footerPrimary = { label: t('action.markArrived'), onClick: () => handleStatusUpdate('arrived'), tone: successFill };
       } else {
-        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), tone: darkFill };
+        footerPrimary = { label: t('action.printSummary'), onClick: () => handlePrint(), tone: darkFill };
       }
       break;
     case 'nurse':
       if (isReceiving && referral.status === 'arrived') {
-        footerPrimary = { label: `Admit to ${referral.requiredBedType} bed`, onClick: () => handleStatusUpdate('admitted'), tone: successFill };
-        footerSecondary = { label: 'Update bed counts', onClick: () => navigate('/bed-management'), tone: neutralOutline };
+        footerPrimary = { label: t('card.admitTo', { bed: referral.requiredBedType }), onClick: () => handleStatusUpdate('admitted'), tone: successFill };
+        footerSecondary = { label: t('action.updateBeds'), onClick: () => navigate('/bed-management'), tone: neutralOutline };
       } else {
-        footerPrimary = { label: 'Update bed counts', onClick: () => navigate('/bed-management'), tone: darkFill };
+        footerPrimary = { label: t('action.updateBeds'), onClick: () => navigate('/bed-management'), tone: darkFill };
       }
       break;
     case 'clinician':
       if (referral.status === 'accepted') {
-        footerPrimary = { label: 'Record patient consent', onClick: handlePatientConsent, disabled: consentBusy, tone: successFill };
+        footerPrimary = { label: t('action.recordConsent'), onClick: handlePatientConsent, disabled: consentBusy, tone: successFill };
       } else if (referral.status === 'patient_consented') {
-        footerPrimary = { label: 'Dispatch ambulance', onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? 'Blocked: waiting on the ER room to record the escort' : undefined, tone: darkFill };
+        footerPrimary = { label: t('card.dispatch'), onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? t('action.blockedOnEr') : undefined, tone: darkFill };
       } else {
-        footerPrimary = { label: 'Print summary', onClick: () => handlePrint(), tone: darkFill };
+        footerPrimary = { label: t('action.printSummary'), onClick: () => handlePrint(), tone: darkFill };
       }
-      if (footerPrimary?.label !== 'Print summary') {
-        footerSecondary = { label: 'Print summary', onClick: () => handlePrint(), tone: neutralOutline };
+      if (footerPrimary?.label !== t('action.printSummary')) {
+        footerSecondary = { label: t('action.printSummary'), onClick: () => handlePrint(), tone: neutralOutline };
       }
       break;
   }
 
   const footerCallNumber = roleVariant && roleVariant !== 'clinician' ? referringUser?.phoneNumber : undefined;
   const REMIT_LABEL: Record<NonNullable<typeof roleVariant>, string> = {
-    'dept-head': 'Department actions',
-    manager: 'Manager actions',
-    'er-room': 'ER room actions',
-    nurse: 'Ward actions',
-    clinician: 'Your actions',
+    'dept-head': t('action.remit.deptHead'),
+    manager: t('action.remit.manager'),
+    'er-room': t('action.remit.erRoom'),
+    nurse: t('action.remit.nurse'),
+    clinician: t('action.remit.clinician'),
   };
   const remitLabel = roleVariant ? REMIT_LABEL[roleVariant] : undefined;
   const hasPinnedFooter = !isDesktop && Boolean(footerPrimary);
@@ -491,7 +481,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
                     await overrideReferralDestination(referral.id, contractedFacilityId);
                   }
                 } catch (e: any) {
-                  toastError(e, 'Could not move the referral to that facility.');
+                  toastError(e, t('action.moveFailed'));
                   return;
                 }
                 handleStatusUpdate('manager_approved');
@@ -531,8 +521,8 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
           <PatientCard patient={referral.patientData} />
           <ClinicalAttachmentsCard referral={referral} onSelectECG={(url) => setSelectedECGUrl(url)} />
           {!isDesktop && (
-            <section aria-label="History">
-              <p className={sectionLabel}>History</p>
+            <section aria-label={t('detail.history')}>
+              <p className={sectionLabel}>{t('detail.history')}</p>
               <ReferralTimeline referral={referral} usersById={usersById} />
             </section>
           )}
@@ -544,8 +534,8 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
         {/* Who acts next, and the record of what already happened */}
         <div className="flex min-w-0 flex-col gap-[15px]">
           {isDesktop && (
-            <section aria-label="History">
-              <p className={sectionLabel}>History</p>
+            <section aria-label={t('detail.history')}>
+              <p className={sectionLabel}>{t('detail.history')}</p>
               <ReferralTimeline referral={referral} usersById={usersById} />
             </section>
           )}
@@ -603,7 +593,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
             setShowRejectModal(false);
             setRejectionReason('');
           } catch (e: any) {
-            setRejectError(e?.message || 'Server transaction failed');
+            setRejectError(e?.message || t('action.serverFailed'));
           }
         }}
       />

@@ -9,6 +9,7 @@ import { PatientConsentCard } from './PatientConsentCard';
 import { EscortAssignmentForm } from './EscortAssignmentForm';
 import { CancellationDialog } from './CancellationDialog';
 import { Facility, Referral, ReferralStatus, User } from '../../../types';
+import { useI18n } from '../../../i18n';
 
 export interface ReferralActionConsoleProps {
   /** Action labels the desktop header already shows (lower-case); the console skips those buttons so each exists once. */
@@ -100,25 +101,28 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
   onCancelReferral,
   onOpenRejectModal,
 }) => {
+  const { t } = useI18n();
+  // Same catalogue strings the header used, so the comparison holds in any language.
   const inHeader = (label: string) => headerActions.includes(label.toLowerCase());
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Facility Actions</CardTitle>
+        <CardTitle>{t('console.title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
         {/* What the referral waits on is stated once, by the role banner above. */}
 
         <div className="text-sm">
           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Action Notes (Optional)
+            {t('console.notes')}
           </label>
           <VoiceTextarea
+            dir="auto"
             className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
             rows={2}
             value={notes}
             onValueChange={setNotes}
-            placeholder="Notes for status update... (Click mic to dictate)"
+            placeholder={t('console.notesPlaceholder')}
           />
         </div>
 
@@ -139,21 +143,21 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           {/* Standard Manager Final Approval (non-admin) */}
           {!isAdmin && isFacilityManager && referral.status === 'dept_approved' && (
             <>
-              {!inHeader('accept the transfer') && (
+              {!inHeader(t('manager.acceptTransfer')) && (
               <Button
                 onClick={() => onStatusUpdate('manager_approved')}
                 className="w-full bg-success-700 hover:bg-success-800 min-h-[48px]"
               >
-                <CheckCircle className="h-4 w-4 me-2" /> Accept the Transfer
+                <CheckCircle className="h-4 w-4 me-2" /> {t('console.acceptTransfer')}
               </Button>
               )}
-              {!inHeader('decline') && (
+              {!inHeader(t('home.decline')) && (
               <Button
                 onClick={onOpenRejectModal}
                 variant="destructive"
                 className="w-full"
               >
-                <X className="h-4 w-4 me-2" /> Reject Transfer
+                <X className="h-4 w-4 me-2" /> {t('console.rejectTransfer')}
               </Button>
               )}
             </>
@@ -165,16 +169,16 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
               onClick={() => onStatusUpdate('accepted')}
               className="w-full bg-success-600 hover:bg-success-700 min-h-[48px]"
             >
-              <Check className="h-4 w-4 me-2" /> Ready for Receive (Accepted)
+              <Check className="h-4 w-4 me-2" /> {t('console.readyReceive')}
             </Button>
           )}
 
-          {(isReceiving || isErRoom) && referral.status === 'in_transit' && !inHeader('mark as arrived') && (
+          {(isReceiving || isErRoom) && referral.status === 'in_transit' && !inHeader(t('action.markArrived')) && (
             <Button
               onClick={() => onStatusUpdate('arrived')}
               className="w-full bg-blue-600 hover:bg-blue-700 min-h-[48px]"
             >
-              Mark as Arrived
+              {t('console.markArrived')}
             </Button>
           )}
 
@@ -183,7 +187,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
               onClick={() => onStatusUpdate('admitted')}
               className="w-full bg-success-600 hover:bg-success-700 min-h-[48px]"
             >
-              Admit Patient
+              {t('console.admit')}
             </Button>
           )}
 
@@ -192,7 +196,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
               onClick={() => onStatusUpdate('discharged')}
               className="w-full bg-slate-600 hover:bg-slate-700 min-h-[48px]"
             >
-              Discharge Patient
+              {t('console.discharge')}
             </Button>
           )}
 
@@ -215,10 +219,10 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
             referral.accompanyingDoctor ? (
               <div className="p-3 bg-success-50 dark:bg-success-950/30 border border-success-200 dark:border-success-900 rounded-lg space-y-1">
                 <span className="text-xs font-semibold text-success-700 dark:text-success-300 flex items-center gap-1.5">
-                  <UserCheck className="w-4 h-4" /> Accompanying Doctor
+                  <UserCheck className="w-4 h-4" /> {t('console.escort')}
                 </span>
                 <p className="text-sm text-slate-700 dark:text-slate-300">
-                  {referral.accompanyingDoctor.name} — {referral.accompanyingDoctor.phoneNumber}
+                  <bdi>{referral.accompanyingDoctor.name}</bdi> — <bdi>{referral.accompanyingDoctor.phoneNumber}</bdi>
                 </p>
               </div>
             ) : isErRoom ? (
@@ -241,7 +245,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
                 <div className="flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-warning-600 shrink-0 mt-0.5" />
                   <p className="text-sm font-semibold text-warning-800 dark:text-warning-300">
-                    Waiting on the ER Room Official to record the accompanying doctor before dispatch.
+                    {t('console.waitingEscort')}
                   </p>
                 </div>
               </div>
@@ -249,34 +253,34 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           )}
 
           {/* Referring Facility Actions */}
-          {(isReferring || isErRoom) && referral.status === 'patient_consented' && !inHeader('dispatch ambulance') && (
+          {(isReferring || isErRoom) && referral.status === 'patient_consented' && !inHeader(t('card.dispatch')) && (
             <Button
               onClick={() => onStatusUpdate('in_transit')}
               disabled={Boolean(referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor)}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 min-h-[48px]"
             >
-              <Truck className="h-4 w-4 me-2" /> Dispatch Ambulance
+              <Truck className="h-4 w-4 me-2" /> {t('console.dispatch')}
             </Button>
           )}
 
           {/* Generic state badges */}
           {referral.status === 'admitted' && (
             <Badge variant="success" className="w-full justify-center py-2 text-xs">
-              Patient Admitted Successfully
+              {t('console.admitted')}
             </Badge>
           )}
           {referral.status === 'discharged' && (
             <Badge variant="default" className="w-full justify-center py-2 text-xs">
-              Patient Discharged
+              {t('console.discharged')}
             </Badge>
           )}
           {referral.status === 'rejected' && (
             <div className="space-y-1">
               <Badge variant="danger" className="w-full justify-center py-2 text-xs">
-                Referral Rejected
+                {t('console.rejected')}
               </Badge>
               {referral.rejectionReason && (
-                <p className="text-xs text-critical-600 dark:text-critical-400 text-center font-medium mt-1">
+                <p dir="auto" className="text-xs text-critical-600 dark:text-critical-400 text-center font-medium mt-1">
                   {referral.rejectionReason}
                 </p>
               )}
@@ -284,19 +288,19 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           )}
           {referral.status === 'postponed' && (
             <Badge variant="warning" className="w-full justify-center py-2.5">
-              Referral Postponed
+              {t('console.postponed')}
             </Badge>
           )}
           {referral.status === 'cancelled' && (
             <Badge variant="danger" className="w-full justify-center py-2 text-xs">
-              Referral Cancelled{referral.cancelReason ? `: ${referral.cancelReason}` : ''}
+              {referral.cancelReason ? t('console.cancelledWith', { reason: referral.cancelReason }) : t('console.cancelled')}
             </Badge>
           )}
 
           {isAdmin && ['pending', 'dept_approved', 'manager_approved', 'accepted'].includes(referral.status) && (
             <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
               <label htmlFor="overrideDestination" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
-                Admin Override Destination
+                {t('console.overrideLabel')}
               </label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <select
@@ -305,7 +309,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
                   value={overrideFacilityId}
                   onChange={(e) => setOverrideFacilityId(e.target.value)}
                 >
-                  <option value="">Select new destination...</option>
+                  <option value="">{t('console.overrideSelect')}</option>
                   {facilities
                     .filter(f => f.id !== referral.referringFacilityId)
                     .map(f => (
@@ -321,7 +325,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
                   onClick={onDestinationOverride}
                   className="shrink-0"
                 >
-                  Override
+                  {t('console.override')}
                 </Button>
               </div>
             </div>

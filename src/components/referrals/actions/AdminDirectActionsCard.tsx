@@ -2,6 +2,7 @@ import React from 'react';
 import { CheckCircle, Clock, ShieldAlert, X } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { Facility, Referral } from '../../../types';
+import { useI18n } from '../../../i18n';
 
 export interface AdminDirectActionsCardProps {
   referral: Referral;
@@ -22,15 +23,16 @@ export const AdminDirectActionsCard: React.FC<AdminDirectActionsCardProps> = ({
   onDirectDecline,
   onDirectPostpone,
 }) => {
+  const { t } = useI18n();
   return (
     <div className="p-3 bg-critical-50 dark:bg-critical-950/30 border border-critical-200 dark:border-critical-900 rounded-lg space-y-3 mb-2">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-critical-700 dark:text-critical-400 flex items-center gap-1.5">
-          <ShieldAlert className="w-4 h-4" /> System Admin Direct Actions
+          <ShieldAlert className="w-4 h-4" /> {t('adminActions.title')}
         </span>
         {referral.isEscalated && (
           <span className="text-xs bg-critical-700 text-white font-semibold px-2 py-0.5 rounded">
-            Escalated
+            {t('adminActions.escalated')}
           </span>
         )}
       </div>
@@ -38,14 +40,14 @@ export const AdminDirectActionsCard: React.FC<AdminDirectActionsCardProps> = ({
       {/* Any Facility Transfer option on Approval (System Admin Bypass) */}
       <div className="space-y-1.5 pt-1">
         <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-          Force Move/Transfer to Facility (Bypass Bed Check)
+          {t('adminActions.forceMove')}
         </label>
         <select
           className="w-full min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-700 p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
           value={contractedFacilityId}
           onChange={(e) => setContractedFacilityId(e.target.value)}
         >
-          <option value="">-- Keep Default Destination --</option>
+          <option value="">{t('adminActions.keepDefault')}</option>
           {facilities
             .filter(f => f.id !== referral.referringFacilityId)
             .map(f => {
@@ -63,24 +65,24 @@ export const AdminDirectActionsCard: React.FC<AdminDirectActionsCardProps> = ({
         <Button
           onClick={onDirectApprove}
           className="bg-success-600 hover:bg-success-700 text-xs py-1.5"
-          title="Direct Approve Referral"
+          title={t('adminActions.approveTitle')}
         >
-          <CheckCircle className="h-3.5 w-3.5 me-1 shrink-0" /> Approve
+          <CheckCircle className="h-3.5 w-3.5 me-1 shrink-0" /> {t('adminActions.approve')}
         </Button>
         <Button
           onClick={onDirectDecline}
           variant="destructive"
           className="text-xs py-1.5"
-          title="Direct Decline Referral"
+          title={t('adminActions.declineTitle')}
         >
-          <X className="h-3.5 w-3.5 me-1 shrink-0" /> Decline
+          <X className="h-3.5 w-3.5 me-1 shrink-0" /> {t('adminActions.decline')}
         </Button>
         <Button
           onClick={onDirectPostpone}
           className="bg-warning-600 hover:bg-warning-700 text-white text-xs py-1.5"
-          title="Direct Postpone Referral"
+          title={t('adminActions.postponeTitle')}
         >
-          <Clock className="h-3.5 w-3.5 me-1 shrink-0" /> Postpone
+          <Clock className="h-3.5 w-3.5 me-1 shrink-0" /> {t('adminActions.postpone')}
         </Button>
       </div>
     </div>

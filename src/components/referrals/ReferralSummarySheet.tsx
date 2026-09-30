@@ -6,6 +6,7 @@ import { Referral } from '../../types';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
 import { FOOTER_TONE_CLASSES, FooterTone } from './detail/MobileActionFooter';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../i18n';
 
 const NOT_RECORDED = '—';
 const isAbnormal = (value: number | undefined, outOfRange: (n: number) => boolean) =>
@@ -14,7 +15,9 @@ const show = (value: number | undefined, suffix = '') => (value === undefined ? 
 
 // Abnormal cells are tinted AND carry a warning glyph and an sr-only word, so
 // the flag never rests on colour alone.
-const VitalCell: React.FC<{ label: string; value: React.ReactNode; abnormal: boolean }> = ({ label, value, abnormal }) => (
+const VitalCell: React.FC<{ label: string; value: React.ReactNode; abnormal: boolean }> = ({ label, value, abnormal }) => {
+  const { t } = useI18n();
+  return (
   <div className={cn(
     'rounded-[10px] border px-2 py-2.5 text-center',
     abnormal
@@ -27,10 +30,11 @@ const VitalCell: React.FC<{ label: string; value: React.ReactNode; abnormal: boo
     </p>
     <p className={cn('mt-1 text-[16px] font-semibold tabular-nums', abnormal ? 'text-critical-700 dark:text-critical-300' : 'text-ink dark:text-paper')}>
       {value}
-      {abnormal && <span className="sr-only"> (abnormal)</span>}
+      {abnormal && <span className="sr-only"> {t('patient.abnormal')}</span>}
     </p>
   </div>
-);
+  );
+};
 
 export interface SheetAction {
   label: string;
@@ -52,6 +56,7 @@ export const ReferralSummarySheet: React.FC<{
   secondary?: SheetAction[];
 }> = ({ referral, onClose, primary, secondary = [] }) => {
   const navigate = useNavigate();
+  const { t, lang } = useI18n();
   const vitals = referral.patientData.vitalSigns;
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogA11y(true, onClose, dialogRef);
@@ -77,13 +82,13 @@ export const ReferralSummarySheet: React.FC<{
               {referral.patientData.name}, {referral.patientData.age}
             </h2>
             <p className="mt-0.5 text-[13px] text-slate-700 dark:text-white/65">
-              {referral.requiredBedType} · <span className="font-mono">{referral.patientData.hospitalId}</span>
+              <bdi>{referral.requiredBedType}</bdi> · <bdi className="font-mono">{referral.patientData.hospitalId}</bdi>
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close summary"
+            aria-label={t('sheet.close')}
             className="-me-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-slate-700 hover:bg-slate-100 dark:text-white/70 dark:hover:bg-white/10"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -92,28 +97,28 @@ export const ReferralSummarySheet: React.FC<{
 
         <div className="space-y-5 overflow-y-auto px-5 pb-5">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">Why the transfer</p>
-            <p className="mt-1.5 text-[15.5px] leading-[1.55] text-ink dark:text-paper">{referral.reasonForReferral || NOT_RECORDED}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">{t('sheet.why')}</p>
+            <p dir="auto" className="mt-1.5 text-[15.5px] leading-[1.55] text-ink dark:text-paper">{referral.reasonForReferral || NOT_RECORDED}</p>
           </div>
 
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">
-              Vitals{vitals?.timestamp ? <> · <span className="font-mono normal-case tracking-normal">{formatClock(new Date(vitals.timestamp))}</span></> : ''}
+              {t('patient.vitals')}{vitals?.timestamp ? <> · <span className="font-mono normal-case tracking-normal">{formatClock(new Date(vitals.timestamp), lang)}</span></> : ''}
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2">
-              <VitalCell label="HR" value={show(vitals?.hr, ' bpm')} abnormal={isAbnormal(vitals?.hr, n => n > 100 || n < 60)} />
-              <VitalCell label="BP" value={vitals?.bp || NOT_RECORDED} abnormal={isAbnormal(parseInt(String(vitals?.bp || '').split('/')[0] || ''), n => !Number.isNaN(n) && (n > 140 || n < 90))} />
-              <VitalCell label="SpO2" value={show(vitals?.spo2, '%')} abnormal={isAbnormal(vitals?.spo2, n => n < 95)} />
-              <VitalCell label="Temp" value={show(vitals?.temp, '°C')} abnormal={isAbnormal(vitals?.temp, n => n > 38 || n < 36)} />
-              <VitalCell label="RR" value={show(vitals?.rr, '/min')} abnormal={isAbnormal(vitals?.rr, n => n > 20 || n < 12)} />
-              <VitalCell label="GCS" value={show(vitals?.gcs, '/15')} abnormal={isAbnormal(vitals?.gcs, n => n < 15)} />
+              <VitalCell label={t('patient.hr')} value={show(vitals?.hr, ' bpm')} abnormal={isAbnormal(vitals?.hr, n => n > 100 || n < 60)} />
+              <VitalCell label={t('patient.bp')} value={vitals?.bp || NOT_RECORDED} abnormal={isAbnormal(parseInt(String(vitals?.bp || '').split('/')[0] || ''), n => !Number.isNaN(n) && (n > 140 || n < 90))} />
+              <VitalCell label={t('patient.spo2')} value={show(vitals?.spo2, '%')} abnormal={isAbnormal(vitals?.spo2, n => n < 95)} />
+              <VitalCell label={t('patient.temp')} value={show(vitals?.temp, '°C')} abnormal={isAbnormal(vitals?.temp, n => n > 38 || n < 36)} />
+              <VitalCell label={t('patient.rr')} value={show(vitals?.rr, '/min')} abnormal={isAbnormal(vitals?.rr, n => n > 20 || n < 12)} />
+              <VitalCell label={t('patient.gcs')} value={show(vitals?.gcs, '/15')} abnormal={isAbnormal(vitals?.gcs, n => n < 15)} />
             </div>
           </div>
 
           {referral.patientData.diagnosis && (
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">Diagnosis</p>
-              <p className="mt-1.5 text-[15px] leading-[1.5] text-ink dark:text-paper">{referral.patientData.diagnosis}</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">{t('patient.diagnosis')}</p>
+              <p dir="auto" className="mt-1.5 text-[15px] leading-[1.5] text-ink dark:text-paper">{referral.patientData.diagnosis}</p>
             </div>
           )}
 
@@ -122,7 +127,7 @@ export const ReferralSummarySheet: React.FC<{
             onClick={() => navigate(`/referrals/${referral.id}`)}
             className="flex min-h-[52px] w-full items-center justify-between rounded-[10px] border border-slate-300 bg-white px-4 text-[15px] font-semibold text-ink transition-colors hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10"
           >
-            ECG + full chart
+            {t('sheet.fullChart')}
             <ChevronRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden="true" />
           </button>
         </div>
