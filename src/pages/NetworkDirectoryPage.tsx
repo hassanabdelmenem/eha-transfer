@@ -9,27 +9,30 @@ import { cn } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
 import { BedType, Facility } from '../types';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
+import { useI18n } from '../i18n';
 
 const BED_TYPES: BedType[] = ['ICU', 'CCU', 'PICU', 'Ward'];
 // 2e network list: a capacity hint per facility -- the first configured bed
 // type, ICU preferred since that's what most referrals in this network need.
 // Falls back to a department count for a facility with no capacity configured.
-const capacityHint = (f: Facility): string => {
+const capacityHint = (f: Facility, t: ReturnType<typeof useI18n>['t']): string => {
   const bt = BED_TYPES.find(b => (f.capacity?.[b]?.total ?? 0) > 0);
-  if (!bt) return `${f.departments.length} department${f.departments.length === 1 ? '' : 's'}`;
+  if (!bt) return t('directory.departments', { count: f.departments.length });
   const cap = f.capacity[bt];
   const free = cap.total - cap.occupied;
-  return free > 0 ? `${free} ${bt} free` : `${bt} full`;
+  return free > 0 ? t('directory.bedsFree', { count: free, bed: bt }) : t('directory.bedFull', { bed: bt });
 };
 
 /** "TERTIARY", "DISTRICT", "PRIMARY"… — or "CONTRACTED" for an external partner. */
-const facilityKind = (f: Facility) => (f.isExternal ? 'Contracted' : (f.type || '').split('_')[0] || 'Facility');
+const facilityKind = (f: Facility, t: ReturnType<typeof useI18n>['t']) =>
+  t(f.isExternal ? 'facilityKind.contracted' : f.type ? `facilityKind.${f.type}` : 'facilityKind.facility');
 
 export const NetworkDirectoryPage: React.FC = () => {
   const { user } = useAuth();
   const { facilities, shiftAssignments, referrals, users, usersById, loading } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAll, setShowAll] = useState(false);
+  const { t } = useI18n();
 
   // Memoized maps for fast HOD and assignment lookups
   const hodByFacilityAndDept = useMemo(() => {
@@ -155,15 +158,15 @@ export const NetworkDirectoryPage: React.FC = () => {
 
   return (
     <div className="max-w-[640px]">
-      <ScreenHeader title="Directory">
-        <label htmlFor="directory-search" className="sr-only">Search the directory</label>
+      <ScreenHeader title={t('directory.title')}>
+        <label htmlFor="directory-search" className="sr-only">{t('directory.searchLabel')}</label>
         <div className="relative">
           <Search className="pointer-events-none absolute start-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-paper/60 lg:text-slate-500 dark:lg:text-white/55" aria-hidden="true" />
           <input
             id="directory-search"
             type="search"
             autoComplete="off"
-            placeholder="Name, department or hospital"
+            placeholder={t('directory.searchPlaceholder')}
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); setShowAll(false); }}
             className="min-h-[52px] w-full rounded-[10px] border border-paper/20 bg-paper/10 ps-11 pe-3 text-[16px] text-paper placeholder:text-paper/55 focus:border-paper/50 focus:outline-none focus:ring-2 focus:ring-paper/30 lg:border-slate-300 lg:bg-white lg:text-ink lg:placeholder:text-slate-500 lg:focus:border-info-700 lg:focus:ring-info-700/30 dark:lg:border-white/25 dark:lg:bg-white/5 dark:lg:text-paper"
@@ -173,9 +176,9 @@ export const NetworkDirectoryPage: React.FC = () => {
 
       {ownFacilityId && (
         <section aria-labelledby="on-call-now" className="flex flex-col gap-2.5">
-          <MicroLabel id="on-call-now">On call right now · your hospital</MicroLabel>
+          <MicroLabel id="on-call-now">{t('directory.onCall')}</MicroLabel>
           {onCallNow.length === 0 ? (
-            <p className="text-[14.5px] text-slate-700 dark:text-white/65">{q ? 'Nobody on call matches that search.' : 'No on-call staff found.'}</p>
+            <p className="text-[14.5px] text-slate-700 dark:text-white/65">{q ? t('directory.noOnCallMatch') : t('directory.noOnCall')}</p>
           ) : (
             <ul className="flex flex-col gap-2.5">
               {onCallNow.map(u => (
@@ -183,18 +186,18 @@ export const NetworkDirectoryPage: React.FC = () => {
                   <div className="min-w-0">
                     <p className="flex items-center gap-2">
                       <span className="truncate text-[16px] font-semibold text-ink dark:text-paper">{u.name}</span>
-                      <span className="shrink-0 rounded-[5px] bg-success-100 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.06em] text-success-800 dark:bg-success-900/60 dark:text-success-200">On call</span>
+                      <span className="shrink-0 rounded-[5px] bg-success-100 px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.06em] text-success-800 dark:bg-success-900/60 dark:text-success-200">{t('directory.onCallChip')}</span>
                     </p>
                     <p className="mt-0.5 truncate text-[13.5px] text-slate-700 dark:text-white/65">
-                      {ROLE_CONFIGS[u.role]?.label ?? (u.role || '').replace(/_/g, ' ')}{u.department ? ` · ${u.department}` : ''}
+                      {u.role && u.role in ROLE_CONFIGS ? t(`role.${u.role}`) : (u.role || '').replace(/_/g, ' ')}{u.department ? <> · <bdi>{u.department}</bdi></> : null}
                     </p>
                   </div>
                   {u.phoneNumber ? (
-                    <a href={`tel:${u.phoneNumber}`} aria-label={`Call ${u.name}`} className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-ink text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200">
+                    <a href={`tel:${u.phoneNumber}`} aria-label={t('directory.call', { name: u.name })} className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-ink text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200">
                       <Phone className="h-5 w-5" aria-hidden="true" />
                     </a>
                   ) : (
-                    <span className="shrink-0 text-[12.5px] text-slate-500 dark:text-white/55">No number</span>
+                    <span className="shrink-0 text-[12.5px] text-slate-500 dark:text-white/55">{t('directory.noNumber')}</span>
                   )}
                 </li>
               ))}
@@ -204,11 +207,11 @@ export const NetworkDirectoryPage: React.FC = () => {
       )}
 
       <section aria-labelledby="network-list" className="mt-6 flex flex-col gap-2.5">
-        <MicroLabel id="network-list">Network · {filteredFacilities.length} {filteredFacilities.length === 1 ? 'facility' : 'facilities'}</MicroLabel>
+        <MicroLabel id="network-list">{t('directory.network', { count: filteredFacilities.length })}</MicroLabel>
         {loading ? (
           <div className="flex flex-col gap-2.5">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
         ) : filteredFacilities.length === 0 ? (
-          <p className="text-[14.5px] text-slate-700 dark:text-white/65">No facility matches that search.</p>
+          <p className="text-[14.5px] text-slate-700 dark:text-white/65">{t('directory.noFacilityMatch')}</p>
         ) : (
           <>
             <ul className="flex flex-col gap-2.5">
@@ -216,20 +219,20 @@ export const NetworkDirectoryPage: React.FC = () => {
                 <li key={f.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-[14px] py-3 dark:border-white/12 dark:bg-white/[0.05]">
                   <div className="min-w-0">
                     <p className="truncate text-[16px] font-semibold text-ink dark:text-paper">{f.name}</p>
-                    <p className="mt-0.5 truncate text-[13.5px] text-slate-700 dark:text-white/65">{f.location} · {capacityHint(f)}</p>
+                    <p className="mt-0.5 truncate text-[13.5px] text-slate-700 dark:text-white/65"><bdi>{f.location}</bdi> · {capacityHint(f, t)}</p>
                   </div>
                   <span className={cn(
                     'shrink-0 rounded-[5px] px-2 py-1 text-[10.5px] font-bold uppercase leading-none tracking-[0.06em]',
                     f.isExternal ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200' : 'bg-info-100 text-info-800 dark:bg-info-900/60 dark:text-info-200'
                   )}>
-                    {facilityKind(f)}
+                    {facilityKind(f, t)}
                   </span>
                 </li>
               ))}
             </ul>
             {filteredFacilities.length > shownFacilities.length && (
               <button type="button" onClick={() => setShowAll(true)} className="min-h-[48px] rounded-[10px] border border-slate-300 bg-white text-[15px] font-semibold text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10">
-                Show all {filteredFacilities.length} facilities
+                {t('directory.showAll', { count: filteredFacilities.length })}
               </button>
             )}
           </>

@@ -18,7 +18,8 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
 2. Seed staging: owner runs `scripts/seed-staging.mjs --apply` with a password they choose (Claude's
    auto mode may not write staging accounts or store the password).
 3. Arabic translation PRs, one per surface (see "Arabic and right-to-left" below). Role homes (#49)
-   referral detail (#50) and intake wizard done; next: inbox, directory, archive, settings, admin.
+   referral detail (#50), intake wizard (#51) and inbox/list/directory/archive/reports/department
+   done; next: settings, admin console, beds, app shell; then sign-in and onboarding.
 
 Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg).
 
@@ -87,9 +88,13 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
       action console, consent, escort, cancel, reject, admin actions, ECG viewer, summary sheet (30 Sep)
 - [x] Intake wizard: all five steps, errors, toasts, draft banner, offline screen, review list;
       vital findings translated from stable codes (30 Sep)
-- [ ] Translate: inbox, directory, archive, settings, admin, HoD department page
-      (delegation, internal transfer); sign-in, onboarding; remaining toasts and errors; role labels
-      (the phone header's role line)
+- [x] Inbox, referrals list, directory, archive, reports (charts stay left-to-right), HoD department
+      page (delegation, internal transfer); role and facility-type labels (30 Sep)
+- [ ] Translate: facility settings, admin console, beds (census, admit, direct admission), app shell
+      (profile, hotline, end-of-shift handover, sidebar role line); sign-in, onboarding
+- [ ] Notification text is stored in English by DataContext (13 call sites) and the sweep, so inbox
+      messages stay English in Arabic. Fix: store a message key + params on each notification and
+      render in the reader's language (needs a rules change for the new fields). Owner decision.
 - [ ] Owner decision: the printable clinical summary (PrintableSummary) stays English, or follows the
       viewer's language? It travels with the patient to other hospitals.
 - [ ] Dates in Arabic (date-fns `ar` locale with Western digits); charts stay left-to-right

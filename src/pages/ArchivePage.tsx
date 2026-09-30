@@ -7,6 +7,8 @@ import { ScreenHeader, headerActionClass } from '../components/layout/ScreenHead
 import { MicroLabel, EmptyQueue } from '../components/dashboard/RoleHome';
 import { toCsv, downloadCsv, isoOrEmpty } from '../lib/csv';
 import { formatDateTime, cn } from '../lib/utils';
+import { useI18n } from '../i18n';
+import { formatDayMonthClock } from '../i18n/format';
 
 /**
  * Referrals that have ended: the patient was admitted, or the referral was
@@ -21,6 +23,7 @@ export const ArchivePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState<'all' | 'admitted' | 'cancelled'>('all');
+  const { t, lang } = useI18n();
 
   const myReferrals = useMemo(() => {
     if (!user) return [];
@@ -62,7 +65,7 @@ export const ArchivePage: React.FC = () => {
     .sort((a, b) => endedAt(b) - endedAt(a)),
   [myReferrals, outcomeFilter, q]);
 
-  const facilityName = (id: string) => (id === 'auto' ? 'auto-routed' : facilitiesById.get(id)?.name || '—');
+  const facilityName = (id: string) => (id === 'auto' ? t('archive.autoRouted') : facilitiesById.get(id)?.name || '—');
 
   const handleExportCSV = () => {
     const archived = myReferrals.filter(r => ['admitted', 'cancelled'].includes(r.status));
@@ -89,10 +92,12 @@ export const ArchivePage: React.FC = () => {
     if (r.status === 'admitted') {
       const entry = endedEntry(r);
       const by = entry ? usersById.get(entry.userId)?.name : undefined;
-      return [`${r.requiredBedType} · admitted`, entry && formatDateTime(entry.timestamp), by && `by ${by}`].filter(Boolean).join(' ');
+      // English keeps its long date; Arabic gets day, month and a 24-hour clock.
+      const when = entry && (lang === 'ar' ? formatDayMonthClock(new Date(entry.timestamp), lang) : formatDateTime(entry.timestamp));
+      return [t('archive.admittedLine', { bed: r.requiredBedType }), when, by && t('archive.by', { name: by })].filter(Boolean).join(' ');
     }
     const by = r.cancelledBy ? usersById.get(r.cancelledBy)?.name : undefined;
-    return `${r.cancelReason || 'Cancelled'}${by ? ` · closed by ${by}` : ''}`;
+    return `${r.cancelReason || t('archive.cancelled')}${by ? ` · ${t('archive.closedBy', { name: by })}` : ''}`;
   };
 
   const tile = (key: 'admitted' | 'cancelled', label: string, count: number) => {
@@ -120,31 +125,31 @@ export const ArchivePage: React.FC = () => {
   return (
     <div className="max-w-[640px]">
       <ScreenHeader
-        title="Archive"
+        title={t('archive.title')}
         action={
           <button type="button" onClick={handleExportCSV} className={headerActionClass}>
-            <Download className="me-1.5 h-4 w-4" aria-hidden="true" /> Export CSV
+            <Download className="me-1.5 h-4 w-4" aria-hidden="true" /> {t('screen.exportCsv')}
           </button>
         }
       />
 
       <p className="text-[14.5px] leading-[1.45] text-slate-700 dark:text-white/65">
-        Referrals that ended: the patient was admitted, or the referral was cancelled.
+        {t('archive.intro')}
       </p>
 
-      <div role="group" aria-label="Filter by outcome" className="mt-3.5 grid grid-cols-2 gap-2.5">
-        {tile('admitted', 'Admitted', stats.admitted)}
-        {tile('cancelled', 'Cancelled', stats.cancelled)}
+      <div role="group" aria-label={t('archive.filterLabel')} className="mt-3.5 grid grid-cols-2 gap-2.5">
+        {tile('admitted', t('archive.admitted'), stats.admitted)}
+        {tile('cancelled', t('archive.cancelled'), stats.cancelled)}
       </div>
 
       <div className="relative mt-3">
-        <label htmlFor="archive-search" className="sr-only">Search ended cases</label>
+        <label htmlFor="archive-search" className="sr-only">{t('archive.searchLabel')}</label>
         <Search className="pointer-events-none absolute start-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500 dark:text-white/55" aria-hidden="true" />
         <input
           id="archive-search"
           type="search"
           autoComplete="off"
-          placeholder="Patient name, hospital ID or department"
+          placeholder={t('archive.searchPlaceholder')}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           className="min-h-[52px] w-full rounded-[10px] border border-slate-300 bg-white ps-11 pe-3 text-[16px] text-ink placeholder:text-slate-500 focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper dark:placeholder:text-white/45"
@@ -153,10 +158,10 @@ export const ArchivePage: React.FC = () => {
 
       <section aria-labelledby="archive-list" className="mt-5 flex flex-col gap-2.5">
         <MicroLabel id="archive-list">
-          {outcomeFilter === 'all' ? 'All ended cases' : outcomeFilter === 'admitted' ? 'Admitted' : 'Cancelled'} · {rows.length}
+          {outcomeFilter === 'all' ? t('archive.allEnded') : outcomeFilter === 'admitted' ? t('archive.admitted') : t('archive.cancelled')} · {rows.length}
         </MicroLabel>
         {rows.length === 0 ? (
-          <EmptyQueue>{q || outcomeFilter !== 'all' ? 'No ended cases match.' : 'No referral has ended yet.'}</EmptyQueue>
+          <EmptyQueue>{q || outcomeFilter !== 'all' ? t('archive.noMatch') : t('archive.noneYet')}</EmptyQueue>
         ) : (
           <ul className="flex flex-col gap-2.5">
             {rows.map(r => (
@@ -170,14 +175,14 @@ export const ArchivePage: React.FC = () => {
                     <span className="min-w-0">
                       <span className="block truncate text-[17px] font-semibold text-ink dark:text-paper">{r.patientData.name}, {r.patientData.age}</span>
                       <span className="mt-0.5 block text-[13.5px] leading-[1.4] text-slate-700 dark:text-white/65">
-                        <span className="font-mono">{r.patientData.hospitalId}</span> · {facilityName(r.referringFacilityId)} → {facilityName(r.receivingFacilityId)}
+                        <bdi className="font-mono">{r.patientData.hospitalId}</bdi> · <bdi>{facilityName(r.referringFacilityId)}</bdi> <span className="inline-block rtl:-scale-x-100">→</span> <bdi>{facilityName(r.receivingFacilityId)}</bdi>
                       </span>
                     </span>
                     <span className={cn(
                       'shrink-0 rounded-[6px] px-2 py-1 text-[11px] font-bold uppercase leading-none tracking-[0.06em]',
                       r.status === 'admitted' ? 'bg-success-100 text-success-800 dark:bg-success-900/60 dark:text-success-200' : 'bg-critical-100 text-critical-700 dark:bg-critical-950/60 dark:text-critical-200'
                     )}>
-                      {r.status}
+                      {t(`status.${r.status}`)}
                     </span>
                   </span>
                   <span className="mt-2.5 block border-t border-slate-200 pt-2.5 text-[13.5px] leading-[1.4] text-slate-700 dark:border-white/10 dark:text-white/70">
