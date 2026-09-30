@@ -6,6 +6,7 @@ import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { showToast, toastError } from '../../lib/toast';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
+import { useI18n } from '../../i18n';
 
 export interface DirectAdmissionModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export const DirectAdmissionModal: React.FC<DirectAdmissionModalProps> = ({
 }) => {
   const { user } = useAuth();
   const { addDirectAdmission } = useData();
+  const { t } = useI18n();
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogA11y(isOpen, onClose, dialogRef);
 
@@ -56,13 +58,13 @@ export const DirectAdmissionModal: React.FC<DirectAdmissionModalProps> = ({
         admittedBy: user.id,
       });
 
-      showToast(`Admitted ${data.patientName} directly to ${data.department} (${data.bedType})`, 'success');
+      showToast(t('admission.toastAdmitted', { name: data.patientName, dept: data.department, bed: data.bedType }), 'success');
       if (onSuccess) {
         onSuccess();
       }
       onClose();
     } catch (err: any) {
-      toastError(err, 'Failed to record direct admission.');
+      toastError(err, t('admission.toastModalFailed'));
     }
   };
 
@@ -92,10 +94,13 @@ export const DirectAdmissionModal: React.FC<DirectAdmissionModalProps> = ({
                 id="direct-admit-title"
                 className="text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight"
               >
-                Direct Walk-In Admission
+                {t('admission.modalTitle')}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Admitting to <strong className="text-slate-700 dark:text-slate-200">{facility.name}</strong>
+                {/* The facility name is set in bold, so split the sentence on its placeholder. */}
+                {t('admission.admittingTo').split('{facility}').map((part, i) => (
+                  <React.Fragment key={i}>{i > 0 && <strong className="text-slate-700 dark:text-slate-200"><bdi>{facility.name}</bdi></strong>}{part}</React.Fragment>
+                ))}
               </p>
             </div>
           </div>
@@ -103,7 +108,7 @@ export const DirectAdmissionModal: React.FC<DirectAdmissionModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close dialog"
+            aria-label={t('admission.closeDialog')}
             className="h-11 w-11 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
           >
             <X className="w-5 h-5" />

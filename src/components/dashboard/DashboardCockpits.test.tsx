@@ -23,6 +23,9 @@ import { NotificationsPage } from '../../pages/NotificationsPage';
 import { ReferralsPage } from '../../pages/ReferralsPage';
 import { NetworkDirectoryPage } from '../../pages/NetworkDirectoryPage';
 import { ArchivePage } from '../../pages/ArchivePage';
+import { FacilitySettingsPage } from '../../pages/FacilitySettingsPage';
+import { BedManagementPage } from '../../pages/BedManagementPage';
+import { AdmitPatientPage } from '../../pages/AdmitPatientPage';
 
 // Mock contexts
 let mockUser: User | null = null;
@@ -696,6 +699,32 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       const { container } = renderAr(<ReportsPage />);
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('التقارير');
       expect(englishLeaks(container)).toEqual([]);
+    });
+
+    it('facility settings, admin console, beds, direct admission', () => {
+      // An unverified account and a system-level escalation, so every section renders.
+      mockUsers = [...mockUsers, { id: 'new-1', name: 'Dr. New', email: 'new@example.com', role: 'resident', requestedRole: 'resident', facilityId: 'fac-1', department: 'Cardiology', verified: false } as User];
+      mockReferrals = [
+        { ...testReferral, escalationLevel: 'system', escalationReason: 'no_beds_available' },
+        { ...testReferral, id: 'ref-2', status: 'arrived', isEscalated: false, escalationReason: null },
+      ];
+      mockDirectAdmissions = [{ ...mockDirectAdmissions[0], status: 'admitted' } as DirectAdmission];
+      const extra = ['CSV', 'Surgery', 'new', 'example', 'com', 'mahmoud', 'Center', 'Ismailia', 'HR', 'BP', 'SpO'];
+      const check = (ui: React.ReactElement, open?: () => void) => {
+        const { container, unmount } = renderAr(ui);
+        open?.();
+        expect(englishLeaks(container).filter(w => !extra.includes(w))).toEqual([]);
+        unmount();
+      };
+      mockUser = { ...mockUsers[0], role: 'owner' };
+      check(<FacilitySettingsPage />, () => fireEvent.click(screen.getByRole('button', { name: /إضافة منشأة متعاقدة/ })));
+      check(<AdminDashboard />);
+      mockUser = { ...mockUsers[0], role: 'nurse' };
+      check(<BedManagementPage />, () => {
+        fireEvent.click(screen.getByRole('button', { name: /إدخال مباشر لمريض حضر بنفسه/ }));
+        fireEvent.click(screen.getByRole('button', { name: /إضافة ملاحظات سريرية/ }));
+      });
+      check(<AdmitPatientPage />);
     });
 
     it('nurse home', () => {
