@@ -63,8 +63,14 @@ jobs:
       - name: Run Firestore Security Rules Tests
         run: npm run test:rules
 
+      # Chromium only: playwright.config.ts has a single chromium project. With
+      # no browser named, this installed Firefox and WebKit too, plus 181 apt
+      # packages (130 MB, mostly GTK4/GStreamer for those two). When the Azure
+      # Ubuntu mirror is slow that download ran 20+ minutes (#48, #52); the
+      # timeout makes a slow mirror fail fast so the run can simply be retried.
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+        timeout-minutes: 6
+        run: npx playwright install --with-deps chromium
 
       - name: Run E2E Tests (Playwright)
         run: npm run test:e2e
