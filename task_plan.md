@@ -18,7 +18,7 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
 2. Seed staging: owner runs `scripts/seed-staging.mjs --apply` with a password they choose (Claude's
    auto mode may not write staging accounts or store the password).
 3. Arabic translation PRs, one per surface (see "Arabic and right-to-left" below). Role homes (#49)
-   and referral detail done; next: the intake wizard.
+   referral detail (#50) and intake wizard done; next: inbox, directory, archive, settings, admin.
 
 Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg).
 
@@ -85,7 +85,9 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
 - [x] Referral detail and actions, phone and desktop case pane: header, stage rail, role banners,
       footer/header actions, escalation card, timeline, patient card, clinical cards, department review,
       action console, consent, escort, cancel, reject, admin actions, ECG viewer, summary sheet (30 Sep)
-- [ ] Translate: intake wizard; inbox, directory, archive, settings, admin, HoD department page
+- [x] Intake wizard: all five steps, errors, toasts, draft banner, offline screen, review list;
+      vital findings translated from stable codes (30 Sep)
+- [ ] Translate: inbox, directory, archive, settings, admin, HoD department page
       (delegation, internal transfer); sign-in, onboarding; remaining toasts and errors; role labels
       (the phone header's role line)
 - [ ] Owner decision: the printable clinical summary (PrintableSummary) stays English, or follows the

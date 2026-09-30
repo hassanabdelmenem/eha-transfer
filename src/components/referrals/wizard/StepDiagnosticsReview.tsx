@@ -5,6 +5,7 @@ import { Upload, FileText, X, Eye } from 'lucide-react';
 import { showToast } from '../../../lib/toast';
 import { MAX_ATTACHMENT_SIZE_BYTES } from './types';
 import { FieldError, FieldHint, FieldLabel, StepHeading, inputClass, textareaClass } from './fields';
+import { useI18n, typedDir } from '../../../i18n';
 
 interface StepDiagnosticsReviewProps {
   patientData: Partial<PatientData>;
@@ -30,6 +31,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
   setPatientData,
   fieldErrors,
 }) => {
+  const { t } = useI18n();
   const [uploading, setUploading] = useState(false);
   const [activeEcgUrl, setActiveEcgUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,10 +42,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
 
     // Check file size (15MB limit)
     if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
-      showToast(
-        `File ${file.name} exceeds the 15MB size limit (${(file.size / (1024 * 1024)).toFixed(1)}MB).`,
-        'error'
-      );
+      showToast(t('workupStep.tooLarge', { name: file.name, size: (file.size / (1024 * 1024)).toFixed(1) }), 'error');
       if (e.target) e.target.value = '';
       return;
     }
@@ -54,10 +53,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
     const isExtAllowed = ALLOWED_EXTENSIONS.includes(ext);
 
     if (!isMimeAllowed && !isExtAllowed) {
-      showToast(
-        `Unsupported file type for ${file.name}. Only images (JPG, PNG, WEBP, GIF, SVG) and PDF reports are allowed.`,
-        'error'
-      );
+      showToast(t('workupStep.badType', { name: file.name }), 'error');
       if (e.target) e.target.value = '';
       return;
     }
@@ -94,15 +90,16 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
 
   return (
     <div className="space-y-5">
-      <StepHeading>Diagnosis and workup</StepHeading>
+      <StepHeading>{t('workupStep.heading')}</StepHeading>
 
       <div>
-        <FieldLabel htmlFor="diagnosis" required>Working diagnosis</FieldLabel>
+        <FieldLabel htmlFor="diagnosis" required>{t('workupStep.diagnosis')}</FieldLabel>
         <input
           id="diagnosis"
           required
           autoComplete="off"
-          placeholder="e.g. Anterior STEMI"
+          dir={typedDir(patientData.diagnosis)}
+          placeholder={t('workupStep.diagnosisPlaceholder')}
           value={patientData.diagnosis || ''}
           onChange={e => setPatientData(prev => ({ ...prev, diagnosis: e.target.value }))}
           aria-invalid={!!fieldErrors?.diagnosis}
@@ -113,10 +110,11 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
       </div>
 
       <div>
-        <FieldLabel htmlFor="investigations">Investigations</FieldLabel>
+        <FieldLabel htmlFor="investigations">{t('workupStep.investigations')}</FieldLabel>
         <textarea
           id="investigations"
-          placeholder="e.g. Troponin 4.8 ng/mL. ECG: ST elevation V1–V4."
+          dir={typedDir(patientData.investigations)}
+          placeholder={t('workupStep.investigationsPlaceholder')}
           value={patientData.investigations || ''}
           onChange={e => setPatientData(prev => ({ ...prev, investigations: e.target.value }))}
           className={textareaClass(false)}
@@ -124,15 +122,15 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
       </div>
 
       <div>
-        <FieldLabel id="attachments-label">Attachments · ECG and scans</FieldLabel>
+        <FieldLabel id="attachments-label">{t('workupStep.attachments')}</FieldLabel>
         <ul aria-labelledby="attachments-label" className="grid grid-cols-3 gap-2.5">
           {attachments.map(att => (
             <li key={att.id} className="relative aspect-square overflow-hidden rounded-[10px] border border-slate-200 bg-white dark:border-white/12 dark:bg-white/5">
               {att.type === 'image' ? (
-                <button type="button" onClick={() => setActiveEcgUrl(att.url)} className="block h-full w-full" aria-label={`View ${att.name}`}>
+                <button type="button" onClick={() => setActiveEcgUrl(att.url)} className="block h-full w-full" aria-label={t('workupStep.viewFile', { name: att.name })}>
                   <img src={att.url} alt={att.name} className="h-full w-full object-cover" />
                   <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-ink/70 py-1 text-[11px] font-semibold text-paper">
-                    <Eye className="h-3 w-3" aria-hidden="true" /> View
+                    <Eye className="h-3 w-3" aria-hidden="true" /> {t('workupStep.view')}
                   </span>
                 </button>
               ) : (
@@ -144,7 +142,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
               <button
                 type="button"
                 onClick={() => removeAttachment(att.id)}
-                aria-label={`Remove attachment ${att.name}`}
+                aria-label={t('workupStep.removeFile', { name: att.name })}
                 className="absolute top-0 end-0 flex h-11 w-11 items-center justify-center"
               >
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-critical-700 shadow-sm dark:bg-ink/90 dark:text-critical-300">
@@ -156,12 +154,12 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
           <li>
             <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[10px] border-2 border-dashed border-slate-300 bg-white text-slate-700 transition-colors hover:border-ink hover:text-ink has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-info-700 dark:border-white/25 dark:bg-transparent dark:text-white/70 dark:hover:border-paper dark:hover:text-paper">
               {uploading ? (
-                <span className="text-[12.5px] font-semibold">Adding…</span>
+                <span className="text-[12.5px] font-semibold">{t('workupStep.adding')}</span>
               ) : (
                 <>
                   <Upload className="mb-1 h-6 w-6" aria-hidden="true" />
-                  <span className="text-[13px] font-semibold">Add photo</span>
-                  <span className="text-[11px] text-slate-500 dark:text-white/55">or PDF</span>
+                  <span className="text-[13px] font-semibold">{t('workupStep.addPhoto')}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-white/55">{t('workupStep.orPdf')}</span>
                 </>
               )}
               <input
@@ -174,7 +172,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
             </label>
           </li>
         </ul>
-        <FieldHint>The receiving team reads the ECG before accepting. Images or PDF, up to 15 MB each.</FieldHint>
+        <FieldHint>{t('workupStep.hint')}</FieldHint>
       </div>
 
       <ECGViewerOverlay

@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { useDialogA11y } from '../../../hooks/useDialogA11y';
-import { useI18n } from '../../../i18n';
+import { useI18n, typedDir } from '../../../i18n';
 
 export interface RejectionModalProps {
   isOpen: boolean;
@@ -62,7 +62,7 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
         )}
         <textarea
           id="rejectionReasonInput"
-          dir="auto"
+          dir={typedDir(rejectionReason)}
           className="w-full border rounded p-2 mb-4 dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm focus:ring-1 focus:ring-critical-500 outline-none"
           rows={3}
           placeholder={t('reject.placeholder')}

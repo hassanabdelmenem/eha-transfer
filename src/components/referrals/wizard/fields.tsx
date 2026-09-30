@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../../lib/utils';
+import { useI18n } from '../../../i18n';
 
 // Field anatomy from the handoff's intake wizard: a 12.5px/600 label above a
 // 54px field, 10px radius, 16px text (no iOS zoom-on-focus). Errors sit under
@@ -19,15 +20,18 @@ export const FieldLabel: React.FC<{ htmlFor?: string; children: React.ReactNode;
   required,
   aside,
   id,
-}) => (
+}) => {
+  const { t } = useI18n();
+  return (
   <div className="mb-1.5 flex items-baseline justify-between gap-3">
     <label id={id} htmlFor={htmlFor} className="text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
       {children}
-      {required && <span className="sr-only"> (required)</span>}
+      {required && <span className="sr-only"> {t('wizard.required')}</span>}
     </label>
     {aside}
   </div>
-);
+  );
+};
 
 export const FieldError: React.FC<{ id: string; children?: React.ReactNode }> = ({ id, children }) =>
   children ? (

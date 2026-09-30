@@ -11,6 +11,8 @@ import { StepClinicalPresentation } from './StepClinicalPresentation';
 import { StepDiagnosticsReview } from './StepDiagnosticsReview';
 import { NewReferralPage } from '../../../pages/NewReferralPage';
 import * as toastModule from '../../../lib/toast';
+import { I18nProvider } from '../../../i18n';
+import { NETWORK_DEPARTMENTS } from './types';
 
 // Mock contexts
 const mockAddReferral = vi.fn();
@@ -422,5 +424,74 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
       expect(screen.queryByText(/Enter the patient’s full name/)).not.toBeInTheDocument();
       expect(document.querySelector('#patientName')).toHaveAttribute('aria-invalid', 'false');
     });
+  });
+});
+
+// Arabic: every word of interface text on every step comes from the catalogue.
+// Latin words left must be data (typed values, departments, facilities), vital
+// abbreviations and units, or the clinical examples in placeholders.
+describe('Intake wizard in Arabic', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.spyOn(toastModule, 'showToast').mockImplementation(() => 'toast-id');
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  const ALLOWED = new Set([
+    ...NETWORK_DEPARTMENTS.flatMap(d => d.split(' ')),
+    ...mockFacilities.flatMap(f => f.name.split(' ')),
+    'Ward', 'ICU', 'CCU', 'PICU',
+    'HR', 'BP', 'SpO', 'RR', 'GCS', 'bpm', 'mmHg', 'min', 'PDF', 'JPG', 'PNG', 'WEBP', 'GIF', 'SVG',
+    // Clinical examples kept in English in the Arabic placeholders.
+    'Anterior', 'STEMI', 'Troponin', 'ng', 'mL', 'ECG', 'ST', 'elevation',
+    // Typed by the test.
+    'XXXXX', // the hospital-ID format placeholder, ISM-XXXXX
+    'Omar', 'Farid', 'ISM', 'Chest', 'pain', 'Diaphoretic', 'NSTEMI', 'Needs', 'PCI',
+  ]);
+  const leaks = (container: HTMLElement) => {
+    const words: string[] = [];
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) words.push(...(n.textContent?.match(/[A-Za-z]{2,}/g) ?? []));
+    container.querySelectorAll('[aria-label],[placeholder],[title]').forEach(el => {
+      for (const a of ['aria-label', 'placeholder', 'title']) words.push(...(el.getAttribute(a)?.match(/[A-Za-z]{2,}/g) ?? []));
+    });
+    return [...new Set(words)].filter(w => !ALLOWED.has(w));
+  };
+  const cont = () => fireEvent.click(screen.getByRole('button', { name: 'متابعة' }));
+
+  it('walks all five steps with no English interface text, errors included', () => {
+    const { container } = render(
+      <I18nProvider arabicAvailable savedLanguage="ar">
+        <MemoryRouter><NewReferralPage /></MemoryRouter>
+      </I18nProvider>
+    );
+    // Step 1, with its errors showing.
+    cont();
+    expect(screen.getByText('أدخل الاسم الكامل للمريض.')).toBeInTheDocument();
+    expect(leaks(container)).toEqual([]);
+    fireEvent.change(container.querySelector('#patientName')!, { target: { value: 'Omar Farid' } });
+    fireEvent.change(container.querySelector('#patientAge')!, { target: { value: '58' } });
+    fireEvent.change(container.querySelector('#hospitalId')!, { target: { value: 'ISM-1' } });
+    cont();
+    // Step 2: an abnormal vital shows the Arabic word and finding.
+    fireEvent.change(container.querySelector('#vitalHr')!, { target: { value: '150' } });
+    expect(screen.getByText('مرتفع')).toBeInTheDocument();
+    expect(leaks(container)).toEqual([]);
+    cont();
+    // Step 3.
+    expect(leaks(container)).toEqual([]);
+    fireEvent.change(container.querySelector('#complaint')!, { target: { value: 'Chest pain' } });
+    fireEvent.change(container.querySelector('#presentation')!, { target: { value: 'Diaphoretic' } });
+    cont();
+    // Step 4.
+    expect(leaks(container)).toEqual([]);
+    fireEvent.change(container.querySelector('#diagnosis')!, { target: { value: 'NSTEMI' } });
+    cont();
+    // Step 5, with the review list filled in.
+    fireEvent.click(screen.getByRole('button', { name: 'Cardiology' }));
+    fireEvent.change(container.querySelector('#reasonForReferral')!, { target: { value: 'Needs PCI' } });
+    expect(screen.getByRole('heading', { name: 'جاهزة للإرسال' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'إرسال الإحالة' })).toBeInTheDocument();
+    expect(leaks(container)).toEqual([]);
   });
 });

@@ -2,7 +2,7 @@ import React from 'react';
 import { Ban } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { VoiceTextarea } from '../../ui/VoiceTextarea';
-import { useI18n } from '../../../i18n';
+import { useI18n, typedDir } from '../../../i18n';
 
 export interface CancellationDialogProps {
   canCancel: boolean;
@@ -49,7 +49,7 @@ export const CancellationDialog: React.FC<CancellationDialogProps> = ({
             {t('cancelReferral.warning')}
           </p>
           <VoiceTextarea
-            dir="auto"
+            dir={typedDir(cancelReason)}
             className="w-full rounded border border-critical-200 dark:border-critical-900 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm min-h-[50px]"
             placeholder={t('cancelReferral.placeholder')}
             value={cancelReason}

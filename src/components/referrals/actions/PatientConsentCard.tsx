@@ -3,7 +3,7 @@ import { UserCheck, UserX } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { VoiceTextarea } from '../../ui/VoiceTextarea';
 import { Facility } from '../../../types';
-import { useI18n } from '../../../i18n';
+import { useI18n, typedDir } from '../../../i18n';
 
 export interface PatientConsentCardProps {
   toFacility?: Partial<Facility> & { name: string };
@@ -60,7 +60,7 @@ export const PatientConsentCard: React.FC<PatientConsentCardProps> = ({
       ) : (
         <div className="space-y-2">
           <VoiceTextarea
-            dir="auto"
+            dir={typedDir(declineReason)}
             className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[60px]"
             placeholder={t('consent.placeholder')}
             value={declineReason}

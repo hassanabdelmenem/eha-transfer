@@ -1,19 +1,21 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
 import { PatientData } from '../../../types';
-import { evaluateVital } from './VitalsRangeIndicator';
+import { evaluateVital, LOW_VITAL_CODES } from './VitalsRangeIndicator';
 import { StepHeading, fieldBase } from './fields';
 import { cn } from '../../../lib/utils';
+import { useI18n } from '../../../i18n';
 
 type VitalKey = 'hr' | 'bp' | 'spo2' | 'temp' | 'rr' | 'gcs';
 
-const VITALS: { key: VitalKey; id: string; label: string; unit: string; placeholder: string; float?: boolean; min?: number; max?: number; text?: boolean }[] = [
-  { key: 'hr', id: 'vitalHr', label: 'HR', unit: 'bpm', placeholder: '—' },
-  { key: 'bp', id: 'vitalBp', label: 'BP', unit: 'mmHg', placeholder: '—', text: true },
-  { key: 'spo2', id: 'vitalSpo2', label: 'SpO₂', unit: '%', placeholder: '—', min: 0, max: 100 },
-  { key: 'temp', id: 'vitalTemp', label: 'Temp', unit: '°C', placeholder: '—', float: true },
-  { key: 'rr', id: 'vitalRr', label: 'RR', unit: '/min', placeholder: '—' },
-  { key: 'gcs', id: 'vitalGcs', label: 'GCS', unit: '/ 15', placeholder: '—', min: 3, max: 15 },
+// Labels are patient.<key> in the catalogue; units stay as monitors print them.
+const VITALS: { key: VitalKey; id: string; unit: string; placeholder: string; float?: boolean; min?: number; max?: number; text?: boolean }[] = [
+  { key: 'hr', id: 'vitalHr', unit: 'bpm', placeholder: '—' },
+  { key: 'bp', id: 'vitalBp', unit: 'mmHg', placeholder: '—', text: true },
+  { key: 'spo2', id: 'vitalSpo2', unit: '%', placeholder: '—', min: 0, max: 100 },
+  { key: 'temp', id: 'vitalTemp', unit: '°C', placeholder: '—', float: true },
+  { key: 'rr', id: 'vitalRr', unit: '/min', placeholder: '—' },
+  { key: 'gcs', id: 'vitalGcs', unit: '/ 15', placeholder: '—', min: 3, max: 15 },
 ];
 
 const parseVital = (raw: string, float = false): number | undefined => {
@@ -29,6 +31,7 @@ export const StepVitals: React.FC<{
   patientData: Partial<PatientData>;
   setPatientData: React.Dispatch<React.SetStateAction<Partial<PatientData>>>;
 }> = ({ patientData, setPatientData }) => {
+  const { t } = useI18n();
   const vitals = patientData.vitalSigns;
 
   const update = (key: VitalKey, value: number | string | undefined) => {
@@ -46,28 +49,23 @@ export const StepVitals: React.FC<{
 
   return (
     <div className="space-y-5">
-      <StepHeading>Vitals, as measured</StepHeading>
+      <StepHeading>{t('vitalsStep.heading')}</StepHeading>
 
       <div className="grid grid-cols-2 gap-3">
         {VITALS.map(v => {
           const raw = vitals?.[v.key];
           const evaluation = evaluateVital(v.key, raw as number | string | undefined);
-          // The word states direction. GCS tiers are named "high"/"low" for
-          // severity in evaluateVital, but any abnormal GCS is below 15.
-          const flag = !evaluation.isAbnormal
+          // The word states direction, from the finding's code (GCS tiers are
+          // named by severity, but any abnormal GCS is below 15).
+          const flag = !evaluation.isAbnormal || !evaluation.code
             ? null
-            : v.key === 'gcs'
-            ? 'low'
-            : evaluation.status === 'critical'
-            ? // Critical labels state their bound: "(<40)" is below range, "(>140)" above.
-              (/\(</.test(evaluation.label) ? 'low' : 'high')
-            : evaluation.status;
+            : LOW_VITAL_CODES.has(evaluation.code) ? 'low' : 'high';
           const abnormal = evaluation.isAbnormal;
           const flagId = `${v.id}-flag`;
           return (
             <div key={v.key}>
               <label htmlFor={v.id} className="mb-1.5 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
-                {v.label} <span className="font-normal text-slate-500 dark:text-white/55">{v.unit}</span>
+                {t(`patient.${v.key}`)} <bdi className="font-normal text-slate-500 dark:text-white/55">{v.unit}</bdi>
               </label>
               <div className={cn(
                 'relative flex min-h-[54px] items-center rounded-[10px]',
@@ -98,8 +96,8 @@ export const StepVitals: React.FC<{
                 />
                 {flag && (
                   <span id={flagId} className="pointer-events-none absolute end-3 text-[12.5px] font-bold text-critical-700 dark:text-critical-300">
-                    {flag}
-                    <span className="sr-only"> — {evaluation.label}</span>
+                    {t(flag === 'low' ? 'vitalsStep.low' : 'vitalsStep.high')}
+                    <span className="sr-only"> — {evaluation.code ? t(`vitalRange.${evaluation.code}`) : evaluation.label}</span>
                   </span>
                 )}
               </div>
@@ -110,7 +108,7 @@ export const StepVitals: React.FC<{
 
       <p className="flex items-start gap-2 text-[13.5px] leading-[1.45] text-slate-700 dark:text-white/65">
         <Clock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        Timestamped automatically. Leave a field empty and it reads as not recorded, never as zero.
+        {t('vitalsStep.note')}
       </p>
     </div>
   );

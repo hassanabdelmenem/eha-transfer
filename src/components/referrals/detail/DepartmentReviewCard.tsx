@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/Card';
 import { Button } from '../../ui/Button';
 import { VoiceTextarea } from '../../ui/VoiceTextarea';
 import { Referral, User, DeptApprovalStatus } from '../../../types';
-import { useI18n } from '../../../i18n';
+import { useI18n, typedDir } from '../../../i18n';
 
 interface DepartmentReviewCardProps {
   referral: Referral;
@@ -60,7 +60,7 @@ export const DepartmentReviewCard: React.FC<DepartmentReviewCardProps> = ({
             </p>
           )}
           <VoiceTextarea
-            dir="auto"
+            dir={typedDir(deptCommentText)}
             className={`${field} min-h-[88px] py-2.5`}
             placeholder={t('review.placeholder')}
             value={deptCommentText}

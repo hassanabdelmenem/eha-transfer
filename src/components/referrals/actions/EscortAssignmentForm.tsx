@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '../../ui/Button';
-import { useI18n } from '../../../i18n';
+import { useI18n, typedDir } from '../../../i18n';
 
 export interface EscortAssignmentFormProps {
   escortName: string;
@@ -29,7 +29,7 @@ export const EscortAssignmentForm: React.FC<EscortAssignmentFormProps> = ({
       <label className="sr-only" htmlFor="escort-name">{t('card.escortNameLabel')}</label>
       <input
         id="escort-name"
-        dir="auto"
+        dir={typedDir(escortName)}
         type="text"
         placeholder={t('card.escortNamePlaceholder')}
         value={escortName}

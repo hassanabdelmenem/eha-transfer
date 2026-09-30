@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { I18nProvider, formatNumber, resolveLanguage, translate, useI18n } from './index';
+import { I18nProvider, formatNumber, resolveLanguage, translate, typedDir, useI18n } from './index';
 import { en } from './en';
 import { ar } from './ar';
 import { AppSidebar } from '../components/layout/AppSidebar';
@@ -79,6 +79,14 @@ describe('catalogue safety', () => {
   it('the banner shows the same capacity sentences the sweep stores in English', () => {
     expect(translate('en', 'escalation.noMatchingFacility')).toBe(describeCapacityEscalation('no_matching_facility'));
     expect(translate('en', 'escalation.allFull')).toBe(describeCapacityEscalation('no_beds_available'));
+  });
+});
+
+describe('typed fields', () => {
+  it('follow the page while empty and the text once typed', () => {
+    expect(typedDir('')).toBeUndefined();
+    expect(typedDir(undefined)).toBeUndefined();
+    expect(typedDir('Needs PCI.')).toBe('auto');
   });
 });
 
