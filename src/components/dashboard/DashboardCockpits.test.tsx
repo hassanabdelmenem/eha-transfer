@@ -677,6 +677,20 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       expect(englishLeaks(container)).toEqual([]);
     });
 
+    it('inbox renders a keyed notification in Arabic, and an old one in its stored English', () => {
+      mockUser = { ...mockUsers[0], role: 'head_of_department' };
+      mockNotifications = [
+        { id: 'k1', userId: mockUser.id, title: 'Patient Consented to Transfer', message: 'Patient Omar Farid has consented; dispatch can proceed.',
+          key: 'consented', vars: { patient: 'Omar Farid' }, type: 'success', read: false, createdAt: new Date().toISOString(), referralId: 'ref-1' },
+        { id: 'o1', userId: mockUser.id, title: 'Referral ARRIVED', message: 'Patient Old referral is now arrived.',
+          type: 'info', read: false, createdAt: new Date().toISOString(), referralId: 'ref-1' },
+      ];
+      renderAr(<NotificationsPage />);
+      expect(screen.getByText(/وافق المريض .*Omar Farid.*؛ يمكن إرسال الإسعاف\./)).toBeInTheDocument();
+      expect(screen.queryByText(/has consented/)).not.toBeInTheDocument();
+      expect(screen.getByText('Patient Old referral is now arrived.')).toBeInTheDocument();
+    });
+
     it('inbox, referrals, directory, archive, reports, department page', () => {
       mockUser = { ...mockUsers[0], role: 'head_of_department' };
       mockNotifications = [

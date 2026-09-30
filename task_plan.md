@@ -94,11 +94,10 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
       admission page and dialog (30 Sep)
 - [ ] Translate: app shell (profile, hotline, end-of-shift handover, header and sidebar role line);
       sign-in, onboarding, pending verification
-- [ ] Notification text is stored in English by DataContext (13 call sites) and the sweep, so inbox
-      messages stay English in Arabic. Fix: store a message key + params on each notification and
-      render in the reader's language (needs a rules change for the new fields). Owner decision.
-- [ ] Owner decision: the printable clinical summary (PrintableSummary) stays English, or follows the
-      viewer's language? It travels with the patient to other hospitals.
+- [x] Notifications carry a catalogue key + values (src/i18n/notifications.ts); the inbox renders
+      them in the reader's language, older ones keep their stored English. Rules bound key/vars and
+      now allow only the known notification fields (owner decision d6, 1 Oct)
+- [x] The printable clinical summary stays English (owner decision d7, 1 Oct)
 - [ ] Dates in Arabic (date-fns `ar` locale with Western digits); charts stay left-to-right
 - [ ] Clinician review of the sheet; then enable Arabic in production
 
@@ -132,6 +131,8 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
 | d3 | End of shift tied to Log out? | No: sending the handover keeps you signed in; users sign out manually |
 | d4 | Declining a pending account deletes it? | Yes, keep deleting |
 | d5 | Old redesign attempts? | Keep only the current design: #24/#28 closed, stale branches deleted, old-design code removed |
+| d6 | Notifications in the reader's language? (1 Oct) | Yes: key + values per notification, rules change; old ones stay English |
+| d7 | Printable clinical summary language? (1 Oct) | Always English: it travels with the patient to other hospitals |
 
 ## Rules that always apply
 

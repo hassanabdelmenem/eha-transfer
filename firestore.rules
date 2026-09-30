@@ -479,7 +479,15 @@ service cloud.firestore {
       //
       // Moving fan-out into a Cloud Function would let this become a deny rule and
       // would also let the /users list rule narrow to a single facility.
+      // key + vars: the catalogue entry and its values, so the inbox renders in
+      // the reader's language (src/i18n/notifications.ts). The key is a plain
+      // identifier and the values a small map; nothing else may ride along.
       allow create: if isVerifiedCaller()
+                    && request.resource.data.keys().hasOnly(['id', 'userId', 'title', 'message', 'type', 'read', 'createdAt', 'createdAtMs', 'referralId', 'key', 'vars'])
+                    && (!('key' in request.resource.data)
+                        || (request.resource.data.key is string && request.resource.data.key.matches('^[A-Za-z]{1,64}$')))
+                    && (!('vars' in request.resource.data)
+                        || (request.resource.data.vars is map && request.resource.data.vars.size() <= 12))
                     && request.resource.data.userId is string
                     && request.resource.data.title is string
                     && request.resource.data.message is string

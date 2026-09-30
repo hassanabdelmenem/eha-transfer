@@ -1,7 +1,7 @@
 import { Facility, Referral, Role } from '../types';
 import { SLA_MINUTES, needsAutoEscalation } from './sla';
 import { CapacityEscalationReason, capacityEscalationReason, describeCapacityEscalation } from './routing';
-import { formatDateTime } from './utils';
+import { notificationText, type NotificationKey, type NotificationVars } from '../i18n/notifications';
 
 /**
  * The escalation rules, shared by the two writers that apply them:
@@ -79,8 +79,12 @@ export function escalationUpdate(r: Pick<Referral, 'status' | 'statusHistory'>, 
 }
 
 export interface EscalationNotice {
+  /** Stored English, rendered from notif.<key> so old clients still read it. */
   title: string;
   message: string;
+  /** What the inbox renders in the reader's language (src/i18n/notifications). */
+  key: NotificationKey;
+  vars: NotificationVars;
   type: 'urgent';
   referralId: string;
   facilityId: string;
@@ -93,10 +97,13 @@ export function escalationNotice(
   r: Pick<Referral, 'id' | 'patientData' | 'priority' | 'requiredBedType' | 'createdAt' | 'referringFacilityId' | 'candidateFacilityIds' | 'receivingDepartments'>,
   action: EscalationAction
 ): EscalationNotice {
+  const patient = r.patientData?.name || '@notif.aPatient';
   if (action.kind === 'sla') {
+    const vars = { patient, priority: `@priorityWord.${r.priority}`, bed: r.requiredBedType, minutes: SLA_MINUTES, since: `#date:${r.createdAt}` };
     return {
-      title: `Referral Escalated — No Response in ${SLA_MINUTES} Minutes`,
-      message: `${r.patientData?.name || 'A patient'} (${r.priority} ${r.requiredBedType}) has had no response since ${formatDateTime(r.createdAt)} and has been escalated for intervention.`,
+      ...notificationText('en', 'escalationSla', vars),
+      key: 'escalationSla',
+      vars,
       type: 'urgent',
       referralId: r.id,
       facilityId: r.referringFacilityId,
@@ -106,9 +113,17 @@ export function escalationNotice(
       targetRoles: ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department', 'er_official'],
     };
   }
+  const key: NotificationKey = action.reason === 'no_matching_facility' ? 'escalationNoMatch' : 'escalationNoBeds';
+  const vars = {
+    patient,
+    depts: (r.receivingDepartments || []).join(', '),
+    bed: r.requiredBedType,
+    capacity: action.reason === 'no_matching_facility' ? '@escalation.noMatchingFacility' : '@escalation.allFull',
+  };
   return {
-    title: action.reason === 'no_matching_facility' ? 'ESCALATION: No Matching Facility' : 'ESCALATION: No Beds Available',
-    message: `${r.patientData?.name || 'A patient'} needs ${(r.receivingDepartments || []).join(', ')} (${r.requiredBedType}). ${describeCapacityEscalation(action.reason)} Administrative placement required.`,
+    ...notificationText('en', key, vars),
+    key,
+    vars,
     type: 'urgent',
     referralId: r.id,
     facilityId: r.referringFacilityId,
