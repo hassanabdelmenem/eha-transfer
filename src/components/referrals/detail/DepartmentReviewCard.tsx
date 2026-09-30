@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/Card';
 import { Button } from '../../ui/Button';
 import { VoiceTextarea } from '../../ui/VoiceTextarea';
 import { Referral, User, DeptApprovalStatus } from '../../../types';
+import { useI18n } from '../../../i18n';
 
 interface DepartmentReviewCardProps {
   referral: Referral;
@@ -26,6 +27,7 @@ export const DepartmentReviewCard: React.FC<DepartmentReviewCardProps> = ({
   setDeptCommentText,
   onSubmitDeptComment,
 }) => {
+  const { t } = useI18n();
   // The department's comments already read in the history timeline; this card
   // is only the review form, for the people who can file one.
   if (!((isTargetDeptHead || isAdmin) && referral.status === 'pending')) return null;
@@ -35,34 +37,37 @@ export const DepartmentReviewCard: React.FC<DepartmentReviewCardProps> = ({
     <Card>
       <CardContent className="pt-5">
         <div id="dept-review-section" className="space-y-3">
-          <h3 className="font-heading text-[17px] font-semibold tracking-[-0.01em] text-ink dark:text-paper">Add Department Review</h3>
-          <label className="sr-only" htmlFor="dept-review-action">Review decision</label>
+          <h3 className="font-heading text-[17px] font-semibold tracking-[-0.01em] text-ink dark:text-paper">{t('review.title')}</h3>
+          <label className="sr-only" htmlFor="dept-review-action">{t('review.decisionLabel')}</label>
           <select
             id="dept-review-action"
             className={`${field} min-h-[52px]`}
             value={deptAction}
             onChange={e => setDeptAction(e.target.value as DeptApprovalStatus)}
           >
-            <option value="pending" disabled>Select action...</option>
-            <option value="requirements_needed">Requirements Needed</option>
-            <option value="direct_approval">Direct Approval</option>
-            <option value="urgent_approval">Urgent Approval</option>
-            <option value="scheduled_approval">Scheduled Approval</option>
-            <option value="no_role">No Role / Not Indicated</option>
+            <option value="pending" disabled>{t('review.select')}</option>
+            <option value="requirements_needed">{t('review.requirements')}</option>
+            <option value="direct_approval">{t('review.direct')}</option>
+            <option value="urgent_approval">{t('review.urgent')}</option>
+            <option value="scheduled_approval">{t('review.scheduled')}</option>
+            <option value="no_role">{t('review.noRole')}</option>
           </select>
           {deptAction === 'requirements_needed' && (
             <p className="rounded-[10px] border border-warning-300 bg-warning-100 p-3 text-[13.5px] leading-[1.45] text-warning-800 dark:border-warning-700 dark:bg-warning-900/40 dark:text-warning-300">
-              This sends the referral straight back to the referring facility as <strong>Postponed</strong>, with no manager approval step — and escalates it automatically so the medical director, deputy managers and managers at both facilities are notified along with the referring doctor.
+              {t('review.warning').split('{postponed}').map((part, i) => (
+                <React.Fragment key={i}>{i > 0 && <strong>{t('review.postponed')}</strong>}{part}</React.Fragment>
+              ))}
             </p>
           )}
           <VoiceTextarea
+            dir="auto"
             className={`${field} min-h-[88px] py-2.5`}
-            placeholder="Clinical reasoning or requirements... (Click mic to dictate)"
+            placeholder={t('review.placeholder')}
             value={deptCommentText}
             onValueChange={setDeptCommentText}
           />
           <Button onClick={onSubmitDeptComment} disabled={deptAction === 'pending'} className="w-full">
-            Submit Review
+            {t('review.submit')}
           </Button>
         </div>
       </CardContent>

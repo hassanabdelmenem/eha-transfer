@@ -2,6 +2,25 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-09-30: Arabic, referral detail and actions
+
+- #49 (role homes) merged at b3d6497.
+- Translated the referral detail screen on phones and the desktop case pane: header facts, stage rail
+  and its label, every role banner, the role's actions (footer and desktop header; the console still
+  skips duplicates because both sides use the same catalogue strings), escalation card, timeline,
+  patient card, clinical cards, department review, action console, consent, escort, cancellation,
+  rejection, admin direct actions, ECG viewer, summary sheet. ~290 new strings.
+- Bidi: facts in the header are one `<bdi>` each; doctor-typed text (notes, diagnosis, reason,
+  history, rejection reason, department comments in the banner) and its input fields use
+  `dir="auto"`, so an English sentence keeps its punctuation on the right side in an Arabic page.
+- Monospace only for a real National ID: Arabic "غير متاح" fell apart in the mono face.
+- Catalogue gotcha: an object with an `other` key is a plural, so gender "other" is `gender.unspecified`.
+- Removed dead `ROLE_VARIANT_LABEL` and the exported ESCALATION_HEADLINE/DETAIL maps (now catalogue).
+- Left English on purpose: the printable clinical summary (owner decision pending).
+- Verified: tsc, vitest 975/975 (new: detail page in Arabic for manager, referring clinician, ER,
+  nurse, admin with no English interface words; checked that the same test fails in English),
+  Playwright 11/11, Arabic captures (phone and desktop).
+
 ## 2026-09-30: Arabic, role homes and queue cards
 
 - #48 merged (sweep trigger docs; memory refresh). CI's Playwright browser install hung ~20 min on

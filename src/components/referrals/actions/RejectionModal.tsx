@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { useDialogA11y } from '../../../hooks/useDialogA11y';
+import { useI18n } from '../../../i18n';
 
 export interface RejectionModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
   onConfirm,
   isSubmitting = false,
 }) => {
+  const { t } = useI18n();
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogA11y(isOpen, onClose, dialogRef);
 
@@ -40,10 +42,10 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
         className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-[0_8px_24px_rgba(20,20,19,0.14)] w-full max-w-md relative border border-slate-200 dark:border-slate-800"
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 id="rejection-modal-title" className="text-xl font-bold text-slate-900 dark:text-slate-100">Reject Transfer</h2>
+          <h2 id="rejection-modal-title" className="text-xl font-bold text-slate-900 dark:text-slate-100">{t('reject.title')}</h2>
           <button
             type="button"
-            aria-label="Close rejection dialog"
+            aria-label={t('reject.close')}
             onClick={() => {
               onClose();
               setRejectError('');
@@ -60,9 +62,10 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
         )}
         <textarea
           id="rejectionReasonInput"
+          dir="auto"
           className="w-full border rounded p-2 mb-4 dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm focus:ring-1 focus:ring-critical-500 outline-none"
           rows={3}
-          placeholder="Reason for rejection (e.g. Bed capacity exhausted, clinical mismatch)..."
+          placeholder={t('reject.placeholder')}
           value={rejectionReason}
           onChange={(e) => setRejectionReason(e.target.value)}
         />
@@ -74,14 +77,14 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
             }}
             variant="outline"
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={onConfirm}
             disabled={!rejectionReason.trim() || isSubmitting}
             variant="destructive"
           >
-            Confirm Rejection
+            {t('reject.confirm')}
           </Button>
         </div>
       </div>

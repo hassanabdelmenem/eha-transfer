@@ -17,8 +17,8 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
    "Escalation sweep"); until then escalation when nobody is signed in can be hours late.
 2. Seed staging: owner runs `scripts/seed-staging.mjs --apply` with a password they choose (Claude's
    auto mode may not write staging accounts or store the password).
-3. Arabic translation PRs, one per surface (see "Arabic and right-to-left" below). Role homes done;
-   next: referral detail and actions.
+3. Arabic translation PRs, one per surface (see "Arabic and right-to-left" below). Role homes (#49)
+   and referral detail done; next: the intake wizard.
 
 Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg).
 
@@ -82,9 +82,14 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
       Arabic phones in production today), rail translated
 - [x] Role homes and queue cards (clinician, HoD, manager, ER, nurse): headlines, segments, cards,
       escalation banner, draft card, handover feed, their toasts, priority chips (30 Sep)
-- [ ] Translate: referral detail and actions (also the desktop case pane); intake wizard; inbox,
-      directory, archive, settings, admin, HoD department page (delegation, internal transfer); sign-in,
-      onboarding; remaining toasts and errors; status/role labels (the phone header's role line)
+- [x] Referral detail and actions, phone and desktop case pane: header, stage rail, role banners,
+      footer/header actions, escalation card, timeline, patient card, clinical cards, department review,
+      action console, consent, escort, cancel, reject, admin actions, ECG viewer, summary sheet (30 Sep)
+- [ ] Translate: intake wizard; inbox, directory, archive, settings, admin, HoD department page
+      (delegation, internal transfer); sign-in, onboarding; remaining toasts and errors; role labels
+      (the phone header's role line)
+- [ ] Owner decision: the printable clinical summary (PrintableSummary) stays English, or follows the
+      viewer's language? It travels with the patient to other hospitals.
 - [ ] Dates in Arabic (date-fns `ar` locale with Western digits); charts stay left-to-right
 - [ ] Clinician review of the sheet; then enable Arabic in production
 

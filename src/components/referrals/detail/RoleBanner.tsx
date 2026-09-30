@@ -19,6 +19,7 @@ export interface RoleBannerProps {
 export const RoleBanner: React.FC<RoleBannerProps> = ({ label, text, tint }) => (
   <section aria-label={label} className={cn('rounded-[11px] border p-[13px]', TINTS[tint].box)}>
     <p className={cn('text-[11px] font-bold uppercase tracking-[0.08em]', TINTS[tint].label)}>{label}</p>
-    {text && <p className="mt-[5px] text-[15px] font-medium leading-[1.4] text-ink dark:text-paper">{text}</p>}
+    {/* dir=auto: the sentence can be a department's own comment, typed in English. */}
+    {text && <p dir="auto" className="mt-[5px] text-[15px] font-medium leading-[1.4] text-ink dark:text-paper">{text}</p>}
   </section>
 );
