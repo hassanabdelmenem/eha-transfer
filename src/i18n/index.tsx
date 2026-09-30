@@ -66,6 +66,16 @@ export function formatNumber(n: number, lang: Language): string {
   return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB').format(n);
 }
 
+/**
+ * Data inside an Arabic sentence (a facility, department or doctor's name typed
+ * in English) is wrapped in Unicode isolates, FSI…PDI, so the bidi algorithm
+ * lays it out as one unit: without them "من Referring Hospital · ICU" merges
+ * neighbouring Latin runs and reverses their order. Only values with Latin
+ * letters need it; Arabic and digits already sit correctly. In JSX, wrap data
+ * joined outside a translation in <bdi> instead.
+ */
+const isolate = (v: string) => (/[A-Za-z]/.test(v) ? `\u2068${v}\u2069` : v);
+
 function lookup(messages: Messages, key: string): string | PluralForms | undefined {
   let node: unknown = messages;
   for (const part of key.split('.')) {
@@ -87,7 +97,8 @@ export function translate(lang: Language, key: MessageKey, vars?: MessageVars): 
   return (entry as string).replace(/\{(\w+)\}/g, (m, name) => {
     const v = vars?.[name];
     if (v === undefined) return m;
-    return typeof v === 'number' ? formatNumber(v, lang) : v;
+    if (typeof v === 'number') return formatNumber(v, lang);
+    return lang === 'ar' ? isolate(v) : v;
   });
 }
 

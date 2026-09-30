@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Referral } from '../../types';
 import { isSlaTracked, secondsUntilSlaBreach } from '../../lib/sla';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../i18n';
 
 // The pieces every role home is built from, in the handoff's order:
 // headline count -> one line of ordering rationale -> optional segmented
@@ -42,6 +43,7 @@ export function SegmentedControl<K extends string>({
   onChange: (key: K) => void;
   label: string;
 }) {
+  const { t } = useI18n();
   return (
     <div role="group" aria-label={label} className="flex gap-2">
       {segments.map(s => {
@@ -61,7 +63,7 @@ export function SegmentedControl<K extends string>({
           >
             <span className="text-[14.5px] font-semibold leading-tight">{s.label}</span>
             <span className={cn('mt-0.5 text-[11.5px] leading-tight', active ? 'text-paper/70 dark:text-ink/70' : 'text-slate-500 dark:text-white/60')}>
-              {s.count} {s.count === 1 ? 'case' : 'cases'}
+              {t('home.cases', { count: s.count })}
             </span>
           </button>
         );
@@ -115,16 +117,17 @@ const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds
  * minute-level label so they are not re-read every second.
  */
 export const SlaClock: React.FC<{ referral: Referral; now: number }> = ({ referral, now }) => {
+  const { t } = useI18n();
   if (!isSlaTracked(referral)) {
-    return <span className="text-[12.5px] font-medium text-slate-500 dark:text-white/60">no clock</span>;
+    return <span className="text-[12.5px] font-medium text-slate-500 dark:text-white/60">{t('sla.noClock')}</span>;
   }
   const left = secondsUntilSlaBreach(referral, now);
   if (left === null) return null;
   const over = left <= 0;
-  const text = over ? `+${clock(Math.abs(left))} over` : `${clock(left)} left`;
+  const text = over ? t('sla.over', { time: clock(Math.abs(left)) }) : t('sla.left', { time: clock(left) });
   const spoken = over
-    ? `SLA passed ${Math.floor(Math.abs(left) / 60)} minutes ago`
-    : `${Math.ceil(left / 60)} minutes left on the SLA`;
+    ? t('sla.passedSpoken', { count: Math.floor(Math.abs(left) / 60) })
+    : t('sla.leftSpoken', { count: Math.ceil(left / 60) });
   return (
     <span
       aria-label={spoken}

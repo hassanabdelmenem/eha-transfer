@@ -12,6 +12,7 @@ import { useOpenCase, useReportQueue } from '../layout/Workspace';
 import { RoleHomeHeadline, MicroLabel, EmptyQueue } from './RoleHome';
 import { capacityTone } from '../../lib/capacityTone';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../i18n';
 
 export const ManagerCockpit: React.FC = () => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export const ManagerCockpit: React.FC = () => {
   } = useData();
   const navigate = useNavigate();
   const openCase = useOpenCase();
+  const { t } = useI18n();
 
   const [summaryReferral, setSummaryReferral] = useState<Referral | null>(null);
   const [busyAcceptId, setBusyAcceptId] = useState<string | null>(null);
@@ -71,9 +73,9 @@ export const ManagerCockpit: React.FC = () => {
     setBusyAcceptId(id);
     try {
       await updateReferralStatus(id, 'manager_approved', 'Accepted by hospital manager.');
-      showToast('Referral accepted.', 'success');
+      showToast(t('manager.toastAccepted'), 'success');
     } catch (e: any) {
-      toastError(e, 'Could not accept this referral.');
+      toastError(e, t('manager.toastAcceptFailed'));
     } finally {
       setBusyAcceptId(null);
     }
@@ -91,21 +93,25 @@ export const ManagerCockpit: React.FC = () => {
   const q = signQueue.length;
   const capacityReason = pinned?.escalationReason === 'no_beds_available' || pinned?.escalationReason === 'no_matching_facility';
   const title =
-    e > 0 ? `${e} escalation${e === 1 ? '' : 's'}, ${q} to sign` : q > 0 ? `${q} to sign` : 'Nothing to sign';
+    e > 0
+      ? t('manager.titleBoth', { escalations: t('manager.escalations', { count: e }), toSign: t('manager.toSign', { count: q }) })
+      : q > 0
+        ? t('manager.toSign', { count: q })
+        : t('manager.nothingToSign');
 
   return (
     <div className="flex flex-col gap-3">
       <RoleHomeHeadline
         title={title}
-        rationale="Escalations first, then the transfers departments approved, waiting on your signature."
+        rationale={t('manager.rationale')}
       />
 
       {pinned && (
         <EscalationAlertBanner
           referral={pinned}
-          actionLabel={capacityReason ? 'Source a bed' : 'Review now'}
+          actionLabel={capacityReason ? t('manager.sourceBed') : t('home.reviewNow')}
           onAction={() => openCase(pinned.id)}
-          secondaryAction={capacityReason ? { label: 'Call admin', onClick: () => navigate('/directory') } : undefined}
+          secondaryAction={capacityReason ? { label: t('manager.callAdmin'), onClick: () => navigate('/directory') } : undefined}
           referringFacilityName={facilitiesById.get(pinned.referringFacilityId)?.name}
         />
       )}
@@ -115,13 +121,13 @@ export const ManagerCockpit: React.FC = () => {
           onClick={() => navigate('/referrals')}
           className="self-start text-[14px] font-semibold text-critical-700 underline underline-offset-4 hover:text-critical-800 dark:text-critical-300"
         >
-          {e - 1} more escalated {e - 1 === 1 ? 'case' : 'cases'}
+          {t('manager.moreEscalated', { count: e - 1 })}
         </button>
       )}
 
       {bedTypesWithCapacity.length > 0 && (
         <section aria-labelledby="manager-free-beds" className="mt-3">
-          <MicroLabel id="manager-free-beds">Free beds right now</MicroLabel>
+          <MicroLabel id="manager-free-beds">{t('manager.freeBeds')}</MicroLabel>
           <ul className="mt-3 space-y-3">
             {bedTypesWithCapacity.map(bt => {
               const cap = userFacility!.capacity[bt];
@@ -132,7 +138,7 @@ export const ManagerCockpit: React.FC = () => {
                   <div className="flex items-baseline justify-between text-[15px]">
                     <span className="font-semibold text-ink dark:text-paper">{bt}</span>
                     <span className={cn('text-[13.5px] font-semibold tabular-nums', tone.text)}>
-                      {free} of {cap.total} free
+                      {t('manager.freeOf', { free, total: cap.total })}
                     </span>
                   </div>
                   <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10" aria-hidden="true">
@@ -146,9 +152,9 @@ export const ManagerCockpit: React.FC = () => {
       )}
 
       <section aria-labelledby="manager-queue" className="mt-4 flex flex-col gap-3">
-        <MicroLabel id="manager-queue">Department approved · your signature</MicroLabel>
+        <MicroLabel id="manager-queue">{t('manager.queue')}</MicroLabel>
         {q === 0 ? (
-          <EmptyQueue>Nothing waiting on your signature right now.</EmptyQueue>
+          <EmptyQueue>{t('manager.empty')}</EmptyQueue>
         ) : (
           signQueue.map(r => {
             const approvingComment = [...(r.deptComments || [])]
@@ -182,7 +188,7 @@ export const ManagerCockpit: React.FC = () => {
           referral={summaryReferral}
           onClose={() => setSummaryReferral(null)}
           primary={{
-            label: 'Accept the transfer',
+            label: t('manager.acceptTransfer'),
             tone: 'success',
             onClick: async () => {
               const r = summaryReferral;
@@ -191,7 +197,7 @@ export const ManagerCockpit: React.FC = () => {
             },
           }}
           secondary={[
-            { label: 'Decline', tone: 'critical-outline', onClick: () => navigate(`/referrals/${summaryReferral.id}`) },
+            { label: t('home.decline'), tone: 'critical-outline', onClick: () => navigate(`/referrals/${summaryReferral.id}`) },
           ]}
         />
       )}

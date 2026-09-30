@@ -333,7 +333,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
       const { unmount: u1 } = render(
         <EscalationAlertBanner referral={pastRef} actionLabel="Review" />
       );
-      expect(screen.getByText(/^Escalated · no response 525600 min$/i)).toBeInTheDocument();
+      expect(screen.getByText(/^Escalated · no response 525,600 min$/i)).toBeInTheDocument();
       u1();
 
       // 2. Future extreme (scheduled in year 2099)
@@ -389,7 +389,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
       );
 
       expect(screen.getByText('Dr. Shift Hero')).toBeInTheDocument();
-      expect(screen.getByText('Pending: 99999')).toBeInTheDocument();
+      expect(screen.getByText('Pending: 99,999')).toBeInTheDocument();
       expect(screen.getByText('Admitted: 0')).toBeInTheDocument();
     });
   });
