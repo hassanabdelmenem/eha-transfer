@@ -15,6 +15,7 @@ import { StepClinicalPresentation } from '../components/referrals/wizard/StepCli
 import { StepDiagnosticsReview } from '../components/referrals/wizard/StepDiagnosticsReview';
 import { StepDestinationPriority } from '../components/referrals/wizard/StepDestinationPriority';
 import { SLA_MINUTES } from '../lib/sla';
+import { useI18n } from '../i18n';
 
 const loadDraft = (): WizardDraft | null => {
   try {
@@ -40,6 +41,7 @@ export const NewReferralPage: React.FC = () => {
   const { user } = useAuth();
   const { addReferral, facilities, isOnline } = useData();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const initialDraftRef = useRef<WizardDraft | null>(null);
   if (initialDraftRef.current === null) {
@@ -104,18 +106,18 @@ export const NewReferralPage: React.FC = () => {
   const missing = (step: number): FieldErrors => {
     const e: FieldErrors = {};
     if (step === 1) {
-      if (!patientData.name?.trim()) e.name = 'Enter the patient’s full name.';
-      if (patientData.age === undefined) e.age = 'Enter the age in years.';
-      if (!patientData.hospitalId?.trim()) e.hospitalId = 'Enter the hospital ID.';
+      if (!patientData.name?.trim()) e.name = t('wizard.errors.name');
+      if (patientData.age === undefined) e.age = t('wizard.errors.age');
+      if (!patientData.hospitalId?.trim()) e.hospitalId = t('wizard.errors.hospitalId');
     } else if (step === 3) {
-      if (!patientData.complaint?.trim()) e.complaint = 'Enter the chief complaint.';
-      if (!patientData.presentation?.trim()) e.presentation = 'Describe the presentation.';
+      if (!patientData.complaint?.trim()) e.complaint = t('wizard.errors.complaint');
+      if (!patientData.presentation?.trim()) e.presentation = t('wizard.errors.presentation');
     } else if (step === 4) {
-      if (!patientData.diagnosis?.trim()) e.diagnosis = 'Enter the working diagnosis.';
+      if (!patientData.diagnosis?.trim()) e.diagnosis = t('wizard.errors.diagnosis');
     } else if (step === 5) {
-      if (receivingDepartments.length === 0) e.departments = 'Pick at least one receiving department.';
-      if (!isAutoRouting && !receivingFacilityId) e.facility = 'Choose a hospital, or turn Auto-Route back on.';
-      if (!reasonForReferral.trim()) e.reason = 'Say why this patient needs the transfer.';
+      if (receivingDepartments.length === 0) e.departments = t('wizard.errors.departments');
+      if (!isAutoRouting && !receivingFacilityId) e.facility = t('wizard.errors.facility');
+      if (!reasonForReferral.trim()) e.reason = t('wizard.errors.reason');
     }
     return e;
   };
@@ -144,7 +146,7 @@ export const NewReferralPage: React.FC = () => {
     setAttempted([]);
     setCurrentStep(1);
     setDraftBannerVisible(false);
-    showToast('Draft discarded.', 'info');
+    showToast(t('wizard.toastDiscarded'), 'info');
   };
 
   const goToStep = (step: number) => {
@@ -166,7 +168,7 @@ export const NewReferralPage: React.FC = () => {
   if (!isDoctorRole(user.role)) {
     return (
       <div className="p-8 text-center text-slate-700 dark:text-white/65">
-        Access Denied. Only doctors can create new referrals.
+        {t('wizard.accessDenied')}
       </div>
     );
   }
@@ -180,7 +182,7 @@ export const NewReferralPage: React.FC = () => {
       setAttempted(prev => Array.from(new Set([...prev, firstGap])));
       goToStep(firstGap);
       // Name the first thing that is missing, not just the step it is on.
-      showToast(Object.values(missing(firstGap))[0] ?? 'Fill in the required fields.', 'error');
+      showToast(Object.values(missing(firstGap))[0] ?? t('wizard.errors.generic'), 'error');
       focusFirstError();
       return;
     }
@@ -196,15 +198,9 @@ export const NewReferralPage: React.FC = () => {
     setIsSubmitting(true);
 
     if (isAutoRouting && matching.length === 0) {
-      showToast(
-        'No hospital in the network can take this patient. The referral was created and sent to a system administrator for placement — do not wait for a facility to respond.',
-        'error'
-      );
+      showToast(t('wizard.toastNoMatch'), 'error');
     } else if (isAutoRouting && withBeds.length === 0) {
-      showToast(
-        'Every matching hospital is full. The referral was created and sent to a system administrator for placement — do not wait for a facility to respond.',
-        'error'
-      );
+      showToast(t('wizard.toastAllFull'), 'error');
     }
 
     const patientId = `p-${Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('')}`;
@@ -233,7 +229,7 @@ export const NewReferralPage: React.FC = () => {
       console.error('addReferral threw', err);
       submitLockRef.current = false;
       setIsSubmitting(false);
-      showToast('Could not submit the referral. Please try again.', 'error');
+      showToast(t('wizard.toastSubmitFailed'), 'error');
       return;
     }
 
@@ -247,13 +243,15 @@ export const NewReferralPage: React.FC = () => {
     if (!isOnline) {
       const facilityName = !isAutoRouting ? facilities.find(f => f.id === receivingFacilityId)?.name : undefined;
       setQueuedOffline({
-        facilityName: facilityName || `${matching.length} matching ${matching.length === 1 ? 'hospital' : 'hospitals'}`,
-        departments: receivingDepartments.join(' and '),
+        facilityName: facilityName || t('wizard.matchingHospitals', { count: matching.length }),
+        departments: receivingDepartments.length <= 1
+          ? receivingDepartments.join('')
+          : t('wizard.listAnd', { list: receivingDepartments.slice(0, -1).join(t('punct.comma')), last: receivingDepartments[receivingDepartments.length - 1] }),
       });
       return;
     }
 
-    showToast('Referral sent.', 'success');
+    showToast(t('wizard.toastSent'), 'success');
     navigate('/referrals');
   };
 
@@ -288,15 +286,17 @@ export const NewReferralPage: React.FC = () => {
           <Check className="h-7 w-7" aria-hidden="true" />
         </span>
         <h1 className="mt-5 font-heading text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-ink dark:text-paper">
-          Queued for {queuedOffline.facilityName}
+          {t('wizard.queuedTitle', { facility: queuedOffline.facilityName })}
         </h1>
         <p className="mt-2 text-[15px] leading-[1.55] text-slate-700 dark:text-white/70">
-          Offline · it sends automatically when the connection is back, and {queuedOffline.departments || 'the department'} and the manager get it in the same push. You will see it under <strong className="font-semibold text-ink dark:text-paper">Them</strong> on your home screen.
+          {t('wizard.queuedText', { departments: queuedOffline.departments || t('wizard.theDepartment') }).split('{them}').map((part, i) => (
+            <React.Fragment key={i}>{i > 0 && <strong className="font-semibold text-ink dark:text-paper">{t('wizard.them')}</strong>}{part}</React.Fragment>
+          ))}
         </p>
         <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 dark:border-white/12 dark:bg-white/5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">Next for you</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">{t('wizard.nextForYou')}</p>
           <p className="mt-1.5 text-[15px] leading-[1.55] text-ink dark:text-paper">
-            Nothing. If nobody responds in {SLA_MINUTES} minutes it escalates itself — the clock starts once this reaches the server, not now.
+            {t('wizard.nextText', { minutes: SLA_MINUTES })}
           </p>
         </div>
         <button
@@ -304,13 +304,13 @@ export const NewReferralPage: React.FC = () => {
           onClick={() => navigate('/dashboard')}
           className="mt-6 min-h-[54px] rounded-xl bg-ink px-8 text-[16px] font-semibold text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200"
         >
-          Done
+          {t('wizard.done')}
         </button>
       </div>
     );
   }
 
-  const stepTitle = WIZARD_STEPS[currentStep - 1].title;
+  const stepTitle = t(`wizard.step.${WIZARD_STEPS[currentStep - 1].key}`);
 
   return (
     // Full-height column on phones so the footer sits at the bottom even on a short step;
@@ -322,14 +322,14 @@ export const NewReferralPage: React.FC = () => {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 pt-1">
             <h1 className="truncate text-[17px] font-semibold leading-tight">
-              {patientData.name?.trim() || 'New referral'} · step {currentStep} of {LAST_STEP}
+              {t('wizard.headerTitle', { name: patientData.name?.trim() || t('wizard.newReferral'), step: currentStep, total: LAST_STEP })}
             </h1>
             <p className="mt-0.5 text-[13px] text-paper/65">{stepTitle}</p>
           </div>
           <button
             type="button"
             onClick={() => navigate(-1)}
-            aria-label="Close — the draft stays on this phone"
+            aria-label={t('wizard.close')}
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border border-paper/25 hover:bg-paper/10"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -393,7 +393,7 @@ export const NewReferralPage: React.FC = () => {
             {hasContent && (
               <>
                 <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
-                Draft saved on this phone · resume from any step
+                {t('wizard.draftSaved')}
               </>
             )}
           </p>
@@ -403,7 +403,7 @@ export const NewReferralPage: React.FC = () => {
               onClick={goBack}
               className="min-h-[54px] w-24 shrink-0 rounded-xl border border-slate-300 bg-white text-[16px] font-semibold text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10"
             >
-              Back
+              {t('wizard.back')}
             </button>
             {/* Distinct keys keep these as two separate DOM nodes. Without them React
                 reuses one <button> and flips its type from "button" to "submit"
@@ -416,7 +416,7 @@ export const NewReferralPage: React.FC = () => {
                 onClick={goNext}
                 className="min-h-[54px] flex-1 rounded-xl bg-ink text-[16px] font-semibold text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200"
               >
-                Continue
+                {t('wizard.continue')}
               </button>
             ) : (
               <button
@@ -425,7 +425,7 @@ export const NewReferralPage: React.FC = () => {
                 disabled={isSubmitting}
                 className="min-h-[54px] flex-1 rounded-xl bg-success-700 text-[16px] font-semibold text-white hover:bg-success-800 disabled:bg-slate-200 disabled:text-slate-500"
               >
-                {isSubmitting ? 'Submitting…' : 'Submit referral'}
+                {isSubmitting ? t('wizard.submitting') : t('wizard.submit')}
               </button>
             )}
           </div>

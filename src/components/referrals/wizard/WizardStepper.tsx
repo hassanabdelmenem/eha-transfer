@@ -1,6 +1,7 @@
 import React from 'react';
 import { WIZARD_STEPS } from './types';
 import { cn } from '../../../lib/utils';
+import { useI18n } from '../../../i18n';
 
 interface WizardStepperProps {
   currentStep: number;
@@ -14,8 +15,10 @@ interface WizardStepperProps {
  * draft can be resumed "from any step"; its name says which step and whether
  * it is complete, so progress is never carried by colour alone.
  */
-export const WizardStepper: React.FC<WizardStepperProps> = ({ currentStep, completedSteps, onStepClick }) => (
-  <ol className="flex gap-1.5" aria-label="Referral steps">
+export const WizardStepper: React.FC<WizardStepperProps> = ({ currentStep, completedSteps, onStepClick }) => {
+  const { t } = useI18n();
+  return (
+  <ol className="flex gap-1.5" aria-label={t('wizard.stepsLabel')}>
     {WIZARD_STEPS.map(step => {
       const current = step.id === currentStep;
       const done = completedSteps.includes(step.id);
@@ -25,7 +28,7 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({ currentStep, compl
             type="button"
             onClick={() => onStepClick(step.id)}
             aria-current={current ? 'step' : undefined}
-            aria-label={`Step ${step.id}: ${step.title}${done ? ', complete' : ''}`}
+            aria-label={t(done ? 'wizard.stepButtonDone' : 'wizard.stepButton', { step: step.id, title: t(`wizard.step.${step.key}`) })}
             className="group flex h-11 w-full items-center focus-visible:outline-none"
           >
             <span
@@ -40,4 +43,5 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({ currentStep, compl
       );
     })}
   </ol>
-);
+  );
+};
