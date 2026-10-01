@@ -17,7 +17,7 @@ export interface EscalationAlertBannerProps {
 
 export interface ReferralCockpitCardProps {
   referral: Referral;
-  variant?: 'clinician' | 'hod' | 'manager' | 'er_outbound' | 'er_inbound' | 'nurse';
+  variant?: 'clinician' | 'hod' | 'manager' | 'er_outbound' | 'er_inbound' | 'nurse' | 'nurse_incoming';
   actionLabel?: string;
   actionSentence?: string;
   /** Replaces the clinician card's default "bed · departments" line. */

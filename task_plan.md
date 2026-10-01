@@ -36,7 +36,7 @@ Phase 5: Launch readiness (redesign complete; staging live; Arabic foundation me
 - [x] Owner account verified in production (role owner, verified true)
 - [x] Smoke test as non-admin roles on staging (2 Oct): one emergency STEMI referral sent → admitted through resident, HOD, director, consultant, ER, nurse. 10 findings; decisions below
   - PR A (items 1–5): [x] director's accept = accepted (no hidden "ready to receive" step); [x] alert sound bundled + per-device mute; [x] sex required, no default (national ID fills age + sex); [x] Discharge asks first (case page + census); [x] arrival confirmed by the receiving side only (UI + rules)
-  - PR B (items 6–10): [ ] nurse sees patients in transit; [ ] Transfer journey box follows status; [ ] history: one entry per action (escort ≠ consent, single approval entry); [ ] buttons show Saving… and disable until the change lands; [ ] Auto-Route label + test for unnamed form controls in the wizard
+  - PR B (items 6–10): [x] nurse sees patients in transit; [x] Transfer journey box follows status; [x] history: one entry per action (escort ≠ consent, single approval entry); [x] buttons show Saving… and disable until the change lands; [x] unnamed-control sweep over the wizard (Auto-Route was already named: the browser tool showed its value)
   - [ ] Staging Hosting has no live site (only PR preview channels); deploy main to `eha-transfer-staging.web.app` on merge
 - [x] Phase 1.4 backfill (27 Sep): `scripts/backfill-created-at-ms.mjs` wrote 5 referrals + 69 notifications; rules now require the field. Was: 5/10 referrals and 69/127 notifications lack `createdAtMs` (all have a valid
       `createdAt`); decision pending (dry run first, then make the rules require the field)

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import { User, Facility, Referral, ShiftAssignment, ShiftLog } from '../../types';
@@ -556,6 +556,32 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       const admitBtn = screen.getByRole('button', { name: /Admit to CCU bed/i });
       fireEvent.click(admitBtn);
       expect(mockUpdateReferralStatus).toHaveBeenCalledWith('ref-1', 'admitted');
+    });
+
+    // The ward heard nothing until the patient was at the door: show who is on
+    // the way, with the bed they need, so it can be readied.
+    it('lists patients in transit to this hospital, with the bed they need', () => {
+      mockReferrals = [{
+        ...testReferral,
+        id: 'ref-moving',
+        status: 'in_transit',
+        referringFacilityId: 'fac-9',
+        patientData: { ...testReferral.patientData, name: 'Moving Patient' },
+        statusHistory: [...testReferral.statusHistory, { status: 'in_transit', timestamp: '2026-10-02T09:15:00.000Z', userId: 'er-1' }],
+      }];
+      render(<MemoryRouter><NurseCockpit /></MemoryRouter>);
+
+      const incoming = screen.getByRole('region', { name: /Incoming · on the way/i });
+      expect(within(incoming).getByText(/Moving Patient/)).toBeInTheDocument();
+      expect(within(incoming).getByText(/CCU/)).toBeInTheDocument();
+      // Arrival is confirmed by the receiving ER; the ward only prepares.
+      expect(within(incoming).queryByRole('button', { name: /arriv|admit/i })).not.toBeInTheDocument();
+    });
+
+    it('says so when nobody is on the way', () => {
+      mockReferrals = [];
+      render(<MemoryRouter><NurseCockpit /></MemoryRouter>);
+      expect(screen.getByText(/No patients on the way/i)).toBeInTheDocument();
     });
   });
 

@@ -230,6 +230,24 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   }
 
   // -------------------------------------------------------------------------
+  // Nurse: a patient on the way. Read-only: the receiving ER confirms arrival;
+  // the ward uses the time to ready the bed.
+  // -------------------------------------------------------------------------
+  if (variant === 'nurse_incoming') {
+    const leftAt = hhmm(enteredAt(referral, 'in_transit')?.timestamp);
+    return (
+      <div className={shellFor(shell)}>
+        <Rail referral={referral} />
+        <div className={body}>
+          {identity(
+            <>{t('card.fromStart', { facility: getFacilityName(referral.referringFacilityId) })}{leftAt ? ` · ${t('card.leftAt', { time: leftAt })}` : ''} · {t('card.requested', { bed: referral.requiredBedType })}</>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
   // Nurse: an arrived patient waiting for a bed.
   // -------------------------------------------------------------------------
   if (variant === 'nurse') {

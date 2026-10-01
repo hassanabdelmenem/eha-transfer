@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { ArrowLeft, FileText } from 'lucide-react';
@@ -64,6 +64,9 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
   const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const [notes, setNotes] = useState('');
+  // See handleStatusUpdate: actions stay "Saving…" until the status moves.
+  const [savingFrom, setSavingFrom] = useState<ReferralStatus | null>(null);
+
   const [selectedECGUrl, setSelectedECGUrl] = useState<string | null>(null);
   const [deptCommentText, setDeptCommentText] = useState('');
   const [deptAction, setDeptAction] = useState<DeptApprovalStatus>('pending');
@@ -86,6 +89,18 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
   const [deptBusy, setDeptBusy] = useState(false);
 
   const referral = referralsById.get(id || '');
+  useEffect(() => {
+    if (!savingFrom) return;
+    if (referral && referral.status !== savingFrom) {
+      setSavingFrom(null);
+      showToast(t('action.toastUpdated'), 'success');
+      return;
+    }
+    // A write that changes no status (or a listener that never delivers) must not
+    // lock the page: let go after a while either way.
+    const timer = setTimeout(() => setSavingFrom(null), 10_000);
+    return () => clearTimeout(timer);
+  }, [savingFrom, referral?.status]);
 
   // Hooks must run unconditionally on every render -- keep these above any early return
   const printRef = useRef<HTMLDivElement>(null);
@@ -211,12 +226,17 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // The write returns before the listener delivers the new status, which took
+  // seconds on staging: the toast said "updated" while the screen still offered
+  // the same button. Hold the actions as "Saving…" until the status really moves.
   const handleStatusUpdate = async (status: ReferralStatus, overrideNotes?: string) => {
+    if (savingFrom) return;
+    setSavingFrom(referral.status);
     try {
       await updateReferralStatus(referral.id, status, overrideNotes || notes);
       setNotes('');
-      showToast(t('action.toastUpdated'), 'success');
     } catch (e: any) {
+      setSavingFrom(null);
       toastError(e, t('action.toastUpdateFailed'));
     }
   };
@@ -408,6 +428,13 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
       break;
   }
 
+  // Labels before the saving hold, so the console still knows which buttons the header shows.
+  const headerLabels = [footerPrimary?.label, footerSecondary?.label, footerTertiary?.label].filter((l): l is string => !!l).map(l => l.toLowerCase());
+  if (savingFrom) {
+    if (footerPrimary) footerPrimary = { ...footerPrimary, label: t('card.saving'), disabled: true };
+    if (footerSecondary) footerSecondary = { ...footerSecondary, disabled: true };
+  }
+
   const footerCallNumber = roleVariant && roleVariant !== 'clinician' ? referringUser?.phoneNumber : undefined;
   const REMIT_LABEL: Record<NonNullable<typeof roleVariant>, string> = {
     'dept-head': t('action.remit.deptHead'),
@@ -443,7 +470,8 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
             />
 
             <ReferralActionConsole
-              headerActions={isDesktop ? [footerPrimary?.label, footerSecondary?.label, footerTertiary?.label].filter((l): l is string => !!l).map(l => l.toLowerCase()) : []}
+              headerActions={isDesktop ? headerLabels : []}
+              statusBusy={!!savingFrom}
               referral={referral}
               user={user}
               isAdmin={isAdmin}

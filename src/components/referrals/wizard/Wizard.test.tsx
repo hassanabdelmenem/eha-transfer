@@ -238,6 +238,26 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
   });
 
   describe('NewReferralPage Full E2E & Contract Verification', () => {
+    // A screen reader announces a control by its name; a nameless one is read as
+    // "checkbox, on" or "button". Every control on every step must have one.
+    it('names every form control on every step', () => {
+      localStorage.clear();
+      render(<MemoryRouter><NewReferralPage /></MemoryRouter>);
+      const ROLES = ['textbox', 'spinbutton', 'checkbox', 'radio', 'combobox', 'switch', 'button'] as const;
+      const unnamed: string[] = [];
+      let checked = 0;
+      for (const step of [1, 2, 3, 4, 5]) {
+        fireEvent.click(screen.getByRole('button', { name: new RegExp(`^Step ${step}:`) }));
+        for (const role of ROLES) {
+          // Only controls in the accessibility tree; name '' matches a nameless one.
+          checked += screen.queryAllByRole(role).length;
+          screen.queryAllByRole(role, { name: '' }).forEach(el => unnamed.push(`step ${step} ${role}: ${el.outerHTML.slice(0, 90)}`));
+        }
+      }
+      expect(checked).toBeGreaterThan(30); // the sweep really looked at the form
+      expect(unnamed).toEqual([]);
+    });
+
     // Male used to look selected while nothing was chosen; clicking it fired no
     // change, so the referral was saved with no sex at all.
     it('starts with neither sex selected and will not continue until one is chosen', () => {

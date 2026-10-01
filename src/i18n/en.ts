@@ -239,6 +239,8 @@ export const en = {
     oneFewer: 'One fewer {bed} bed occupied',
     bedsFree: '{bed} beds free',
     noCapacity: 'No bed capacity configured for this facility yet.',
+    incoming: 'Incoming · on the way',
+    noneIncoming: 'No patients on the way.',
     arrived: 'Arrived · waiting to be admitted',
     loadingArrivals: 'Loading arrivals…',
     noneArrived: 'No transferred patients waiting for a bed.',
@@ -396,6 +398,11 @@ export const en = {
     noRejectionReason: 'No rejection reason specified.',
   },
   timeline: {
+    updated: 'Updated',
+    event: {
+      escort_assigned: 'Escort assigned',
+      destination_override: 'Destination changed',
+    },
     status: {
       pending: 'Referral sent',
       dept_approved: 'Department approved',
@@ -469,6 +476,11 @@ export const en = {
     origin: 'Origin',
     outbound: 'Outbound Transfer',
     inTransit: 'Currently in transit',
+    waitingDispatch: 'Waiting for dispatch',
+    inTransitLeft: 'In transit · left {time}',
+    arrivedAt: 'Arrived {time}',
+    arrived: 'Arrived',
+    notDispatched: 'Not dispatched',
     pending: 'Pending',
     external: 'External',
     destination: 'Destination ({bed})',
