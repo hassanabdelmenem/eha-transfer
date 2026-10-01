@@ -15,6 +15,8 @@ import { useI18n, typedDir } from '../../../i18n';
 export interface ReferralActionConsoleProps {
   /** Action labels the desktop header already shows (lower-case); the console skips those buttons so each exists once. */
   headerActions?: string[];
+  /** A status change is saving: its buttons hold as "Saving…" until the referral moves. */
+  statusBusy?: boolean;
   referral: Referral;
   user: User;
   isAdmin: boolean;
@@ -63,6 +65,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
   user,
   isAdmin,
   headerActions = [],
+  statusBusy = false,
   isReceiving,
   isReferring,
   isFacilityManager,
@@ -150,6 +153,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
               {!inHeader(t('manager.acceptTransfer')) && (
               <Button
                 onClick={() => onStatusUpdate('accepted')}
+                disabled={statusBusy}
                 className="w-full bg-success-700 hover:bg-success-800 min-h-[48px]"
               >
                 <CheckCircle className="h-4 w-4 me-2" /> {t('console.acceptTransfer')}
@@ -171,6 +175,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           {isReceiving && !['nurse', 'nursing_supervisor'].includes(user.role) && referral.status === 'manager_approved' && (
             <Button
               onClick={() => onStatusUpdate('accepted')}
+              disabled={statusBusy}
               className="w-full bg-success-600 hover:bg-success-700 min-h-[48px]"
             >
               <Check className="h-4 w-4 me-2" /> {t('console.readyReceive')}
@@ -181,6 +186,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           {isReceiving && referral.status === 'in_transit' && !inHeader(t('action.markArrived')) && (
             <Button
               onClick={() => onStatusUpdate('arrived')}
+              disabled={statusBusy}
               className="w-full bg-blue-600 hover:bg-blue-700 min-h-[48px]"
             >
               {t('console.markArrived')}
@@ -190,6 +196,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           {isReceiving && referral.status === 'arrived' && (
             <Button
               onClick={() => onStatusUpdate('admitted')}
+              disabled={statusBusy}
               className="w-full bg-success-600 hover:bg-success-700 min-h-[48px]"
             >
               {t('console.admit')}
@@ -199,6 +206,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           {isReceiving && referral.status === 'admitted' && (
             <Button
               onClick={() => setConfirmDischarge(true)}
+              disabled={statusBusy}
               className="w-full bg-slate-600 hover:bg-slate-700 min-h-[48px]"
             >
               {t('console.discharge')}
@@ -261,7 +269,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
           {(isReferring || isErRoom) && referral.status === 'patient_consented' && !inHeader(t('card.dispatch')) && (
             <Button
               onClick={() => onStatusUpdate('in_transit')}
-              disabled={Boolean(referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor)}
+              disabled={statusBusy || Boolean(referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor)}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 min-h-[48px]"
             >
               <Truck className="h-4 w-4 me-2" /> {t('console.dispatch')}

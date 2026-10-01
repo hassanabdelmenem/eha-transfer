@@ -2,6 +2,24 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-02: Smoke-test findings 6–10 (PR B)
+
+- Nurse home: "Incoming · on the way" lists in_transit referrals to the facility (origin, time left,
+  bed requested), read-only; arrival stays with the receiving ER.
+- Transfer journey card follows the status: Waiting for dispatch → In transit · left HH:MM →
+  Arrived HH:MM (kept after admission); "Not dispatched" when rejected or cancelled. It read
+  "Pending" before dispatch and again after arrival.
+- History: entries that leave the status unchanged carry `event` ('escort_assigned',
+  'destination_override') and are titled by it; older untagged ones read "Updated" instead of
+  repeating the status ("Consent recorded" twice). A department head's approval comment and the
+  dept_approved status entry by the same user within 2 min show as one entry.
+- Case page: a status action holds its buttons as "Saving…" (disabled) until the listener delivers
+  the new status; the toast fires then. Released at once on error, after 10 s otherwise.
+- Item 10 was a false alarm: the Auto-Route checkbox is named (the browser tool read its value,
+  "on"). Kept the requested guard: a test that fails on any nameless control on any wizard step
+  (verified it fails when the label is removed).
+- Verified: tsc; vitest 1029/1029; Playwright 11/11.
+
 ## 2026-10-02: Staging smoke test; fixes for the five blocking findings (PR A)
 
 - Smoke test on staging (PR #58 preview, the bare staging URL has no site) with the seeded accounts:

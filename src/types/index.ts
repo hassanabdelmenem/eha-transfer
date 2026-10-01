@@ -178,6 +178,8 @@ export interface Referral {
     timestamp: string;
     userId: string;
     notes?: string;
+    /** What an entry that leaves `status` unchanged records; the timeline titles it by this. */
+    event?: 'escort_assigned' | 'destination_override';
   }[];
   // Facilities the patient has declined transfer to; excluded from future auto-routing candidates.
   patientDeclinedFacilityIds?: string[];
