@@ -897,7 +897,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           status: r.status,
           timestamp: now,
           userId: user.id,
-          notes: `Destination manually overridden to ${newFacilityName}`
+          notes: `Destination manually overridden to ${newFacilityName}`,
+          event: 'destination_override',
         }]
       });
     });
@@ -1108,7 +1109,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           status: r.status,
           timestamp: now,
           userId: user.id,
-          notes: `Accompanying doctor assigned: ${accompanyingDoctor.name} (${accompanyingDoctor.phoneNumber})`
+          notes: `Accompanying doctor assigned: ${accompanyingDoctor.name} (${accompanyingDoctor.phoneNumber})`,
+          event: 'escort_assigned',
         }]
       });
     });

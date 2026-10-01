@@ -60,12 +60,14 @@ describe('ReferralTimeline', () => {
     render(<ReferralTimeline referral={referral} usersById={usersById} />);
 
     expect(screen.getByText('Referral sent')).toBeInTheDocument();
-    expect(screen.getByText('Department approved')).toBeInTheDocument();
     expect(screen.getByText('Dispatched')).toBeInTheDocument();
+    // One approval, one entry: the department's decision and the status change
+    // it caused were shown as two ("Department approved" + "Approved by ...").
     expect(screen.getByText('Approved by Cardiology')).toBeInTheDocument();
+    expect(screen.queryByText('Department approved')).not.toBeInTheDocument();
 
     expect(screen.getByText(/Dr\. Referring/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Dr\. HoD/i).length).toBe(2);
+    expect(screen.getAllByText(/Dr\. HoD/i).length).toBe(1);
     expect(screen.getByText(/ER Dispatch/i)).toBeInTheDocument();
 
     expect(screen.getByText('Initial submission')).toBeInTheDocument();
@@ -86,5 +88,33 @@ describe('ReferralTimeline', () => {
 
     expect(screen.getByText('Declined')).toBeInTheDocument();
     expect(screen.getByText('No bed capacity')).toBeInTheDocument();
+  });
+
+  it('titles the escort assignment as such, not as a second "Consent recorded"', () => {
+    const referral = createMockReferral({
+      status: 'patient_consented',
+      deptComments: [],
+      statusHistory: [
+        { status: 'patient_consented', timestamp: '2026-08-29T10:00:00.000Z', userId: 'u', notes: 'Patient consented to transfer.' },
+        { status: 'patient_consented', timestamp: '2026-08-29T10:05:00.000Z', userId: 'u', notes: 'Accompanying doctor assigned: Dr. X (0100)', event: 'escort_assigned' },
+      ],
+    });
+    render(<ReferralTimeline referral={referral} />);
+    expect(screen.getAllByText('Consent recorded')).toHaveLength(1);
+    expect(screen.getByText('Escort assigned')).toBeInTheDocument();
+  });
+
+  it('an older entry that did not change the status reads as an update, not a repeat', () => {
+    const referral = createMockReferral({
+      status: 'patient_consented',
+      deptComments: [],
+      statusHistory: [
+        { status: 'patient_consented', timestamp: '2026-08-29T10:00:00.000Z', userId: 'u' },
+        { status: 'patient_consented', timestamp: '2026-08-29T10:05:00.000Z', userId: 'u', notes: 'Accompanying doctor assigned: Dr. X (0100)' },
+      ],
+    });
+    render(<ReferralTimeline referral={referral} />);
+    expect(screen.getAllByText('Consent recorded')).toHaveLength(1);
+    expect(screen.getByText('Updated')).toBeInTheDocument();
   });
 });

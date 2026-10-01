@@ -238,6 +238,8 @@ export const ar: Messages = {
     oneFewer: 'سرير {bed} أقل مشغول',
     bedsFree: 'أسرّة {bed} الشاغرة',
     noCapacity: 'لم تُضبط سعة الأسرّة لهذه المنشأة بعد.',
+    incoming: 'قادمون · في الطريق',
+    noneIncoming: 'لا يوجد مرضى في الطريق.',
     arrived: 'وصلوا · بانتظار الإدخال',
     loadingArrivals: 'جارٍ تحميل الواصلين…',
     noneArrived: 'لا مرضى محوَّلون بانتظار سرير.',
@@ -390,6 +392,11 @@ export const ar: Messages = {
     noRejectionReason: 'لم يُذكر سبب للرفض.',
   },
   timeline: {
+    updated: 'تحديث',
+    event: {
+      escort_assigned: 'تعيين الطبيب المرافق',
+      destination_override: 'تغيير الوجهة',
+    },
     status: {
       pending: 'أُرسلت الإحالة',
       dept_approved: 'وافق القسم',
@@ -463,6 +470,11 @@ export const ar: Messages = {
     origin: 'المنشأ',
     outbound: 'التحويل الصادر',
     inTransit: 'في الطريق الآن',
+    waitingDispatch: 'بانتظار الإرسال',
+    inTransitLeft: 'في الطريق · غادر {time}',
+    arrivedAt: 'وصل {time}',
+    arrived: 'وصل',
+    notDispatched: 'لم يُرسل',
     pending: 'معلّق',
     external: 'خارجية',
     destination: 'الوجهة ({bed})',

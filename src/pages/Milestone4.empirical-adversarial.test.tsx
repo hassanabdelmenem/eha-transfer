@@ -520,6 +520,43 @@ describe('Milestone 4 Empirical Adversarial Suite: Referral Detail, Timeline & A
       expect(mockUpdateReferralStatus).toHaveBeenCalledWith('ref-m4-stress-1', 'accepted', '');
     });
 
+    // The toast said "updated" seconds before the screen changed, so the button
+    // stayed live and invited a second click. It now waits for the change.
+    it('holds the action as "Saving…" until the referral actually changes', async () => {
+      mockUser = mockUsers[3]; // u-rec-manager
+      mockReferrals = [createMockReferral({ status: 'dept_approved' })];
+      mockUpdateReferralStatus.mockResolvedValue(undefined);
+      const view = renderDetail();
+
+      fireEvent.click(screen.getAllByRole('button', { name: /accept the transfer/i })[0]);
+      await waitFor(() => expect(mockUpdateReferralStatus).toHaveBeenCalledTimes(1));
+      // The write returned, but the listener has not delivered the new status yet.
+      const saving = screen.getAllByRole('button', { name: /Saving…/ });
+      expect(saving.length).toBeGreaterThanOrEqual(1);
+      saving.forEach(b => expect(b).toBeDisabled());
+      fireEvent.click(saving[0]);
+      expect(mockUpdateReferralStatus).toHaveBeenCalledTimes(1);
+
+      // The snapshot lands: the status moved, the hold is released.
+      mockReferrals = [createMockReferral({ status: 'accepted' })];
+      view.rerender(
+        <MemoryRouter initialEntries={['/referrals/ref-m4-stress-1']}>
+          <Routes><Route path="/referrals/:id" element={<ReferralDetailPage />} /></Routes>
+        </MemoryRouter>
+      );
+      await waitFor(() => expect(screen.queryByRole('button', { name: /Saving…/ })).not.toBeInTheDocument());
+    });
+
+    it('releases the hold at once when the save fails', async () => {
+      mockUser = mockUsers[3];
+      mockReferrals = [createMockReferral({ status: 'dept_approved' })];
+      mockUpdateReferralStatus.mockRejectedValueOnce(new Error('denied'));
+      renderDetail();
+      fireEvent.click(screen.getAllByRole('button', { name: /accept the transfer/i })[0]);
+      await waitFor(() => expect(screen.queryByRole('button', { name: /Saving…/ })).not.toBeInTheDocument());
+      expect(screen.getAllByRole('button', { name: /accept the transfer/i })[0]).not.toBeDisabled();
+    });
+
     it('Third-party clinician from unrelated Facility F3 (u-third-party) has zero actionable controls', () => {
       mockUser = mockUsers[6]; // u-third-party (facilityId: 'f3')
       mockReferrals = [createMockReferral({ status: 'pending' })];

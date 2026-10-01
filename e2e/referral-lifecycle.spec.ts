@@ -144,7 +144,8 @@ test.describe('Complete Referral Lifecycle Journey', () => {
     await dispatchBtn.click();
 
     // Verify transit status
-    await expect(page.getByText(/Currently in transit/i)).toBeVisible({ timeout: 15000 });
+    // The journey card follows the status: "In transit · left HH:MM".
+    await expect(page.getByText(/^In transit · left \d\d:\d\d$/)).toBeVisible({ timeout: 15000 });
 
     // 4d. Confirm arrival
     const markArrivedBtn = page.getByRole('button', { name: /Mark as Arrived/i });
