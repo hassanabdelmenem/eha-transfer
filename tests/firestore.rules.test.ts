@@ -542,6 +542,38 @@ describe('notification relatedness (security review follow-up)', () => {
   });
 });
 
+// The end-of-shift handover (AppLayout) writes these; colleagues read the summary in
+// their feed. The summary can be rendered in the reader's language from key + vars.
+describe('shift log shape', () => {
+  const log = (id: string) => ({
+    id, userId: F1_DOCTOR, userName: 'F1 Doc', facilityId: 'f1', department: 'Cardiology',
+    timestamp: '2026-10-01T12:00:00.000Z', pendingTransfersCount: 2, admittedPatientsCount: 1,
+    summary: 'Day shift ending. 2 active transfers in progress for Cardiology department.',
+  });
+
+  it('allows a handover with a catalogue key and values', async () => {
+    await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'shiftLogs', 's1'), {
+      ...log('s1'), key: 'summary', vars: { shift: '@endOfShift.shiftWord.Day', count: 2, dept: 'Cardiology' },
+    }));
+  });
+
+  it('still allows a handover without them', async () => {
+    await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'shiftLogs', 's2'), log('s2')));
+  });
+
+  it('blocks a bad key, values that are not a small map, and fields outside the shape', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'shiftLogs', 's3'), { ...log('s3'), key: 'not a key!' }));
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'shiftLogs', 's4'), { ...log('s4'), key: 'summary', vars: 'x' }));
+    const many = Object.fromEntries(Array.from({ length: 13 }, (_, i) => [`v${i}`, 'x']));
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'shiftLogs', 's5'), { ...log('s5'), key: 'summary', vars: many }));
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'shiftLogs', 's6'), { ...log('s6'), payload: 'x' }));
+  });
+
+  it('blocks a summary too long to be a handover', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'shiftLogs', 's7'), { ...log('s7'), summary: 'x'.repeat(2001) }));
+  });
+});
+
 describe('user self-signup', () => {
   it('blocks self-signup with an elevated role', async () => {
     await assertFails(setDoc(doc(testEnv.authenticatedContext('brand-new').firestore(), 'users', 'brand-new'), {

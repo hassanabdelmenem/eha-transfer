@@ -58,3 +58,18 @@ export function renderNotification(
   if (!n.key || !isKnownKey(n.key)) return { title: n.title, message: n.message };
   return notificationText(lang, n.key, n.vars ?? {});
 }
+
+// ---- End-of-shift summaries (shift logs) -------------------------------------
+// The same idea for the handover summary other people read in their feed: the
+// log stores key 'summary' + values beside its English text.
+
+/** Values for endOfShift.summary; the shift word and a missing department are catalogue references. */
+export function shiftSummaryVars(shift: 'Day' | 'Night', count: number, department: string | undefined): NotificationVars {
+  return { shift: `@endOfShift.shiftWord.${shift}`, count, dept: department || '@endOfShift.general' };
+}
+
+/** A shift log's summary in the reader's language, or its stored English (older logs, unknown keys). */
+export function shiftLogSummary(lang: Language, log: { summary: string; key?: string; vars?: NotificationVars }): string {
+  if (log.key !== 'summary') return log.summary;
+  return translate(lang, 'endOfShift.summary', resolve(lang, log.vars ?? {}));
+}
