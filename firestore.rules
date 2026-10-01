@@ -547,9 +547,19 @@ service cloud.firestore {
     // facility-scoped reads, author-pinned creates, and no edits or deletes.
     match /shiftLogs/{logId} {
       allow read: if isPrivileged() || (isVerifiedCaller() && resource.data.facilityId == callerFacility());
+      // Colleagues read the summary in their handover feed, so it has a shape: only
+      // the known fields, a bounded summary, and (for the reader's language, see
+      // src/i18n/notifications.ts) a plain key with a small map of values.
       allow create: if isVerifiedCaller()
                     && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.facilityId == callerFacility();
+                    && request.resource.data.facilityId == callerFacility()
+                    && request.resource.data.keys().hasOnly(['id', 'userId', 'userName', 'facilityId', 'department', 'timestamp', 'pendingTransfersCount', 'admittedPatientsCount', 'summary', 'key', 'vars'])
+                    && request.resource.data.summary is string
+                    && request.resource.data.summary.size() <= 2000
+                    && (!('key' in request.resource.data)
+                        || (request.resource.data.key is string && request.resource.data.key.matches('^[A-Za-z]{1,64}$')))
+                    && (!('vars' in request.resource.data)
+                        || (request.resource.data.vars is map && request.resource.data.vars.size() <= 12));
       allow update, delete: if false;
     }
   }

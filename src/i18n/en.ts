@@ -1290,7 +1290,6 @@ export const en = {
     closeButton: 'Close',
     toastSent: { Day: 'Handover sent to the night shift. You are still signed in.', Night: 'Handover sent to the day shift. You are still signed in.' },
     toastFailed: 'Could not send the handover. Check the connection and try again.',
-    unknown: 'Unknown',
   },
   auth: {
     appName: 'Ismailia Health Connect',

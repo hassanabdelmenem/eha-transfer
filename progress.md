@@ -2,6 +2,19 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-01: Shift-log summaries in the reader's language
+
+- #56 merged (2d371df): every screen translated. Owner: keep Arabic off in production until the
+  clinician review is done.
+- Shift logs now store key 'summary' + values (shift word, transfer count, department) beside the
+  English summary, like notifications. The handover feed renders them in the reader's language;
+  older logs keep their English. Helpers: shiftSummaryVars / shiftLogSummary (src/i18n/notifications.ts).
+- Rules: shift-log create had no shape checks at all. Now: only the known fields (hasOnly), summary
+  a string of <= 2000, key letters only (<= 64), vars a map of <= 12.
+- Verified: tsc, vitest 997/997 (renderer, writer stores key + vars, feed in Arabic), rules 110/110
+  (4 new: keyed and plain logs allowed; bad key/vars, stray fields, over-long summary rejected),
+  Playwright 11/11.
+
 ## 2026-10-01: Arabic, app shell and sign-in; escalation trigger live
 
 - #55 merged (notifications in the reader's language); rules deployed to staging and verified

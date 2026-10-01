@@ -7,7 +7,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { AppSidebar } from './AppSidebar';
 import { ShellContext } from './ShellContext';
 import { WORKSPACE_QUERY } from './Workspace';
-import { LANGUAGES, useI18n, translate, typedDir } from '../../i18n';
+import { LANGUAGES, useI18n, typedDir } from '../../i18n';
+import { shiftSummaryVars, shiftLogSummary } from '../../i18n/notifications';
 import { ROLE_CONFIGS } from './RoleBadge';
 import { Button } from '../ui/Button';
 import { toastError, showToast } from '../../lib/toast';
@@ -154,17 +155,14 @@ export const AppLayout: React.FC = () => {
     const hour = new Date().getHours();
     if (hour >= 20 || hour < 8) shiftType = 'Night';
 
-    // The shift log keeps English (others read it in their handover feed); the
-    // dialog shows the same sentence in the reader's language.
-    const summaryIn = (l: 'en' | 'ar') => translate(l, 'endOfShift.summary', {
-      shift: translate(l, `endOfShift.shiftWord.${shiftType}`),
-      count: pendingTransfersCount,
-      dept: user.department || translate(l, 'endOfShift.general'),
-    });
+    // The shift log stores key + values (colleagues' feeds render them in their
+    // language) beside the English, which older app versions show.
+    const summaryVars = shiftSummaryVars(shiftType, pendingTransfersCount, user.department);
     const handover = {
       shiftType,
-      summary: summaryIn('en'),
-      displaySummary: summaryIn(lang),
+      summaryVars,
+      summary: shiftLogSummary('en', { summary: '', key: 'summary', vars: summaryVars }),
+      displaySummary: shiftLogSummary(lang, { summary: '', key: 'summary', vars: summaryVars }),
       doneThisShift: 0,
       carryOver: [] as string[],
       watch: [] as string[],
@@ -197,10 +195,12 @@ export const AppLayout: React.FC = () => {
     try {
       await addShiftLog({
         userId: user.id,
-        userName: user.name || translate('en', 'endOfShift.unknown'),
+        userName: user.name || 'Unknown',
         department: user.department,
         facilityId: user.facilityId,
         summary: handover.summary,
+        key: 'summary',
+        vars: handover.summaryVars,
         pendingTransfersCount: handover.carryOver.length,
         admittedPatientsCount: handover.doneThisShift
       });
