@@ -15,8 +15,8 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
 1. Arabic: every screen is translated. Next is a native-speaking clinician's review of
    docs/i18n/arabic-review.csv (`npm run i18n:sheet`), then enabling Arabic in production
    (VITE_ENABLE_ARABIC in the production build).
-2. Follow-up: the end-of-shift summary is stored on the shift log in English (others read it in
-   their handover feed); give shift logs a key + values like notifications.
+2. Arabic stays off in production until the clinician review is done (owner, 1 Oct); the owner
+   says when to set VITE_ENABLE_ARABIC.
 
 Done 1 Oct: the 5-minute escalation trigger is live (cron-job.org → workflow_dispatch; token
 "eha-transfer sweep trigger" expires 30 Sep 2027, rotate before then); staging is seeded.

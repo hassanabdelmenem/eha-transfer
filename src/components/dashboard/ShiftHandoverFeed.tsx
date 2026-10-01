@@ -3,6 +3,7 @@ import { formatDayMonthClock } from '../../i18n/format';
 import { ShiftHandoverFeedProps } from './types';
 import { MicroLabel } from './RoleHome';
 import { useI18n, type Language } from '../../i18n';
+import { shiftLogSummary } from '../../i18n/notifications';
 
 const when = (iso: string | undefined, lang: Language) => {
   const t = Date.parse(iso || '');
@@ -42,7 +43,8 @@ export const ShiftHandoverFeed: React.FC<ShiftHandoverFeedProps> = ({
                 </p>
                 <span className="shrink-0 font-mono text-[12px] font-medium text-slate-500 dark:text-white/60">{when(log.timestamp, lang)}</span>
               </div>
-              <p className="mt-1 line-clamp-2 text-[14px] leading-[1.5] text-slate-700 dark:text-white/70">{log.summary}</p>
+              {/* In the reader's language when the log carries key + vars; older logs keep their English. */}
+              <p dir="auto" className="mt-1 line-clamp-2 text-[14px] leading-[1.5] text-slate-700 dark:text-white/70">{shiftLogSummary(lang, log)}</p>
               <p className="mt-1.5 flex gap-3 text-[12.5px] font-semibold">
                 <span className="text-warning-800 dark:text-warning-300">{t('handover.pending', { count: log.pendingTransfersCount ?? 0 })}</span>
                 <span className="text-success-700 dark:text-success-300">{t('handover.admitted', { count: log.admittedPatientsCount ?? 0 })}</span>
