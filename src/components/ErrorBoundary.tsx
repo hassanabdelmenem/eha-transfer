@@ -28,12 +28,6 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
     this.setState({ error, errorInfo });
-    
-    // Optionally fetch to local dev server to log
-    fetch('http://localhost:3001/__error', {
-      method: 'POST',
-      body: JSON.stringify({ message: error.message, stack: error.stack, info: errorInfo.componentStack }),
-    }).catch(() => {});
   }
 
   public render() {

@@ -470,6 +470,66 @@ describe('AuthContext idle timeout', () => {
     expect(screen.getByTestId('user')).not.toHaveTextContent('No User');
     vi.useRealTimers();
   });
+
+  // The Firebase session survives a browser restart (browserLocalPersistence),
+  // so the in-memory timer alone let the next person at a shared workstation
+  // open the browser as the previous clinician.
+  it('signs out a session restored after the browser sat closed past the limit', async () => {
+    localStorage.setItem('auth_user', JSON.stringify({ id: 'u1', name: 'u1', role: 'resident' }));
+    localStorage.setItem('eha_last_activity', String(Date.now() - 16 * 60 * 1000));
+    renderAuth();
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(screen.getByTestId('user')).toHaveTextContent('No User');
+    vi.useRealTimers();
+  });
+
+  it('keeps a restored session whose last activity is recent', async () => {
+    localStorage.setItem('auth_user', JSON.stringify({ id: 'u1', name: 'u1', role: 'resident' }));
+    localStorage.setItem('eha_last_activity', String(Date.now() - 5 * 60 * 1000));
+    renderAuth();
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(screen.getByTestId('user')).toHaveTextContent('u1');
+    vi.useRealTimers();
+  });
+
+  it('a stale timestamp from an earlier session does not sign out a fresh login', async () => {
+    localStorage.setItem('eha_last_activity', String(Date.now() - 24 * 60 * 60 * 1000));
+    renderAuth();
+    act(() => { fireEvent.click(screen.getByText('Login U1')); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(60 * 1000); });
+    expect(screen.getByTestId('user')).toHaveTextContent('u1');
+    vi.useRealTimers();
+  });
+
+  it('activity in another tab keeps this tab signed in', async () => {
+    renderAuth();
+    act(() => { fireEvent.click(screen.getByText('Login U1')); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(14 * 60 * 1000); });
+    // The other tab records its activity in shared storage; this tab sees no events.
+    localStorage.setItem('eha_last_activity', String(Date.now()));
+    await act(async () => { await vi.advanceTimersByTimeAsync(2 * 60 * 1000); });
+    expect(screen.getByTestId('user')).toHaveTextContent('u1');
+    vi.useRealTimers();
+  });
+
+  it('signs out on wake when the machine slept past the limit (timers paused)', async () => {
+    renderAuth();
+    act(() => { fireEvent.click(screen.getByText('Login U1')); });
+    // Wall clock jumps 20 minutes while no timer ran.
+    vi.setSystemTime(Date.now() + 20 * 60 * 1000);
+    await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
+    expect(screen.getByTestId('user')).toHaveTextContent('No User');
+    vi.useRealTimers();
+  });
+
+  it('forgets the activity timestamp on sign-out', async () => {
+    renderAuth();
+    act(() => { fireEvent.click(screen.getByText('Login U1')); });
+    expect(localStorage.getItem('eha_last_activity')).not.toBeNull();
+    await act(async () => { fireEvent.click(screen.getByText('Logout')); });
+    expect(localStorage.getItem('eha_last_activity')).toBeNull();
+    vi.useRealTimers();
+  });
 });
 
 describe('useAuth outside a provider', () => {
