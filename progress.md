@@ -9,8 +9,11 @@ Newest first. One entry per working session: what changed, what was verified, wh
   it serves the app. Independent of the production deploy. Manual "deploy rules to staging" after a
   rules change is no longer needed.
 - The staging service account (github-preview@eha-transfer-staging) had Hosting only; it needs
-  roles/firebaserules.admin and roles/datastore.indexAdmin on the staging project. Auto mode blocked
-  Claude from granting IAM roles: the owner grants them (command in the PR).
+  roles/firebaserules.admin, roles/datastore.indexAdmin and roles/serviceusage.serviceUsageViewer on the
+  staging project (the last because firebase-tools checks the Firestore API is enabled; the first run
+  failed 403 without it). Auto mode blocks Claude from granting IAM roles: the owner granted all three.
+- First successful run 2 Oct (workflow_dispatch after the third role): rules + indexes + live site;
+  https://eha-transfer-staging.web.app serves the app; live staging rules byte-identical to main.
 - Correction: PR previews never had Arabic on (no VITE_ENABLE_ARABIC in the preview build); the live
   staging site now does.
 
