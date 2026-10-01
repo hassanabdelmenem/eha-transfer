@@ -36,8 +36,9 @@ local commit  →  push branch  →  CI (every branch)  →  PR  →  preview ch
                                                        ↓
                                                 merge to main
                                                        ↓
-                                       CI passes → Deploy to Firebase
-                                       (rules + indexes, then hosting)
+                                       CI passes → Deploy to Firebase  (production)
+                                                 → Deploy to staging (eha-transfer-staging.web.app)
+                                       each: rules + indexes, then hosting
 ```
 
 | Workflow | File | Trigger | Does |
@@ -45,6 +46,7 @@ local commit  →  push branch  →  CI (every branch)  →  PR  →  preview ch
 | CI | `.github/workflows/ci.yml` | every branch push, every PR | typecheck, unit tests, **security-rules tests**, Playwright E2E, coverage |
 | PR Preview | `.github/workflows/firebase-preview.yml` | PR opened/updated | builds and publishes a 7-day preview channel, comments the URL on the PR |
 | Deploy | `.github/workflows/firebase-deploy.yml` | CI succeeding on `main` | deploys Firestore rules + indexes, then Hosting |
+| Deploy to staging | `.github/workflows/firebase-deploy-staging.yml` | CI succeeding on `main` | builds for staging with Arabic on, deploys staging rules + indexes, then the live staging site; checks it serves the app |
 
 Deploy is chained to CI via `workflow_run`, so a red test suite cannot reach
 production. It checks out `workflow_run.head_sha` — the exact commit CI
@@ -128,9 +130,14 @@ build` uses production, so the deploy workflow is unchanged. To run the dev
 server against production (read-only checks only), use
 `VITE_FIREBASE_TARGET=production npm run dev`.
 
-Staging mirrors production's `firestore.rules` and indexes, but nothing deploys
-them automatically: after a rules change, run
-`npx firebase deploy --only firestore --project eha-transfer-staging`.
+Every merge to `main` that passes CI also deploys staging: the live site
+https://eha-transfer-staging.web.app (built with `VITE_FIREBASE_TARGET=staging`
+and `VITE_ENABLE_ARABIC=true`, so the clinician reviewer can read the Arabic in
+place) and staging's `firestore.rules` and indexes. It runs independently of the
+production deploy, so a staging failure never holds production back. The service
+account needs `roles/firebasehosting.admin`, `roles/firebaserules.admin` and
+`roles/datastore.indexAdmin` on `eha-transfer-staging`, and nothing in
+production. To redeploy by hand: Actions → "Deploy to staging" → Run workflow.
 
 ### Before pushing
 
