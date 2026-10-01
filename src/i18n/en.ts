@@ -12,6 +12,10 @@ export const en = {
     hint: 'Numbers and vital signs always use 0–9.',
     saveFailed: 'Could not save your language.',
   },
+  alertSound: {
+    label: 'Alert sound',
+    hint: 'Plays when an emergency referral is waiting. Saved on this device only.',
+  },
   rail: {
     mainNavigation: 'Main navigation',
     brand: 'Ismailia Health',
@@ -318,6 +322,7 @@ export const en = {
     erEscort: { label: 'Record the escort before dispatch', text: 'The ambulance can\'t leave until the escorting doctor is named.' },
     erArrival: { label: 'Confirm arrival when the patient lands', text: 'Mark the patient as arrived as soon as they reach the ER.' },
     erReady: { label: 'Ready to dispatch', text: 'Consent is recorded. The ambulance can leave.' },
+    erEnRoute: { label: 'On the way', text: 'The receiving hospital confirms arrival when the patient reaches them.' },
     erNotYet: { label: 'Not yours yet', text: 'The ER room acts once the receiving hospital accepts and the patient consents.' },
     nurseBed: { label: 'Prepare a bed', text: 'This patient needs a {bed} bed. Reserve one before they arrive.' },
     requirements: { label: 'Waiting on you — {asker} needs requirements', text: 'Answer what the department asked for, then it can continue.' },
@@ -495,6 +500,11 @@ export const en = {
     placeholder: 'Clinical reasoning or requirements... (Click mic to dictate)',
     submit: 'Submit Review',
   },
+  dischargeConfirm: {
+    title: 'Discharge {patient}?',
+    body: 'Their bed is freed for the next patient at once. This cannot be undone here.',
+    confirm: 'Discharge',
+  },
   console: {
     title: 'Facility Actions',
     notes: 'Action Notes (Optional)',
@@ -604,6 +614,7 @@ export const en = {
     errors: {
       name: 'Enter the patient’s full name.',
       age: 'Enter the age in years.',
+      sex: 'Choose the patient’s sex.',
       hospitalId: 'Enter the hospital ID.',
       complaint: 'Enter the chief complaint.',
       presentation: 'Describe the presentation.',
@@ -761,6 +772,7 @@ export const en = {
     rowDiagnosis: 'Diagnosis',
     rowReason: 'Reason',
     notEntered: 'Not entered',
+    sexMissing: 'sex not chosen',
     noneRecorded: 'None recorded',
     noHospitalId: 'no hospital ID',
     attachmentsCount: { one: '{count} attachment', other: '{count} attachments' },

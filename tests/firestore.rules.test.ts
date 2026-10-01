@@ -743,6 +743,24 @@ describe('transition actor binding', () => {
     await forceStatus('arrived', { receivingFacilityId: 'f3' });
     await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advance('admitted')));
   });
+
+  // Only the hospital the patient reached can say they arrived; the sending side
+  // was offered (and allowed) the button while the ambulance was still on the road.
+  it('blocks the referring facility from marking the patient arrived', async () => {
+    await forceStatus('in_transit', { receivingFacilityId: 'f3' });
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advance('arrived')));
+  });
+
+  it('allows the receiving facility to mark the patient arrived', async () => {
+    await forceStatus('in_transit', { receivingFacilityId: 'f3' });
+    await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), advance('arrived')));
+  });
+
+  // The director's signature now accepts outright, without a manager_approved stop.
+  it('allows the receiving facility to accept straight from department approval', async () => {
+    await forceStatus('dept_approved', { receivingFacilityId: 'f3' });
+    await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), advance('accepted')));
+  });
 });
 
 describe('escalation claims', () => {

@@ -97,21 +97,20 @@ test.describe('Complete Referral Lifecycle Journey', () => {
     await expect(page.getByText(/direct approval/i).first()).toBeVisible({ timeout: 15000 });
 
     // -------------------------------------------------------------------------
-    // STEP 3: HOSPITAL MANAGER APPROVAL (Manager approves referral -> manager_approved -> accepted)
+    // STEP 3: HOSPITAL MANAGER APPROVAL (Manager accepts -> accepted, in one step)
     // -------------------------------------------------------------------------
     await loginAs(page, E2E_USERS.manager);
     await page.goto(`/referrals/${referralId}`);
     await expect(page.locator('body')).toContainText('Sayed Abdel-Rahman', { timeout: 15000 });
 
-    const acceptTransferBtn = page.getByRole('button', { name: /Accept the Transfer/i });
+    const acceptTransferBtn = page.getByRole('button', { name: /Accept the Transfer/i }).first();
     await expect(acceptTransferBtn).toBeVisible({ timeout: 15000 });
     await acceptTransferBtn.click();
+    await expect(acceptTransferBtn).not.toBeVisible({ timeout: 15000 });
 
-    // Advance to accepted state
-    const readyToReceiveBtn = page.getByRole('button', { name: /Ready for Receive/i });
-    await expect(readyToReceiveBtn).toBeVisible({ timeout: 15000 });
-    await readyToReceiveBtn.click();
-    await expect(readyToReceiveBtn).not.toBeVisible({ timeout: 15000 });
+    // The signature is the acceptance: no second "ready to receive" step, which
+    // no queue showed and which left accepted emergencies waiting.
+    await expect(page.getByRole('button', { name: /Ready for Receive/i })).toHaveCount(0);
 
     // -------------------------------------------------------------------------
     // STEP 4: CONSENT & TRANSIT DISPATCH (Clinician records consent, ER assigns escort and dispatches)

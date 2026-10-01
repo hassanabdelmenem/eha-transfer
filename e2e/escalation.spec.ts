@@ -66,6 +66,7 @@ async function createReferral(page: Page, o: { name: string; hospitalId: string;
   await expect(page.getByRole('heading', { level: 1, name: /step 1 of 5/i })).toBeVisible({ timeout: 15000 });
   await form.locator('#patientName').fill(o.name);
   await form.locator('#patientAge').fill('60');
+  await form.getByRole('radio', { name: 'Male', exact: true }).check(); // sex is required, no default
   await form.locator('#hospitalId').fill(o.hospitalId);
   await page.getByRole('button', { name: /^Step 3:/ }).click();
   await form.locator('#complaint').fill('Chest pain');

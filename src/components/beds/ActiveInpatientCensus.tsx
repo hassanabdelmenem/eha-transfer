@@ -6,6 +6,7 @@ import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { UserMinus, Users, Calendar, Building, Hash } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 export interface ActiveInpatientCensusProps {
   admissions: DirectAdmission[];
@@ -23,6 +24,8 @@ export const ActiveInpatientCensus: React.FC<ActiveInpatientCensusProps> = ({
   className = '',
 }) => {
   const { t, lang } = useI18n();
+  // Discharge frees the bed for the whole network at once, so it asks first.
+  const [confirming, setConfirming] = React.useState<DirectAdmission | null>(null);
   return (
     <div className={`space-y-4 ${className}`}>
       <div className="flex items-center justify-between">
@@ -92,7 +95,7 @@ export const ActiveInpatientCensus: React.FC<ActiveInpatientCensusProps> = ({
                       size="sm"
                       disabled={isDischarging}
                       className="border-critical-200 dark:border-critical-900 text-critical-600 dark:text-critical-400 hover:bg-critical-50 dark:hover:bg-critical-950/30 px-4 font-semibold"
-                      onClick={() => onDischarge(admission.id)}
+                      onClick={() => setConfirming(admission)}
                     >
                       <UserMinus className="w-4 h-4 me-2" />
                       {t('beds.discharge')}
@@ -104,6 +107,14 @@ export const ActiveInpatientCensus: React.FC<ActiveInpatientCensusProps> = ({
           })}
         </div>
       )}
+      <ConfirmDialog
+        open={!!confirming}
+        title={t('dischargeConfirm.title', { patient: confirming?.patientName ?? '' })}
+        body={t('dischargeConfirm.body')}
+        confirmLabel={t('dischargeConfirm.confirm')}
+        onCancel={() => setConfirming(null)}
+        onConfirm={() => { const id = confirming!.id; setConfirming(null); onDischarge(id); }}
+      />
     </div>
   );
 };

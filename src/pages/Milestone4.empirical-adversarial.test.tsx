@@ -517,7 +517,7 @@ describe('Milestone 4 Empirical Adversarial Suite: Referral Detail, Timeline & A
       expect(screen.getByRole('button', { name: /reject transfer/i })).toBeInTheDocument();
 
       fireEvent.click(acceptBtns[0]);
-      expect(mockUpdateReferralStatus).toHaveBeenCalledWith('ref-m4-stress-1', 'manager_approved', '');
+      expect(mockUpdateReferralStatus).toHaveBeenCalledWith('ref-m4-stress-1', 'accepted', '');
     });
 
     it('Third-party clinician from unrelated Facility F3 (u-third-party) has zero actionable controls', () => {

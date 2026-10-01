@@ -238,6 +238,27 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
   });
 
   describe('NewReferralPage Full E2E & Contract Verification', () => {
+    // Male used to look selected while nothing was chosen; clicking it fired no
+    // change, so the referral was saved with no sex at all.
+    it('starts with neither sex selected and will not continue until one is chosen', () => {
+      localStorage.clear();
+      render(<MemoryRouter><NewReferralPage /></MemoryRouter>);
+      expect(screen.getByRole('radio', { name: 'Male' })).not.toBeChecked();
+      expect(screen.getByRole('radio', { name: 'Female' })).not.toBeChecked();
+
+      fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Sayed Abdel-Rahman' } });
+      fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '58' } });
+      fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-98231' } });
+      fireEvent.click(screen.getByRole('button', { name: /^Continue$/ }));
+      expect(screen.getByText('Choose the patient’s sex.')).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Male' })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('radio', { name: 'Male' }));
+      expect(screen.getByRole('radio', { name: 'Male' })).toBeChecked();
+      fireEvent.click(screen.getByRole('button', { name: /^Continue$/ }));
+      expect(document.querySelector('#vitalHr')).toBeInTheDocument();
+    });
+
     it('renders all required DOM IDs and contracts', () => {
       render(
         <MemoryRouter>
@@ -309,9 +330,6 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-98231' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Sayed Abdel-Rahman' } });
       fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '58' } });
-      // Male is already the visual default; click Female then Male so a real
-      // onChange fires and patientData.gender is explicitly set.
-      fireEvent.click(screen.getByRole('radio', { name: 'Female' }));
       fireEvent.click(screen.getByRole('radio', { name: 'Male' }));
 
       // Step 3: Clinical & Vitals
@@ -395,6 +413,7 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-1' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Test Patient' } });
       fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '40' } });
+      fireEvent.click(document.querySelectorAll('input[name="gender"]')[0]); // sex is required, no default
       fireEvent.click(screen.getByRole('button', { name: /Continue/i })); // -> Step 2
 
       // Nothing is pre-filled.
@@ -471,6 +490,7 @@ describe('Intake wizard in Arabic', () => {
     expect(leaks(container)).toEqual([]);
     fireEvent.change(container.querySelector('#patientName')!, { target: { value: 'Omar Farid' } });
     fireEvent.change(container.querySelector('#patientAge')!, { target: { value: '58' } });
+    fireEvent.click(container.querySelectorAll('input[name="gender"]')[0]); // sex is required, no default
     fireEvent.change(container.querySelector('#hospitalId')!, { target: { value: 'ISM-1' } });
     cont();
     // Step 2: an abnormal vital shows the Arabic word and finding.

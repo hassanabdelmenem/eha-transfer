@@ -58,7 +58,9 @@ export const ManagerCockpit: React.FC = () => {
       user?.facilityId
         ? sortByWorkflow(
             facilityReferrals.filter(
-              r => r.status === 'dept_approved' && r.receivingFacilityId === user.facilityId
+              // manager_approved: cases signed under the old two-click flow, which
+              // then waited on a "ready to receive" step no queue showed.
+              r => (r.status === 'dept_approved' || r.status === 'manager_approved') && r.receivingFacilityId === user.facilityId
             )
           )
         : [],
@@ -72,7 +74,10 @@ export const ManagerCockpit: React.FC = () => {
   const handleManagerAccept = async (id: string) => {
     setBusyAcceptId(id);
     try {
-      await updateReferralStatus(id, 'manager_approved', 'Accepted by hospital manager.');
+      // The signature is the hospital's acceptance. It used to stop at
+      // 'manager_approved' and wait for a second receiving-side click that no
+      // queue showed, so an accepted emergency sat still.
+      await updateReferralStatus(id, 'accepted', 'Accepted by hospital manager.');
       showToast(t('manager.toastAccepted'), 'success');
     } catch (e: any) {
       toastError(e, t('manager.toastAcceptFailed'));

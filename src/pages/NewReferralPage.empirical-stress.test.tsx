@@ -95,6 +95,7 @@ globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock-file-url');
 function fillClinicalMinimum() {
   fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
   fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '50' } });
+  fireEvent.click(document.querySelectorAll('input[name="gender"]')[0]); // sex is required, no default
   fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
   fireEvent.change(document.querySelector('#complaint')!, { target: { value: 'Chest pain' } });
   fireEvent.change(document.querySelector('#presentation')!, { target: { value: 'Diaphoretic' } });
@@ -457,6 +458,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-OFFLINE-01' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Offline Patient' } });
       fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '45' } });
+      fireEvent.click(document.querySelectorAll('input[name="gender"]')[0]); // sex is required, no default
 
       // Step 3: Clinical & Vitals
       fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
@@ -542,9 +544,6 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-98231' } });
       fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Sayed Abdel-Rahman' } });
       fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '58' } });
-      // Male is already the visual default; click Female then Male so a real
-      // onChange fires and patientData.gender is explicitly set.
-      fireEvent.click(screen.getByRole('radio', { name: 'Female' }));
       fireEvent.click(screen.getByRole('radio', { name: 'Male' }));
 
       // Vitals — Step 3: Clinical & Vitals
