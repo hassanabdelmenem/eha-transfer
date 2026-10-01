@@ -2,6 +2,25 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-01: Arabic, app shell and sign-in; escalation trigger live
+
+- #55 merged (notifications in the reader's language); rules deployed to staging and verified
+  byte-identical to main; production deployed by the pipeline.
+- 5-minute escalation trigger live: cron-job.org job (owner's account) POSTs workflow_dispatch every
+  5 minutes with a fine-grained token (eha-transfer only, Actions read/write, expires 30 Sep 2027),
+  failure email after 3 in a row. The first ~3.5 h returned 401: the Authorization value lacked
+  "Bearer ". Verified real (non-dry) sweeps at 06:00 and 06:05 UTC.
+- Translated the app shell (phone header, drawer and rail identity incl. the role line, profile
+  dialog, end-of-shift handover, offline banner, staging ribbon, crash screen), sign-in (now with a
+  language switch before sign-in), onboarding and pending verification. ~120 new strings (review
+  sheet: 1271 rows). Every screen is now translated.
+- Sign-in decides which field an error belongs to by error type, not by searching English text.
+- Pending verification now names the requested role and the hospital by name (it showed the raw
+  facility id and only replaced the first underscore of the role).
+- The end-of-shift summary stays English on the shift log (follow-up: key + values).
+- Verified: tsc, vitest 993/993 (new: frame + profile + handover in Arabic, stored summary stays
+  English, sign-in/onboarding/pending in Arabic), Playwright 11/11, Arabic captures.
+
 ## 2026-10-01: Notifications in the reader's language; CI install fix; staging seeded
 
 - #53 merged. CI's intermittent 20+ minute "Install Playwright Browsers": it installed Firefox and
