@@ -12,14 +12,14 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
 
 ## Next Step
 
-1. Escalation sweep cadence: GitHub runs the `*/5` timer only every few hours (30 Sep: 02:02, 08:23,
-   15:02 UTC). Owner sets up an external 5-minute trigger for the workflow (docs/DEPLOYMENT.md,
-   "Escalation sweep"); until then escalation when nobody is signed in can be hours late.
-2. Seed staging: owner runs `scripts/seed-staging.mjs --apply` with a password they choose (Claude's
-   auto mode may not write staging accounts or store the password).
-3. Arabic translation PRs, one per surface (see "Arabic and right-to-left" below). Role homes (#49)
-   referral detail (#50), intake wizard (#51) and inbox/list/directory/archive/reports/department
-   done, then settings/admin/beds; next: the app shell, then sign-in and onboarding.
+1. Arabic: every screen is translated. Next is a native-speaking clinician's review of
+   docs/i18n/arabic-review.csv (`npm run i18n:sheet`), then enabling Arabic in production
+   (VITE_ENABLE_ARABIC in the production build).
+2. Follow-up: the end-of-shift summary is stored on the shift log in English (others read it in
+   their handover feed); give shift logs a key + values like notifications.
+
+Done 1 Oct: the 5-minute escalation trigger is live (cron-job.org → workflow_dispatch; token
+"eha-transfer sweep trigger" expires 30 Sep 2027, rotate before then); staging is seeded.
 
 Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg).
 
@@ -92,8 +92,9 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
       page (delegation, internal transfer); role and facility-type labels (30 Sep)
 - [x] Facility settings, admin console, beds (capacity grid, steppers, arrivals, census), direct
       admission page and dialog (30 Sep)
-- [ ] Translate: app shell (profile, hotline, end-of-shift handover, header and sidebar role line);
-      sign-in, onboarding, pending verification
+- [x] App shell (header, drawer and rail identity, profile, end-of-shift handover, offline banner,
+      staging ribbon, crash screen), sign-in (with a language switch), onboarding, pending
+      verification (1 Oct)
 - [x] Notifications carry a catalogue key + values (src/i18n/notifications.ts); the inbox renders
       them in the reader's language, older ones keep their stored English. Rules bound key/vars and
       now allow only the known notification fields (owner decision d6, 1 Oct)
@@ -106,7 +107,7 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
 - [x] 2a Escalation when nobody is signed in: `.github/workflows/escalation-sweep.yml` every 5 min (keyless
       WIF, `escalation-sweep` SA with datastore.user) runs `scripts/escalation-sweep.ts`; rules shared with the
       in-app sweep in `src/lib/escalationSweep.ts`. Stale `overnight-sweep.ts` removed (30 Sep)
-- [ ] 2a' GitHub throttles the timer to every few hours; external 5-minute trigger (owner sets it up)
+- [x] 2a' External 5-minute trigger: cron-job.org job calls workflow_dispatch (live 1 Oct 06:00 UTC)
 - [ ] 2c `statusHistory` as a subcollection (not started)
 - [ ] 2d `useIdleTimeout` exists; wiring and duration unverified
 - [ ] 2e small text / 28px buttons (largely superseded by the redesign; re-audit after phase 6)

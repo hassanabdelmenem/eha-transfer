@@ -1,4 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { translate } from '../i18n';
+
+// Outside every provider (it must survive their crashes), so it reads the page's language.
+const pageLang = () => (typeof document !== 'undefined' && document.documentElement.lang === 'ar' ? 'ar' : 'en');
 
 interface Props {
   children?: ReactNode;
@@ -36,9 +40,9 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div style={{ padding: '20px', backgroundColor: '#fee2e2', color: '#991b1b', fontFamily: 'monospace' }}>
-          <h2>Something went wrong.</h2>
+          <h2>{translate(pageLang(), 'shell.crashTitle')}</h2>
           <details style={{ whiteSpace: 'pre-wrap' }}>
-            <summary>Click for error details</summary>
+            <summary>{translate(pageLang(), 'shell.crashDetails')}</summary>
             {this.state.error && this.state.error.toString()}
             <br />
             {this.state.errorInfo && this.state.errorInfo.componentStack}

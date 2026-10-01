@@ -7,10 +7,12 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { User, Phone, Building2 } from 'lucide-react';
 import { toastError } from '../lib/toast';
+import { useI18n, typedDir } from '../i18n';
 
 export const Onboarding: React.FC = () => {
   const { user, updateUserProfile } = useAuth();
   const { facilities, facilitiesById } = useData();
+  const { t } = useI18n();
   
   const [name, setName] = useState(user?.name || '');
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
@@ -22,13 +24,13 @@ export const Onboarding: React.FC = () => {
 
   const validate = () => {
     const errors: Record<string, string> = {};
-    if (!name.trim()) errors.name = 'Full Name is required.';
-    if (!phoneNumber.trim()) errors.phoneNumber = 'Phone Number is required.';
+    if (!name.trim()) errors.name = t('onboarding.errors.name');
+    if (!phoneNumber.trim()) errors.phoneNumber = t('onboarding.errors.phone');
     if (role !== 'system_admin' && role !== 'owner' && !facilityId) {
-      errors.facilityId = 'Please select a hospital.';
+      errors.facilityId = t('onboarding.errors.hospital');
     }
     if ((role === 'consultant' || role === 'specialist' || role === 'resident' || role === 'head_of_department' || role === 'nurse' || role === 'nursing_supervisor') && selectedFacility && !department) {
-      errors.department = 'Please select a department.';
+      errors.department = t('onboarding.errors.department');
     }
     return errors;
   };
@@ -52,7 +54,7 @@ export const Onboarding: React.FC = () => {
       if (department) profile.department = department;
       await updateUserProfile(profile);
     } catch (err: any) {
-      toastError(err, "Could not save your profile.");
+      toastError(err, t('shell.toastProfileFailed'));
       setSubmitting(false);
     }
   };
@@ -64,22 +66,22 @@ export const Onboarding: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-light text-slate-900 dark:text-slate-100 tracking-tight">
-          Complete Your Profile
+          {t('onboarding.title')}
         </h2>
         <p className="mt-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-          Required for Verification
+          {t('onboarding.subtitle')}
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <Card className="border-t-4 border-t-blue-900">
           <CardHeader className="bg-white dark:bg-slate-900">
-            <CardTitle>Welcome! Please provide your details</CardTitle>
+            <CardTitle>{t('onboarding.welcome')}</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="onboardName" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Full Name</label>
+                <label htmlFor="onboardName" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('onboarding.name')}</label>
                 <div className="relative">
                   <User className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
@@ -87,7 +89,8 @@ export const Onboarding: React.FC = () => {
                     type="text"
                     required
                     className="ps-10"
-                    placeholder="Dr. Ahmed Ali"
+                    dir={typedDir(name)}
+                    placeholder={t('onboarding.namePlaceholder')}
                     value={name}
                     error={!!formErrors.name}
                     onChange={e => {
@@ -100,12 +103,13 @@ export const Onboarding: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="onboardPhone" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Phone Number</label>
+                <label htmlFor="onboardPhone" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('onboarding.phone')}</label>
                 <div className="relative">
                   <Phone className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
                     id="onboardPhone"
                     type="tel"
+                    dir="ltr"
                     required
                     className="ps-10"
                     placeholder="+20 100 000 0000"
@@ -122,7 +126,7 @@ export const Onboarding: React.FC = () => {
 
               <div>
                 <label htmlFor="onboardRole" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
-                  Requested Role <span className="font-normal normal-case tracking-normal text-slate-500 dark:text-slate-400">— confirmed by your facility during verification</span>
+                  {t('onboarding.role')} <span className="font-normal normal-case tracking-normal text-slate-500 dark:text-slate-400">{t('onboarding.roleHint')}</span>
                 </label>
                 <select
                   id="onboardRole"
@@ -131,23 +135,16 @@ export const Onboarding: React.FC = () => {
                   className="w-full min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
                   disabled={user?.role === 'owner'}
                 >
-                  {user?.role === 'owner' && <option value="owner">Owner</option>}
-                  <option value="hospital_manager">Hospital Manager</option>
-                  <option value="medical_director">Medical Director</option>
-                  <option value="deputy_manager">Deputy Manager</option>
-                  <option value="head_of_department">Head of Department</option>
-                  <option value="consultant">Consultant</option>
-                  <option value="specialist">Specialist</option>
-                  <option value="resident">Resident</option>
-                  <option value="nursing_supervisor">Nursing Supervisor</option>
-                  <option value="nurse">Nurse</option>
-                  <option value="er_official">ER Room Official</option>
+                  {user?.role === 'owner' && <option value="owner">{t('settings.roleOption.owner')}</option>}
+                  {(['hospital_manager', 'medical_director', 'deputy_manager', 'head_of_department', 'consultant', 'specialist', 'resident', 'nursing_supervisor', 'nurse', 'er_official'] as const).map(r => (
+                    <option key={r} value={r}>{t(`settings.roleOption.${r}`)}</option>
+                  ))}
                 </select>
               </div>
 
               {role !== 'system_admin' && role !== 'owner' && (
                 <div>
-                  <label htmlFor="onboardFacility" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Hospital</label>
+                  <label htmlFor="onboardFacility" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('onboarding.hospital')}</label>
                   <div className="relative">
                     <Building2 className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                     <select
@@ -161,7 +158,7 @@ export const Onboarding: React.FC = () => {
                       }}
                       className={`w-full min-h-[48px] ps-10 rounded-xl border ${formErrors.facilityId ? 'border-critical-500' : 'border-slate-200 dark:border-slate-800'} bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900`}
                     >
-                      <option value="">Select a Hospital</option>
+                      <option value="">{t('onboarding.selectHospital')}</option>
                       {facilities.map(f => (
                         <option key={f.id} value={f.id}>{f.name}</option>
                       ))}
@@ -173,7 +170,7 @@ export const Onboarding: React.FC = () => {
 
               {(role === 'consultant' || role === 'specialist' || role === 'resident' || role === 'head_of_department' || role === 'nurse' || role === 'nursing_supervisor') && selectedFacility && (
                 <div>
-                  <label htmlFor="onboardDepartment" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Department</label>
+                  <label htmlFor="onboardDepartment" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('onboarding.department')}</label>
                   <select
                     id="onboardDepartment"
                     required
@@ -184,7 +181,7 @@ export const Onboarding: React.FC = () => {
                     }}
                     className={`w-full min-h-[48px] rounded-xl border ${formErrors.department ? 'border-critical-500' : 'border-slate-200 dark:border-slate-800'} bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900`}
                   >
-                    <option value="">Select a Department</option>
+                    <option value="">{t('onboarding.selectDepartment')}</option>
                     {selectedFacility.departments.map(d => (
                       <option key={d} value={d}>{d}</option>
                     ))}
@@ -194,7 +191,7 @@ export const Onboarding: React.FC = () => {
               )}
 
               <Button type="submit" size="lg" disabled={submitting} className="w-full text-lg font-bold disabled:opacity-60">
-                {submitting ? 'Saving...' : 'Complete Onboarding'}
+                {submitting ? t('onboarding.saving') : t('onboarding.submit')}
               </Button>
             </form>
           </CardContent>

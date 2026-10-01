@@ -46,12 +46,9 @@ export interface AppSidebarProps {
   onToggleTheme: () => void;
 }
 
-const FACILITY_TYPE_LABELS: Record<string, string> = {
-  tertiary_care: 'Tertiary Center',
-  district_hospital: 'District Hospital',
-  primary_care: 'Primary Care',
-  external_contracted: 'Contracted Facility',
-};
+// Facility-type words beside the facility name: shell.facilityType.* in the catalogue.
+const FACILITY_TYPES = ['tertiary_care', 'district_hospital', 'primary_care', 'external_contracted'] as const;
+const isFacilityType = (v: string): v is (typeof FACILITY_TYPES)[number] => (FACILITY_TYPES as readonly string[]).includes(v);
 
 // The ink rail from the handoff's unified desktop (3d): persistent at lg and up,
 // and the same component inside the phone's menu drawer. Flat rows, no section
@@ -114,7 +111,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     );
   };
 
-  const roleLabel = ROLE_CONFIGS[user.role]?.label ?? user.role;
+  const roleLabel = user.role in ROLE_CONFIGS ? t(`role.${user.role}`) : user.role;
 
   return (
     <aside className="flex h-full w-[228px] flex-col bg-ink text-paper select-none max-lg:w-full" aria-label={t('rail.mainNavigation')}>
@@ -172,15 +169,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       </nav>
 
       <div className="shrink-0 space-y-1 border-t border-white/12 px-3 pt-3 pb-4">
-        <button type="button" onClick={onOpenProfile} className="w-full rounded-[10px] px-3 py-2 text-start hover:bg-white/[0.07]" title="My Profile & On-Call Schedule">
+        <button type="button" onClick={onOpenProfile} className="w-full rounded-[10px] px-3 py-2 text-start hover:bg-white/[0.07]" title={t('shell.profileHint')}>
           <span className="block truncate text-[14px] font-semibold">{user.name}</span>
           <span className="block truncate text-[12.5px] text-white/60">
-            {roleLabel}{user.department ? ` · ${user.department}` : ''}
+            {roleLabel}{user.department ? <> · <bdi>{user.department}</bdi></> : null}
           </span>
           <span className="block text-[12.5px] leading-[1.35] text-white/60">
-            <span>{facility?.name ?? t('rail.network')}</span>
+            <bdi>{facility?.name ?? t('rail.network')}</bdi>
             <span aria-hidden="true"> · </span>
-            <span className="whitespace-nowrap">{FACILITY_TYPE_LABELS[facility?.type ?? ''] ?? 'Regional Facility'}</span>
+            <span className="whitespace-nowrap">{facility?.type && isFacilityType(facility.type) ? t(`shell.facilityType.${facility.type}`) : t('shell.regionalFacility')}</span>
           </span>
         </button>
         <div className="flex items-center gap-1">

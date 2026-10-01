@@ -7,7 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { AppSidebar } from './AppSidebar';
 import { ShellContext } from './ShellContext';
 import { WORKSPACE_QUERY } from './Workspace';
-import { LANGUAGES, useI18n } from '../../i18n';
+import { LANGUAGES, useI18n, translate, typedDir } from '../../i18n';
 import { ROLE_CONFIGS } from './RoleBadge';
 import { Button } from '../ui/Button';
 import { toastError, showToast } from '../../lib/toast';
@@ -25,8 +25,9 @@ import { cn } from '../../lib/utils';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 
-/** Day runs 08:00–20:00; the handover goes to whichever shift comes next. */
-const nextShift = (shiftType: string) => (shiftType === 'Day' ? 'night' : 'day');
+/** Day runs 08:00–20:00; the handover goes to whichever shift comes next (endOfShift.send.*). */
+type ShiftType = 'Day' | 'Night';
+const SHIFT_HOURS: Record<ShiftType, string> = { Day: '08:00–20:00', Night: '20:00–08:00' };
 
 export const AppLayout: React.FC = () => {
   const { t, lang, setLanguage, arabicAvailable } = useI18n();
@@ -79,11 +80,11 @@ export const AppLayout: React.FC = () => {
     try {
       const existing = localStorage.getItem('authSinceDate');
       if (existing) return existing;
-      const today = formatDayMonth(new Date());
+      const today = formatDayMonth(new Date(), lang);
       localStorage.setItem('authSinceDate', today);
       return today;
     } catch {
-      return formatDayMonth(new Date());
+      return formatDayMonth(new Date(), lang);
     }
   });
 
@@ -93,7 +94,7 @@ export const AppLayout: React.FC = () => {
       await updateUserProfile({ phoneNumber: profilePhone, monthlySchedule: profileSchedule });
       setShowProfile(false);
     } catch (err: any) {
-      toastError(err, 'Could not save your profile.');
+      toastError(err, t('shell.toastProfileFailed'));
     } finally {
       setSavingProfile(false);
     }
@@ -149,13 +150,21 @@ export const AppLayout: React.FC = () => {
     );
     const pendingTransfersCount = pendingTransfers.length;
 
-    let shiftType = 'Day';
+    let shiftType: ShiftType = 'Day';
     const hour = new Date().getHours();
     if (hour >= 20 || hour < 8) shiftType = 'Night';
 
+    // The shift log keeps English (others read it in their handover feed); the
+    // dialog shows the same sentence in the reader's language.
+    const summaryIn = (l: 'en' | 'ar') => translate(l, 'endOfShift.summary', {
+      shift: translate(l, `endOfShift.shiftWord.${shiftType}`),
+      count: pendingTransfersCount,
+      dept: user.department || translate(l, 'endOfShift.general'),
+    });
     const handover = {
       shiftType,
-      summary: `${shiftType} shift ending. ${pendingTransfersCount} active transfers in progress for ${user.department || 'General'} department.`,
+      summary: summaryIn('en'),
+      displaySummary: summaryIn(lang),
       doneThisShift: 0,
       carryOver: [] as string[],
       watch: [] as string[],
@@ -188,7 +197,7 @@ export const AppLayout: React.FC = () => {
     try {
       await addShiftLog({
         userId: user.id,
-        userName: user.name || 'Unknown',
+        userName: user.name || translate('en', 'endOfShift.unknown'),
         department: user.department,
         facilityId: user.facilityId,
         summary: handover.summary,
@@ -196,9 +205,9 @@ export const AppLayout: React.FC = () => {
         admittedPatientsCount: handover.doneThisShift
       });
       setShowEndOfShift(false);
-      showToast(`Handover sent to the ${nextShift(handover.shiftType)} shift. You are still signed in.`, 'success');
+      showToast(t(`endOfShift.toastSent.${handover.shiftType}`), 'success');
     } catch (err: any) {
-      toastError(err, 'Could not send the handover. Check the connection and try again.');
+      toastError(err, t('endOfShift.toastFailed'));
     } finally {
       setSendingHandover(false);
     }
@@ -226,7 +235,7 @@ export const AppLayout: React.FC = () => {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[200] focus:bg-paper focus:text-ink focus:px-4 focus:py-3 focus:rounded-[10px] focus:shadow-[0_8px_24px_rgba(20,20,19,0.14)] font-semibold text-sm"
       >
-        Skip to main content
+        {t('shell.skip')}
       </a>
 
       {/* Desktop: the ink rail is always there. */}
@@ -286,13 +295,13 @@ export const AppLayout: React.FC = () => {
             <div className="min-w-0">
               <p className="truncate text-[15px] font-semibold leading-[1.3]">{user.name}</p>
               <p className="mt-0.5 truncate text-[12.5px] leading-[1.3] text-white/60">
-                {ROLE_CONFIGS[user.role]?.label ?? user.role}{facility ? ` · ${facility.name}` : ''}
+                {user.role in ROLE_CONFIGS ? t(`role.${user.role}`) : user.role}{facility ? <> · <bdi>{facility.name}</bdi></> : null}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <Link
                 to="/notifications"
-                aria-label={unreadNotifs > 0 ? `Inbox, ${unreadNotifs} unread` : 'Inbox'}
+                aria-label={unreadNotifs > 0 ? t('shell.inboxUnread', { count: unreadNotifs }) : t('shell.inbox')}
                 className="relative flex h-12 w-12 items-center justify-center rounded-[10px] border border-white/25 hover:bg-white/10"
               >
                 <Bell className="h-5 w-5" aria-hidden="true" />
@@ -304,7 +313,7 @@ export const AppLayout: React.FC = () => {
                 ref={mobileMenuTriggerRef}
                 type="button"
                 onClick={() => setMobileMenuOpen(true)}
-                aria-label="Open menu"
+                aria-label={t('shell.openMenu')}
                 aria-expanded={mobileMenuOpen}
                 className="flex h-12 w-12 items-center justify-center rounded-[10px] border border-white/25 hover:bg-white/10"
               >
@@ -316,8 +325,8 @@ export const AppLayout: React.FC = () => {
             <p role="status" className="mt-3.5 flex items-center gap-2 rounded-lg border border-warning-700 bg-warning-800/30 px-[11px] py-[9px] text-[12.5px] font-semibold text-warning-300">
               <WifiOff className="h-4 w-4 shrink-0" aria-hidden="true" />
               {!isOnline
-                ? `Offline · ${pendingSyncCount} action${pendingSyncCount === 1 ? '' : 's'} queued, will send automatically`
-                : `Back online · sending ${pendingSyncCount} queued action${pendingSyncCount === 1 ? '' : 's'}`}
+                ? t('shell.offline', { count: pendingSyncCount })
+                : t('shell.backOnline', { count: pendingSyncCount })}
             </p>
           )}
         </header>}
@@ -352,13 +361,13 @@ export const AppLayout: React.FC = () => {
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div>
                 <h2 id="profile-title" className="text-lg font-bold text-slate-900 dark:text-white">
-                  My Profile & Settings
+                  {t('shell.profileTitle')}
                 </h2>
               </div>
               <button
                 onClick={() => setShowProfile(false)}
                 className="text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
-                aria-label="Close profile settings"
+                aria-label={t('shell.closeProfile')}
               >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -387,7 +396,7 @@ export const AppLayout: React.FC = () => {
 
               <div>
                 <label htmlFor="profilePhone" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  On-Call Phone Number
+                  {t('shell.phone')}
                 </label>
                 <input
                   id="profilePhone"
@@ -395,30 +404,31 @@ export const AppLayout: React.FC = () => {
                   type="tel"
                   value={profilePhone}
                   onChange={(e) => setProfilePhone(e.target.value)}
-                  placeholder="e.g. 01012345678"
+                  placeholder={t('shell.phonePlaceholder')}
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none text-slate-900 dark:text-white transition-all"
                 />
               </div>
 
               <div>
                 <label htmlFor="profileSchedule" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Monthly Schedule & Availability
+                  {t('shell.schedule')}
                 </label>
                 <textarea
                   id="profileSchedule"
                   value={profileSchedule}
                   onChange={(e) => setProfileSchedule(e.target.value)}
-                  placeholder="E.g. Mondays & Wednesdays 8am-8pm, On-call weekends..."
+                  dir={typedDir(profileSchedule)}
+                  placeholder={t('shell.schedulePlaceholder')}
                   rows={4}
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none text-slate-900 dark:text-white transition-all"
                 />
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                  This schedule is published to the regional Network Directory to assist triage coordination.
+                  {t('shell.scheduleHint')}
                 </p>
               </div>
 
               <Button onClick={handleSaveProfile} disabled={savingProfile} className="w-full">
-                {savingProfile ? 'Saving…' : 'Save Changes'}
+                {savingProfile ? t('shell.saving') : t('shell.save')}
               </Button>
             </div>
           </div>
@@ -442,20 +452,20 @@ export const AppLayout: React.FC = () => {
             {/* 2f: the handover is written for you; sending it keeps you signed in. */}
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-paper/12 px-[18px] pt-[max(14px,env(safe-area-inset-top))] pb-4">
               <div className="min-w-0">
-                <h2 id="eos-title" className="text-[17px] font-semibold leading-tight">End of shift</h2>
+                <h2 id="eos-title" className="text-[17px] font-semibold leading-tight">{t('endOfShift.title')}</h2>
                 {handover && (
                   <p className="mt-0.5 text-[13px] font-semibold tabular-nums text-paper/80">
-                    {handover.shiftType} shift · {handover.shiftType === 'Day' ? '08:00–20:00' : '20:00–08:00'}
+                    {t(`endOfShift.shift.${handover.shiftType}`, { hours: SHIFT_HOURS[handover.shiftType] })}
                   </p>
                 )}
                 <p className="mt-0.5 truncate text-[13px] text-paper/65">
-                  {user.name}{user.department ? ` · ${user.department}` : ''}{facility ? ` · ${facility.name}` : ''}
+                  <bdi>{user.name}</bdi>{user.department ? <> · <bdi>{user.department}</bdi></> : null}{facility ? <> · <bdi>{facility.name}</bdi></> : null}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowEndOfShift(false)}
-                aria-label="Close the handover"
+                aria-label={t('endOfShift.close')}
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border border-paper/25 hover:bg-paper/10"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
@@ -465,40 +475,40 @@ export const AppLayout: React.FC = () => {
             <div className="mx-auto w-full max-w-xl flex-1 space-y-3 px-[18px] py-5">
               <p className={cn(card, 'flex items-start gap-2.5 text-[14px] leading-[1.45] text-paper/85')}>
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-400" aria-hidden="true" />
-                Signed in since {signedInSince} on this device. Sending the handover keeps you signed in; sign out from the menu when you leave.
+                {t('endOfShift.signedIn', { since: signedInSince })}
               </p>
 
               {handover ? (
                 <>
                   <div className={card}>
-                    <p className={cn(kind, 'text-paper/60')}>Handover, written for you</p>
-                    <p className="mt-1.5 text-[15px] leading-[1.6]">{handover.summary}</p>
+                    <p className={cn(kind, 'text-paper/60')}>{t('endOfShift.writtenForYou')}</p>
+                    <p className="mt-1.5 text-[15px] leading-[1.6]">{handover.displaySummary}</p>
                   </div>
 
                   {handover.carryOver.length > 0 && (
                     <div className={card}>
-                      <p className={cn(kind, 'flex items-center gap-1.5 text-warning-300')}><Clock className="h-3.5 w-3.5" aria-hidden="true" />Carry over · waiting on review</p>
-                      <p className="mt-1.5 text-[15px] leading-[1.5]">{handover.carryOver.join(', ')} — still waiting on a department or manager decision.</p>
+                      <p className={cn(kind, 'flex items-center gap-1.5 text-warning-300')}><Clock className="h-3.5 w-3.5" aria-hidden="true" />{t('endOfShift.carryOver')}</p>
+                      <p className="mt-1.5 text-[15px] leading-[1.5]">{t('endOfShift.carryOverText', { names: handover.carryOver.join(t('punct.comma')) })}</p>
                     </div>
                   )}
 
                   {handover.watch.length > 0 && (
                     <div className={card}>
-                      <p className={cn(kind, 'text-paper/60')}>On the move</p>
-                      <p className="mt-1.5 text-[15px] leading-[1.5]">{handover.watch.join(', ')} — accepted, in transit or arrived; the next shift sees them through.</p>
+                      <p className={cn(kind, 'text-paper/60')}>{t('endOfShift.onTheMove')}</p>
+                      <p className="mt-1.5 text-[15px] leading-[1.5]">{t('endOfShift.onTheMoveText', { names: handover.watch.join(t('punct.comma')) })}</p>
                     </div>
                   )}
 
                   <div className={card}>
-                    <p className={cn(kind, 'text-success-300')}>On record</p>
+                    <p className={cn(kind, 'text-success-300')}>{t('endOfShift.onRecord')}</p>
                     <p className="mt-1 text-[15px]">
-                      {handover.doneThisShift} patient admission{handover.doneThisShift === 1 ? '' : 's'}/discharge{handover.doneThisShift === 1 ? '' : 's'} recorded.
+                      {t('endOfShift.recorded', { count: handover.doneThisShift })}
                     </p>
                   </div>
                 </>
               ) : (
                 <p className={cn(card, 'py-6 text-center text-[14.5px] text-paper/70')}>
-                  No active clinical handover summary required for your role.
+                  {t('endOfShift.none')}
                 </p>
               )}
             </div>
@@ -511,7 +521,7 @@ export const AppLayout: React.FC = () => {
                 className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-xl bg-paper text-[16px] font-semibold text-ink transition-colors hover:bg-slate-200 disabled:opacity-60"
               >
                 {handover && <Send className="h-4 w-4" aria-hidden="true" />}
-                <span>{sendingHandover ? 'Sending…' : handover ? `Send handover to the ${nextShift(handover.shiftType)} shift` : 'Close'}</span>
+                <span>{sendingHandover ? t('endOfShift.sending') : handover ? t(`endOfShift.send.${handover.shiftType}`) : t('endOfShift.closeButton')}</span>
               </button>
             </div>
           </div>
