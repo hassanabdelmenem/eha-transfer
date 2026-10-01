@@ -18,6 +18,8 @@ interface TimelineEvent {
   title: string;
   note?: string;
   noteKind?: 'dept' | 'action';
+  /** The action note of a status change folded into this entry. */
+  actionNote?: string;
   /** A department's decision, spoken in the by-line ("Direct approval"). */
   decision?: string;
   dot: string;
@@ -59,20 +61,45 @@ export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({ referral, us
   const userOf = (id: string) => (usersById ? usersById.get(id) : users?.find(u => u.id === id));
   const events: TimelineEvent[] = [];
 
-  (Array.isArray(referral.statusHistory) ? referral.statusHistory : []).forEach((sh, idx) => {
+  const history = Array.isArray(referral.statusHistory) ? referral.statusHistory : [];
+  const comments = Array.isArray(referral.deptComments) ? referral.deptComments : [];
+  const APPROVALS = ['direct_approval', 'urgent_approval', 'scheduled_approval'];
+  // A department head's approval writes a comment and moves the status in the
+  // same click; shown as one entry, the comment's ("Approved by Cardiology").
+  const foldedInto = new Map<number, string>();
+  history.forEach((sh, idx) => {
+    if (sh.status !== 'dept_approved') return;
+    const dc = comments.find(c => APPROVALS.includes(c.status) && c.userId === sh.userId
+      && Math.abs(Date.parse(c.timestamp) - Date.parse(sh.timestamp)) <= 2 * 60 * 1000);
+    if (dc) foldedInto.set(idx, dc.id);
+  });
+
+  history.forEach((sh, idx) => {
+    if (foldedInto.has(idx)) return;
     const known = sh.status && sh.status in STATUS_DOT;
+    // An entry that leaves the status where it was (escort, destination override)
+    // was titled by that status, so the escort read as a second "Consent recorded".
+    const unchanged = idx > 0 && history[idx - 1]?.status === sh.status;
+    const title = sh.event
+      ? t(`timeline.event.${sh.event}`)
+      : unchanged
+        ? t('timeline.updated')
+        : known ? t(`timeline.status.${sh.status}`) : sh.status ? String(sh.status).replace(/_/g, ' ') : t('timeline.statusChanged');
     events.push({
       id: `sh-${idx}`,
       timestamp: sh.timestamp,
       userId: sh.userId,
-      title: known ? t(`timeline.status.${sh.status}`) : sh.status ? String(sh.status).replace(/_/g, ' ') : t('timeline.statusChanged'),
+      title,
       note: sh.notes,
       noteKind: 'action',
-      dot: known ? STATUS_DOT[sh.status] : 'bg-slate-400',
+      dot: sh.event || unchanged ? 'bg-slate-400' : known ? STATUS_DOT[sh.status] : 'bg-slate-400',
     });
   });
 
-  (Array.isArray(referral.deptComments) ? referral.deptComments : []).forEach(dc => {
+  const foldedNotes = new Map<string, string | undefined>();
+  foldedInto.forEach((dcId, idx) => foldedNotes.set(dcId, history[idx].notes));
+
+  comments.forEach(dc => {
     const dept = userOf(dc.userId)?.department || referral.receivingDepartments?.[0] || t('timeline.department');
     const title = isDeptEvent(dc.status) ? t(`timeline.dept.${dc.status}`, { dept }) : t('timeline.deptNote', { dept });
     events.push({
@@ -82,6 +109,7 @@ export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({ referral, us
       title,
       note: dc.comment,
       noteKind: 'dept',
+      actionNote: foldedNotes.get(dc.id),
       decision: dc.status ? t(`timeline.decision.${dc.status}`) : undefined,
       dot: ['direct_approval', 'urgent_approval', 'scheduled_approval'].includes(dc.status) ? 'bg-success-500' : 'bg-purple-500',
     });
@@ -123,6 +151,12 @@ export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({ referral, us
                     {event.noteKind === 'dept' ? t('timeline.deptNoteLabel') : t('timeline.actionNoteLabel')}
                   </span>
                   <p dir="auto" className="whitespace-pre-wrap">{event.note}</p>
+                </div>
+              )}
+              {event.actionNote && event.actionNote !== event.note && (
+                <div className="mt-[7px] rounded-[9px] border border-slate-200 bg-white px-[11px] py-[9px] text-[13px] leading-[1.45] text-slate-700 dark:border-white/12 dark:bg-white/[0.05] dark:text-white/75">
+                  <span className="mb-0.5 block text-[11px] font-bold uppercase tracking-[0.06em] text-info-700 dark:text-info-300">{t('timeline.actionNoteLabel')}</span>
+                  <p dir="auto" className="whitespace-pre-wrap">{event.actionNote}</p>
                 </div>
               )}
             </div>

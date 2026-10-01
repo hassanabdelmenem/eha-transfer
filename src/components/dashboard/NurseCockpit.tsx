@@ -105,6 +105,11 @@ export const NurseCockpit: React.FC = () => {
     [referrals, facility]
   );
 
+  const incomingReferrals = useMemo(
+    () => (facility ? referrals.filter(r => r.status === 'in_transit' && r.receivingFacilityId === facility.id) : []),
+    [referrals, facility]
+  );
+
   useReportQueue(arrivedReferrals.map(r => r.id));
 
   if (!user) return null;
@@ -167,6 +172,23 @@ export const NurseCockpit: React.FC = () => {
       ) : (
         <EmptyQueue>{t('nurse.noCapacity')}</EmptyQueue>
       )}
+
+      {/* Who is on the way, so the bed is ready before the patient is at the door. */}
+      <section aria-labelledby="nurse-incoming" className="mt-4 flex flex-col gap-3">
+        <MicroLabel id="nurse-incoming">{t('nurse.incoming')}</MicroLabel>
+        {loading ? null : incomingReferrals.length === 0 ? (
+          <p className="text-[14.5px] text-slate-700 dark:text-white/65">{t('nurse.noneIncoming')}</p>
+        ) : (
+          incomingReferrals.map(r => (
+            <ReferralCockpitCard
+              key={r.id}
+              referral={r}
+              variant="nurse_incoming"
+              getFacilityName={id => facilitiesById.get(id)?.name || id}
+            />
+          ))
+        )}
+      </section>
 
       <section aria-labelledby="nurse-arrived" className="mt-4 flex flex-col gap-3">
         <MicroLabel id="nurse-arrived">{t('nurse.arrived')}</MicroLabel>
