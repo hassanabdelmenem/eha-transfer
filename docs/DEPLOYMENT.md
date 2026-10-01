@@ -135,8 +135,10 @@ https://eha-transfer-staging.web.app (built with `VITE_FIREBASE_TARGET=staging`
 and `VITE_ENABLE_ARABIC=true`, so the clinician reviewer can read the Arabic in
 place) and staging's `firestore.rules` and indexes. It runs independently of the
 production deploy, so a staging failure never holds production back. The service
-account needs `roles/firebasehosting.admin`, `roles/firebaserules.admin` and
-`roles/datastore.indexAdmin` on `eha-transfer-staging`, and nothing in
+account needs `roles/firebasehosting.admin`, `roles/firebaserules.admin`,
+`roles/datastore.indexAdmin` and `roles/serviceusage.serviceUsageViewer` (without
+it `firebase deploy --only firestore` fails with 403 "Permission denied to get
+service [firestore.googleapis.com]") on `eha-transfer-staging`, and nothing in
 production. To redeploy by hand: Actions → "Deploy to staging" → Run workflow.
 
 ### Before pushing
