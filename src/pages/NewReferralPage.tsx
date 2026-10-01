@@ -35,7 +35,7 @@ const emptyPatient = (): Partial<PatientData> => ({
 
 const LAST_STEP = WIZARD_STEPS.length;
 
-type FieldErrors = Partial<Record<'name' | 'hospitalId' | 'age' | 'complaint' | 'presentation' | 'diagnosis' | 'departments' | 'facility' | 'reason', string>>;
+type FieldErrors = Partial<Record<'name' | 'hospitalId' | 'age' | 'sex' | 'complaint' | 'presentation' | 'diagnosis' | 'departments' | 'facility' | 'reason', string>>;
 
 export const NewReferralPage: React.FC = () => {
   const { user } = useAuth();
@@ -108,6 +108,8 @@ export const NewReferralPage: React.FC = () => {
     if (step === 1) {
       if (!patientData.name?.trim()) e.name = t('wizard.errors.name');
       if (patientData.age === undefined) e.age = t('wizard.errors.age');
+      // No default: a pre-selected Male was never stored. A national ID fills it in.
+      if (!patientData.gender) e.sex = t('wizard.errors.sex');
       if (!patientData.hospitalId?.trim()) e.hospitalId = t('wizard.errors.hospitalId');
     } else if (step === 3) {
       if (!patientData.complaint?.trim()) e.complaint = t('wizard.errors.complaint');

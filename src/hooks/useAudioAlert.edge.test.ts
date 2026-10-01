@@ -23,7 +23,9 @@ describe('useAudioAlert edge behaviors', () => {
     render(React.createElement(TestComp, { trigger: true }));
 
     expect(constructed.length).toBeGreaterThan(0);
-    expect(constructed[0].src).toContain('mixkit');
+    // Same-origin: the CSP has no media-src, so default-src 'self' blocked the
+    // old hot-linked third-party file and the alert never sounded.
+    expect(constructed[0].src).toBe('/sounds/alert.wav');
     expect(play).toHaveBeenCalled();
 
     delete (global as any).Audio;
@@ -85,9 +87,27 @@ describe('useAudioAlert edge behaviors', () => {
 
     expect(log).toHaveBeenCalled();
     // assert the logged message contains the original user-facing string
-    expect(log.mock.calls.some(c => String(c[0]).includes('Audio play prevented by browser policy'))).toBe(true);
+    expect(log.mock.calls.some(c => String(c[0]).includes('Alert sound did not play'))).toBe(true);
 
     delete (global as any).Audio;
     (global as any).console = console;
+  });
+
+  it('stays silent on a device where alerts are muted', () => {
+    const play = vi.fn().mockResolvedValue(null);
+    (global as any).Audio = function (this: any, src: string) { this.src = src; this.play = play; } as any;
+    localStorage.setItem('eha_alert_muted', '1');
+
+    render(React.createElement(TestComp, { trigger: true }));
+    expect(play).not.toHaveBeenCalled();
+
+    localStorage.removeItem('eha_alert_muted');
+    delete (global as any).Audio;
+  });
+
+  it('ships the alert sound with the app', async () => {
+    const { existsSync, statSync } = await import('node:fs');
+    expect(existsSync('public/sounds/alert.wav')).toBe(true);
+    expect(statSync('public/sounds/alert.wav').size).toBeGreaterThan(1000);
   });
 });

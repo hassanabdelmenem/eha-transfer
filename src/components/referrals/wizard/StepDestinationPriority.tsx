@@ -120,7 +120,11 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
     v?.gcs !== undefined && `GCS ${v.gcs}`,
   ].filter(Boolean).join(' · ');
   const notEntered = t('destinationStep.notEntered');
-  const gender = t(`gender.${patientData.gender === 'female' ? 'female' : patientData.gender === 'other' ? 'unspecified' : 'male'}`);
+  // No sex chosen reads as missing, not as male: the old default here is what
+  // made a referral saved without one look complete.
+  const gender = patientData.gender
+    ? t(`gender.${patientData.gender === 'other' ? 'unspecified' : patientData.gender}`)
+    : t('destinationStep.sexMissing');
   const review: { label: string; value: string; step: number }[] = [
     { label: t('destinationStep.rowPatient'), value: patientData.name ? `${patientData.name}${patientData.age !== undefined ? `, ${patientData.age}` : ''}, ${gender} · ${patientData.hospitalId || t('destinationStep.noHospitalId')}` : notEntered, step: 1 },
     { label: t('destinationStep.rowVitals'), value: vitalsLine || t('destinationStep.noneRecorded'), step: 2 },

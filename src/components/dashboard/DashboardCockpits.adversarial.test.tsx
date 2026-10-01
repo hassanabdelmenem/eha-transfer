@@ -765,7 +765,7 @@ describe('Milestone 3 Adversarial Challenge Suite (Empirical Component & Page St
 
       expect(mockUpdateReferralStatus).toHaveBeenCalledWith(
         'ref-manager-accept',
-        'manager_approved',
+        'accepted',
         'Accepted by hospital manager.'
       );
     });

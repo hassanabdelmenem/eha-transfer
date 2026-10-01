@@ -2,6 +2,27 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-02: Staging smoke test; fixes for the five blocking findings (PR A)
+
+- Smoke test on staging (PR #58 preview, the bare staging URL has no site) with the seeded accounts:
+  one emergency STEMI referral, resident → HOD → director → consultant → ER → nurse, sent to admitted;
+  CCU free 2 → 1. Ten findings; owner chose an option for each (task_plan.md, Phase 1).
+- Director's accept now writes 'accepted'. It stopped at 'manager_approved', which waited on a
+  "Ready for Receive" click that only the full case page offered and no queue showed: the case sat
+  still while every screen said "nothing waiting on you". Cases already in manager_approved appear in
+  the director's queue. Rules unchanged (dept_approved → accepted was already a receiving-party move).
+- Alert sound: the hot-linked mixkit.co file was blocked by the CSP (no media-src → default-src
+  'self') and the failure logged as "browser policy". Now /sounds/alert.wav (generated two-tone
+  chime) and a per-device "Alert sound" switch in the profile dialog (localStorage eha_alert_muted).
+- Sex at intake: Male looked selected while unset and clicking it fired no change, so referrals were
+  saved without sex. Now no default and required; the national ID still fills age and sex; the review
+  row says "sex not chosen" instead of assuming male. Old drafts ask for it once.
+- Discharge asks first (ConfirmDialog, Cancel focused) on the case page and in the inpatient census.
+- Arrival: only the receiving side may mark arrived, in the UI and in firestore.rules (moved out of
+  the either-side bucket). The sending ER sees "On the way" instead.
+- Verified: tsc; vitest 1018/1018; rules 113/113 (3 new); Playwright 11/11 (escalation helper now
+  chooses a sex). Rules need deploying to staging after merge.
+
 ## 2026-10-01: Idle sign-out hardened; CI housekeeping
 
 - Idle sign-out already ran in AuthContext (a 15-minute in-memory timer); the useIdleTimeout hook was

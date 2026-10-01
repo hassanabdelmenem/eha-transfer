@@ -572,6 +572,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       fireEvent.change(document.querySelector("#hospitalId")!, { target: { value: "ISM-33019" } });
       fireEvent.change(document.querySelector("#patientName")!, { target: { value: "Mahmoud Al-Sayed" } });
       fireEvent.change(document.querySelector("#patientAge")!, { target: { value: "52" } });
+      fireEvent.click(document.querySelectorAll('input[name="gender"]')[0]); // sex is required, no default
       fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
       fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
       fireEvent.change(document.querySelector("#complaint")!, { target: { value: "Crushing chest pain" } });
@@ -609,6 +610,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       fireEvent.change(document.querySelector("#hospitalId")!, { target: { value: "ISM-33019" } });
       fireEvent.change(document.querySelector("#patientName")!, { target: { value: "Mahmoud Al-Sayed" } });
       fireEvent.change(document.querySelector("#patientAge")!, { target: { value: "52" } });
+      fireEvent.click(document.querySelectorAll('input[name="gender"]')[0]); // sex is required, no default
       fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
       fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
       fireEvent.change(document.querySelector("#complaint")!, { target: { value: "Crushing chest pain" } });
@@ -651,6 +653,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       fireEvent.change(document.querySelector("#hospitalId")!, { target: { value: "ISM-33019" } });
       fireEvent.change(document.querySelector("#patientName")!, { target: { value: "Mahmoud Al-Sayed" } });
       fireEvent.change(document.querySelector("#patientAge")!, { target: { value: "52" } });
+      fireEvent.click(document.querySelectorAll('input[name="gender"]')[0]); // sex is required, no default
       fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
       fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
       fireEvent.change(document.querySelector("#complaint")!, { target: { value: "Crushing chest pain" } });
@@ -694,6 +697,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       fireEvent.change(document.querySelector("#hospitalId")!, { target: { value: "ISM-33019" } });
       fireEvent.change(document.querySelector("#patientName")!, { target: { value: "Mahmoud Al-Sayed" } });
       fireEvent.change(document.querySelector("#patientAge")!, { target: { value: "52" } });
+      fireEvent.click(document.querySelectorAll('input[name="gender"]')[0]); // sex is required, no default
 
       // Step 3: Clinical & Vitals
       fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
@@ -749,6 +753,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       fireEvent.change(document.querySelector("#hospitalId")!, { target: { value: "ISM-OFFLINE-1" } });
       fireEvent.change(document.querySelector("#patientName")!, { target: { value: "Offline Patient" } });
       fireEvent.change(document.querySelector("#patientAge")!, { target: { value: "40" } });
+      fireEvent.click(document.querySelectorAll('input[name="gender"]')[0]); // sex is required, no default
 
       // Step 3: Clinical & Vitals
       fireEvent.click(screen.getByRole('button', { name: /^Step 2:/ }));
