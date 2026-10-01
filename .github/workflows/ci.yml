@@ -4,9 +4,11 @@ on:
   # Every branch, not just the long-lived ones: feature branches (claude/**,
   # refactor/**, ...) previously got no checks at all, so breakage was only
   # discovered after opening a PR.
+  # A PR shows the push run for its head commit, so there is no pull_request
+  # trigger: with both, every PR commit ran the whole suite twice (the two runs
+  # have different refs, so the concurrency group below never collapsed them).
   push:
     branches: [ "**" ]
-  pull_request:
   workflow_dispatch: {}
 
 # Cancel superseded runs on the same branch instead of queueing them.
@@ -23,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # The name must stay quoted: an unquoted YAML scalar containing ": "
       # parses as a nested mapping key and makes this whole file invalid, which
@@ -38,7 +40,7 @@ jobs:
           fi
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '24'
           cache: 'npm'
@@ -55,7 +57,7 @@ jobs:
       # Guards the only server-side authorization layer this app has. Runs
       # against the Firestore emulator, which needs a JVM.
       - name: Set up Java (Firestore emulator)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -87,7 +89,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-report
           path: coverage/

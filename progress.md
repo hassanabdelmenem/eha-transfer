@@ -2,6 +2,20 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-01: Idle sign-out hardened; CI housekeeping
+
+- Idle sign-out already ran in AuthContext (a 15-minute in-memory timer); the useIdleTimeout hook was
+  an unused duplicate and is gone. Three gaps closed: a session restored after the browser sat closed
+  past the limit is signed out at once (the Firebase session survives a restart, so the next person
+  at a shared workstation opened it as the previous clinician); activity in one tab keeps the others
+  signed in; a laptop that slept past the limit signs out on wake. Last activity is a timestamp in
+  localStorage (`eha_last_activity`), checked every 30 s, on focus and on visibilitychange; every
+  sign-in starts it fresh and sign-out removes it.
+- ErrorBoundary no longer posts crash details to http://localhost:3001 from production browsers.
+- CI: no pull_request trigger (each PR commit ran twice); actions on v5 (Node 24). The escalation
+  sweep's google-github-actions/auth@v2 is left for a separate change: that job is live.
+- Plan: ticked 2d, Seed staging, Arabic + RTL.
+
 ## 2026-10-01: Shift-log summaries in the reader's language
 
 - #56 merged (2d371df): every screen translated. Owner: keep Arabic off in production until the

@@ -3,6 +3,7 @@ import { User } from '../types';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, type User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { markActivity, clearActivity, hasActivity, isIdleExpired } from '../lib/idleSession';
 import { clearOfflineReferrals } from '../lib/db';
 
 // Mobile browsers (especially iOS Safari) routinely block or break signInWithPopup —
@@ -180,6 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithGoogle = async () => {
+    markActivity(); // a fresh sign-in must not inherit a stale timestamp
     try {
       if (isMobileDevice()) {
         await signInWithRedirect(auth, googleProvider);
@@ -197,10 +199,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   const loginWithEmail = async (e: string, p: string) => {
+    markActivity(); // a fresh sign-in must not inherit a stale timestamp
     await signInWithEmailAndPassword(auth, e, p);
   };
 
   const registerWithEmail = async (e: string, p: string) => {
+    markActivity(); // a fresh sign-in must not inherit a stale timestamp
     const { user: newUser } = await createUserWithEmailAndPassword(auth, e, p);
     // Send a verification link immediately. The Firestore rules now require
     // email_verified before isVerifiedCaller() passes, so until the user clicks
@@ -232,6 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: `${id}@example.com`,
       role: 'resident'
     } as User;
+    markActivity();
     setUser(mockUser);
     try {
       localStorage.setItem('auth_user', JSON.stringify(mockUser));
@@ -239,6 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   const logout = useCallback(async () => {
+    clearActivity();
     await firebaseSignOut(auth);
     setUser(null);
     try {
@@ -257,28 +263,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user) return; // Only track idle time when logged in
 
-    let timeoutId: NodeJS.Timeout;
-    // 15 minutes idle timeout
-    const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+    // A session restored after the browser sat closed (or asleep) past the
+    // limit ends here, before anyone at a shared workstation can use it.
+    if (isIdleExpired()) {
+      console.log('Idle timeout reached, logging out.');
+      logout();
+      return;
+    }
+    if (!hasActivity()) markActivity();
 
-    const resetTimer = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
+    // Activity is recorded at most every few seconds: mousemove fires constantly.
+    let lastWrite = 0;
+    const handleActivity = () => {
+      const now = Date.now();
+      if (now - lastWrite < 5000) return;
+      lastWrite = now;
+      markActivity(now);
+    };
+    const check = () => {
+      if (isIdleExpired()) {
         console.log('Idle timeout reached, logging out.');
         logout();
-      }, IDLE_TIMEOUT_MS);
+      }
     };
 
-    resetTimer();
-
     const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
-    const handleActivity = () => resetTimer();
-
     events.forEach(event => document.addEventListener(event, handleActivity));
+    // Waking from sleep or returning to the tab checks at once; the interval
+    // covers a screen left open and untouched.
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check);
+    const intervalId = setInterval(check, 30 * 1000);
 
     return () => {
-      clearTimeout(timeoutId);
+      clearInterval(intervalId);
       events.forEach(event => document.removeEventListener(event, handleActivity));
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('focus', check);
     };
   }, [user, logout]);
 
