@@ -109,18 +109,18 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
       in-app sweep in `src/lib/escalationSweep.ts`. Stale `overnight-sweep.ts` removed (30 Sep)
 - [x] 2a' External 5-minute trigger: cron-job.org job calls workflow_dispatch (live 1 Oct 06:00 UTC)
 - [ ] 2c `statusHistory` as a subcollection (not started)
-- [ ] 2d `useIdleTimeout` exists; wiring and duration unverified
+- [x] 2d idle sign-out: 15 min on the wall clock, shared across tabs, and enforced on a restored session (src/lib/idleSession.ts; the unused useIdleTimeout hook removed)
 - [ ] 2e small text / 28px buttons (largely superseded by the redesign; re-audit after phase 6)
 - [x] Emulator Playwright tests for the four escalation scenarios (`e2e/escalation.spec.ts`, 27 Sep)
 - **Status:** open
 
 ### Phase 5: Launch readiness
 
-- [ ] Arabic + RTL: foundation merged (#47); translation per surface open (section above)
+- [x] Arabic + RTL: foundation (#47) and every screen (#49–#57); production stays off until the clinician review (section above)
 - [ ] Pilot plan with one referring and one receiving facility; real non-admin accounts per role
 - [x] Staging project `eha-transfer-staging` (#44): dev server and PR previews use it; Auth enabled
       (Email/Password + Google) 29 Sep
-- [ ] Seed staging with test accounts and synthetic referrals (`scripts/seed-staging.mjs`)
+- [x] Seed staging with test accounts and synthetic referrals (`scripts/seed-staging.mjs`)
 - **Status:** in progress
 
 ## Decisions (owner, answered 27 Sep)
