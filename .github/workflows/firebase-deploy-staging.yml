@@ -11,8 +11,10 @@ name: Deploy to staging
 #
 # Uses FIREBASE_SERVICE_ACCOUNT_STAGING (github-preview@eha-transfer-staging),
 # which exists only in the staging project and cannot reach production. It
-# needs roles/firebasehosting.admin, roles/firebaserules.admin and
-# roles/datastore.indexAdmin on eha-transfer-staging (docs/DEPLOYMENT.md).
+# needs roles/firebasehosting.admin, roles/firebaserules.admin,
+# roles/datastore.indexAdmin and roles/serviceusage.serviceUsageViewer (firebase-tools
+# checks the Firestore API is enabled before deploying rules) on
+# eha-transfer-staging (docs/DEPLOYMENT.md).
 on:
   workflow_run:
     workflows: ["CI"]
