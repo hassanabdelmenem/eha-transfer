@@ -393,11 +393,26 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
 
       const acceptBtn = screen.getByRole('button', { name: /^Accept$/i });
       fireEvent.click(acceptBtn);
+      // The signature is the hospital's acceptance: straight to 'accepted', so
+      // the sending ER can record consent. 'manager_approved' left the case
+      // waiting on a second receiving-side click that no queue showed.
       expect(mockUpdateReferralStatus).toHaveBeenCalledWith(
         'ref-1',
-        'manager_approved',
+        'accepted',
         'Accepted by hospital manager.'
       );
+    });
+
+    it('surfaces a case left in manager_approved by the old flow, so it can be accepted', () => {
+      mockReferrals = [{ ...testReferral, status: 'manager_approved', isEscalated: false, escalationReason: null }];
+      render(
+        <MemoryRouter>
+          <ManagerCockpit />
+        </MemoryRouter>
+      );
+      expect(screen.getByRole('heading', { level: 1, name: /^1 to sign$/i })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /^Accept$/i }));
+      expect(mockUpdateReferralStatus).toHaveBeenCalledWith('ref-1', 'accepted', 'Accepted by hospital manager.');
     });
 
     it('safely handles null user and transitions without hook ordering mismatch', () => {

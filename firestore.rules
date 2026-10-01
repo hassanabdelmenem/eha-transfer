@@ -355,12 +355,15 @@ service cloud.firestore {
     // then push the referral to in_transit, which cancel-locks it for everyone
     // including owners, with no transition back.
     //
-    // Sides are taken from the UI gating in ReferralDetailPage: approvals and
-    // admission belong to the destination, consent belongs to the facility
-    // physically holding the patient. The permissive bucket is deliberate --
-    // parking, re-opening, arrival and dispatch are all done from either end in
-    // practice (a receiving hospital may send its own ambulance), and none of them
-    // grants anything that patient_consented has not already gated.
+    // Sides are taken from the UI gating in ReferralDetailPage: approvals,
+    // arrival and admission belong to the destination, consent belongs to the
+    // facility physically holding the patient. Arrival used to sit in the
+    // permissive bucket, and the sending ER was offered "Mark as arrived" while
+    // the ambulance was still on the road; only the hospital the patient reached
+    // can know. The permissive bucket is deliberate for the rest -- parking,
+    // re-opening and dispatch are done from either end in practice (a receiving
+    // hospital may send its own ambulance), and none of them grants anything that
+    // patient_consented has not already gated.
     function transitionActorAllowed() {
       return isPrivileged()
           || request.resource.data.status == resource.data.status
@@ -368,9 +371,9 @@ service cloud.firestore {
           || request.resource.data.status == 'cancelled'
           || (request.resource.data.status == 'patient_consented'
               && isReferringParty(resource.data))
-          || (request.resource.data.status in ['dept_approved', 'manager_approved', 'accepted', 'rejected', 'admitted', 'discharged']
+          || (request.resource.data.status in ['dept_approved', 'manager_approved', 'accepted', 'rejected', 'arrived', 'admitted', 'discharged']
               && isReceivingParty(resource.data))
-          || (request.resource.data.status in ['pending', 'postponed', 'arrived', 'in_transit']
+          || (request.resource.data.status in ['pending', 'postponed', 'in_transit']
               && (isReferringParty(resource.data) || isReceivingParty(resource.data)));
     }
 

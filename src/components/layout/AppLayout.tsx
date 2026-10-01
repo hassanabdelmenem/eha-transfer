@@ -23,6 +23,7 @@ import {
   Send,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { isAlertMuted, setAlertMuted } from '../../lib/alertSound';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 
@@ -32,6 +33,7 @@ const SHIFT_HOURS: Record<ShiftType, string> = { Day: '08:00–20:00', Night: '2
 
 export const AppLayout: React.FC = () => {
   const { t, lang, setLanguage, arabicAvailable } = useI18n();
+  const [alertMuted, setAlertMutedState] = useState(isAlertMuted);
   const { user, logout, updateUserProfile } = useAuth();
   const {
     notifications,
@@ -393,6 +395,27 @@ export const AppLayout: React.FC = () => {
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{t('language.hint')}</p>
               </fieldset>}
+
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span id="alertSoundLabel" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">{t('alertSound.label')}</span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{t('alertSound.hint')}</p>
+                </div>
+                {/* Applies at once, like the language; not part of "Save Changes". */}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!alertMuted}
+                  aria-labelledby="alertSoundLabel"
+                  onClick={() => { setAlertMuted(!alertMuted); setAlertMutedState(!alertMuted); }}
+                  className={cn(
+                    'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors min-h-[28px]',
+                    !alertMuted ? 'border-ink bg-ink dark:border-paper dark:bg-paper' : 'border-slate-300 bg-slate-200 dark:border-white/25 dark:bg-white/10'
+                  )}
+                >
+                  <span className={cn('inline-block h-5 w-5 rounded-full bg-white shadow transition-transform dark:bg-ink', !alertMuted ? 'translate-x-6 rtl:-translate-x-6' : 'translate-x-1 rtl:-translate-x-1')} />
+                </button>
+              </div>
 
               <div>
                 <label htmlFor="profilePhone" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">

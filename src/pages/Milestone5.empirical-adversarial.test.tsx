@@ -920,6 +920,8 @@ describe('Milestone 5 Empirical Adversarial Test Suite', () => {
       // Discharge existing patient
       const dischargeBtn = screen.getByRole('button', { name: /Discharge/i });
       fireEvent.click(dischargeBtn);
+      // Discharge asks first; confirm in the dialog.
+      fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: /^Discharge$/i }));
       expect(mockDischargeDirectAdmission).toHaveBeenCalledWith('adm-standalone-1');
     });
   });

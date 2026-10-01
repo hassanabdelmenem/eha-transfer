@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BedManagementPage } from '../src/pages/BedManagementPage';
 import { AdmitPatientPage } from '../src/pages/AdmitPatientPage';
@@ -473,6 +473,8 @@ describe('Milestone 5 Adversarial DOM & Contract Verification', () => {
       const dischargeBtn = screen.getByRole('button', { name: /Discharge/i });
       expect(dischargeBtn).toBeInTheDocument();
       fireEvent.click(dischargeBtn);
+      // Discharge asks first; confirm in the dialog.
+      fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: /^Discharge$/i }));
       expect(mockDischargeDirectAdmission).toHaveBeenCalledWith('direct-adm-1');
 
       unmount();
