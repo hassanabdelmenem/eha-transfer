@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AppLayout } from './AppLayout';
 import type { User, Facility, Referral, Notification } from '../../types';
 import type { DirectAdmission } from '../../contexts/DataContext';
+import { I18nProvider } from '../../i18n';
 
 let mockUser: User | null = null;
 const logoutMock = vi.fn().mockResolvedValue(undefined);
@@ -119,7 +120,8 @@ describe('AppLayout', () => {
 
   it('renders the sidebar, facility name, and the outlet content', () => {
     renderLayout();
-    expect(screen.getByText('Ismailia Medical Complex')).toBeInTheDocument();
+    // Named in the sidebar and in the phone header (each its own <bdi>).
+    expect(screen.getAllByText('Ismailia Medical Complex').length).toBeGreaterThan(0);
     expect(screen.getByText('Skip to main content')).toBeInTheDocument();
   });
 
@@ -457,5 +459,61 @@ describe('AppLayout', () => {
       expect(() => renderLayout()).not.toThrow();
       getSpy.mockRestore();
     });
+  });
+});
+
+// Arabic: the frame, the profile dialog and the end-of-shift handover carry no
+// English interface words. Latin words left must be data (names, facility,
+// department) or the 08:00–20:00 hours.
+describe('AppLayout in Arabic', () => {
+  // 'English' is the language picker naming English in its own script, on purpose.
+  const DATA = new Set(['Dr', 'Sara', 'Ismailia', 'Medical', 'Complex', 'Cardiology', 'Patient', 'One', 'English']);
+  const leaks = (root: HTMLElement) => {
+    const words: string[] = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) words.push(...(n.textContent?.match(/[A-Za-z]{2,}/g) ?? []));
+    root.querySelectorAll('[aria-label],[placeholder],[title]').forEach(el => {
+      for (const a of ['aria-label', 'placeholder', 'title']) words.push(...(el.getAttribute(a)?.match(/[A-Za-z]{2,}/g) ?? []));
+    });
+    return [...new Set(words)].filter(w => !DATA.has(w));
+  };
+  beforeEach(() => {
+    localStorage.clear();
+    mockUser = makeUser();
+    mockFacilities = [makeFacility()];
+    mockReferrals = [makeReferral({ receivingFacilityId: 'f1' }), makeReferral({ id: 'r2', receivingFacilityId: 'f1', status: 'in_transit' })];
+    mockNotifications = [];
+    mockIsOnline = false;
+    mockPendingSyncCount = 2;
+  });
+
+  it('frame, profile and end-of-shift handover', () => {
+    render(
+      <I18nProvider arabicAvailable savedLanguage="ar">
+        <MemoryRouter initialEntries={['/referrals']}><AppLayout /></MemoryRouter>
+      </I18nProvider>
+    );
+    expect(leaks(document.body)).toEqual([]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'نهاية المناوبة' })[0]);
+    expect(screen.getByRole('dialog', { name: 'نهاية المناوبة' })).toBeInTheDocument();
+    expect(leaks(document.body)).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'إغلاق التسليم' }));
+    fireEvent.click(screen.getAllByTitle('ملفي وجدول المناوبات')[0]);
+    expect(screen.getByRole('dialog', { name: 'ملفي وإعداداتي' })).toBeInTheDocument();
+    expect(leaks(document.body)).toEqual([]);
+  });
+
+  it('keeps the stored handover summary in English while showing it in Arabic', async () => {
+    render(
+      <I18nProvider arabicAvailable savedLanguage="ar">
+        <MemoryRouter initialEntries={['/referrals']}><AppLayout /></MemoryRouter>
+      </I18nProvider>
+    );
+    fireEvent.click(screen.getAllByRole('button', { name: 'نهاية المناوبة' })[0]);
+    expect(screen.getByText(/انتهاء المناوبة/)).toBeInTheDocument();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /إرسال التسليم/ })); });
+    expect(addShiftLogMock).toHaveBeenCalledWith(expect.objectContaining({
+      summary: expect.stringMatching(/^(Day|Night) shift ending\. 2 active transfers in progress for Cardiology department\.$/),
+    }));
   });
 });
