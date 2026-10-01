@@ -5,6 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../compone
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Shield, Mail } from 'lucide-react';
+import { useI18n, LANGUAGES } from '../i18n';
+
+type AuthErrorKey = 'credentials' | 'exists' | 'weak' | 'tooMany' | 'network' | 'cancelled' | 'popup' | 'generic';
+// Which field an error belongs under; the rest show above the form.
+const FIELD_FOR: Partial<Record<AuthErrorKey, 'email' | 'password'>> = { credentials: 'password', weak: 'password', exists: 'email' };
 
 export const Login: React.FC = () => {
   const { loginWithEmail, registerWithEmail, loginWithGoogle, redirectError } = useAuth();
@@ -14,6 +19,7 @@ export const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<{email?: string, password?: string}>({});
   const [submitting, setSubmitting] = useState(false);
+  const { t, lang, setLanguage, arabicAvailable } = useI18n();
 
 
   // Firebase distinguishes auth/user-not-found from auth/wrong-password, and
@@ -21,29 +27,29 @@ export const Login: React.FC = () => {
   // discover which hospital staff addresses hold accounts, which is exactly the
   // reconnaissance step before phishing a patient-transfer system. Both collapse
   // into one message here. The raw error still goes to the console for debugging.
-  const describeAuthError = (err: unknown): string => {
+  const describeAuthError = (err: unknown): AuthErrorKey => {
     const code = (err as { code?: string } | null)?.code ?? '';
     switch (code) {
       case 'auth/user-not-found':
       case 'auth/wrong-password':
       case 'auth/invalid-credential':
       case 'auth/invalid-email':
-        return 'Email or password is incorrect.';
+        return 'credentials';
       case 'auth/email-already-in-use':
-        return 'An account already exists for that email address.';
+        return 'exists';
       case 'auth/weak-password':
-        return 'Please choose a password of at least six characters.';
+        return 'weak';
       case 'auth/too-many-requests':
-        return 'Too many attempts. Please wait a few minutes and try again.';
+        return 'tooMany';
       case 'auth/network-request-failed':
-        return 'Could not reach the server. Check your connection and try again.';
+        return 'network';
       case 'auth/popup-closed-by-user':
       case 'auth/cancelled-popup-request':
-        return 'Sign-in was cancelled.';
+        return 'cancelled';
       case 'auth/popup-blocked':
-        return 'Your browser blocked the sign-in popup. Allow popups for this site and try again.';
+        return 'popup';
       default:
-        return 'Sign-in failed. Please try again.';
+        return 'generic';
     }
   };
 
@@ -61,14 +67,11 @@ export const Login: React.FC = () => {
       }
     } catch (err) {
       console.error('Email auth failed:', err);
-      const msg = describeAuthError(err);
-      if (msg.toLowerCase().includes('password')) {
-        setFormErrors({ password: msg });
-      } else if (msg.toLowerCase().includes('email')) {
-        setFormErrors({ email: msg });
-      } else {
-        setError(msg);
-      }
+      const key = describeAuthError(err);
+      const msg = t(`auth.errors.${key}`);
+      const field = FIELD_FOR[key];
+      if (field) setFormErrors({ [field]: msg });
+      else setError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -82,7 +85,7 @@ export const Login: React.FC = () => {
       await loginWithGoogle();
     } catch (err) {
       console.error('Google auth failed:', err);
-      setError(describeAuthError(err));
+      setError(t(`auth.errors.${describeAuthError(err)}`));
     } finally {
       setSubmitting(false);
     }
@@ -99,17 +102,34 @@ export const Login: React.FC = () => {
         {/* h1, not h2: this page renders outside AppLayout, so nothing above it
             supplies the document's top-level heading. */}
         <h1 className="mt-6 text-center text-3xl font-light text-slate-900 dark:text-slate-100 tracking-tight">
-          Ismailia Health Connect
+          {t('auth.appName')}
         </h1>
         <p className="mt-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-          Referral Coordination & Governance
+          {t('auth.tagline')}
         </p>
+        {/* Before sign-in there is no profile to save a choice in: this one stays on the device. */}
+        {arabicAvailable && (
+          <div role="group" aria-label={t('language.label')} className="mt-4 flex justify-center gap-2">
+            {LANGUAGES.map(l => (
+              <button
+                key={l}
+                type="button"
+                lang={l}
+                aria-pressed={lang === l}
+                onClick={() => setLanguage(l)}
+                className={`min-h-[44px] rounded-full border px-4 text-sm font-semibold ${lang === l ? 'border-ink bg-ink text-paper dark:border-paper dark:bg-paper dark:text-ink' : 'border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/25 dark:text-white/80 dark:hover:bg-white/10'}`}
+              >
+                {l === 'ar' ? t('language.arabic') : t('language.english')}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <Card className="border-t-4 border-t-blue-900">
           <CardHeader className="bg-white dark:bg-slate-900">
-            <CardTitle>{isRegistering ? 'Create your account' : 'Sign in to your account'}</CardTitle>
+            <CardTitle>{isRegistering ? t('auth.createTitle') : t('auth.signInTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
             {(error || redirectError) && (
@@ -133,7 +153,7 @@ export const Login: React.FC = () => {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
-              Continue with Google
+              {t('auth.google')}
             </Button>
             
             <div className="relative">
@@ -141,17 +161,18 @@ export const Login: React.FC = () => {
                 <div className="w-full border-t border-slate-200 dark:border-slate-800" />
               </div>
               <div className="relative flex justify-center text-xs font-semibold">
-                <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">Or continue with email</span>
+                <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">{t('auth.orEmail')}</span>
               </div>
             </div>
 
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div>
-                <label htmlFor="loginEmail" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Email address</label>
+                <label htmlFor="loginEmail" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('auth.email')}</label>
                 <div className="relative">
                   <Mail className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
                     id="loginEmail"
+                    dir="ltr"
                     type="email"
                     required
                     autoComplete="email"
@@ -168,9 +189,10 @@ export const Login: React.FC = () => {
                 {formErrors.email && <p className="mt-1 text-xs text-critical-500 font-medium">{formErrors.email}</p>}
               </div>
               <div>
-                <label htmlFor="loginPassword" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Password</label>
+                <label htmlFor="loginPassword" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('auth.password')}</label>
                 <Input
                   id="loginPassword"
+                  dir="ltr"
                   type="password"
                   required
                   autoComplete={isRegistering ? 'new-password' : 'current-password'}
@@ -186,8 +208,8 @@ export const Login: React.FC = () => {
               </div>
               <Button type="submit" size="lg" className="w-full text-lg font-bold" disabled={submitting}>
                 {submitting
-                  ? 'Working…'
-                  : isRegistering ? 'Create Account' : 'Authenticate with Email'}
+                  ? t('auth.working')
+                  : isRegistering ? t('auth.create') : t('auth.signIn')}
               </Button>
             </form>
             
@@ -197,7 +219,7 @@ export const Login: React.FC = () => {
                 className="text-xs text-blue-600 dark:text-blue-400 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                 onClick={() => { setIsRegistering(!isRegistering); setError(null); }}
               >
-                {isRegistering ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+                {isRegistering ? t('auth.haveAccount') : t('auth.noAccount')}
               </button>
             </div>
 

@@ -10,6 +10,7 @@ import {
   UserCheck 
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../i18n';
 
 export interface RoleBadgeProps {
   role?: Role | string;
@@ -161,6 +162,7 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({
   showIcon = true,
   className = '',
 }) => {
+  const { t } = useI18n();
   const normalizedRole = typeof role === 'string' ? role.toLowerCase() : 'clinician';
   const config = ROLE_CONFIGS[normalizedRole] || {
     label: normalizedRole.replace(/_/g, ' '),
@@ -173,6 +175,8 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({
   };
 
   const IconComponent = config.icon;
+  // role.* in the catalogue; an unknown role keeps its de-underscored code.
+  const label = normalizedRole in ROLE_CONFIGS ? t(`role.${normalizedRole as keyof typeof ROLE_CONFIGS & string}` as Parameters<typeof t>[0]) : config.label;
 
   const sizeClasses = {
     sm: 'px-2 py-0.5 text-[11px] gap-1',
@@ -196,10 +200,10 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({
         sizeClasses[size],
         className
       )}
-      title={config.label}
+      title={label}
     >
       {showIcon && <IconComponent className={cn('shrink-0', iconSizes[size])} aria-hidden="true" />}
-      <span className="truncate">{config.label}</span>
+      <span className="truncate">{label}</span>
     </span>
   );
 };

@@ -5,9 +5,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { auth } from '../lib/firebase';
 import { Button } from '../components/ui/Button';
+import { useData } from '../contexts/DataContext';
+import { useI18n } from '../i18n';
+import { ROLE_CONFIGS } from '../components/layout/RoleBadge';
+import { Role } from '../types';
 
 export const PendingVerification: React.FC = () => {
   const { user, emailVerified, resendVerificationEmail, logout } = useAuth();
+  const { facilitiesById } = useData();
+  const { t } = useI18n();
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   if (!user) return <Navigate to="/login" replace />;
@@ -44,7 +50,7 @@ export const PendingVerification: React.FC = () => {
             <div className="flex justify-center mb-4">
               <Clock className="h-12 w-12 text-warning-500" />
             </div>
-            <CardTitle>Account Pending Verification</CardTitle>
+            <CardTitle>{t('pending.title')}</CardTitle>
           </CardHeader>
           <CardContent className="pt-6 text-center space-y-6">
             {/* Email verification status */}
@@ -52,10 +58,10 @@ export const PendingVerification: React.FC = () => {
               <div className="rounded-lg bg-warning-50 dark:bg-warning-950/30 border border-warning-200 dark:border-warning-800 p-4 space-y-3">
                 <div className="flex items-center justify-center gap-2 text-warning-700 dark:text-warning-400">
                   <Mail className="h-5 w-5" />
-                  <span className="text-sm font-semibold">Email Not Verified</span>
+                  <span className="text-sm font-semibold">{t('pending.emailNotVerified')}</span>
                 </div>
                 <p className="text-xs text-warning-600 dark:text-warning-400">
-                  Please check your inbox for a verification link. You must verify your email address before an administrator can approve your account.
+                  {t('pending.checkInbox')}
                 </p>
                 <div className="flex flex-col gap-2">
                   <Button
@@ -65,10 +71,10 @@ export const PendingVerification: React.FC = () => {
                     disabled={resendStatus === 'sending' || resendStatus === 'sent'}
                     className="w-full text-xs"
                   >
-                    {resendStatus === 'sending' ? 'Sending…' :
-                     resendStatus === 'sent' ? '✓ Verification email sent' :
-                     resendStatus === 'error' ? 'Failed — try again' :
-                     'Resend Verification Email'}
+                    {resendStatus === 'sending' ? t('pending.sending') :
+                     resendStatus === 'sent' ? t('pending.sent') :
+                     resendStatus === 'error' ? t('pending.failed') :
+                     t('pending.resend')}
                   </Button>
                   <Button
                     onClick={handleRefresh}
@@ -76,7 +82,7 @@ export const PendingVerification: React.FC = () => {
                     size="sm"
                     className="w-full text-xs"
                   >
-                    I've verified — refresh
+                    {t('pending.refresh')}
                   </Button>
                 </div>
               </div>
@@ -86,27 +92,34 @@ export const PendingVerification: React.FC = () => {
               <div className="rounded-lg bg-success-50 dark:bg-success-950/30 border border-success-200 dark:border-success-800 p-4">
                 <div className="flex items-center justify-center gap-2 text-success-700 dark:text-success-400">
                   <CheckCircle className="h-5 w-5" />
-                  <span className="text-sm font-semibold">Email Verified</span>
+                  <span className="text-sm font-semibold">{t('pending.emailVerified')}</span>
                 </div>
               </div>
             )}
 
             {user.verified ? (
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                An administrator has approved your account. Confirm your email address to continue.
+                {t('pending.approvedConfirm')}
               </p>
             ) : (
               <>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Your profile has been submitted successfully. You requested the role of <strong>{(user.role || "").replace('_', ' ')}</strong> at <strong>{user.facilityId || 'Global Network'}</strong>.
+                  {(() => {
+                    // The role they asked for, and the hospital by name (it used to show the raw id).
+                    const r = (user.requestedRole || user.role) as Role;
+                    const role = r in ROLE_CONFIGS ? t(`role.${r}`) : String(r || '').replace(/_/g, ' ');
+                    const facility = (user.facilityId && facilitiesById.get(user.facilityId)?.name) || user.facilityId || t('pending.globalNetwork');
+                    return t('pending.submitted').split(/(\{role\}|\{facility\})/).map((part, i) =>
+                      part === '{role}' ? <strong key={i}>{role}</strong> : part === '{facility}' ? <strong key={i}><bdi>{facility}</bdi></strong> : part);
+                  })()}
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  An administrator will review and verify your account shortly. Please check back later.
+                  {t('pending.review')}
                 </p>
               </>
             )}
             <Button onClick={logout} variant="outline" className="w-full">
-              Sign Out
+              {t('pending.signOut')}
             </Button>
           </CardContent>
         </Card>
