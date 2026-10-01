@@ -212,7 +212,11 @@ export interface ShiftLog {
   timestamp: string;
   pendingTransfersCount: number;
   admittedPatientsCount: number;
+  /** English, for older app versions; the feed renders key + vars in the reader's language. */
   summary: string;
+  /** 'summary' (endOfShift.summary in the i18n catalogue). */
+  key?: string;
+  vars?: Record<string, string | number>;
 }
 
 export interface ShiftAssignment {

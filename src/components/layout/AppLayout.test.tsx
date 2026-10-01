@@ -514,6 +514,9 @@ describe('AppLayout in Arabic', () => {
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: /إرسال التسليم/ })); });
     expect(addShiftLogMock).toHaveBeenCalledWith(expect.objectContaining({
       summary: expect.stringMatching(/^(Day|Night) shift ending\. 2 active transfers in progress for Cardiology department\.$/),
+      // ...and the key + values colleagues' feeds render in their own language.
+      key: 'summary',
+      vars: { shift: expect.stringMatching(/^@endOfShift\.shiftWord\.(Day|Night)$/), count: 2, dept: 'Cardiology' },
     }));
   });
 });
