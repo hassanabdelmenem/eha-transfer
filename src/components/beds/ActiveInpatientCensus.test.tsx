@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { ActiveInpatientCensus } from './ActiveInpatientCensus';
 import { DirectAdmission } from '../../contexts/DataContext';
 
@@ -74,8 +74,21 @@ describe('ActiveInpatientCensus', () => {
     const dischargeButtons = screen.getAllByRole('button', { name: /Discharge/i });
     expect(dischargeButtons).toHaveLength(2);
 
+    // Discharge frees the bed at once, so it asks first.
     fireEvent.click(dischargeButtons[0]);
+    expect(handleDischarge).not.toHaveBeenCalled();
+    const dialog = screen.getByRole('alertdialog', { name: /Discharge Tarek Mahmoud\?/i });
+    fireEvent.click(within(dialog).getByRole('button', { name: /^Discharge$/i }));
     expect(handleDischarge).toHaveBeenCalledWith('adm-1');
+  });
+
+  it('does nothing when the discharge is cancelled', () => {
+    const handleDischarge = vi.fn();
+    render(<ActiveInpatientCensus admissions={mockAdmissions} onDischarge={handleDischarge} />);
+    fireEvent.click(screen.getAllByRole('button', { name: /Discharge/i })[0]);
+    fireEvent.click(screen.getByRole('button', { name: /^Cancel$/i }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(handleDischarge).not.toHaveBeenCalled();
   });
 
   it('renders empty state when no direct admissions are active', () => {

@@ -184,6 +184,21 @@ describe('AppLayout', () => {
   });
 
   describe('profile dialog', () => {
+    it('mutes and unmutes the alert sound on this device, applied at once', () => {
+      localStorage.removeItem('eha_alert_muted');
+      mockUser = makeUser();
+      renderLayout();
+      act(() => { screen.getByTitle('My Profile & On-Call Schedule').click(); });
+
+      const sw = screen.getByRole('switch', { name: /alert sound/i });
+      expect(sw).toBeChecked();
+      act(() => { sw.click(); });
+      expect(localStorage.getItem('eha_alert_muted')).toBe('1');
+      expect(sw).not.toBeChecked();
+      act(() => { sw.click(); });
+      expect(localStorage.getItem('eha_alert_muted')).toBeNull();
+    });
+
     it('opens pre-filled from the current user, saves successfully, and closes', async () => {
       mockUser = makeUser({ phoneNumber: '0100000', monthlySchedule: 'Mon-Fri' });
       renderLayout();

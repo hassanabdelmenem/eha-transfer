@@ -480,7 +480,7 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
 
       await waitFor(() => {
         expect(mockOverrideReferralDestination).toHaveBeenCalledWith('ref-adv-999', 'f3');
-        expect(mockUpdateReferralStatus).toHaveBeenCalledWith('ref-adv-999', 'manager_approved', '');
+        expect(mockUpdateReferralStatus).toHaveBeenCalledWith('ref-adv-999', 'accepted', '');
       });
     });
 
@@ -1007,6 +1007,7 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
       fireEvent.change(screen.getAllByLabelText(/^Hospital ID/i)[0], { target: { value: 'ISM-99999' } });
       fireEvent.change(screen.getAllByLabelText(/Full Name/i)[0], { target: { value: 'Adel Sameh' } });
       fireEvent.change(screen.getAllByLabelText(/^Age/i)[0], { target: { value: '47' } });
+      fireEvent.click(screen.getAllByRole('radio', { name: 'Male' })[0]); // sex is required, no default
       fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
       fireEvent.change(document.querySelector('#complaint')!, { target: { value: 'Sudden weakness' } });
       fireEvent.change(document.querySelector('#presentation')!, { target: { value: 'Left hemiparesis' } });
@@ -1078,6 +1079,7 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
           hospitalId: 'ISM-12345',
           name: 'Ahmed Offline',
           age: 40,
+          gender: 'male',
           complaint: 'Severe shortness of breath',
           presentation: 'Acute asthma exacerbation',
           diagnosis: 'Status Asthmaticus',

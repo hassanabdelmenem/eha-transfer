@@ -7,7 +7,7 @@ import { useI18n, typedDir } from '../../../i18n';
 interface StepPatientDemographicsProps {
   patientData: Partial<PatientData>;
   setPatientData: React.Dispatch<React.SetStateAction<Partial<PatientData>>>;
-  fieldErrors?: { hospitalId?: string; name?: string; age?: string };
+  fieldErrors?: { hospitalId?: string; name?: string; age?: string; sex?: string };
 }
 
 /** Egyptian 14-digit National ID -> age and sex, when it parses. */
@@ -83,18 +83,19 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
           />
           <FieldError id="patientAge-error">{fieldErrors?.age}</FieldError>
         </div>
-        <fieldset>
+        <fieldset aria-invalid={!!fieldErrors?.sex} aria-describedby={fieldErrors?.sex ? 'patientSex-error' : undefined}>
           <legend className="mb-1.5 text-[12.5px] font-semibold text-slate-700 dark:text-white/70">
             {t('identity.sex')}<span className="sr-only"> {t('wizard.required')}</span>
           </legend>
           <div className="grid grid-cols-2 gap-2">
-            <ChoicePill type="radio" name="gender" checked={patientData.gender === 'male' || !patientData.gender} onChange={() => set({ gender: 'male' })} className="min-h-[54px]">
+            <ChoicePill type="radio" name="gender" checked={patientData.gender === 'male'} onChange={() => set({ gender: 'male' })} className="min-h-[54px]">
               {t('identity.male')}
             </ChoicePill>
             <ChoicePill type="radio" name="gender" checked={patientData.gender === 'female'} onChange={() => set({ gender: 'female' })} className="min-h-[54px]">
               {t('identity.female')}
             </ChoicePill>
           </div>
+          <FieldError id="patientSex-error">{fieldErrors?.sex}</FieldError>
         </fieldset>
       </div>
 

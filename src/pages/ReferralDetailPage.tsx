@@ -165,7 +165,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
   // escalation has its own card above this, so it is not repeated here.
   const mobileBanner: { label: string; text: string; tint: BannerTint } = (() => {
     // label/text pairs from banner.* in the catalogue.
-    const b = (key: 'admin' | 'deptPending' | 'deptApproved' | 'deptReviewed' | 'managerSign' | 'managerWaiting' | 'managerOversight' | 'erConsent' | 'erEscort' | 'erArrival' | 'erReady' | 'erNotYet' | 'nurseBed' | 'requirements' | 'referrerReady' | 'referrerConsent' | 'referrerWaiting' | 'following',
+    const b = (key: 'admin' | 'deptPending' | 'deptApproved' | 'deptReviewed' | 'managerSign' | 'managerWaiting' | 'managerOversight' | 'erConsent' | 'erEscort' | 'erArrival' | 'erEnRoute' | 'erReady' | 'erNotYet' | 'nurseBed' | 'requirements' | 'referrerReady' | 'referrerConsent' | 'referrerWaiting' | 'following',
       tint: BannerTint, vars?: Record<string, string>) => ({ label: t(`banner.${key}.label`, vars), text: t(`banner.${key}.text`, vars), tint });
     if (isAdmin) return b('admin', 'info');
     if (isTargetDeptHead && referral.status === 'pending') return b('deptPending', 'warning');
@@ -183,7 +183,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     if (isErRoom && referral.requiresAccompanyingDoctor && referral.status === 'patient_consented' && !referral.accompanyingDoctor) {
       return b('erEscort', 'warning');
     }
-    if (isErRoom && referral.status === 'in_transit') return b('erArrival', 'info');
+    if (isErRoom && referral.status === 'in_transit') return b(isReceiving ? 'erArrival' : 'erEnRoute', 'info');
     if (isErRoom && referral.status === 'patient_consented') return b('erReady', 'info');
     if (isErRoom) return b('erNotYet', 'warning');
     if (isNurse && ['arrived', 'accepted', 'manager_approved'].includes(referral.status)) {
@@ -361,8 +361,10 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
       }
       break;
     case 'manager':
-      if (referral.status === 'dept_approved') {
-        footerPrimary = { label: t('manager.acceptTransfer'), onClick: () => handleStatusUpdate('manager_approved'), tone: successFill };
+      // 'manager_approved' is only left over from the old two-click flow; the
+      // signature now accepts outright (see ManagerCockpit.handleManagerAccept).
+      if (referral.status === 'dept_approved' || referral.status === 'manager_approved') {
+        footerPrimary = { label: t('manager.acceptTransfer'), onClick: () => handleStatusUpdate('accepted'), tone: successFill };
         // A rejection always needs a reason: open the same dialog the console uses.
         footerSecondary = { label: t('home.decline'), onClick: () => setShowRejectModal(true), tone: criticalOutline };
       } else {
@@ -377,7 +379,8 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
         footerPrimary = { label: t('card.saveEscort'), onClick: () => focusSection('escort-form-section'), tone: darkFill };
       } else if (referral.status === 'patient_consented') {
         footerPrimary = { label: t('card.dispatch'), onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? t('card.blockedEscort') : undefined, tone: darkFill };
-      } else if (referral.status === 'in_transit') {
+      } else if (referral.status === 'in_transit' && (isReceiving || isAdmin)) {
+        // The sending ER can't know the patient arrived; the rules refuse it too.
         footerPrimary = { label: t('action.markArrived'), onClick: () => handleStatusUpdate('arrived'), tone: successFill };
       } else {
         footerPrimary = { label: t('action.printSummary'), onClick: () => handlePrint(), tone: darkFill };
@@ -484,7 +487,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
                   toastError(e, t('action.moveFailed'));
                   return;
                 }
-                handleStatusUpdate('manager_approved');
+                handleStatusUpdate('accepted');
               }}
               onDestinationOverride={handleDestinationOverride}
               onPatientConsent={handlePatientConsent}

@@ -1,15 +1,18 @@
 import { useEffect, useRef } from 'react';
+import { ALERT_SOUND_URL, isAlertMuted } from '../lib/alertSound';
 
-export function useAudioAlert(trigger: boolean, audioUrl = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3') {
+export function useAudioAlert(trigger: boolean, audioUrl = ALERT_SOUND_URL) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio(audioUrl);
     }
-    
-    if (trigger) {
-      audioRef.current.play().catch(e => console.log('Audio play prevented by browser policy', e));
+
+    if (trigger && !isAlertMuted()) {
+      // Autoplay rules block sound until the user has interacted with the page;
+      // a missing or blocked file fails here too, so say which it was.
+      audioRef.current.play().catch(e => console.log('Alert sound did not play:', e?.name, e?.message));
     }
   }, [trigger, audioUrl]);
 }

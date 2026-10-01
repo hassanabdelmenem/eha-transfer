@@ -8,6 +8,7 @@ import { AdminDirectActionsCard } from './AdminDirectActionsCard';
 import { PatientConsentCard } from './PatientConsentCard';
 import { EscortAssignmentForm } from './EscortAssignmentForm';
 import { CancellationDialog } from './CancellationDialog';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Facility, Referral, ReferralStatus, User } from '../../../types';
 import { useI18n, typedDir } from '../../../i18n';
 
@@ -102,6 +103,9 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
   onOpenRejectModal,
 }) => {
   const { t } = useI18n();
+  // Discharge appears where Admit was; without this a double-click on Admit
+  // discharged the patient it had just admitted.
+  const [confirmDischarge, setConfirmDischarge] = React.useState(false);
   // Same catalogue strings the header used, so the comparison holds in any language.
   const inHeader = (label: string) => headerActions.includes(label.toLowerCase());
   return (
@@ -145,7 +149,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
             <>
               {!inHeader(t('manager.acceptTransfer')) && (
               <Button
-                onClick={() => onStatusUpdate('manager_approved')}
+                onClick={() => onStatusUpdate('accepted')}
                 className="w-full bg-success-700 hover:bg-success-800 min-h-[48px]"
               >
                 <CheckCircle className="h-4 w-4 me-2" /> {t('console.acceptTransfer')}
@@ -173,7 +177,8 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
             </Button>
           )}
 
-          {(isReceiving || isErRoom) && referral.status === 'in_transit' && !inHeader(t('action.markArrived')) && (
+          {/* Only the hospital the patient reached can confirm arrival (firestore.rules agrees). */}
+          {isReceiving && referral.status === 'in_transit' && !inHeader(t('action.markArrived')) && (
             <Button
               onClick={() => onStatusUpdate('arrived')}
               className="w-full bg-blue-600 hover:bg-blue-700 min-h-[48px]"
@@ -193,7 +198,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
 
           {isReceiving && referral.status === 'admitted' && (
             <Button
-              onClick={() => onStatusUpdate('discharged')}
+              onClick={() => setConfirmDischarge(true)}
               className="w-full bg-slate-600 hover:bg-slate-700 min-h-[48px]"
             >
               {t('console.discharge')}
@@ -341,6 +346,15 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
             setCancelError={setCancelError}
             cancelBusy={cancelBusy}
             onConfirmCancel={onCancelReferral}
+          />
+
+          <ConfirmDialog
+            open={confirmDischarge}
+            title={t('dischargeConfirm.title', { patient: referral.patientData.name })}
+            body={t('dischargeConfirm.body')}
+            confirmLabel={t('dischargeConfirm.confirm')}
+            onCancel={() => setConfirmDischarge(false)}
+            onConfirm={() => { setConfirmDischarge(false); onStatusUpdate('discharged'); }}
           />
         </div>
       </CardContent>

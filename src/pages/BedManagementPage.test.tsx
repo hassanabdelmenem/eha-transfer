@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BedManagementPage } from './BedManagementPage';
 import { Facility, Referral, User } from '../types';
@@ -188,6 +188,8 @@ describe('BedManagementPage', () => {
 
     const dischargeBtn = screen.getByRole('button', { name: /Discharge/i });
     fireEvent.click(dischargeBtn);
+    // Discharge asks first; confirm in the dialog.
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: /^Discharge$/i }));
     expect(mockDischargeDirectAdmission).toHaveBeenCalledWith('adm-1');
   });
 
