@@ -1,0 +1,102 @@
+name: Deploy to staging
+
+# Keeps https://eha-transfer-staging.web.app on the latest main, with main's
+# Firestore rules and indexes, so the permanent staging address always matches
+# what production runs. Before this the live staging site was empty ("Site Not
+# Found") and only PR preview channels had an app, and staging rules were
+# deployed by hand after every rules change.
+#
+# Runs after CI passes on main, like the production deploy, but independently
+# of it: a staging failure never holds production back.
+#
+# Uses FIREBASE_SERVICE_ACCOUNT_STAGING (github-preview@eha-transfer-staging),
+# which exists only in the staging project and cannot reach production. It
+# needs roles/firebasehosting.admin, roles/firebaserules.admin and
+# roles/datastore.indexAdmin on eha-transfer-staging (docs/DEPLOYMENT.md).
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [ "main" ]
+    types: [ completed ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-deploy-staging
+  cancel-in-progress: false
+
+env:
+  FIREBASE_PROJECT: eha-transfer-staging
+
+jobs:
+  deploy:
+    name: Build and deploy staging
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Staging shows Arabic so the clinician reviewer can read it in place;
+      # production keeps it off until that review is signed off.
+      - name: Build for staging
+        run: npm run build
+        env:
+          VITE_FIREBASE_TARGET: staging
+          VITE_ENABLE_ARABIC: 'true'
+
+      # Same rewrite as the PR preview: firebase.json names the production site
+      # and allows the production auth domain in the CSP frame-src.
+      - name: Point firebase.json at the staging site
+        run: |
+          jq '.hosting.site = "eha-transfer-staging"
+              | .hosting.headers |= map(.headers |= map(
+                  if .key == "Content-Security-Policy"
+                  then .value |= gsub("https://eha-transfer\\.web\\.app"; "https://eha-transfer-staging.web.app")
+                  else . end))' firebase.json > firebase.staging.json
+          mv firebase.staging.json firebase.json
+          grep -q '"site": "eha-transfer-staging"' firebase.json
+          grep -q 'frame-src .*https://eha-transfer-staging.web.app' firebase.json
+
+      - name: Authenticate to Firebase
+        env:
+          FIREBASE_SERVICE_ACCOUNT_STAGING: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_STAGING" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT_STAGING secret is not set. See docs/DEPLOYMENT.md."
+            exit 1
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_STAGING" > "$RUNNER_TEMP/gcp-key.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/gcp-key.json" >> "$GITHUB_ENV"
+
+      # Rules before hosting, as in production: a bundle that relies on a
+      # changed rule must not go live ahead of it.
+      - name: Deploy Firestore rules and indexes
+        run: npx firebase-tools deploy --only firestore --project "$FIREBASE_PROJECT" --non-interactive
+
+      - name: Deploy Hosting (live channel)
+        run: npx firebase-tools deploy --only hosting --project "$FIREBASE_PROJECT" --non-interactive
+
+      - name: Check the live site serves the app
+        run: |
+          html=$(curl -fsS https://eha-transfer-staging.web.app/)
+          echo "$html" | grep -q '<div id="root"' || { echo "::error::staging did not serve the app"; exit 1; }
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/gcp-key.json"
