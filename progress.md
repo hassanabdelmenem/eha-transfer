@@ -2,6 +2,18 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-02: Staging deploys on merge
+
+- New workflow `firebase-deploy-staging.yml`: after CI passes on main, build for staging (Arabic on),
+  deploy staging rules + indexes, then the live site https://eha-transfer-staging.web.app, then check
+  it serves the app. Independent of the production deploy. Manual "deploy rules to staging" after a
+  rules change is no longer needed.
+- The staging service account (github-preview@eha-transfer-staging) had Hosting only; it needs
+  roles/firebaserules.admin and roles/datastore.indexAdmin on the staging project. Auto mode blocked
+  Claude from granting IAM roles: the owner grants them (command in the PR).
+- Correction: PR previews never had Arabic on (no VITE_ENABLE_ARABIC in the preview build); the live
+  staging site now does.
+
 ## 2026-10-02: Smoke-test findings 6–10 (PR B)
 
 - Nurse home: "Incoming · on the way" lists in_transit referrals to the facility (origin, time left,
