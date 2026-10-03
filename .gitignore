@@ -1,6 +1,9 @@
 node_modules/
 build/
 dist/
+# Cloud Functions build output -- compiled from functions/src by the predeploy
+# hook in firebase.json, so a deploy can never ship a stale committed copy.
+functions/lib/
 coverage/
 .DS_Store
 *.log
@@ -47,3 +50,12 @@ _to_delete/
 # These two are local-only:
 graphify-out/cost.json
 graphify-out/cache/
+
+# One-off agent scratch work (see CLAUDE.md, Housekeeping). Keep it out of the
+# repo: it pollutes search and the graphify graph.
+scratch/
+/check_img.*
+/formatted.js
+/test_*.cjs
+/run_*.cjs
+/*.png
