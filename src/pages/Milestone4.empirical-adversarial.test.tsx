@@ -418,11 +418,12 @@ describe('Milestone 4 Empirical Adversarial Suite: Referral Detail, Timeline & A
     });
 
     it('enforces mandatory doctor name and phone number on EscortAssignmentForm', async () => {
-      mockUser = mockUsers[5]; // u-er-room (facilityId: 'f1')
+      mockUser = { id: 'u-ref-hod-er', email: 'hod_er@eha.eg', name: 'Dr. Mona (HoD Emergency)', role: 'head_of_department', facilityId: 'f1', department: 'Emergency', verified: true }; // head of the sending department
       mockReferrals = [
         createMockReferral({
           status: 'patient_consented',
           requiresAccompanyingDoctor: true,
+          referringDepartment: 'Emergency',
           accompanyingDoctor: undefined,
         }),
       ];
@@ -463,8 +464,9 @@ describe('Milestone 4 Empirical Adversarial Suite: Referral Detail, Timeline & A
 
       renderDetail();
 
-      const dispatchBtn = screen.getByRole('button', { name: /dispatch ambulance/i });
-      expect(dispatchBtn).toBeDisabled();
+      // Both the console button and the footer bar: every way to dispatch is blocked.
+      const dispatchBtns = screen.getAllByRole('button', { name: /dispatch ambulance/i });
+      dispatchBtns.forEach(btn => expect(btn).toBeDisabled());
     });
   });
 

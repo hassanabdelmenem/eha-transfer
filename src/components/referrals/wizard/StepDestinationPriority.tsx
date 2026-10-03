@@ -27,10 +27,12 @@ interface StepDestinationPriorityProps {
   setSendCriticalAlert: (value: boolean) => void;
   requiresAccompanyingDoctor: boolean;
   setRequiresAccompanyingDoctor: (value: boolean) => void;
+  referringDepartment: string;
+  setReferringDepartment: (value: string) => void;
   patientData: Partial<PatientData>;
   onEditStep: (step: number) => void;
   isOnline: boolean;
-  fieldErrors?: { departments?: string; facility?: string; reason?: string };
+  fieldErrors?: { departments?: string; facility?: string; reason?: string; sendingDepartment?: string };
 }
 
 // Words: destinationStep.<value> and destinationStep.<value>Sub.
@@ -94,6 +96,8 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
   setSendCriticalAlert,
   requiresAccompanyingDoctor,
   setRequiresAccompanyingDoctor,
+  referringDepartment,
+  setReferringDepartment,
   patientData,
   onEditStep,
   isOnline,
@@ -310,6 +314,28 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
           title={t('destinationStep.escortTitle')}
           sub={t('destinationStep.escortSub')}
         />
+        {requiresAccompanyingDoctor && (
+          <div>
+            <FieldLabel htmlFor="referringDepartment" required>{t('destinationStep.sendingDept')}</FieldLabel>
+            <select
+              id="referringDepartment"
+              required
+              value={referringDepartment}
+              onChange={e => setReferringDepartment(e.target.value)}
+              aria-invalid={!!fieldErrors?.sendingDepartment}
+              aria-describedby={fieldErrors?.sendingDepartment ? 'referringDepartment-error' : 'referringDepartment-hint'}
+              className={inputClass(!!fieldErrors?.sendingDepartment, 'appearance-auto')}
+            >
+              {!referringDepartment && <option value="">{t('destinationStep.chooseSendingDept')}</option>}
+              {[...new Set([...(referringDepartment ? [referringDepartment] : []), ...NETWORK_DEPARTMENTS])].map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+            {fieldErrors?.sendingDepartment ? (
+              <FieldError id="referringDepartment-error">{fieldErrors.sendingDepartment}</FieldError>
+            ) : (
+              <FieldHint id="referringDepartment-hint">{t('destinationStep.sendingDeptHint')}</FieldHint>
+            )}
+          </div>
+        )}
         <ToggleRow
           id="critical-alert"
           checked={sendCriticalAlert}

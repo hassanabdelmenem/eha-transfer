@@ -24,6 +24,8 @@ export interface ReferralActionConsoleProps {
   isReferring: boolean;
   isFacilityManager: boolean;
   isErRoom: boolean;
+  /** The head of the sending department or its shift delegate (escortAuthority). */
+  canRecordEscort: boolean;
   canCancel: boolean;
   notes: string;
   setNotes: (notes: string) => void;
@@ -70,6 +72,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
   isReferring,
   isFacilityManager,
   isErRoom,
+  canRecordEscort,
   canCancel,
   notes,
   setNotes,
@@ -238,7 +241,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
                   <bdi>{referral.accompanyingDoctor.name}</bdi> — <bdi>{referral.accompanyingDoctor.phoneNumber}</bdi>
                 </p>
               </div>
-            ) : isErRoom ? (
+            ) : canRecordEscort ? (
               <div className="relative p-1 rounded-xl ring-2 ring-warning-400 ring-offset-2 motion-safe:animate-[pulse_2s_ease-in-out_infinite]">
                 <EscortAssignmentForm
                   escortName={escortName}
@@ -258,7 +261,7 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
                 <div className="flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-warning-600 shrink-0 mt-0.5" />
                   <p className="text-sm font-semibold text-warning-800 dark:text-warning-300">
-                    {t('console.waitingEscort')}
+                    {t('console.waitingEscort', { dept: referral.referringDepartment || t('console.sendingDepartment') })}
                   </p>
                 </div>
               </div>

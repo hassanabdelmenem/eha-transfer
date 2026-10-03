@@ -2,6 +2,21 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-03: escort doctor named by the sending department
+
+- Bug (owner): when a transfer needs an escort doctor, nobody could record the doctor's name and phone
+  unless an ER-room account handled it (only er_official/er_room could, at either facility), so dispatch
+  stayed blocked. Owner decisions: the head of the department the patient leaves, or its shift delegate,
+  at the sending facility only; ER room loses it; sending department pre-filled from the referrer and
+  editable.
+- Rules: new `isSendingDeptHead` / `isSendingDeptDelegate` (shift assignment verified by `get()`);
+  `referringDepartment` pinned and bounded; user `department` pinned once verified (it now carries
+  authority). Rules tests rewritten for the new behaviour (123 pass).
+- App: `escortAuthority()` mirrors the rules; wizard field `#referringDepartment`; escort form, banner and
+  footer action for whoever may record it, a waiting message for everyone else; `escortNeeded`
+  notification on consent; EN/AR strings. Unit 1042, e2e 11 (lifecycle now has the sending HoD name the
+  escort and the receiving ER mark arrival).
+
 ## 2026-10-02: Staging deploys on merge
 
 - New workflow `firebase-deploy-staging.yml`: after CI passes on main, build for staging (Arabic on),

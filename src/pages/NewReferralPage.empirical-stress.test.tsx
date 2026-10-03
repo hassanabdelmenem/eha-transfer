@@ -534,6 +534,8 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
       const escortCheckbox = document.querySelector('#requires-accompanying-doctor') as HTMLInputElement;
       fireEvent.click(escortCheckbox);
       expect(escortCheckbox.checked).toBe(true);
+      // The department the patient leaves (decides who names the escort doctor).
+      fireEvent.change(document.querySelector('#referringDepartment')!, { target: { value: 'Emergency' } });
 
       const alertCheckbox = document.querySelector('#critical-alert') as HTMLInputElement;
       fireEvent.click(alertCheckbox);
@@ -597,6 +599,7 @@ describe('NewReferralPage Empirical Stress & Edge Case Challenge Suite', () => {
           requiredBedType: 'ICU',
           priority: 'emergency',
           requiresAccompanyingDoctor: true,
+          referringDepartment: 'Emergency',
           patientData: expect.objectContaining({
             hospitalId: 'ISM-98231',
             name: 'Sayed Abdel-Rahman',
