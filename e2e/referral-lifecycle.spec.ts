@@ -113,7 +113,7 @@ test.describe('Complete Referral Lifecycle Journey', () => {
     await expect(page.getByRole('button', { name: /Ready for Receive/i })).toHaveCount(0);
 
     // -------------------------------------------------------------------------
-    // STEP 4: CONSENT & TRANSIT DISPATCH (Clinician records consent, ER assigns escort and dispatches)
+    // STEP 4: CONSENT & TRANSIT DISPATCH (Clinician records consent, the sending department's head names the escort, dispatch)
     // -------------------------------------------------------------------------
     // 4a. Referring Clinician records patient consent
     await loginAs(page, E2E_USERS.clinician);
@@ -124,8 +124,9 @@ test.describe('Complete Referral Lifecycle Journey', () => {
     await consentBtn.click();
     await expect(consentBtn).not.toBeVisible({ timeout: 15000 });
 
-    // 4b. ER Room Official assigns escort doctor
-    await loginAs(page, E2E_USERS.erOfficial);
+    // 4b. The head of the department the patient leaves names the escort doctor
+    // (owner decision, 3 Oct 2026; ER-room staff no longer do this).
+    await loginAs(page, E2E_USERS.sendingHod);
     await page.goto(`/referrals/${referralId}`);
 
     const escortSection = page.locator('#escort-form-section');
@@ -147,7 +148,9 @@ test.describe('Complete Referral Lifecycle Journey', () => {
     // The journey card follows the status: "In transit · left HH:MM".
     await expect(page.getByText(/^In transit · left \d\d:\d\d$/)).toBeVisible({ timeout: 15000 });
 
-    // 4d. Confirm arrival
+    // 4d. Confirm arrival (the receiving facility's ER)
+    await loginAs(page, E2E_USERS.erOfficial);
+    await page.goto(`/referrals/${referralId}`);
     const markArrivedBtn = page.getByRole('button', { name: /Mark as Arrived/i });
     await expect(markArrivedBtn).toBeVisible({ timeout: 15000 });
     await markArrivedBtn.click();

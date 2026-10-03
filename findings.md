@@ -74,6 +74,23 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
 - Escalation writers, routing (`src/lib/routing.ts`) and SLA logic are untouchable in presentation work.
 - `User.role` is the only role field the rules trust; `requestedRole` carries no authority.
 
+## Escort doctor: who names it (owner decision, 3 Oct 2026)
+
+- After the patient consents and before the ambulance is called, the escort doctor's name and phone are
+  recorded by the **head of the department the patient leaves** (`referral.referringDepartment`) at the
+  **sending** facility, or by that department's current **shift delegate** (`shiftAssignments`, roles
+  consultant/specialist/resident, same as notification delegation). Admins as a fallback. Not ER-room
+  staff, not the receiving facility.
+- `referringDepartment` is set in the intake wizard (`#referringDepartment`, shown with the escort toggle),
+  defaulting to the referring clinician's department, and pinned after creation. Referrals made before it
+  existed: any head of department at the sending facility.
+- A delegate's escort record carries `viaShiftAssignmentId`; the rules `get()` that assignment to verify it
+  (assignment ids are random, so the rules cannot search by facility and department).
+- `department` is now a privilege field on users once verified (rules `privilegeFieldsUnchanged`): escort
+  authority depends on it.
+- Client mirror: `src/lib/escortAuthority.ts`. Consent sends the `escortNeeded` notification to the sending
+  department's head and delegate.
+
 ## Escalation e2e (`e2e/escalation.spec.ts`)
 
 - Referrals are created through the wizard, then changed with emulator admin REST writes (`Bearer owner`):

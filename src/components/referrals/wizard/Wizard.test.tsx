@@ -343,7 +343,11 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
       fireEvent.change(document.querySelector('#reasonForReferral')!, {
         target: { value: 'Severe acute respiratory distress with hemodynamic instability' }
       });
+      expect(document.querySelector('#referringDepartment')).not.toBeInTheDocument();
       fireEvent.click(document.querySelector('#requires-accompanying-doctor')!);
+      // The department the patient leaves decides who names the escort doctor. This
+      // clinician has no department on file, so it must be chosen.
+      fireEvent.change(document.querySelector('#referringDepartment')!, { target: { value: 'Emergency' } });
 
       // Step 2: Patient Identification
       fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
@@ -387,6 +391,7 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
             requiredBedType: 'ICU',
             priority: 'urgent',
             requiresAccompanyingDoctor: true,
+            referringDepartment: 'Emergency',
             patientData: expect.objectContaining({
               name: 'Sayed Abdel-Rahman',
               hospitalId: 'ISM-98231',
@@ -423,6 +428,32 @@ describe('Milestone 2 - Unified Referral Intake Wizard', () => {
   });
 
   describe('Continue-button validation gates', () => {
+    it('asks which department the patient leaves when an escort doctor is needed', async () => {
+      render(<MemoryRouter><NewReferralPage /></MemoryRouter>);
+      // Everything else complete, so the missing department is the only gap.
+      fireEvent.change(document.querySelector('#hospitalId')!, { target: { value: 'ISM-1' } });
+      fireEvent.change(document.querySelector('#patientName')!, { target: { value: 'Test Patient' } });
+      fireEvent.change(document.querySelector('#patientAge')!, { target: { value: '40' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Male' }));
+      fireEvent.click(screen.getByRole('button', { name: /^Step 3:/ }));
+      fireEvent.change(document.querySelector('#complaint')!, { target: { value: 'Chest pain' } });
+      fireEvent.change(document.querySelector('#presentation')!, { target: { value: 'Two hours of chest pain' } });
+      fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
+      fireEvent.change(document.querySelector('#diagnosis')!, { target: { value: 'ACS' } });
+      fireEvent.click(screen.getByRole('button', { name: /^Step 5:/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'ICU' }));
+      fireEvent.change(document.querySelector('#reasonForReferral')!, { target: { value: 'Needs ICU' } });
+      expect(document.querySelector('#referringDepartment')).not.toBeInTheDocument();
+      fireEvent.click(document.querySelector('#requires-accompanying-doctor')!);
+      const select = document.querySelector('#referringDepartment') as HTMLSelectElement;
+      expect(select.value).toBe(''); // this clinician has no department on file
+
+      fireEvent.click(screen.getByRole('button', { name: /Submit Referral/i }));
+      await waitFor(() => expect(document.querySelector('#referringDepartment')).toHaveAttribute('aria-invalid', 'true'));
+      expect(screen.getAllByText('Choose the department the patient leaves from.').length).toBeGreaterThan(0);
+      expect(mockAddReferral).not.toHaveBeenCalled();
+    });
+
     it('does not require vitals to continue: an empty vital is "not recorded", never a default', () => {
       render(
         <MemoryRouter>

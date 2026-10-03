@@ -45,6 +45,8 @@ export const E2E_USER = {
 export const E2E_USERS = {
   clinician: { email: 'e2e.resident@example.com', password: 'e2e-password', name: 'Dr. Resident', role: 'resident', facilityId: 'test-referring-1' },
   specialist: { email: 'e2e.specialist@example.com', password: 'e2e-password', name: 'Dr. Specialist', role: 'specialist', facilityId: 'test-referring-1' },
+  // Head of the department the patient leaves (every seeded user is in ICU): names the escort doctor.
+  sendingHod: { email: 'e2e.hod.sending@example.com', password: 'e2e-password', name: 'Dr. Sending Head', role: 'head_of_department', facilityId: 'test-referring-1' },
   hod: { email: 'e2e.hod@example.com', password: 'e2e-password', name: 'Dr. Head', role: 'head_of_department', facilityId: 'test-receiving-2' },
   manager: { email: 'e2e.md1@example.com', password: 'e2e-password', name: 'Dr. Med Dir 1', role: 'medical_director', facilityId: 'test-receiving-2' },
   medical_director_receiving: { email: 'e2e.md2@example.com', password: 'e2e-password', name: 'Dr. Med Dir 2', role: 'medical_director', facilityId: 'test-receiving-2' },

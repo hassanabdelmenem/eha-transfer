@@ -15,6 +15,8 @@ export interface WizardDraft {
   receivingFacilityId: string;
   sendCriticalAlert: boolean;
   requiresAccompanyingDoctor: boolean;
+  /** The department the patient leaves; decides who names the escort doctor. */
+  referringDepartment?: string;
   lastSaved?: string;
 }
 
