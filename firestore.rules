@@ -50,6 +50,13 @@ service cloud.firestore {
     // Roles trusted with facility *configuration* (department lists), as opposed to
     // day-to-day occupancy. Mirrors the admin gate in BedManagementPage /
     // FacilitySettingsPage.
+    // Who may appoint a department's on-call delegate (shiftAssignments).
+    function mayAppointDelegate(assignment) {
+      return atFacility(assignment.facilityId)
+          && (callerDoc().role in ['medical_director', 'hospital_manager', 'deputy_manager']
+              || (callerDoc().role == 'head_of_department'
+                  && callerDoc().get('department', null) == assignment.department));
+    }
     function isFacilityConfigRole() {
       return callerDoc().role in ['medical_director', 'hospital_manager', 'deputy_manager', 'head_of_department'];
     }
@@ -575,8 +582,16 @@ service cloud.firestore {
     // a department and a user id. Writes stay facility-scoped.
     match /shiftAssignments/{assignmentId} {
       allow read: if isVerifiedCaller();
-      allow create: if isPrivileged() || atFacility(request.resource.data.facilityId);
-      allow update: if isPrivileged() || atFacility(resource.data.facilityId);
+      // Appointing a department's delegate carries authority (notification cover,
+      // and recording an escort doctor -- isSendingDeptDelegate), so only the head
+      // of that department, facility leadership, or an admin may set it; a
+      // resident must not be able to appoint themselves. Facility and department
+      // are fixed once created.
+      allow create: if isPrivileged() || mayAppointDelegate(request.resource.data);
+      allow update: if isPrivileged()
+                    || (mayAppointDelegate(resource.data)
+                        && request.resource.data.facilityId == resource.data.facilityId
+                        && request.resource.data.department == resource.data.department);
       allow delete: if isPrivileged();
     }
 

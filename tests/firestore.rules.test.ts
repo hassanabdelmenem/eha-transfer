@@ -1046,3 +1046,39 @@ describe('department is a privilege field once verified (escort authority depend
   });
 });
 
+
+/**
+ * Shift assignments decide who covers a department (notifications) and, since
+ * 3 Oct 2026, who may record an escort doctor as that department's delegate.
+ * Writes were open to any verified account at the facility, so a resident could
+ * appoint themselves (code-scanning finding on #65). Now: the head of that
+ * department, facility leadership, or an admin; facility and department fixed.
+ */
+describe('shiftAssignments: who may appoint a delegate', () => {
+  const sa = (over: Record<string, unknown> = {}) => ({ id: 'sa-new', facilityId: 'f1', department: 'Emergency', assignedUserId: F1_ONCALL, updatedAt: '2026-10-03T12:00:00.000Z', ...over });
+
+  it('blocks a resident appointing themselves, by creating or by editing an assignment', async () => {
+    await assertFails(setDoc(doc(authed(F1_ONCALL), 'shiftAssignments', 'sa-new'), sa()));
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'shiftAssignments', 'sa-er'), { assignedUserId: F1_DOCTOR }));
+  });
+
+  it('lets the head of that department appoint and change its delegate', async () => {
+    await assertSucceeds(setDoc(doc(authed(F1_HOD_ER), 'shiftAssignments', 'sa-new'), sa()));
+    await assertSucceeds(updateDoc(doc(authed(F1_HOD_ER), 'shiftAssignments', 'sa-er'), { assignedUserId: null, updatedAt: '2026-10-03T13:00:00.000Z' }));
+  });
+
+  it("blocks the head of another department, or of the same department at another facility", async () => {
+    await assertFails(updateDoc(doc(authed(F1_HOD_ICU), 'shiftAssignments', 'sa-er'), { assignedUserId: F1_HOD_ICU }));
+    await assertFails(setDoc(doc(authed(F2_HOD_ER), 'shiftAssignments', 'sa-new'), sa()));
+  });
+
+  it('lets facility leadership and admins set it', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'shiftAssignments', 'sa-er'), { assignedUserId: F1_DOCTOR }));
+    await assertSucceeds(updateDoc(doc(authed(OWNER), 'shiftAssignments', 'sa-er'), { assignedUserId: F1_DOCTOR }));
+  });
+
+  it("blocks moving an assignment to another department or facility", async () => {
+    await assertFails(updateDoc(doc(authed(F1_HOD_ER), 'shiftAssignments', 'sa-er'), { department: 'ICU' }));
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'shiftAssignments', 'sa-er'), { facilityId: 'f2' }));
+  });
+});

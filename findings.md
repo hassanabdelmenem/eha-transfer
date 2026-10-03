@@ -86,6 +86,9 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
   existed: any head of department at the sending facility.
 - A delegate's escort record carries `viaShiftAssignmentId`; the rules `get()` that assignment to verify it
   (assignment ids are random, so the rules cannot search by facility and department).
+- Only the head of a department, facility leadership or an admin may set that department's shift delegate
+  (rules `mayAppointDelegate`); before, any verified account at the facility could, so a resident could
+  appoint themselves (code-scanning finding on #65).
 - `department` is now a privilege field on users once verified (rules `privilegeFieldsUnchanged`): escort
   authority depends on it.
 - Client mirror: `src/lib/escortAuthority.ts`. Consent sends the `escortNeeded` notification to the sending
