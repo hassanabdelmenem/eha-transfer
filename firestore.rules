@@ -82,7 +82,12 @@ service cloud.firestore {
       return request.resource.data.role == resource.data.role
           && request.resource.data.verified == resource.data.verified
           && (resource.data.verified != true
-              || request.resource.data.facilityId == resource.data.facilityId);
+              || request.resource.data.facilityId == resource.data.facilityId)
+          // Department is set during onboarding and by facility leadership; once
+          // verified it carries authority (who records a transfer's escort doctor,
+          // accompanyingDoctorWriteAuthorized), so a user cannot move themselves.
+          && (resource.data.verified != true
+              || request.resource.data.get('department', null) == resource.data.get('department', null));
     }
 
     match /users/{userId} {
@@ -210,7 +215,11 @@ service cloud.firestore {
           // Missing on referrals created before this field existed; those are
           // let through rather than becoming permanently un-editable.
           && (!('requiresAccompanyingDoctor' in resource.data)
-              || request.resource.data.requiresAccompanyingDoctor == resource.data.requiresAccompanyingDoctor);
+              || request.resource.data.requiresAccompanyingDoctor == resource.data.requiresAccompanyingDoctor)
+          // The department the patient leaves decides who records the escort
+          // doctor (accompanyingDoctorWriteAuthorized); editable, it would let a
+          // party redirect that authority to themselves.
+          && request.resource.data.get('referringDepartment', null) == resource.data.get('referringDepartment', null);
     }
 
     // The clinical record itself. Pinned for everyone except the clinician who
@@ -378,7 +387,7 @@ service cloud.firestore {
     }
 
     // A transfer flagged at creation as needing a doctor escort cannot be
-    // dispatched (moved to in_transit) until the ER Room Official has recorded
+    // dispatched (moved to in_transit) until the sending department has recorded
     // who that doctor is. Mirrors the client-side guard in updateReferralStatus
     // -- keep both in sync. Only checked on the transition itself, so it never
     // blocks unrelated field edits on a referral that happens to need an escort.
@@ -395,21 +404,44 @@ service cloud.firestore {
 
     // The escort assignment is a clinical/legal attestation about who is
     // physically riding with the patient, so who may write it matters as much
-    // as its shape (which accompanyingDoctorSatisfied() already checks). It's
-    // recorded by ER staff at whichever facility is actually dispatching the
-    // ambulance -- either side, mirroring the existing 'in_transit' permissive
-    // bucket in transitionActorAllowed() and the client's isErRoom check in
-    // ReferralDetailPage.tsx -- but only by the er_official/er_room roles, and
-    // only attributed to the caller's own uid. Without this, any verified
-    // referral party of any role could fabricate or reassign the escort.
+    // as its shape (accompanyingDoctorSatisfied() checks the shape). Owner
+    // decision, 3 Oct 2026: it is decided by the head of the department the
+    // patient leaves (referringDepartment) at the sending facility, or by that
+    // department's current shift delegate -- not by ER-room staff, and not by
+    // the receiving facility. Always attributed to the caller's own uid.
+    // Referrals made before referringDepartment existed: any head of department
+    // at the sending facility, so in-flight transfers are not stranded.
+    function isSendingDeptHead(data) {
+      return callerDoc().role == 'head_of_department'
+          && (!('referringDepartment' in data)
+              || callerDoc().get('department', null) == data.referringDepartment);
+    }
+    // A delegate proves the delegation by naming the shift assignment that makes
+    // them the sending department's cover (assignment ids are random, so the rule
+    // cannot look one up by facility and department itself). Same eligible roles
+    // as notification delegation (DELEGATABLE_ON_CALL_ROLES).
+    function isSendingDeptDelegate(data) {
+      return request.resource.data.accompanyingDoctor is map
+          && request.resource.data.accompanyingDoctor.get('viaShiftAssignmentId', null) is string
+          && callerDoc().role in ['consultant', 'specialist', 'resident']
+          && shiftCoversSendingDept(
+               get(/databases/$(database)/documents/shiftAssignments/$(request.resource.data.accompanyingDoctor.viaShiftAssignmentId)).data,
+               data);
+    }
+    function shiftCoversSendingDept(assignment, data) {
+      return assignment.facilityId == data.referringFacilityId
+          && assignment.assignedUserId == request.auth.uid
+          && (!('referringDepartment' in data) || assignment.department == data.referringDepartment);
+    }
     function accompanyingDoctorWriteAuthorized() {
       return !changedKeys().hasAny(['accompanyingDoctor'])
           || isPrivileged()
-          || (isReferralParty(resource.data)
-              && callerDoc().role in ['er_official', 'er_room']
+          || (isVerifiedCaller()
+              && isReferringParty(resource.data)
               && (request.resource.data.accompanyingDoctor == null
                   || (request.resource.data.accompanyingDoctor is map
-                      && request.resource.data.accompanyingDoctor.addedBy == request.auth.uid)));
+                      && request.resource.data.accompanyingDoctor.addedBy == request.auth.uid))
+              && (isSendingDeptHead(resource.data) || isSendingDeptDelegate(resource.data)));
     }
 
     match /referrals/{referralId} {
@@ -432,7 +464,10 @@ service cloud.firestore {
                     && request.resource.data.statusHistory is list
                     && request.resource.data.statusHistory.size() == 1
                     && request.resource.data.createdAtMs is number
-                    && request.resource.data.createdAtMs <= request.time.toMillis() + 300000;
+                    && request.resource.data.createdAtMs <= request.time.toMillis() + 300000
+                    && (!('referringDepartment' in request.resource.data)
+                        || (request.resource.data.referringDepartment is string
+                            && request.resource.data.referringDepartment.size() <= 100));
 
       allow update: if referralIdentityPinned()
                     && auditTrailAppendOnly()

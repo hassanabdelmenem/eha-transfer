@@ -8,6 +8,7 @@ import { toastError } from '../lib/toast';
 import { needsAutoEscalation } from '../lib/sla';
 import { capacityEscalationReason } from '../lib/routing';
 import { isNotificationRecipient } from '../lib/notificationRecipients';
+import { escortAuthority } from '../lib/escortAuthority';
 import { escalationNotice, escalationUpdate, stillEscalates } from '../lib/escalationSweep';
 import { notificationText, type NotificationKey, type NotificationVars } from '../i18n/notifications';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
@@ -1048,6 +1049,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refDocRef = doc(db, 'referrals', id);
     let patientName = '';
     let receivingFacilityId: string | undefined;
+    let escortAsk: { facilityId: string; department?: string } | null = null;
 
     await runTransaction(db, async (transaction) => {
       const snap = await transaction.get(refDocRef);
@@ -1058,6 +1060,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       patientName = r.patientData.name;
       receivingFacilityId = r.receivingFacilityId;
+      if (r.requiresAccompanyingDoctor && !r.accompanyingDoctor) {
+        escortAsk = { facilityId: r.referringFacilityId, department: r.referringDepartment };
+      }
       transaction.update(refDocRef, {
         status: 'patient_consented',
         updatedAt: now,
@@ -1072,6 +1077,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         type: 'success',
         referralId: id,
         facilityId: receivingFacilityId
+      });
+    }
+    // The escort doctor is named next, before the ambulance is called: ask the head
+    // of the department the patient leaves (and its shift delegate, via
+    // isNotificationRecipient's on-call delegation) at the sending facility.
+    const ask = escortAsk as { facilityId: string; department?: string } | null;
+    if (ask) {
+      createNotification({
+        key: 'escortNeeded',
+        vars: { patient: patientName },
+        type: 'warning',
+        referralId: id,
+        facilityId: ask.facilityId,
+        targetRoles: ['head_of_department'],
+        departments: ask.department ? [ask.department] : undefined,
       });
     }
   }, [user, createNotification]);
@@ -1097,7 +1117,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (r.status !== 'patient_consented') {
         throw new Error('The accompanying doctor can only be recorded after the patient has consented to transfer, before dispatch.');
       }
-      const accompanyingDoctor = { name: name.trim(), phoneNumber: phoneNumber.trim(), addedBy: user.id, addedAt: now };
+      // Mirrors firestore.rules accompanyingDoctorWriteAuthorized().
+      const authority = escortAuthority(user, r, shiftAssignmentsByFacility.get(r.referringFacilityId) || []);
+      if (!authority.allowed) {
+        throw new Error('Only the head of the sending department, or its shift delegate, can record the accompanying doctor.');
+      }
+      const accompanyingDoctor = {
+        name: name.trim(), phoneNumber: phoneNumber.trim(), addedBy: user.id, addedAt: now,
+        ...(authority.viaShiftAssignmentId ? { viaShiftAssignmentId: authority.viaShiftAssignmentId } : {}),
+      };
       transaction.update(refDocRef, {
         accompanyingDoctor,
         updatedAt: now,
@@ -1114,7 +1142,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }]
       });
     });
-  }, [user]);
+  }, [user, shiftAssignmentsByFacility]);
 
   // Records that the patient declined the currently proposed facility. Re-routes the
   // referral back to auto-pending and permanently excludes the declined facility from

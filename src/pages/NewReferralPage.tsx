@@ -35,7 +35,7 @@ const emptyPatient = (): Partial<PatientData> => ({
 
 const LAST_STEP = WIZARD_STEPS.length;
 
-type FieldErrors = Partial<Record<'name' | 'hospitalId' | 'age' | 'sex' | 'complaint' | 'presentation' | 'diagnosis' | 'departments' | 'facility' | 'reason', string>>;
+type FieldErrors = Partial<Record<'name' | 'hospitalId' | 'age' | 'sex' | 'complaint' | 'presentation' | 'diagnosis' | 'departments' | 'facility' | 'reason' | 'sendingDepartment', string>>;
 
 export const NewReferralPage: React.FC = () => {
   const { user } = useAuth();
@@ -60,6 +60,9 @@ export const NewReferralPage: React.FC = () => {
   const [reasonForReferral, setReasonForReferral] = useState(initialDraft?.reasonForReferral ?? '');
   const [sendCriticalAlert, setSendCriticalAlert] = useState(initialDraft?.sendCriticalAlert ?? false);
   const [requiresAccompanyingDoctor, setRequiresAccompanyingDoctor] = useState(initialDraft?.requiresAccompanyingDoctor ?? false);
+  // Defaults to the referring clinician's own department (usually Emergency); editable,
+  // because the patient does not always leave from the referrer's department.
+  const [referringDepartment, setReferringDepartment] = useState(initialDraft?.referringDepartment ?? user?.department ?? '');
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(() => Math.min(LAST_STEP, Math.max(1, initialDraft?.step ?? 1)));
@@ -88,6 +91,7 @@ export const NewReferralPage: React.FC = () => {
       receivingFacilityId,
       sendCriticalAlert,
       requiresAccompanyingDoctor,
+      referringDepartment,
       lastSaved: new Date().toISOString(),
     };
     try {
@@ -95,7 +99,7 @@ export const NewReferralPage: React.FC = () => {
     } catch {
       /* storage quota exceeded or unavailable */
     }
-  }, [currentStep, patientData, receivingDepartments, requiredBedType, priority, transferType, reasonForReferral, isAutoRouting, receivingFacilityId, sendCriticalAlert, requiresAccompanyingDoctor]);
+  }, [currentStep, patientData, receivingDepartments, requiredBedType, priority, transferType, reasonForReferral, isAutoRouting, receivingFacilityId, sendCriticalAlert, requiresAccompanyingDoctor, referringDepartment]);
 
   // A new step starts at its top, not wherever the last one was scrolled to.
   useEffect(() => {
@@ -120,6 +124,7 @@ export const NewReferralPage: React.FC = () => {
       if (receivingDepartments.length === 0) e.departments = t('wizard.errors.departments');
       if (!isAutoRouting && !receivingFacilityId) e.facility = t('wizard.errors.facility');
       if (!reasonForReferral.trim()) e.reason = t('wizard.errors.reason');
+      if (requiresAccompanyingDoctor && !referringDepartment) e.sendingDepartment = t('wizard.errors.sendingDepartment');
     }
     return e;
   };
@@ -145,6 +150,7 @@ export const NewReferralPage: React.FC = () => {
     setReasonForReferral('');
     setSendCriticalAlert(false);
     setRequiresAccompanyingDoctor(false);
+    setReferringDepartment(user?.department ?? '');
     setAttempted([]);
     setCurrentStep(1);
     setDraftBannerVisible(false);
@@ -223,6 +229,7 @@ export const NewReferralPage: React.FC = () => {
           transferType,
           status: 'pending',
           requiresAccompanyingDoctor,
+          ...(referringDepartment ? { referringDepartment } : {}),
         },
         sendCriticalAlert
       );
@@ -381,6 +388,8 @@ export const NewReferralPage: React.FC = () => {
               setSendCriticalAlert={setSendCriticalAlert}
               requiresAccompanyingDoctor={requiresAccompanyingDoctor}
               setRequiresAccompanyingDoctor={setRequiresAccompanyingDoctor}
+              referringDepartment={referringDepartment}
+              setReferringDepartment={setReferringDepartment}
               patientData={patientData}
               onEditStep={goToStep}
               isOnline={isOnline}

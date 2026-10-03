@@ -26,6 +26,7 @@ import { RejectionModal } from '../components/referrals/actions/RejectionModal';
 import { ReferralStatus, DeptApprovalStatus } from '../types';
 import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataContext';
 import { showToast, toastError } from '../lib/toast';
+import { escortAuthority } from '../lib/escortAuthority';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
 import { useI18n } from '../i18n';
 import { formatClock } from '../i18n/format';
@@ -169,6 +170,12 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
   const isNurse = ['nurse', 'nursing_supervisor', 'owner'].includes(user.role);
   const isErRoom = (user.role === 'er_room' || user.role === 'er_official' || user.role === 'owner') && (user.facilityId === referral.referringFacilityId || user.facilityId === referral.receivingFacilityId || (referral.receivingFacilityId === 'auto' && (referral.candidateFacilityIds?.includes(user.facilityId || '') ?? false)));
 
+  // Who names the escort doctor (owner decision, 3 Oct 2026): the head of the
+  // department the patient leaves, or its shift delegate, at the sending facility.
+  // Same verdict as firestore.rules accompanyingDoctorWriteAuthorized().
+  const canRecordEscort = escortAuthority(user, referral, shiftAssignmentsByFacility.get(referral.referringFacilityId) || []).allowed
+    && Boolean(referral.requiresAccompanyingDoctor) && referral.status === 'patient_consented' && !referral.accompanyingDoctor;
+
   const isSeniorAtReferringFacility = user.facilityId === referral.referringFacilityId && SENIOR_CANCEL_ROLES.includes(user.role);
   const isReferralCreator = user.id === referral.referringUserId;
   const canCancel = (isAdmin || isSeniorAtReferringFacility || isReferralCreator) && !CANCEL_LOCKED_STATUSES.includes(referral.status) && referral.status !== 'cancelled';
@@ -180,9 +187,10 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
   // escalation has its own card above this, so it is not repeated here.
   const mobileBanner: { label: string; text: string; tint: BannerTint } = (() => {
     // label/text pairs from banner.* in the catalogue.
-    const b = (key: 'admin' | 'deptPending' | 'deptApproved' | 'deptReviewed' | 'managerSign' | 'managerWaiting' | 'managerOversight' | 'erConsent' | 'erEscort' | 'erArrival' | 'erEnRoute' | 'erReady' | 'erNotYet' | 'nurseBed' | 'requirements' | 'referrerReady' | 'referrerConsent' | 'referrerWaiting' | 'following',
+    const b = (key: 'admin' | 'deptPending' | 'deptApproved' | 'deptReviewed' | 'managerSign' | 'managerWaiting' | 'managerOversight' | 'erConsent' | 'erEscort' | 'waitEscort' | 'erArrival' | 'erEnRoute' | 'erReady' | 'erNotYet' | 'nurseBed' | 'requirements' | 'referrerReady' | 'referrerConsent' | 'referrerWaiting' | 'following',
       tint: BannerTint, vars?: Record<string, string>) => ({ label: t(`banner.${key}.label`, vars), text: t(`banner.${key}.text`, vars), tint });
     if (isAdmin) return b('admin', 'info');
+    if (canRecordEscort) return b('erEscort', 'warning');
     if (isTargetDeptHead && referral.status === 'pending') return b('deptPending', 'warning');
     if (isTargetDeptHead) {
       return latestOwnDeptComment
@@ -196,7 +204,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     if (isFacilityManager) return b('managerOversight', 'info');
     if (isErRoom && referral.status === 'accepted') return b('erConsent', 'warning');
     if (isErRoom && referral.requiresAccompanyingDoctor && referral.status === 'patient_consented' && !referral.accompanyingDoctor) {
-      return b('erEscort', 'warning');
+      return b('waitEscort', 'warning');
     }
     if (isErRoom && referral.status === 'in_transit') return b(isReceiving ? 'erArrival' : 'erEnRoute', 'info');
     if (isErRoom && referral.status === 'patient_consented') return b('erReady', 'info');
@@ -395,7 +403,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
       if (referral.status === 'accepted' && (isReferring || isAdmin)) {
         footerPrimary = { label: t('action.recordConsent'), onClick: handlePatientConsent, disabled: consentBusy, tone: successFill };
         footerSecondary = { label: t('action.declineFacility'), onClick: () => setShowDeclineForm(true), tone: criticalOutline };
-      } else if (referral.requiresAccompanyingDoctor && referral.status === 'patient_consented' && !referral.accompanyingDoctor) {
+      } else if (canRecordEscort) {
         footerPrimary = { label: t('card.saveEscort'), onClick: () => focusSection('escort-form-section'), tone: darkFill };
       } else if (referral.status === 'patient_consented') {
         footerPrimary = { label: t('card.dispatch'), onClick: () => handleStatusUpdate('in_transit'), disabled: dispatchBlocked, disabledReason: dispatchBlocked ? t('card.blockedEscort') : undefined, tone: darkFill };
@@ -430,6 +438,8 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
 
   // Labels before the saving hold, so the console still knows which buttons the header shows.
   const headerLabels = [footerPrimary?.label, footerSecondary?.label, footerTertiary?.label].filter((l): l is string => !!l).map(l => l.toLowerCase());
+  // Whoever names the escort gets that as their one action, whatever their layout.
+  if (canRecordEscort) footerPrimary = { label: t('card.saveEscort'), onClick: () => focusSection('escort-form-section'), tone: darkFill };
   if (savingFrom) {
     if (footerPrimary) footerPrimary = { ...footerPrimary, label: t('card.saving'), disabled: true };
     if (footerSecondary) footerSecondary = { ...footerSecondary, disabled: true };
@@ -479,6 +489,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
               isReferring={isReferring}
               isFacilityManager={isFacilityManager}
               isErRoom={isErRoom}
+              canRecordEscort={canRecordEscort}
               canCancel={canCancel}
               notes={notes}
               setNotes={setNotes}

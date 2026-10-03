@@ -13,7 +13,7 @@ const referral = {
 const user = { id: 'n1', name: 'Nurse', role: 'nurse', facilityId: 'f-rec' } as User;
 
 const props = (onStatusUpdate: ReferralActionConsoleProps['onStatusUpdate']): ReferralActionConsoleProps => ({
-  referral, user, isAdmin: false, isReceiving: true, isReferring: false, isFacilityManager: false, isErRoom: false,
+  referral, user, isAdmin: false, isReceiving: true, isReferring: false, isFacilityManager: false, isErRoom: false, canRecordEscort: false,
   canCancel: false, notes: '', setNotes: noop, facilities: [], contractedFacilityId: '', setContractedFacilityId: noop,
   overrideFacilityId: '', setOverrideFacilityId: noop, showDeclineForm: false, setShowDeclineForm: noop,
   declineReason: '', setDeclineReason: noop, consentBusy: false, escortName: '', setEscortName: noop,

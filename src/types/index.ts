@@ -193,15 +193,23 @@ export interface Referral {
   // condition means a doctor must physically ride with the ambulance. The
   // concrete escort is not known yet at that point -- only that one is needed.
   requiresAccompanyingDoctor?: boolean;
-  // Filled in by the ER Room Official after the patient has consented to
-  // transfer and before the ambulance is dispatched (see setAccompanyingDoctor
-  // in DataContext and the gate in updateReferralStatus). Null rather than
-  // absent once cleared, mirroring the escalation fields' convention.
+  // The department the patient leaves from (usually Emergency, not always). Set at
+  // creation, defaulting to the referring clinician's own department, and pinned
+  // afterwards: its head, or its shift delegate, records the escort doctor.
+  // Missing on referrals made before 3 Oct 2026.
+  referringDepartment?: string;
+  // Filled in by the head of the sending department (or its shift delegate) after
+  // the patient has consented to transfer and before the ambulance is dispatched
+  // (see setAccompanyingDoctor in DataContext, escortAuthority and the gate in
+  // updateReferralStatus). Null rather than absent once cleared, mirroring the
+  // escalation fields' convention.
   accompanyingDoctor?: {
     name: string;
     phoneNumber: string;
     addedBy: string;
     addedAt: string;
+    /** The shift assignment a delegate acted under (the rules verify it). */
+    viaShiftAssignmentId?: string;
   } | null;
 }
 
