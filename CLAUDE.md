@@ -121,5 +121,7 @@ milestones, DOM contracts), `PRODUCT.md`, `DESIGN.md` (design system; follow it 
 
 - Don't touch the Vite `server.hmr` / `watch` settings driven by `DISABLE_HMR`.
 - `graphify-out/` is committed on purpose; for architecture questions query it first.
-- `.agents/`, `scratch/`, root-level `test_*.cjs` / `run_*.cjs` / `*.png`, `formatted.js` are
-  historical agent output. Don't treat them as source.
+- `.agents/` is historical agent output. Don't treat it as source. One-off scratch work
+  (`scratch/`, root-level `test_*.cjs` / `run_*.cjs` / `*.png`) is gitignored; keep it out of the repo.
+- `functions/lib/` is build output, gitignored and compiled by the `predeploy` hook in
+  `firebase.json`. Edit `functions/src/`.
