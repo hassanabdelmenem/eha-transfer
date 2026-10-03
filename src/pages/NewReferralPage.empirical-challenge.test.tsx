@@ -691,6 +691,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       fireEvent.click(screen.getByRole("radio", { name: /Emergency/i }));
       fireEvent.click(document.querySelector("#critical-alert")!);
       fireEvent.click(document.querySelector("#requires-accompanying-doctor")!);
+      fireEvent.change(document.querySelector("#referringDepartment")!, { target: { value: "Emergency" } });
 
       // Step 2: Patient Identification
       fireEvent.click(screen.getByRole('button', { name: /^Step 1:/ }));
@@ -719,6 +720,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
             referringFacilityId: "fac-1",
             priority: "emergency",
             requiresAccompanyingDoctor: true,
+            referringDepartment: "Emergency",
             receivingDepartments: ["Cardiology"],
             reasonForReferral: "Acute STEMI transfer for primary PCI",
             patientData: expect.objectContaining({

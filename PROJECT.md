@@ -88,7 +88,8 @@
   - HoD Review Section: `#dept-review-section` with `select` and `textarea`, button `/Submit Review/i`
   - Manager Action: button `/Accept the Transfer/i`, button `/Ready for Receive/i`
   - Consent Action: button `/Accepted Transfer/i`
-  - Escort Form Section: `#escort-form-section` with `input[type="text"]`, `input[type="tel"]`, button `/Save Accompanying Doctor/i`
+  - Escort Form Section: `#escort-form-section` with `input[type="text"]`, `input[type="tel"]`, button `/Save Accompanying Doctor/i` (shown to the head of the sending department or its shift delegate)
+  - Sending department (intake, shown when `#requires-accompanying-doctor` is checked): `#referringDepartment` select
   - Dispatch Actions: button `/Dispatch Ambulance/i`, button `/Mark as Arrived/i`
   - Rejection Modal: dialog with title "Reject Transfer", `#rejectionReasonInput`, button `/Confirm Rejection/i`
   - Cancellation Modal: dialog with title "Cancel Referral", `textarea[placeholder*="Reason for cancellation"]`, button `/Confirm Cancellation/i`

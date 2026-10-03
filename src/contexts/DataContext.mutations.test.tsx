@@ -510,6 +510,23 @@ describe('DataContext.recordPatientConsent', () => {
     seedCollection(fsState, 'users', [makeUser({ id: 'u1' }), makeUser({ id: 'admin-watcher', role: 'system_admin', facilityId: undefined })]);
   });
 
+  it('when an escort doctor is needed, asks the head of the sending department and its shift delegate to name one', async () => {
+    seedCollection(fsState, 'users', [
+      makeUser({ id: 'u1' }),
+      makeUser({ id: 'hod-er', role: 'head_of_department', facilityId: 'f1', department: 'Emergency' }),
+      makeUser({ id: 'hod-icu', role: 'head_of_department', facilityId: 'f1', department: 'ICU' }),
+      makeUser({ id: 'oncall', role: 'resident', facilityId: 'f1', department: 'Medicine' }),
+      makeUser({ id: 'hod-er-f2', role: 'head_of_department', facilityId: 'f2', department: 'Emergency' }),
+    ]);
+    seedCollection(fsState, 'shiftAssignments', [{ id: 'sa-er', facilityId: 'f1', department: 'Emergency', assignedUserId: 'oncall', updatedAt: new Date().toISOString() }]);
+    seedCollection(fsState, 'referrals', [makeReferral({ id: 'r1', status: 'accepted', receivingFacilityId: 'f2', requiresAccompanyingDoctor: true, referringDepartment: 'Emergency' })]);
+    renderProvider();
+    await act(async () => { screen.getByText('Consent').click(); });
+    await waitFor(() => expect(screen.getByTestId('referral-status')).toHaveTextContent('patient_consented'));
+    const escortAsks = Object.values(fsState.stores['notifications'] || {}).filter((n: any) => n.key === 'escortNeeded');
+    expect(escortAsks.map((n: any) => n.userId).sort()).toEqual(['hod-er', 'oncall']);
+  });
+
   it('records consent and notifies the receiving facility', async () => {
     seedCollection(fsState, 'referrals', [makeReferral({ id: 'r1', status: 'accepted', receivingFacilityId: 'f2' })]);
     renderProvider();
@@ -553,9 +570,30 @@ describe('DataContext.setAccompanyingDoctor', () => {
   beforeEach(() => {
     fsState = getActiveFirestoreState();
     resetFirestoreState(fsState);
-    mockUser = makeUser({ id: 'u1', role: 'er_official', facilityId: 'f2', verified: true });
+    // The head of the department the patient leaves, at the sending facility (f1).
+    mockUser = makeUser({ id: 'u1', role: 'head_of_department', facilityId: 'f1', department: 'Emergency', verified: true });
     seedCollection(fsState, 'facilities', [makeFacility({ id: 'f2' })]);
     seedCollection(fsState, 'users', [makeUser({ id: 'u1' }), makeUser({ id: 'admin-watcher', role: 'system_admin', facilityId: undefined })]);
+  });
+
+  it("is refused for someone who is not the sending department's head or delegate (ER room, receiving side)", async () => {
+    mockUser = makeUser({ id: 'u1', role: 'er_official', facilityId: 'f2', verified: true });
+    seedCollection(fsState, 'referrals', [makeReferral({ id: 'r1', status: 'patient_consented', referringDepartment: 'Emergency' })]);
+    renderProvider();
+    await act(async () => { screen.getByText('SetEscort').click(); });
+    expect(capturedError).toMatch(/head of the sending department/i);
+    expect(fsState.stores['referrals']['r1'].accompanyingDoctor).toBeUndefined();
+  });
+
+  it("records the shift delegate's assignment, so the rules can verify the delegation", async () => {
+    mockUser = makeUser({ id: 'u1', role: 'resident', facilityId: 'f1', department: 'Medicine', verified: true });
+    seedCollection(fsState, 'shiftAssignments', [{ id: 'sa-er', facilityId: 'f1', department: 'Emergency', assignedUserId: 'u1', updatedAt: new Date().toISOString() }]);
+    seedCollection(fsState, 'referrals', [makeReferral({ id: 'r1', status: 'patient_consented', referringDepartment: 'Emergency' })]);
+    renderProvider();
+    await waitFor(() => expect(screen.getByTestId('referral-status')).toHaveTextContent('patient_consented'));
+    await act(async () => { screen.getByText('SetEscort').click(); });
+    await waitFor(() => expect(fsState.stores['referrals']['r1'].accompanyingDoctor?.viaShiftAssignmentId).toBe('sa-er'));
+    expect(fsState.stores['referrals']['r1'].accompanyingDoctor?.addedBy).toBe('u1');
   });
 
   it('requires both a name and a phone number', async () => {

@@ -16,7 +16,7 @@ import {
   assertSucceeds,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { beforeAll, afterAll, beforeEach, describe, it } from 'vitest';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,6 +30,13 @@ const F2_DOCTOR = 'f2-doctor-uid';
 const F3_CANDIDATE = 'f3-candidate-uid';
 const NEWCOMER = 'newcomer-uid';
 const F2_ER_OFFICIAL = 'f2-er-official-uid';
+// Escort recording (3 Oct 2026): the head of the department the patient leaves,
+// or that department's shift delegate, at the sending facility.
+const F1_HOD_ER = 'f1-hod-er-uid';
+const F1_HOD_ICU = 'f1-hod-icu-uid';
+const F1_ER_OFFICIAL = 'f1-er-official-uid';
+const F1_ONCALL = 'f1-oncall-resident-uid';
+const F2_HOD_ER = 'f2-hod-er-uid';
 // Admin-verified staff whose email/password address was never confirmed. The
 // fixtures above tie "email unverified" to "admin-unverified" (NEWCOMER), which
 // is how the email_verified check in isVerifiedCaller() was removed without a
@@ -97,6 +104,14 @@ beforeEach(async () => {
     await setDoc(doc(db, 'users', NEWCOMER), { id: NEWCOMER, name: 'New', email: 'n@x.gov', role: 'resident', verified: false });
     await setDoc(doc(db, 'users', F1_EMAIL_UNCONFIRMED), { id: F1_EMAIL_UNCONFIRMED, name: 'F1 Unconfirmed', email: 'u@x.gov', role: 'resident', verified: true, facilityId: 'f1', department: 'ICU' });
     await setDoc(doc(db, 'users', F2_ER_OFFICIAL), { id: F2_ER_OFFICIAL, name: 'F2 ER Official', email: 'er2@x.gov', role: 'er_official', verified: true, facilityId: 'f2' });
+    await setDoc(doc(db, 'users', F1_HOD_ER), { id: F1_HOD_ER, name: 'F1 HoD ER', email: 'hoder@x.gov', role: 'head_of_department', verified: true, facilityId: 'f1', department: 'Emergency' });
+    await setDoc(doc(db, 'users', F1_HOD_ICU), { id: F1_HOD_ICU, name: 'F1 HoD ICU', email: 'hodicu@x.gov', role: 'head_of_department', verified: true, facilityId: 'f1', department: 'ICU' });
+    await setDoc(doc(db, 'users', F1_ER_OFFICIAL), { id: F1_ER_OFFICIAL, name: 'F1 ER Official', email: 'er1@x.gov', role: 'er_official', verified: true, facilityId: 'f1' });
+    await setDoc(doc(db, 'users', F1_ONCALL), { id: F1_ONCALL, name: 'F1 On-call', email: 'oc@x.gov', role: 'resident', verified: true, facilityId: 'f1', department: 'Medicine' });
+    await setDoc(doc(db, 'users', F2_HOD_ER), { id: F2_HOD_ER, name: 'F2 HoD ER', email: 'hoder2@x.gov', role: 'head_of_department', verified: true, facilityId: 'f2', department: 'Emergency' });
+    await setDoc(doc(db, 'shiftAssignments', 'sa-er'), { id: 'sa-er', facilityId: 'f1', department: 'Emergency', assignedUserId: F1_ONCALL, updatedAt: '2026-10-03T00:00:00.000Z' });
+    await setDoc(doc(db, 'shiftAssignments', 'sa-icu'), { id: 'sa-icu', facilityId: 'f1', department: 'ICU', assignedUserId: F1_ONCALL, updatedAt: '2026-10-03T00:00:00.000Z' });
+    await setDoc(doc(db, 'shiftAssignments', 'sa-f2'), { id: 'sa-f2', facilityId: 'f2', department: 'Emergency', assignedUserId: F1_ONCALL, updatedAt: '2026-10-03T00:00:00.000Z' });
     await setDoc(doc(db, 'referrals', 'ref1'), referral());
     // Intra-facility (f1 only) -- unlike ref1, F2_DOCTOR/F3_CANDIDATE are not
     // parties to this one, which is what the notification-relatedness tests
@@ -936,58 +951,134 @@ describe('bed capacity integrity', () => {
 });
 
 /**
- * Security assessment F2/F3: requiresAccompanyingDoctor was writable by any
- * referral party at any time (silently defeating accompanyingDoctorSatisfied()
- * before dispatch), and accompanyingDoctor itself carried no role or identity
- * check, so any party -- not just the ER Room Official -- could fabricate or
- * reassign the escort. referralIdentityPinned() and the new
- * accompanyingDoctorWriteAuthorized() close both.
+ * Who records the escort doctor (owner decision, 3 Oct 2026): the head of the
+ * department the patient leaves (referringDepartment), or that department's
+ * current shift delegate, at the sending facility only. Replaced the earlier
+ * er_official/er_room rule, under which nobody could record it when no ER-room
+ * account handled the transfer. Security assessment F2/F3 still holds: the
+ * requirement is pinned and the record is attributed to the caller.
  */
-describe('accompanying doctor authorization (security assessment F2/F3)', () => {
+describe('accompanying doctor authorization', () => {
+  const escort = (by: string, extra: Record<string, unknown> = {}) => ({
+    accompanyingDoctor: { name: 'Dr. X', phoneNumber: '+201000000', addedBy: by, addedAt: '2026-10-03T10:00:00.000Z', ...extra },
+  });
+
   beforeEach(async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), {
         requiresAccompanyingDoctor: true,
         receivingFacilityId: 'f2',
+        referringDepartment: 'Emergency',
       });
     });
   });
 
   it('blocks a referral party from disabling the escort requirement after creation', async () => {
-    // An ordinary update that never touches `status` -- exactly the write that
-    // used to slip past accompanyingDoctorSatisfied() on the later in_transit
-    // transition.
-    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
-      requiresAccompanyingDoctor: false,
-    }));
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), { requiresAccompanyingDoctor: false }));
   });
 
-  it('blocks a non-ER-role referral party from recording the accompanying doctor', async () => {
-    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
-      accompanyingDoctor: { name: 'Dr. X', phoneNumber: '+201000000', addedBy: F1_MANAGER, addedAt: '2026-01-02T00:00:00.000Z' },
-    }));
+  it('allows the head of the sending department to record the escort, attributed to themselves', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_HOD_ER), 'referrals', 'ref1'), escort(F1_HOD_ER)));
   });
 
-  it('blocks recording an accompanying doctor attributed to a different user', async () => {
-    await assertFails(updateDoc(doc(authed(F2_ER_OFFICIAL), 'referrals', 'ref1'), {
-      accompanyingDoctor: { name: 'Dr. X', phoneNumber: '+201000000', addedBy: F1_DOCTOR, addedAt: '2026-01-02T00:00:00.000Z' },
-    }));
+  it('blocks a head of another department at the sending facility', async () => {
+    await assertFails(updateDoc(doc(authed(F1_HOD_ICU), 'referrals', 'ref1'), escort(F1_HOD_ICU)));
   });
 
-  it('allows the ER official at a party facility to record the accompanying doctor, attributed to themselves', async () => {
-    await assertSucceeds(updateDoc(doc(authed(F2_ER_OFFICIAL), 'referrals', 'ref1'), {
-      accompanyingDoctor: { name: 'Dr. X', phoneNumber: '+201000000', addedBy: F2_ER_OFFICIAL, addedAt: '2026-01-02T00:00:00.000Z' },
-    }));
+  it('blocks the same department head at the receiving facility', async () => {
+    await assertFails(updateDoc(doc(authed(F2_HOD_ER), 'referrals', 'ref1'), escort(F2_HOD_ER)));
   });
 
-  it('allows the ER official to clear a previously recorded accompanying doctor', async () => {
+  it('blocks ER-room staff at either facility (no longer their step)', async () => {
+    await assertFails(updateDoc(doc(authed(F1_ER_OFFICIAL), 'referrals', 'ref1'), escort(F1_ER_OFFICIAL)));
+    await assertFails(updateDoc(doc(authed(F2_ER_OFFICIAL), 'referrals', 'ref1'), escort(F2_ER_OFFICIAL)));
+  });
+
+  it('blocks an escort attributed to a different user', async () => {
+    await assertFails(updateDoc(doc(authed(F1_HOD_ER), 'referrals', 'ref1'), escort(F1_DOCTOR)));
+  });
+
+  it("allows the sending department's shift delegate, proven by their shift assignment", async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_ONCALL), 'referrals', 'ref1'), escort(F1_ONCALL, { viaShiftAssignmentId: 'sa-er' })));
+  });
+
+  it('blocks a delegate without a shift assignment, or with one for another department or facility', async () => {
+    await assertFails(updateDoc(doc(authed(F1_ONCALL), 'referrals', 'ref1'), escort(F1_ONCALL)));
+    await assertFails(updateDoc(doc(authed(F1_ONCALL), 'referrals', 'ref1'), escort(F1_ONCALL, { viaShiftAssignmentId: 'sa-icu' })));
+    await assertFails(updateDoc(doc(authed(F1_ONCALL), 'referrals', 'ref1'), escort(F1_ONCALL, { viaShiftAssignmentId: 'sa-f2' })));
+    await assertFails(updateDoc(doc(authed(F1_ONCALL), 'referrals', 'ref1'), escort(F1_ONCALL, { viaShiftAssignmentId: 'missing' })));
+  });
+
+  it("blocks someone citing another person's shift assignment", async () => {
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), escort(F1_DOCTOR, { viaShiftAssignmentId: 'sa-er' })));
+  });
+
+  it('allows the head of the sending department to clear a recorded escort', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), {
-        accompanyingDoctor: { name: 'Dr. X', phoneNumber: '+201000000', addedBy: F2_ER_OFFICIAL, addedAt: '2026-01-02T00:00:00.000Z' },
-      });
+      await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), escort(F1_HOD_ER));
     });
-    await assertSucceeds(updateDoc(doc(authed(F2_ER_OFFICIAL), 'referrals', 'ref1'), {
-      accompanyingDoctor: null,
-    }));
+    await assertSucceeds(updateDoc(doc(authed(F1_HOD_ER), 'referrals', 'ref1'), { accompanyingDoctor: null }));
+  });
+
+  it('allows an admin as a fallback', async () => {
+    await assertSucceeds(updateDoc(doc(authed(OWNER), 'referrals', 'ref1'), escort(OWNER)));
+  });
+
+  it('on a referral made before referringDepartment existed, any head of department at the sending facility may record it', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { referringDepartment: deleteField() });
+    });
+    await assertSucceeds(updateDoc(doc(authed(F1_HOD_ICU), 'referrals', 'ref1'), escort(F1_HOD_ICU)));
+    await assertFails(updateDoc(doc(authed(F2_HOD_ER), 'referrals', 'ref1'), escort(F2_HOD_ER)));
+  });
+
+  it('pins referringDepartment after creation, so nobody can redirect who records the escort', async () => {
+    await assertFails(updateDoc(doc(authed(F1_HOD_ICU), 'referrals', 'ref1'), { referringDepartment: 'ICU' }));
+  });
+});
+
+describe('department is a privilege field once verified (escort authority depends on it)', () => {
+  it('blocks a verified user changing their own department', async () => {
+    await assertFails(updateDoc(doc(authed(F1_HOD_ICU), 'users', F1_HOD_ICU), { department: 'Emergency' }));
+  });
+  it('still lets an unverified user choose a department during onboarding', async () => {
+    await assertSucceeds(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'f1', department: 'ICU' }));
+  });
+});
+
+
+/**
+ * Shift assignments decide who covers a department (notifications) and, since
+ * 3 Oct 2026, who may record an escort doctor as that department's delegate.
+ * Writes were open to any verified account at the facility, so a resident could
+ * appoint themselves (code-scanning finding on #65). Now: the head of that
+ * department, facility leadership, or an admin; facility and department fixed.
+ */
+describe('shiftAssignments: who may appoint a delegate', () => {
+  const sa = (over: Record<string, unknown> = {}) => ({ id: 'sa-new', facilityId: 'f1', department: 'Emergency', assignedUserId: F1_ONCALL, updatedAt: '2026-10-03T12:00:00.000Z', ...over });
+
+  it('blocks a resident appointing themselves, by creating or by editing an assignment', async () => {
+    await assertFails(setDoc(doc(authed(F1_ONCALL), 'shiftAssignments', 'sa-new'), sa()));
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'shiftAssignments', 'sa-er'), { assignedUserId: F1_DOCTOR }));
+  });
+
+  it('lets the head of that department appoint and change its delegate', async () => {
+    await assertSucceeds(setDoc(doc(authed(F1_HOD_ER), 'shiftAssignments', 'sa-new'), sa()));
+    await assertSucceeds(updateDoc(doc(authed(F1_HOD_ER), 'shiftAssignments', 'sa-er'), { assignedUserId: null, updatedAt: '2026-10-03T13:00:00.000Z' }));
+  });
+
+  it("blocks the head of another department, or of the same department at another facility", async () => {
+    await assertFails(updateDoc(doc(authed(F1_HOD_ICU), 'shiftAssignments', 'sa-er'), { assignedUserId: F1_HOD_ICU }));
+    await assertFails(setDoc(doc(authed(F2_HOD_ER), 'shiftAssignments', 'sa-new'), sa()));
+  });
+
+  it('lets facility leadership and admins set it', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'shiftAssignments', 'sa-er'), { assignedUserId: F1_DOCTOR }));
+    await assertSucceeds(updateDoc(doc(authed(OWNER), 'shiftAssignments', 'sa-er'), { assignedUserId: F1_DOCTOR }));
+  });
+
+  it("blocks moving an assignment to another department or facility", async () => {
+    await assertFails(updateDoc(doc(authed(F1_HOD_ER), 'shiftAssignments', 'sa-er'), { department: 'ICU' }));
+    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'shiftAssignments', 'sa-er'), { facilityId: 'f2' }));
   });
 });

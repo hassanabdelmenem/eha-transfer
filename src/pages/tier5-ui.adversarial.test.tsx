@@ -400,9 +400,9 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
       expect(screen.getByText(/Needs your signature/i)).toBeInTheDocument();
       u4();
 
-      // 5. ER Room official escort needed banner
-      mockUser = { id: 'u4', name: 'ER Official', role: 'er_official', facilityId: 'f1', verified: true, email: 'er@eha.eg' };
-      mockReferrals = [createReferral({ status: 'patient_consented', requiresAccompanyingDoctor: true, accompanyingDoctor: undefined })];
+      // 5. Escort needed: the head of the sending department records it (3 Oct 2026)
+      mockUser = { id: 'u4', name: 'HoD Emergency', role: 'head_of_department', department: 'Emergency', facilityId: 'f1', verified: true, email: 'hoder@eha.eg' };
+      mockReferrals = [createReferral({ status: 'patient_consented', requiresAccompanyingDoctor: true, referringDepartment: 'Emergency', accompanyingDoctor: undefined })];
       const { unmount: u5 } = renderDetailPage();
       expect(screen.getByText(/Record the escort before dispatch/i)).toBeInTheDocument();
       u5();
@@ -542,9 +542,18 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
   // =========================================================================
 
   describe('3. Accompanying Doctor Escort Gating & Dispatch Edge Cases', () => {
-    it('renders accompanying doctor entry form for ER official when required but missing', () => {
+    it('shows ER-room staff the waiting message, not the form (no longer their step)', () => {
       mockUser = { id: 'u4', name: 'ER Official', role: 'er_official', facilityId: 'f1', verified: true, email: 'er@eha.eg' };
-      mockReferrals = [createReferral({ status: 'patient_consented', requiresAccompanyingDoctor: true, accompanyingDoctor: undefined })];
+      mockReferrals = [createReferral({ status: 'patient_consented', requiresAccompanyingDoctor: true, referringDepartment: 'Emergency', accompanyingDoctor: undefined })];
+      renderDetailPage();
+      expect(screen.queryByPlaceholderText(/doctor's name/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/Waiting for the head of Emergency, or the doctor covering its shift/i)).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: /dispatch ambulance/i })[0]).toBeDisabled();
+    });
+
+    it('renders the accompanying doctor entry form for the head of the sending department', () => {
+      mockUser = { id: 'u4', name: 'HoD Emergency', role: 'head_of_department', department: 'Emergency', facilityId: 'f1', verified: true, email: 'hoder@eha.eg' };
+      mockReferrals = [createReferral({ status: 'patient_consented', requiresAccompanyingDoctor: true, referringDepartment: 'Emergency', accompanyingDoctor: undefined })];
       renderDetailPage();
 
       expect(screen.getByText(/Accompanying Doctor Required/i)).toBeInTheDocument();
@@ -569,11 +578,11 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
 
     it('blocks ambulance dispatch button when accompanying doctor is required but not yet recorded', () => {
       mockUser = { id: 'u1', name: 'Dr. Referring', role: 'clinician', facilityId: 'f1', verified: true, email: 'ref@eha.eg' };
-      mockReferrals = [createReferral({ status: 'patient_consented', requiresAccompanyingDoctor: true, accompanyingDoctor: undefined })];
+      mockReferrals = [createReferral({ status: 'patient_consented', requiresAccompanyingDoctor: true, referringDepartment: 'Emergency', accompanyingDoctor: undefined })];
       renderDetailPage();
 
-      // Non-ER staff see informational waiting message
-      expect(screen.getByText(/Waiting on the ER Room Official to record the accompanying doctor before dispatch/i)).toBeInTheDocument();
+      // Everyone else sees who the transfer is waiting on
+      expect(screen.getByText(/Waiting for the head of Emergency, or the doctor covering its shift, to name the accompanying doctor before dispatch/i)).toBeInTheDocument();
 
       const dispatchBtns = screen.getAllByRole('button', { name: /dispatch ambulance/i });
       expect(dispatchBtns[0]).toBeDisabled();
@@ -605,8 +614,8 @@ describe('Tier 5 UI Adversarial Suite - Ismailia Health Connect', () => {
     });
 
     it('catches and reports error when saving accompanying doctor fails', async () => {
-      mockUser = { id: 'u4', name: 'ER Official', role: 'er_official', facilityId: 'f1', verified: true, email: 'er@eha.eg' };
-      mockReferrals = [createReferral({ status: 'patient_consented', requiresAccompanyingDoctor: true, accompanyingDoctor: undefined })];
+      mockUser = { id: 'u4', name: 'HoD Emergency', role: 'head_of_department', department: 'Emergency', facilityId: 'f1', verified: true, email: 'hoder@eha.eg' };
+      mockReferrals = [createReferral({ status: 'patient_consented', requiresAccompanyingDoctor: true, referringDepartment: 'Emergency', accompanyingDoctor: undefined })];
       mockSetAccompanyingDoctor.mockRejectedValueOnce(new Error('Database write error'));
 
       renderDetailPage();
