@@ -74,6 +74,10 @@ const USERS = [
   { key: 'hod', name: 'Dr. Staging Head', role: 'head_of_department', facilityId: 'stg-general', department: 'Cardiology' },
   { key: 'manager', name: 'Dr. Staging Director', role: 'medical_director', facilityId: 'stg-general', department: 'Emergency' },
   { key: 'er', name: 'Dr. Staging ER', role: 'er_official', facilityId: 'stg-district', department: 'Emergency' },
+  // The sending side of the escort flow (3 Oct 2026): the head of the department the patient
+  // leaves names the escort doctor, or the consultant they appoint as shift delegate.
+  { key: 'hod.district', name: 'Dr. Staging Head (District ER)', role: 'head_of_department', facilityId: 'stg-district', department: 'Emergency' },
+  { key: 'consultant.district', name: 'Dr. Staging Consultant (District ER)', role: 'consultant', facilityId: 'stg-district', department: 'Emergency' },
   { key: 'nurse', name: 'Nurse Staging', role: 'nurse', facilityId: 'stg-general', department: 'Cardiology' },
 ].map(u => ({ ...u, email: `staging.${u.key}@example.com` }));
 
