@@ -203,8 +203,22 @@ describe('DataContext admin/facility mutations', () => {
     expect(errSpy).toHaveBeenCalled();
   });
 
+  it('writes the directory entry with the user change, and removes it with the user', async () => {
+    renderProvider();
+    await waitFor(() => expect(screen.getByTestId('users-count')).not.toHaveTextContent('0'));
+    await act(async () => { screen.getByText('Verify').click(); });
+    await waitFor(() => expect(fsState.stores['directory']?.['u2']).toBeTruthy());
+    const entry = fsState.stores['directory']['u2'];
+    expect(entry.email).toBeUndefined();
+    expect(entry.id).toBe('u2');
+    await act(async () => { screen.getByText('RemoveUser').click(); });
+    await waitFor(() => expect(fsState.stores['directory']?.['u2']).toBeUndefined());
+  });
+
   it('surfaces a toast when a fire-and-forget write is rejected', async () => {
     const firestore = await import('firebase/firestore');
+    // The user + directory batch is refused, then so is the plain update it falls back to.
+    vi.spyOn(firestore, 'writeBatch').mockReturnValueOnce({ update() {}, set() {}, delete() {}, commit: () => Promise.reject(new Error('denied')) } as any);
     vi.spyOn(firestore, 'updateDoc').mockRejectedValueOnce(new Error('denied'));
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     renderProvider();

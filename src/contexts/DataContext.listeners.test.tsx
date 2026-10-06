@@ -238,6 +238,31 @@ describe('DataContext Firestore listeners', () => {
     ]));
   });
 
+  it('gives non-admins full records for their own facility and directory entries for the rest (audit S2)', async () => {
+    mockUser = makeUser({ role: 'resident', verified: true, facilityId: 'f1', id: 'u1' });
+    seedCollection(fsState, 'facilities', [makeFacility()]);
+    seedCollection(fsState, 'users', [makeUser({ id: 'u1', facilityId: 'f1' })]);
+    seedCollection(fsState, 'directory', [{ id: 'u9', name: 'Far Doc', role: 'consultant', facilityId: 'f2' }]);
+    renderProvider();
+
+    await waitFor(() => expect(screen.getByTestId('users-count')).toHaveTextContent('2'));
+    const usersQuery = fsState.subscribers['users'][0].constraints;
+    expect(usersQuery).toEqual(expect.arrayContaining([{ field: 'facilityId', op: '==', value: 'f1' }]));
+    expect(fsState.subscribers['users']).toHaveLength(1);
+    expect(fsState.subscribers['directory']).toHaveLength(1);
+  });
+
+  it('falls back to the full roster while the directory is still empty (release day)', async () => {
+    mockUser = makeUser({ role: 'resident', verified: true, facilityId: 'f1', id: 'u1' });
+    seedCollection(fsState, 'facilities', [makeFacility()]);
+    seedCollection(fsState, 'users', [makeUser({ id: 'u1', facilityId: 'f1' }), makeUser({ id: 'u9', facilityId: 'f2', verified: true })]);
+    renderProvider();
+
+    // The mock ignores where(); unverified users are left out by directoryEntryFor (directory.test.ts).
+    await waitFor(() => expect(screen.getByTestId('users-count')).toHaveTextContent('2'));
+    expect(fsState.subscribers['users']).toHaveLength(2);
+  });
+
   it('re-subscribes when the signed-in user changes', async () => {
     mockUser = makeUser({ role: 'system_admin', verified: true, id: 'admin-1' });
     seedCollection(fsState, 'facilities', [makeFacility()]);

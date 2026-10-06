@@ -11,13 +11,35 @@ export interface UserCredentials {
  * Ensures any existing session is signed out via UI or state reset,
  * then logs in via the UI with the provided user credentials.
  */
+// Log out ends with a full page load of /login (AuthContext.logout). Wait for that
+// load itself, not just the URL (the SPA reaches /login first), so the next
+// navigation is not cut off by it.
+async function clickAndAwaitReload(page: Page, click: () => Promise<void>) {
+  const reloaded = page.waitForEvent('load', { timeout: 15000 }).catch(() => {});
+  await click();
+  await reloaded;
+}
+
 /** On desktop the navigation rail is always visible and carries Log out itself. */
 async function clickVisibleLogout(page: Page): Promise<boolean> {
   const railLogout = page.getByRole('button', { name: /^Log out$/i });
   if (!(await railLogout.isVisible({ timeout: 1500 }).catch(() => false))) return false;
-  await railLogout.click();
-  await page.waitForURL(/\/login/, { timeout: 10000 }).catch(() => {});
+  await clickAndAwaitReload(page, () => railLogout.click());
   return true;
+}
+
+// Logging out does a full page load to /login (AuthContext), which can still be in
+// flight when a test navigates; the second navigation then reports "interrupted".
+async function gotoLogin(page: Page) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await page.goto('/login');
+      return;
+    } catch (err) {
+      if (attempt >= 2 || !String(err).includes('interrupted by another navigation')) throw err;
+      await page.waitForLoadState('load').catch(() => {});
+    }
+  }
 }
 
 export async function loginAs(page: Page, user: UserCredentials) {
@@ -32,13 +54,12 @@ export async function loginAs(page: Page, user: UserCredentials) {
     const logoutBtn = page.locator('button', { hasText: 'Log out' }).last();
     if (await logoutBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
       // Log out signs out directly; the end-of-shift handover is a separate menu item.
-      await logoutBtn.click();
-      await page.waitForURL(/\/login/, { timeout: 10000 }).catch(() => {});
+      await clickAndAwaitReload(page, () => logoutBtn.click());
     }
   }
 
   // Navigate to login and ensure mock user bypass is cleared
-  await page.goto('/login');
+  await gotoLogin(page);
   await page.evaluate(() => {
     try {
       localStorage.removeItem('auth_user');
@@ -48,7 +69,7 @@ export async function loginAs(page: Page, user: UserCredentials) {
 
   // If redirected away because of leftover auth session, trigger logout again
   if (!page.url().includes('/login') && (await clickVisibleLogout(page))) {
-    await page.goto('/login');
+    await gotoLogin(page);
   }
   if (!page.url().includes('/login')) {
     const userMenu2 = page.getByRole('button', { name: /User account menu/i });
@@ -58,11 +79,10 @@ export async function loginAs(page: Page, user: UserCredentials) {
       await menuTrigger2.click();
       const headerLogout = page.locator('button', { hasText: 'Log out' }).last();
       if (await headerLogout.isVisible({ timeout: 1500 }).catch(() => false)) {
-        await headerLogout.click();
-        await page.waitForURL(/\/login/, { timeout: 10000 }).catch(() => {});
+        await clickAndAwaitReload(page, () => headerLogout.click());
       }
     }
-    await page.goto('/login');
+    await gotoLogin(page);
   }
 
   await expect(page.locator('#loginEmail')).toBeVisible({ timeout: 15000 });

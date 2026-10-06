@@ -119,6 +119,36 @@ service cloud.firestore {
       allow delete: if isPrivileged();
     }
 
+    // ------------------------------------------------------------ directory
+    // The network staff directory (audit S2, src/lib/directory.ts): the contact
+    // fields other hospitals need -- name, role, facility, department, phone --
+    // for verified users only. Notification fan-out reads role/facility/department
+    // from here, so an entry is accepted only when it matches the user's own
+    // document field for field (getAfter: the same batch may be changing both).
+    // Writing a true entry needs no privilege, which is what lets the app heal a
+    // stale one; a false one is impossible.
+    function mirrorsUser(userId) {
+      let u = getAfter(/databases/$(database)/documents/users/$(userId)).data;
+      let d = request.resource.data;
+      return u.get('verified', false) == true
+          && d.keys().hasOnly(['id', 'name', 'role', 'facilityId', 'department', 'phoneNumber'])
+          && d.id == userId
+          && d.get('name', null) == u.get('name', null)
+          && d.role == u.role
+          && d.get('facilityId', null) == u.get('facilityId', null)
+          && d.get('department', null) == u.get('department', null)
+          && d.get('phoneNumber', null) == u.get('phoneNumber', null);
+    }
+    match /directory/{userId} {
+      allow read: if isVerifiedCaller();
+      allow create, update: if signedIn()
+                            && existsAfter(/databases/$(database)/documents/users/$(userId))
+                            && mirrorsUser(userId);
+      allow delete: if signedIn()
+                    && (!existsAfter(/databases/$(database)/documents/users/$(userId))
+                        || getAfter(/databases/$(database)/documents/users/$(userId)).data.get('verified', false) != true);
+    }
+
     // ----------------------------------------------------------- facilities
     // Readable pre-verification: the onboarding form has to render the hospital
     // picker before the account exists in any facility.
