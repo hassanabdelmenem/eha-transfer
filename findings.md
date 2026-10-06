@@ -142,6 +142,12 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
   the read savings it would bring are mostly covered by C5. Revisit only as a per-device opt-in for dedicated ER
   terminals. The offline referral queue (`src/lib/db.ts`) is separate and is cleared on every logout.
 
+## Hosting sites
+
+- Production is the `eha-transfer` site: https://eha-transfer.web.app (also the auth domain).
+- The project's default site `eha-transfer-1785622025` (.web.app / .firebaseapp.com) only 301-redirects to
+  production since 6 Oct 2026 (it served a stale build against prod data). Config: `ops/legacy-site-redirect/`.
+
 ## Gotchas
 
 - Hooks after an early `if (!user) return null` break React's hook order once the user loads (found and fixed

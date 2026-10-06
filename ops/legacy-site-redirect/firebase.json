@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "site": "eha-transfer-1785622025",
+    "public": "public",
+    "redirects": [
+      { "regex": "^/(.*)$", "destination": "https://eha-transfer.web.app/:1", "type": 301 }
+    ],
+    "headers": [
+      { "source": "**", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    ]
+  }
+}
