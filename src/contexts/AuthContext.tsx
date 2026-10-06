@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { User } from '../types';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, type User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, writeBatch } from 'firebase/firestore';
+import { DIRECTORY_COLLECTION, directoryEntryFor, sameEntry, type DirectoryEntry } from '../lib/directory';
 import { markActivity, clearActivity, hasActivity, isIdleExpired } from '../lib/idleSession';
 import { clearOfflineReferrals } from '../lib/db';
 
@@ -258,6 +259,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await clearOfflineReferrals();
     } catch (e) {}
+    // A full page load, not just a route change: it drops every patient record
+    // still held in memory on a shared workstation, and it is how an open tab
+    // picks up the current release (an old bundle can otherwise run for days).
+    if (import.meta.env.MODE !== 'test') window.location.replace('/login');
   }, []);
 
   useEffect(() => {
@@ -311,8 +316,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserProfile = async (data: Partial<User>) => {
     if (!user) return;
     const userRef = doc(db, 'users', user.id);
-    await setDoc(userRef, { ...data, profileCompleted: true }, { merge: true });
+    const patch = { ...data, profileCompleted: true };
+    // A name or phone change reaches the network directory in the same write.
+    const entry = directoryEntryFor({ ...user, ...patch, id: user.id });
+    if (entry) {
+      const batch = writeBatch(db);
+      batch.set(userRef, patch, { merge: true });
+      batch.set(doc(db, DIRECTORY_COLLECTION, user.id), entry);
+      try { await batch.commit(); return; } catch { /* fall through: the profile still saves; the sweep reconciles the entry */ }
+    }
+    await setDoc(userRef, patch, { merge: true });
   };
+
+  // Self-heal the signed-in user's own directory entry (audit S2): covers accounts
+  // verified by an older app version and entries a refused write left stale.
+  const healedEntryRef = useRef('');
+  useEffect(() => {
+    if (!user || user.verified !== true || !emailVerified) return;
+    const entry = directoryEntryFor(user);
+    const key = JSON.stringify(entry);
+    if (!entry || healedEntryRef.current === key) return;
+    healedEntryRef.current = key;
+    const ref = doc(db, DIRECTORY_COLLECTION, user.id);
+    (async () => {
+      const snap = await getDoc(ref);
+      if (!sameEntry(snap.exists() ? (snap.data() as DirectoryEntry) : null, entry)) await setDoc(ref, entry);
+    })().catch(err => console.warn('Directory entry not synced:', err?.message));
+  }, [user, emailVerified]);
 
   return (
     <AuthContext.Provider value={{ user, redirectError, authReady, emailVerified, login, loginWithGoogle, loginWithEmail, registerWithEmail, resendVerificationEmail, logout, hasRole, updateUserProfile }}>

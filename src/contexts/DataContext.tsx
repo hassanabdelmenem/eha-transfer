@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User, ShiftLog } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
+import { DIRECTORY_COLLECTION, directoryEntryFor, mergeRoster, type DirectoryEntry } from '../lib/directory';
 import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
 import { toastError } from '../lib/toast';
@@ -324,22 +325,66 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return () => unsubs.forEach(u => u());
     }
 
-    // Users: the full roster, needed because notification fan-out runs client-side
-    // and has to resolve recipients at other facilities.
-    unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
-      markOnline();
-      const data = snapshot.docs.map(doc => doc.data() as User);
-      if (data.length === 0) {
-        const batch = writeBatch(db);
-        INITIAL_USERS.forEach(u => batch.set(doc(db, 'users', u.id), u));
-        batch.commit().catch(writeFailed("Could not seed the user roster."));
-      } else {
-        setUsers(data);
-        // Guards the notification fan-out, which resolves recipients from this
-        // list and would otherwise address real alerts to mock user ids.
+    // Users. Notification fan-out runs client-side and has to resolve recipients
+    // at other facilities, but it only needs their role/facility/department, and
+    // the screens only need a name and a callback phone. Privileged users manage
+    // every account and keep the full roster; everyone else gets full records for
+    // their own facility plus the network directory (audit S2, src/lib/directory.ts).
+    if (isAdmin) {
+      unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
+        markOnline();
+        const data = snapshot.docs.map(doc => doc.data() as User);
+        if (data.length === 0) {
+          const batch = writeBatch(db);
+          INITIAL_USERS.forEach(u => batch.set(doc(db, 'users', u.id), u));
+          batch.commit().catch(writeFailed("Could not seed the user roster."));
+        } else {
+          setUsers(data);
+          // Guards the notification fan-out, which resolves recipients from this
+          // list and would otherwise address real alerts to mock user ids.
+          usersLoadedRef.current = true;
+        }
+      }, logAndCheckOffline));
+    } else {
+      let facilityUsers: User[] = [];
+      let entries: DirectoryEntry[] = [];
+      let haveFacilityUsers = false;
+      let haveEntries = false;
+      let rosterFallback: (() => void) | null = null;
+      const publish = () => {
+        if (!haveFacilityUsers || !haveEntries) return;
+        setUsers(mergeRoster(entries, facilityUsers));
         usersLoadedRef.current = true;
-      }
-    }, logAndCheckOffline));
+      };
+      unsubs.push(onSnapshot(
+        query(collection(db, 'users'), where('facilityId', '==', user.facilityId || '')),
+        (snapshot) => {
+          markOnline();
+          facilityUsers = snapshot.docs.map(d => d.data() as User);
+          haveFacilityUsers = true;
+          publish();
+        }, logAndCheckOffline));
+      unsubs.push(onSnapshot(collection(db, DIRECTORY_COLLECTION), (snapshot) => {
+        markOnline();
+        if (snapshot.empty) {
+          // Release day only: until the sweep's first reconcile fills the
+          // directory, derive it from the full roster as before, so no recipient
+          // is missed. Remove with the S2b rules change, which closes that list.
+          rosterFallback ??= onSnapshot(collection(db, 'users'), (all) => {
+            entries = all.docs.map(d => directoryEntryFor(d.data() as User)).filter((e): e is DirectoryEntry => e !== null);
+            haveEntries = true;
+            publish();
+          }, logAndCheckOffline);
+          return;
+        }
+        rosterFallback?.();
+        rosterFallback = null;
+        entries = snapshot.docs.map(d => d.data() as DirectoryEntry);
+        haveEntries = true;
+        publish();
+      }, logAndCheckOffline));
+      unsubs.push(() => rosterFallback?.());
+    }
 
     // Referrals: one bounded realtime listener per party-shape (see
     // referralQueryShapes). An unfiltered query here is rejected outright for
@@ -529,16 +574,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
   }, [isOnline, dataLoading, createNotification, facilities]);
 
+  // A change to a user rewrites their directory entry in the same batch, so the
+  // two never disagree (firestore.rules checks it field by field). If the batch is
+  // refused -- say our copy of the user was stale -- the user change still goes
+  // through on its own, and the sweep's daily reconcile fixes the entry.
+  const writeUser = useCallback((id: string, updates: Partial<User> | null, failMessage: string) => {
+    const userRef = doc(db, 'users', id);
+    const entryRef = doc(db, DIRECTORY_COLLECTION, id);
+    const batch = writeBatch(db);
+    if (updates === null) {
+      batch.delete(userRef);
+      batch.delete(entryRef);
+    } else {
+      batch.update(userRef, updates);
+      const before = usersById.get(id);
+      if (before) {
+        const entry = directoryEntryFor({ ...before, ...updates, id });
+        if (entry) batch.set(entryRef, entry); else batch.delete(entryRef);
+      }
+    }
+    batch.commit().catch(() =>
+      (updates === null ? deleteDoc(userRef) : updateDoc(userRef, updates)).catch(writeFailed(failMessage))
+    );
+  }, [usersById]);
+
   const updateUserVerified = useCallback((id: string, verified: boolean) => {
-    updateDoc(doc(db, 'users', id), { verified }).catch(writeFailed("Could not change that user's verification status."));
-  }, []);
+    writeUser(id, { verified }, "Could not change that user's verification status.");
+  }, [writeUser]);
 
   const updateUserRole = useCallback((id: string, role: Role, department?: string) => {
     const updates: any = { role };
     if (department !== undefined) updates.department = department;
     if (role === 'system_admin') updates.facilityId = 'branch';
-    updateDoc(doc(db, 'users', id), updates).catch(writeFailed("Could not change that user's role."));
-  }, []);
+    writeUser(id, updates, "Could not change that user's role.");
+  }, [writeUser]);
 
   // Returns the write promise so callers that are about to tear down the session
   // (e.g. logout) can await it -- signing out first would revoke the token this
@@ -1037,12 +1106,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserFacility = useCallback((id: string, facilityId: string, department?: string) => {
     const updates: any = { facilityId };
     if (department !== undefined) updates.department = department;
-    updateDoc(doc(db, 'users', id), updates).catch(writeFailed("Could not change that user's facility."));
-  }, []);
+    writeUser(id, updates, "Could not change that user's facility.");
+  }, [writeUser]);
 
   const removeUser = useCallback((id: string) => {
-    deleteDoc(doc(db, 'users', id)).catch(writeFailed("Could not remove that user."));
-  }, []);
+    writeUser(id, null, "Could not remove that user.");
+  }, [writeUser]);
 
   const addFacility = useCallback((facilityData: Omit<Facility, 'id'>) => {
     const id = uuidv4();
