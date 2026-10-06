@@ -22,6 +22,19 @@ export default defineConfig(() => {
         '@': path.resolve(import.meta.dirname, '.'),
       },
     },
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            // The Firebase SDK is ~200 KB gzipped and changes only on an SDK
+            // bump. In its own chunk its hash survives app deploys, so returning
+            // users on slow hospital links keep it cached instead of
+            // re-downloading it with every merge.
+            groups: [{ name: 'firebase', test: /node_modules[\\/](@firebase|firebase|re2js|idb)[\\/]/ }],
+          },
+        },
+      },
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify — file watching is disabled to prevent flickering during agent edits.

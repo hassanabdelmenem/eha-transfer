@@ -87,10 +87,7 @@ vi.mock('firebase/firestore', () => {
   };
 });
 
-vi.mock('../lib/firebase', () => ({ db: {}, functions: {} }));
-vi.mock('firebase/functions', () => ({
-  httpsCallable: vi.fn(() => vi.fn().mockResolvedValue({ data: 'success' })),
-}));
+vi.mock('../lib/firebase', () => ({ db: {} }));
 
 function makeReferral(overrides: Partial<Referral> = {}): Referral {
   const now = new Date().toISOString();

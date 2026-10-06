@@ -7,8 +7,6 @@ import { DataProvider, useData } from './DataContext';
 vi.mock('../lib/firebase', () => ({
   auth: { currentUser: { uid: 'u1' } },
   db: {},
-  functions: {}
-
 }));
 vi.mock('./AuthContext', () => ({
   useAuth: () => ({ user: { id: 'u1', facilityId: 'f1', role: 'system_admin' }, emailVerified: true }),
@@ -25,9 +23,6 @@ vi.mock('firebase/firestore', () => ({
   updateDoc: vi.fn(),
   writeBatch: vi.fn(() => ({ set: vi.fn(), commit: vi.fn(() => Promise.resolve()) })),
   Timestamp: { now: vi.fn(() => ({ toMillis: () => 1000 })) },
-}));
-vi.mock('firebase/functions', () => ({
-  httpsCallable: vi.fn(() => vi.fn().mockResolvedValue({ data: 'success' })),
 }));
 vi.mock('../lib/db', () => ({
   saveOfflineReferral: vi.fn().mockResolvedValue(undefined),

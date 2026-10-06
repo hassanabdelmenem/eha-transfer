@@ -1,7 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, initializeAuth, browserLocalPersistence, browserPopupRedirectResolver, connectAuthEmulator, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { resolveFirebaseTarget } from './firebaseTarget';
 
 // Read env values from import.meta.env when available (Vite) or fall back to
@@ -186,8 +185,6 @@ try {
 }
 export const db = dbInstance;
 
-export const functions = getFunctions(app);
-
 // E2E only. When the dev server is started with VITE_USE_FIREBASE_EMULATORS=true
 // the app talks to local emulators instead of the live project, so Playwright can
 // sign a real user in and walk the authenticated UI without touching production
@@ -199,5 +196,4 @@ export const functions = getFunctions(app);
 if (useEmulators) {
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
   connectFirestoreEmulator(db, '127.0.0.1', 8080);
-  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
 }
