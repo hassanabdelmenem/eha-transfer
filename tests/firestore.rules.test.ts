@@ -244,6 +244,52 @@ describe('staff directory (security review #3)', () => {
   });
 });
 
+describe('network directory (audit S2): contact fields only, always matching the user document', () => {
+  const entry = (over: Record<string, unknown> = {}) => ({ id: F1_DOCTOR, name: 'F1 Doc', role: 'resident', facilityId: 'f1', department: 'ICU', ...over });
+
+  it('is readable by verified staff at any facility, and not by an unverified account', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => { await setDoc(doc(ctx.firestore(), 'directory', F1_DOCTOR), entry()); });
+    await assertSucceeds(getDocs(collection(authed(F2_DOCTOR), 'directory')));
+    await assertFails(getDocs(collection(authed(NEWCOMER), 'directory')));
+  });
+
+  it('accepts an entry that matches the user document', async () => {
+    await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry()));
+  });
+
+  it('rejects a false role, facility or department (it decides who gets notified)', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry({ role: 'head_of_department' })));
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry({ facilityId: 'f2' })));
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry({ department: 'Emergency' })));
+  });
+
+  it('rejects private fields such as email', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry({ email: 'd@x.gov' })));
+  });
+
+  it('never lists an unverified account', async () => {
+    await assertFails(setDoc(doc(authed(NEWCOMER), 'directory', NEWCOMER), { id: NEWCOMER, name: 'New', role: 'resident' }));
+  });
+
+  it('follows a profile change written in the same batch', async () => {
+    const db = authed(F1_DOCTOR);
+    const b = writeBatch(db);
+    b.update(doc(db, 'users', F1_DOCTOR), { phoneNumber: '0100' });
+    b.set(doc(db, 'directory', F1_DOCTOR), entry({ phoneNumber: '0100' }));
+    await assertSucceeds(b.commit());
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry({ phoneNumber: '0199' })));
+  });
+
+  it('lets an entry be deleted only once its user is gone or unverified', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'directory', F1_DOCTOR), entry());
+      await setDoc(doc(ctx.firestore(), 'directory', 'ghost'), { id: 'ghost', name: 'Gone', role: 'resident' });
+    });
+    await assertFails(deleteDoc(doc(authed(F2_DOCTOR), 'directory', F1_DOCTOR)));
+    await assertSucceeds(deleteDoc(doc(authed(F2_DOCTOR), 'directory', 'ghost')));
+  });
+});
+
 describe('referral integrity (security review #4 and #5)', () => {
   it('blocks an unverified self-declared manager from cancelling', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {

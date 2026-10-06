@@ -18,6 +18,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import type { Facility, Referral, User } from '../src/types';
 import { escalationFor, escalationNotice, escalationUpdate, stillEscalates, type EscalationAction } from '../src/lib/escalationSweep';
 import { isNotificationRecipient, type RecipientShiftAssignment } from '../src/lib/notificationRecipients';
+import { DIRECTORY_COLLECTION, planDirectoryChanges, type DirectoryEntry } from '../src/lib/directory';
 
 const projectId = process.env.FIREBASE_PROJECT;
 if (!projectId) {
@@ -29,8 +30,44 @@ const DRY_RUN = process.argv.includes('--dry-run');
 initializeApp({ projectId });
 const db = getFirestore();
 
+// The network directory (src/lib/directory.ts) is kept in step by the app on
+// every user change; once a day this run also rebuilds it from the users
+// collection, which backfills it on release day and repairs any entry a refused
+// write left stale. One extra read per run to check the date; the full pass reads
+// every user and entry once a day.
+const RECONCILE_EVERY_MS = 24 * 60 * 60 * 1000;
+async function reconcileDirectoryIfDue(now: number) {
+  const metaRef = db.collection('meta').doc('directoryReconcile');
+  const last = (await metaRef.get()).data()?.at ?? 0;
+  if (now - last < RECONCILE_EVERY_MS) return;
+  const [usersSnap, entriesSnap] = await Promise.all([db.collection('users').get(), db.collection(DIRECTORY_COLLECTION).get()]);
+  const plan = planDirectoryChanges(
+    usersSnap.docs.map(d => ({ ...(d.data() as User), id: d.id })),
+    entriesSnap.docs.map(d => d.data() as DirectoryEntry),
+  );
+  console.log(`Directory: ${plan.set.length} to write, ${plan.remove.length} to remove${DRY_RUN ? ' (dry run)' : ''}.`);
+  if (DRY_RUN) return;
+  const writes = [...plan.set.map(e => ['set', e] as const), ...plan.remove.map(id => ['remove', id] as const)];
+  for (let i = 0; i < writes.length; i += 400) {
+    const batch = db.batch();
+    for (const [kind, v] of writes.slice(i, i + 400)) {
+      if (kind === 'set') batch.set(db.collection(DIRECTORY_COLLECTION).doc((v as DirectoryEntry).id), v as DirectoryEntry);
+      else batch.delete(db.collection(DIRECTORY_COLLECTION).doc(v as string));
+    }
+    await batch.commit();
+  }
+  await metaRef.set({ at: now });
+}
+
 async function main() {
   const now = Date.now();
+  try {
+    await reconcileDirectoryIfDue(now);
+  } catch (err) {
+    // Never let the directory hold up escalations.
+    console.error('Directory reconcile failed:', err);
+    process.exitCode = 1;
+  }
   // Pending referrals first: on most of the 288 runs a day there are none, and then
   // reading every facility (one read each, on the free plan's 50,000/day) buys
   // nothing (audit C4, 3 Oct 2026).
