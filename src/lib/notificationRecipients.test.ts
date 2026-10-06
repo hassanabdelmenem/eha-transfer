@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import * as fnRecipients from '../../functions/src/notificationRecipients';
 import { isNotificationRecipient, DELEGATABLE_ON_CALL_ROLES, NotificationRecipientCandidate, RecipientShiftAssignment } from './notificationRecipients';
 import type { Role } from '../types';
 
@@ -74,48 +73,5 @@ describe('isNotificationRecipient', () => {
   it('is satisfied vacuously by an empty facilityIds target list (owners/system_admins only)', () => {
     expect(isNotificationRecipient(user({ role: 'owner' as Role, facilityId: undefined }), [], { facilityIds: [] })).toBe(true);
     expect(isNotificationRecipient(user({ role: 'resident' as Role }), [], { facilityIds: [] })).toBe(false);
-  });
-});
-
-/**
- * The Functions package keeps its own copy of this module (see the header in
- * functions/src/notificationRecipients.ts for why). These assertions are what
- * make that copy safe: if a verdict is changed in one file and not the other,
- * the browser's direct-write fan-out and the (currently unused) Cloud Function
- * would silently disagree about who is a legitimate recipient.
- */
-describe('functions/src/notificationRecipients.ts stays in step with this module', () => {
-  it('agrees on the delegatable on-call roles', () => {
-    expect([...fnRecipients.DELEGATABLE_ON_CALL_ROLES]).toEqual([...DELEGATABLE_ON_CALL_ROLES]);
-  });
-
-  it.each([
-    ['named individual, wrong facility and role', user({ id: 'named', role: 'nurse' as Role, facilityId: 'f9' }), [], { facilityIds: ['f1'], targetUserIds: ['named'] }, true],
-    ['owner, no facility', user({ role: 'owner' as Role, facilityId: undefined }), [], { facilityIds: ['f1'] }, true],
-    ['no facility at all', user({ facilityId: undefined }), [], { facilityIds: ['f1'] }, false],
-    ['facility not targeted', user({ facilityId: 'f2' }), [], { facilityIds: ['f1'] }, false],
-    ['plain facility broadcast', user(), [], { facilityIds: ['f1'] }, true],
-    ['role matches targetRoles', user({ role: 'hospital_manager' as Role }), [], { facilityIds: ['f1'], targetRoles: ['hospital_manager' as Role] }, true],
-    ['role does not match targetRoles', user({ role: 'nurse' as Role }), [], { facilityIds: ['f1'], targetRoles: ['hospital_manager' as Role] }, false],
-    ['department excluded', user({ department: 'Neurology' }), [], { facilityIds: ['f1'], departments: ['Cardiology'] }, false],
-    [
-      'delegated on-call resident, own department irrelevant',
-      user({ role: 'resident' as Role, department: 'Emergency' }),
-      [{ assignedUserId: 'u1', department: 'Cardiology' }],
-      { facilityIds: ['f1'], targetRoles: ['head_of_department' as Role], departments: ['Cardiology'] },
-      true,
-    ],
-    [
-      'shiftAssignment belongs to someone else',
-      user({ role: 'resident' as Role }),
-      [{ assignedUserId: 'someone-else', department: 'Cardiology' }],
-      { facilityIds: ['f1'], targetRoles: ['head_of_department' as Role], departments: ['Cardiology'] },
-      false,
-    ],
-    ['empty facilityIds, owner', user({ role: 'owner' as Role, facilityId: undefined }), [], { facilityIds: [] }, true],
-    ['empty facilityIds, ordinary staff', user({ role: 'resident' as Role }), [], { facilityIds: [] }, false],
-  ] as const)('reaches the same verdict: %s', (_label, u, assignments, params, expected) => {
-    expect(isNotificationRecipient(u, [...assignments], params as any)).toBe(expected);
-    expect(fnRecipients.isNotificationRecipient(u, [...assignments], params as any)).toBe(expected);
   });
 });

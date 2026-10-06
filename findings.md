@@ -17,7 +17,7 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
 
 - Workflows: `ci.yml` (every branch; lint, vitest, rules, e2e), `firebase-deploy.yml` (push to `main` or manual:
   Firestore rules + indexes + hosting only), `firebase-preview.yml` (PR preview channel), `claude.yml`,
-  `claude-code-review.yml`, `stryker-nightly.yml`. Runners use Node 24; `functions/` targets Node 20.
+  `claude-code-review.yml`, `stryker-nightly.yml`. Runners use Node 24. (`functions/` was removed 3 Oct 2026: unused on the Spark plan.)
 - The repo is **public** since 27 Sep (Actions minutes free). Before that, GitHub refused every job for billing:
   jobs failing in 2–3 s with zero steps mean that, not test failures. CI on `main` cancels superseded runs;
   the deploy only runs after CI succeeds on `main`.

@@ -12,9 +12,9 @@ import { Referral, ReferralPriority, BedType } from '../types';
  * the system is handling it.
  *
  * Extracted here so that the display, the client-side escalation sweep, and the
- * scheduled Cloud Function all decide "has this breached?" the same way. If these
- * three ever disagree, a referral either escalates twice or shows a red badge
- * that no longer matches its escalation state.
+ * scheduled sweep (scripts/escalation-sweep.ts) all decide "has this breached?"
+ * the same way. If they ever disagree, a referral either escalates twice or shows
+ * a red badge that no longer matches its escalation state.
  */
 
 export const SLA_MINUTES = 30;
