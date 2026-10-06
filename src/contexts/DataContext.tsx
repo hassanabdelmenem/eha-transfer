@@ -34,6 +34,11 @@ export const CANCEL_LOCKED_STATUSES: Referral['status'][] = ['in_transit', 'arri
 // actually down doesn't block every later sync for the rest of the outage.
 export const OFFLINE_SYNC_STALL_TIMEOUT_MS = 15_000;
 
+// Realtime windows for lists that otherwise grow forever. Each listener re-reads
+// its whole result on every sign-in and page load, so these cap the read cost.
+export const NOTIFICATIONS_LIMIT = 100;
+export const SHIFT_LOGS_LIMIT = 200;
+
 export interface DirectAdmission {
   id: string;
   facilityId: string;
@@ -386,8 +391,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Notifications: readable only by their recipient, so the query must say so.
+    // Admins too: every consumer (tray badge, inbox, mark-all-read) shows only the
+    // caller's own, so an unfiltered admin listener read the whole network's
+    // notifications for nothing. Bounded to the newest NOTIFICATIONS_LIMIT, which
+    // every sign-in otherwise re-read in full (index: userId + createdAt desc).
     unsubs.push(onSnapshot(
-      isAdmin ? collection(db, 'notifications') : query(collection(db, 'notifications'), where('userId', '==', user.id)),
+      query(collection(db, 'notifications'), where('userId', '==', user.id), orderBy('createdAt', 'desc'), firestoreLimit(NOTIFICATIONS_LIMIT)),
       (snapshot) => {
         markOnline();
         // Sorted on createdAtMs, which the rules bound against server time.
@@ -417,8 +426,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, logAndCheckOffline));
 
     // Shift Logs: handover summaries quote patient names — facility-scoped.
+    // The feed shows only the last few per department; the newest
+    // SHIFT_LOGS_LIMIT keep that covered without re-reading every handover ever
+    // written on each sign-in (index: facilityId + timestamp desc).
     unsubs.push(onSnapshot(
-      isAdmin ? collection(db, 'shiftLogs') : query(collection(db, 'shiftLogs'), where('facilityId', '==', user.facilityId || '')),
+      isAdmin
+        ? query(collection(db, 'shiftLogs'), orderBy('timestamp', 'desc'), firestoreLimit(SHIFT_LOGS_LIMIT))
+        : query(collection(db, 'shiftLogs'), where('facilityId', '==', user.facilityId || ''), orderBy('timestamp', 'desc'), firestoreLimit(SHIFT_LOGS_LIMIT)),
       (snapshot) => {
         markOnline();
         setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')));
