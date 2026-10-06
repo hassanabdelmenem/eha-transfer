@@ -39,6 +39,6 @@ if (typeof URL.revokeObjectURL !== 'function') URL.revokeObjectURL = () => {};
   });
   HTMLCanvasElement.prototype.getContext = function getContext() {
     return { fillStyle: '', fillRect() {}, drawImage() {} } as unknown as CanvasRenderingContext2D;
-  } as typeof HTMLCanvasElement.prototype.getContext;
+  } as unknown as typeof HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.toDataURL = () => 'data:image/jpeg;base64,QUJD';
 }
