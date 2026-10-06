@@ -110,6 +110,13 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
   labels) and skips those buttons, so each accessible name exists once (Playwright strict mode, E2E contract).
 - Playwright's default viewport is 1280px, so e2e runs exercise the workspace.
 
+## Accepted dependency advisories (audit S3, 3 Oct 2026)
+
+- `@grpc/grpc-js` 1.9.x (4 "high" via `firebase` → `@firebase/firestore`): Firestore's Node transport only.
+  The browser bundle contains none of it (checked: 0 references in `dist/`), so it cannot run for users.
+  npm's suggested fix is a downgrade to firebase 9; there is no 12.x release with a newer pin yet. Re-check
+  on each Firebase upgrade; dismiss the matching Dependabot alerts with this reason.
+
 ## Gotchas
 
 - Hooks after an early `if (!user) return null` break React's hook order once the user loads (found and fixed
