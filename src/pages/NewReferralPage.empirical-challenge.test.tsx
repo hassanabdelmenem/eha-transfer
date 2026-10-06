@@ -480,7 +480,8 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       await waitFor(() => {
         const previewImg = screen.getByAltText("ecg_trace_lead_2.jpg") as HTMLImageElement;
         expect(previewImg).toBeInTheDocument();
-        expect(previewImg.src).toContain("blob:test-preview-");
+        // Stored as a compressed JPEG data URL, not a blob: link only this tab can open (audit S1).
+        expect(previewImg.src).toMatch(/^data:image\/jpeg;base64,/);
         expect(previewImg).toHaveClass("object-cover");
       });
 
@@ -497,7 +498,7 @@ describe("Empirical Challenge 2: Unified Referral Intake Wizard", () => {
       fireEvent.click(screen.getByRole('button', { name: /^Step 4:/ }));
       const fileInput = document.querySelector("input[type=\"file\"]") as HTMLInputElement;
       const pdfReport = new File(["mock pdf content"], "echocardiogram_report.pdf", { type: "application/pdf" });
-      Object.defineProperty(pdfReport, "size", { value: 3.2 * 1024 * 1024 });
+      Object.defineProperty(pdfReport, "size", { value: 200 * 1024 }); // PDFs above ~500 KB are refused (free-plan storage)
 
       fireEvent.change(fileInput, { target: { files: [pdfReport] } });
 
