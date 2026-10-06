@@ -10,7 +10,7 @@ import { vi } from 'vitest';
  */
 export interface MockFirestoreState {
   stores: Record<string, Record<string, any>>;
-  subscribers: Record<string, Array<{ success: (snap: any) => void; error?: (err: any) => void }>>;
+  subscribers: Record<string, Array<{ success: (snap: any) => void; error?: (err: any) => void; constraints?: any[] }>>;
 }
 
 export function createMockFirestoreState(): MockFirestoreState {
@@ -109,7 +109,7 @@ export function createFirestoreModuleMock() {
   const onSnapshot = (ref: any, successCb: any, errorCb?: any) => {
     const collectionName = ref.__collection;
     state.subscribers[collectionName] = state.subscribers[collectionName] || [];
-    const entry = { success: successCb, error: errorCb };
+    const entry = { success: successCb, error: errorCb, constraints: ref.constraints };
     state.subscribers[collectionName].push(entry);
     successCb(snapshotFor(state, collectionName));
     return () => {
