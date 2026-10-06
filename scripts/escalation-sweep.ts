@@ -31,10 +31,15 @@ const db = getFirestore();
 
 async function main() {
   const now = Date.now();
-  const [pendingSnap, facilitiesSnap] = await Promise.all([
-    db.collection('referrals').where('status', '==', 'pending').get(),
-    db.collection('facilities').get(),
-  ]);
+  // Pending referrals first: on most of the 288 runs a day there are none, and then
+  // reading every facility (one read each, on the free plan's 50,000/day) buys
+  // nothing (audit C4, 3 Oct 2026).
+  const pendingSnap = await db.collection('referrals').where('status', '==', 'pending').get();
+  if (pendingSnap.empty) {
+    console.log('0 pending, 0 to escalate.');
+    return;
+  }
+  const facilitiesSnap = await db.collection('facilities').get();
 
   const facilitiesById = new Map<string, Facility>(facilitiesSnap.docs.map(d => [d.id, { ...(d.data() as Facility), id: d.id }]));
   // No facilities means the capacity verdict would be computed from nothing and

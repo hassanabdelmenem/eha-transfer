@@ -8,7 +8,7 @@ import { DataProvider, useData } from './DataContext';
 
 vi.mock('firebase/firestore', () => createFirestoreModuleMock());
 let fsState: MockFirestoreState;
-vi.mock('../lib/firebase', () => ({ db: {}, auth: {}, functions: {} }));
+vi.mock('../lib/firebase', () => ({ db: {}, auth: {} }));
 vi.mock('../lib/db', () => ({
   saveOfflineReferral: vi.fn().mockResolvedValue(undefined),
   getOfflineReferrals: vi.fn().mockResolvedValue([]),
@@ -38,6 +38,11 @@ const Consumer = () => {
         referringFacilityId: 'f1', referringUserId: 'u1', receivingFacilityId: 'f2', candidateFacilityIds: [],
         receivingDepartments: ['Cardiology'], requiredBedType: 'Ward', priority: 'urgent', status: 'pending', reasonForReferral: '',
       })}>AddDirect</button>
+      <button onClick={() => addReferral({
+        patientId: 'p1', patientData: { ...makeReferral().patientData, attachments: [{ id: 'att1', name: 'ecg.jpg', type: 'image', mimeType: 'image/jpeg', size: 9, url: 'data:image/jpeg;base64,QUJD' }] },
+        referringFacilityId: 'f1', referringUserId: 'u1', receivingFacilityId: 'f2', candidateFacilityIds: [],
+        receivingDepartments: ['Cardiology'], requiredBedType: 'Ward', priority: 'urgent', status: 'pending', reasonForReferral: '',
+      })}>AddWithEcg</button>
       <button onClick={() => addReferral({
         patientId: 'p1', patientData: makeReferral().patientData,
         referringFacilityId: 'f1', referringUserId: 'u1', receivingFacilityId: 'auto', candidateFacilityIds: ['f2', 'f3'],
@@ -121,6 +126,15 @@ describe('DataContext referral mutations', () => {
     mockUser = makeUser({ id: 'u1', role: 'hospital_manager', facilityId: 'f2', verified: true });
     seedCollection(fsState, 'facilities', [makeFacility({ id: 'f1' }), makeFacility({ id: 'f2' })]);
     seedCollection(fsState, 'users', [makeUser({ id: 'u1', facilityId: 'f2', role: 'hospital_manager' }), makeUser({ id: 'admin-watcher', role: 'system_admin', facilityId: undefined })]);
+  });
+
+  it('stores each attachment in its own document, so the receiving hospital can open it (audit S1)', async () => {
+    renderProvider();
+    await act(async () => { screen.getByText('AddWithEcg').click(); });
+    await waitFor(() => expect(Object.keys(fsState.stores['referrals'] || {}).length).toBeGreaterThan(0));
+    const [refId, saved] = Object.entries(fsState.stores['referrals'] as Record<string, any>).find(([, r]) => r.patientData?.attachments?.length)!;
+    expect(saved.patientData.attachments).toEqual([{ id: 'att1', name: 'ecg.jpg', type: 'image', mimeType: 'image/jpeg', size: 9, stored: true }]);
+    expect(fsState.stores[`referrals/${refId}/attachments`]?.att1).toEqual({ id: 'att1', name: 'ecg.jpg', mimeType: 'image/jpeg', data: 'data:image/jpeg;base64,QUJD' });
   });
 
   it('creates a directly-routed referral online and notifies the receiving facility', async () => {

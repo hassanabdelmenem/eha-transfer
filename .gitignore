@@ -1,9 +1,6 @@
 node_modules/
 build/
 dist/
-# Cloud Functions build output -- compiled from functions/src by the predeploy
-# hook in firebase.json, so a deploy can never ship a stale committed copy.
-functions/lib/
 coverage/
 .DS_Store
 *.log

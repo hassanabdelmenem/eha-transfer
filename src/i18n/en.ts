@@ -496,6 +496,8 @@ export const en = {
     medsReceived: 'Medications Received',
     attachments: 'Clinical Attachments',
     quickView: 'Quick View',
+    attachmentUnavailable: 'Not available (sent before Oct 2026)',
+    attachmentLoading: 'Loading {name}',
     download: 'Download',
   },
   review: {
@@ -740,6 +742,9 @@ export const en = {
     hint: 'The receiving team reads the ECG before accepting. Images or PDF, up to 15 MB each.',
     tooLarge: 'File {name} exceeds the 15MB size limit ({size}MB).',
     badType: 'Unsupported file type for {name}. Only images (JPG, PNG, WEBP, GIF, SVG) and PDF reports are allowed.',
+    imageTooLarge: '{name} could not be made small enough to send. Try a cropped photo of the ECG.',
+    pdfTooLarge: '{name} is too large to send (PDFs up to about 500 KB). Attach a photo of the key page instead.',
+    tooMany: 'Up to {max} files per referral.',
   },
   destinationStep: {
     heading: 'Where it goes',

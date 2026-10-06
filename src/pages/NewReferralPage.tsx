@@ -79,9 +79,13 @@ export const NewReferralPage: React.FC = () => {
 
   // Auto-save the draft on every change.
   useEffect(() => {
+    // Attachments stay out of the draft: compressed images can exceed localStorage's
+    // ~5 MB quota, and a failed save would silently drop the whole draft. They remain
+    // in the open form; only a reload loses them (as it always did with blob links).
+    const { attachments: _attachments, ...draftPatient } = patientData;
     const toSave: WizardDraft = {
       step: currentStep,
-      patientData,
+      patientData: draftPatient,
       receivingDepartments,
       requiredBedType,
       priority,

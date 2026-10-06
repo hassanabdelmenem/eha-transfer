@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { PatientData, Attachment } from '../../../types';
+import { PatientData } from '../../../types';
+import { prepareAttachment, AttachmentError, MAX_ATTACHMENTS } from '../../../lib/attachments';
 import { ECGViewerOverlay } from '../ECGViewerOverlay';
 import { Upload, FileText, X, Eye } from 'lucide-react';
 import { showToast } from '../../../lib/toast';
@@ -36,47 +37,45 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
   const [activeEcgUrl, setActiveEcgUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reset = () => { input.value = ''; };
 
-    // Check file size (15MB limit)
+    if ((patientData.attachments?.length ?? 0) >= MAX_ATTACHMENTS) {
+      showToast(t('workupStep.tooMany', { max: MAX_ATTACHMENTS }), 'error');
+      return reset();
+    }
+    // Checked before decoding, so a huge file is never loaded into memory.
     if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
       showToast(t('workupStep.tooLarge', { name: file.name, size: (file.size / (1024 * 1024)).toFixed(1) }), 'error');
-      if (e.target) e.target.value = '';
-      return;
+      return reset();
     }
-
-    // Check file extension & MIME type
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
-    const isMimeAllowed = file.type ? ALLOWED_MIME_TYPES.includes(file.type) : false;
-    const isExtAllowed = ALLOWED_EXTENSIONS.includes(ext);
-
-    if (!isMimeAllowed && !isExtAllowed) {
+    if (!(file.type ? ALLOWED_MIME_TYPES.includes(file.type) : ALLOWED_EXTENSIONS.includes(ext))) {
       showToast(t('workupStep.badType', { name: file.name }), 'error');
-      if (e.target) e.target.value = '';
-      return;
+      return reset();
     }
 
+    // Images are re-drawn as compressed JPEG and PDFs read as they are, so the file
+    // itself (not a link only this browser can open) travels with the referral.
     setUploading(true);
-    setTimeout(() => {
-      const isImage = file.type ? file.type.startsWith('image/') : ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'].includes(ext);
-      const newAttachment: Attachment = {
-        id: Math.random().toString(36).substring(7),
-        name: file.name,
-        type: isImage ? 'image' : 'document',
-        url: URL.createObjectURL(file),
-        size: file.size,
-        mimeType: file.type || (isImage ? 'image/png' : 'application/pdf')
-      };
-
-      setPatientData(prev => ({
-        ...prev,
-        attachments: [...(prev.attachments || []), newAttachment]
-      }));
+    try {
+      const attachment = await prepareAttachment(file);
+      setPatientData(prev => ({ ...prev, attachments: [...(prev.attachments || []), attachment] }));
+    } catch (err) {
+      const code = err instanceof AttachmentError ? err.code : 'badType';
+      showToast(
+        code === 'pdfTooLarge' ? t('workupStep.pdfTooLarge', { name: file.name })
+          : code === 'imageTooLarge' ? t('workupStep.imageTooLarge', { name: file.name })
+          : t('workupStep.badType', { name: file.name }),
+        'error'
+      );
+    } finally {
       setUploading(false);
-      if (e.target) e.target.value = '';
-    }, 50);
+      reset();
+    }
   };
 
   const removeAttachment = (id: string) => {
@@ -127,7 +126,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
           {attachments.map(att => (
             <li key={att.id} className="relative aspect-square overflow-hidden rounded-[10px] border border-slate-200 bg-white dark:border-white/12 dark:bg-white/5">
               {att.type === 'image' ? (
-                <button type="button" onClick={() => setActiveEcgUrl(att.url)} className="block h-full w-full" aria-label={t('workupStep.viewFile', { name: att.name })}>
+                <button type="button" onClick={() => setActiveEcgUrl(att.url ?? null)} className="block h-full w-full" aria-label={t('workupStep.viewFile', { name: att.name })}>
                   <img src={att.url} alt={att.name} className="h-full w-full object-cover" />
                   <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-ink/70 py-1 text-[11px] font-semibold text-paper">
                     <Eye className="h-3 w-3" aria-hidden="true" /> {t('workupStep.view')}

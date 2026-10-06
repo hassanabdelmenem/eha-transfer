@@ -3,6 +3,7 @@ import { db } from './firebase';
 import { Notification, Referral, Role } from '../types';
 import { getOfflineReferrals, deleteOfflineReferral } from './db';
 import type { NotificationKey, NotificationVars } from '../i18n/notifications';
+import { splitAttachments } from './attachments';
 
 // Matches the shape of DataContext's createNotification exactly (not a
 // widened `string`/`string[]`), so that callback can be passed here directly
@@ -62,7 +63,11 @@ export async function syncOfflineReferrals(options: {
         // landed -- write nothing further, so whatever has happened to the
         // referral since is not clobbered by this stale cached copy.
         if (!snap.exists()) {
-          transaction.set(refDocRef, ref);
+          // The cached copy still carries its files as data URLs: split them out
+          // exactly as addReferral does online (src/lib/attachments.ts).
+          const { referral: referralDoc, files } = splitAttachments(ref);
+          transaction.set(refDocRef, referralDoc);
+          files.forEach(f => transaction.set(doc(db, 'referrals', ref.id, 'attachments', f.id), f));
         }
       });
     } catch (err) {

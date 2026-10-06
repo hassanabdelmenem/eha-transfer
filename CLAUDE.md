@@ -5,8 +5,9 @@ ECG review, bed capacity across the facility network, and the admission handoff 
 receiving end. Handles real patient PHI.
 
 React 19 + TypeScript 7 + Vite 8 + Tailwind 4 + React Router 7, on Firebase Auth and
-Cloud Firestore, with IndexedDB (`idb`) for offline drafts and sync. Cloud Functions live in
-`functions/` (separate package, Node 20).
+Cloud Firestore, with IndexedDB (`idb`) for offline drafts and sync. No Cloud Functions: the project is on
+the free Spark plan, where they cannot deploy (the unused `functions/` package was removed 3 Oct 2026).
+Scheduled work runs on GitHub Actions (`scripts/escalation-sweep.ts`).
 
 Firebase project: **`eha-transfer-1785622025`** → https://eha-transfer.web.app (production);
 staging: `eha-transfer-staging` → https://eha-transfer-staging.web.app.
@@ -64,7 +65,7 @@ to run `test:rules` after editing `firestore.rules`, and runs `npm run lint` at 
 - `src/lib/`: `permissions.ts`, `referralStage.ts` (lifecycle), `sla.ts`, `offlineSync.ts`,
   `db.ts` (IndexedDB), `routing.ts`, `firebase.ts`
 - `src/types/index.ts`: `Role`, `Facility`, `User`, referral types
-- `functions/src/`: SLA and notification-recipient functions
+- `scripts/escalation-sweep.ts`: the 5-minute SLA/capacity sweep (GitHub Actions + cron-job.org)
 - `firestore.rules` + `tests/firestore.rules.test.ts`
 - Tests sit next to their source (`*.test.tsx`); cross-cutting suites are in `tests/`, Playwright in `e2e/`
 
@@ -123,5 +124,3 @@ milestones, DOM contracts), `PRODUCT.md`, `DESIGN.md` (design system; follow it 
 - `graphify-out/` is committed on purpose; for architecture questions query it first.
 - `.agents/` is historical agent output. Don't treat it as source. One-off scratch work
   (`scratch/`, root-level `test_*.cjs` / `run_*.cjs` / `*.png`) is gitignored; keep it out of the repo.
-- `functions/lib/` is build output, gitignored and compiled by the `predeploy` hook in
-  `firebase.json`. Edit `functions/src/`.
