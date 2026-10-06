@@ -19,8 +19,8 @@ case "$base" in
     exit 2 ;;
 esac
 case "$rel" in
-  dist/*|functions/lib/*|coverage/*)
-    echo "Blocked: $rel is build output. Edit the source under src/ or functions/src/ instead." >&2
+  dist/*|coverage/*)
+    echo "Blocked: $rel is build output. Edit the source under src/ instead." >&2
     exit 2 ;;
 esac
 exit 0
