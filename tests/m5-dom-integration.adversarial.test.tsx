@@ -69,7 +69,6 @@ const mockReferralICU: Referral = {
   createdAt: '2026-08-29T10:00:00.000Z',
   updatedAt: '2026-08-29T10:00:00.000Z',
   deptComments: [],
-  statusHistory: [],
 };
 
 const mockReferralCCU: Referral = {
@@ -102,7 +101,6 @@ const mockReferralCCU: Referral = {
   createdAt: '2026-08-29T10:00:00.000Z',
   updatedAt: '2026-08-29T10:00:00.000Z',
   deptComments: [],
-  statusHistory: [],
 };
 
 const mockReferralPICU: Referral = {
@@ -135,7 +133,6 @@ const mockReferralPICU: Referral = {
   createdAt: '2026-08-29T10:00:00.000Z',
   updatedAt: '2026-08-29T10:00:00.000Z',
   deptComments: [],
-  statusHistory: [],
 };
 
 const mockReferralWard: Referral = {
@@ -168,7 +165,6 @@ const mockReferralWard: Referral = {
   createdAt: '2026-08-29T10:00:00.000Z',
   updatedAt: '2026-08-29T10:00:00.000Z',
   deptComments: [],
-  statusHistory: [],
 };
 
 const mockDirectAdmission: DirectAdmission = {

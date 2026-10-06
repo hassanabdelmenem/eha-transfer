@@ -32,8 +32,11 @@ const mockAddReferral = vi.fn();
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({ user: mockUser }),
 }));
+vi.mock('../hooks/useStatusHistory', () => ({ useStatusHistory: () => ({ history: [], loading: false }) }));
+
 
 vi.mock('../contexts/DataContext', () => ({
+
   useData: () => ({
     referrals: mockReferrals,
     referralsById: new Map(mockReferrals.map(r => [r.id, r])),
@@ -196,14 +199,6 @@ function createReferral(overrides: Partial<Referral> = {}): Referral {
     reasonForReferral: 'Urgent Primary PCI activation required',
     requiresAccompanyingDoctor: true,
     isEscalated: false,
-    statusHistory: [
-      {
-        status: 'pending',
-        timestamp: now,
-        userId: 'u1',
-        notes: 'Initial referral submitted',
-      },
-    ],
     deptComments: [],
     createdAt: now,
     updatedAt: now,

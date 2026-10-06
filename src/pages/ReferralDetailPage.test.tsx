@@ -76,7 +76,6 @@ function makeReferral(overrides: Partial<Referral> = {}): Referral {
     priority: 'urgent',
     status: 'dept_approved',
     reasonForReferral: 'Higher level of care needed',
-    statusHistory: [],
     deptComments: [],
     createdAt: now,
     updatedAt: now,
@@ -223,7 +222,6 @@ describe('ReferralDetailPage in Arabic', () => {
     ['nurse, patient arrived', { id: 'u6', name: 'Nurse', role: 'nurse', facilityId: 'f2', verified: true }, { status: 'arrived' }],
     ['admin, escalated and pending', { id: 'u7', name: 'Admin', role: 'system_admin', facilityId: 'f2', verified: true },
       { status: 'pending', isEscalated: true, escalationReason: 'sla_breach', escalatedAt: new Date(Date.now() - 45 * 60000).toISOString(), escalatedBy: 'system',
-        statusHistory: [{ status: 'pending', timestamp: new Date().toISOString(), userId: 'u1' }],
         deptComments: [{ id: 'c1', userId: 'u9', status: 'requirements_needed', comment: 'Need CT first', timestamp: new Date().toISOString() }] as any }],
   ];
 

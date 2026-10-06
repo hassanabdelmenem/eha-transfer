@@ -83,7 +83,6 @@ function makeReferral(overrides: Partial<Referral> = {}): Referral {
     priority: 'emergency',
     status: 'pending',
     reasonForReferral: 'Immediate catheterization lab activation needed',
-    statusHistory: [],
     deptComments: [],
     createdAt: now,
     updatedAt: now,

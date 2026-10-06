@@ -31,7 +31,7 @@ export function makeReferral(overrides: Partial<Referral> = {}): Referral {
     },
     referringFacilityId: 'f1', referringUserId: 'u1', receivingFacilityId: 'f2',
     candidateFacilityIds: [], receivingDepartments: ['Cardiology'], requiredBedType: 'Ward', priority: 'urgent',
-    status: 'pending', reasonForReferral: '', createdAt: now, updatedAt: now, deptComments: [], statusHistory: [],
+    status: 'pending', reasonForReferral: '', createdAt: now, updatedAt: now, deptComments: [],
     isEscalated: false,
     ...overrides,
   };

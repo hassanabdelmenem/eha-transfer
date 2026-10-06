@@ -6,7 +6,7 @@ import { ReferralDetailPage } from './ReferralDetailPage';
 import { ReferralTimeline } from '../components/referrals/ReferralTimeline';
 import { ECGViewerOverlay } from '../components/referrals/ECGViewerOverlay';
 import { PatientCard } from '../components/referrals/PatientCard';
-import { Referral, User, Facility } from '../types';
+import { Referral, StatusHistoryEntry, User, Facility } from '../types';
 
 let mockUser: any = null;
 let mockReferrals: Referral[] = [];
@@ -92,7 +92,10 @@ vi.mock('../contexts/DataContext', async (importOriginal) => {
   };
 });
 
-function createMockReferral(overrides: Partial<Referral> = {}): Referral {
+// Carries the trail inline, as a referral not yet migrated to the subcollection does.
+type LegacyReferral = Referral & { statusHistory?: StatusHistoryEntry[] };
+
+function createMockReferral(overrides: Partial<LegacyReferral> = {}): LegacyReferral {
   const now = '2026-08-29T08:00:00.000Z';
   return {
     id: 'ref-m4-stress-1',
@@ -341,7 +344,7 @@ describe('Milestone 4 Empirical Adversarial Suite: Referral Detail, Timeline & A
 
       const ref = createMockReferral({ statusHistory: corruptedHistory });
 
-      render(<ReferralTimeline referral={ref} usersById={mockUsersById} />);
+      render(<ReferralTimeline referral={ref} history={ref.statusHistory} usersById={mockUsersById} />);
 
       // Should render without error
       expect(screen.getByText(/^Referral sent$/i)).toBeInTheDocument();
@@ -369,7 +372,7 @@ describe('Milestone 4 Empirical Adversarial Suite: Referral Detail, Timeline & A
         ],
       });
 
-      render(<ReferralTimeline referral={ref} usersById={mockUsersById} />);
+      render(<ReferralTimeline referral={ref} history={ref.statusHistory} usersById={mockUsersById} />);
 
       const eventTitles = screen.getAllByRole('listitem').map(li => li.querySelector('p')?.textContent ?? '');
       // Newest first: 08:45 -> 08:30 -> 08:15 -> 08:00

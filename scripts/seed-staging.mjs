@@ -129,7 +129,8 @@ if (CASES && APPLY) {
       isEscalated: false, escalationReason: null, escalationLevel: null, escalatedBy: null, escalatedAt: null,
       reasonForReferral: o.reason, createdAt: t.toISOString(), createdAtMs: t.getTime(), updatedAt: t.toISOString(),
       requiresAccompanyingDoctor: !!o.escort, deptComments: [],
-      statusHistory: [{ status: 'pending', timestamp: t.toISOString(), userId: uid.resident }, ...(o.history || [])],
+      // The audit trail is the referrals/{id}/statusHistory subcollection, written below.
+      history: [{ status: 'pending', timestamp: t.toISOString(), userId: uid.resident }, ...(o.history || [])],
       patientData: {
         id: `p-${id}`, hospitalId: o.hid, name: o.name, age: o.age, gender: o.gender || 'male',
         vitalSigns: { hr: o.hr, bp: o.bp, spo2: o.spo2, temp: 36.9, rr: 18, gcs: 15, timestamp: t.toISOString() },
@@ -142,7 +143,11 @@ if (CASES && APPLY) {
     mk('stg-case-2', { mins: 25, priority: 'urgent', bed: 'CCU', name: 'Test Patient Two', age: 47, gender: 'female', hid: 'STG-0002', complaint: 'Breathlessness', reason: 'Decompensated heart failure', dx: 'Acute heart failure', hr: 104, bp: '102/66', spo2: 93 }),
     mk('stg-case-3', { mins: 50, priority: 'routine', bed: 'Ward', name: 'Test Patient Three', age: 55, hid: 'STG-0003', complaint: 'Exertional chest pain', reason: 'Elective angiography', dx: 'Stable angina', hr: 78, bp: '130/82', spo2: 97 }),
   ];
-  for (const c of cases) await writeDoc(`referrals/${c.id}`, c);
+  for (const { history, ...c } of cases) {
+    await writeDoc(`referrals/${c.id}`, c);
+    // Fixed entry ids keep a re-run idempotent (PATCH overwrites, never duplicates).
+    for (const [i, h] of history.entries()) await writeDoc(`referrals/${c.id}/statusHistory/seed-${i}`, h);
+  }
   report.referrals = cases.length;
 }
 

@@ -46,9 +46,7 @@ const hhmm = (iso?: string) => {
   return Number.isNaN(t) ? null : format(new Date(t), 'HH:mm');
 };
 
-/** When the referral last entered `status`, from its history. */
-const enteredAt = (referral: Referral, status: Referral['status']) =>
-  [...(Array.isArray(referral.statusHistory) ? referral.statusHistory : [])].reverse().find(h => h.status === status);
+
 
 export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   referral,
@@ -129,10 +127,9 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
     const consentGiven = ['patient_consented', 'in_transit'].includes(referral.status);
     const escortMissing = !!referral.requiresAccompanyingDoctor && !referral.accompanyingDoctor;
     const canDispatch = referral.status === 'patient_consented' && !escortMissing;
-    const consentEntry = enteredAt(referral, 'patient_consented');
-    const consentClinician = consentEntry ? getUserName(consentEntry.userId) : undefined;
-    const consentTime = hhmm(consentEntry?.timestamp);
-    const dispatchedAt = hhmm(enteredAt(referral, 'in_transit')?.timestamp ?? referral.updatedAt);
+    const consentClinician = referral.patientConsentedBy ? getUserName(referral.patientConsentedBy) : undefined;
+    const consentTime = hhmm(referral.patientConsentedAt);
+    const dispatchedAt = hhmm(referral.inTransitAt ?? referral.updatedAt);
 
     return (
       <div className={cn('px-[14px] pt-3 pb-[14px]', selected && 'bg-slate-100 dark:bg-white/[0.07]')}>
@@ -202,8 +199,8 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   // -------------------------------------------------------------------------
   if (variant === 'er_inbound') {
     const arrived = referral.status === 'arrived';
-    const leftAt = hhmm(enteredAt(referral, 'in_transit')?.timestamp);
-    const arrivedAt = hhmm(enteredAt(referral, 'arrived')?.timestamp ?? referral.updatedAt);
+    const leftAt = hhmm(referral.inTransitAt);
+    const arrivedAt = hhmm(referral.arrivedAt ?? referral.updatedAt);
     return (
       <div className={cn('px-[14px] pt-3 pb-[14px]', selected && 'bg-slate-100 dark:bg-white/[0.07]')}>
         {identity(
@@ -234,7 +231,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   // the ward uses the time to ready the bed.
   // -------------------------------------------------------------------------
   if (variant === 'nurse_incoming') {
-    const leftAt = hhmm(enteredAt(referral, 'in_transit')?.timestamp);
+    const leftAt = hhmm(referral.inTransitAt);
     return (
       <div className={shellFor(shell)}>
         <Rail referral={referral} />
@@ -251,7 +248,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
   // Nurse: an arrived patient waiting for a bed.
   // -------------------------------------------------------------------------
   if (variant === 'nurse') {
-    const arrivedAt = hhmm(enteredAt(referral, 'arrived')?.timestamp ?? referral.updatedAt);
+    const arrivedAt = hhmm(referral.arrivedAt ?? referral.updatedAt);
     return (
       <div className={shellFor(shell)}>
         <Rail referral={referral} />

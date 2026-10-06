@@ -405,27 +405,6 @@ service cloud.firestore {
               && (!(request.resource.data.escalationReason in ['no_matching_facility', 'no_beds_available'])
                   || request.resource.data.escalationLevel == 'system'));
     }
-    // Rules cannot iterate a list, so a true element-wise prefix comparison is not
-    // expressible here. What is enforced: the trail grows by exactly one entry when
-    // the status moves and by none when it doesn't (so a caller cannot smuggle in a
-    // rewritten history under cover of padding), and the opening entry is immutable.
-    //
-    // Residual gap: the middle of the trail can still be rewritten by a party. The
-    // durable fix is to move history into an immutable subcollection
-    // (referrals/{id}/statusHistory/{entryId}, create-only, no update or delete) so
-    // append-only becomes a property of the data model rather than a predicate.
-    // "At most one new entry per write", not "exactly one when the status moves".
-    // Escalation, de-escalation and destination overrides all append an audit entry
-    // while leaving `status` untouched, so keying the allowed growth off a status
-    // change would reject every one of them -- including the automatic SLA
-    // escalation, whose whole purpose is to leave a record.
-    function auditTrailAppendOnly() {
-      return request.resource.data.statusHistory is list
-          && (request.resource.data.statusHistory.size() == resource.data.statusHistory.size()
-              || request.resource.data.statusHistory.size() == resource.data.statusHistory.size() + 1)
-          && (resource.data.statusHistory.size() == 0
-              || request.resource.data.statusHistory[0] == resource.data.statusHistory[0]);
-    }
 
     // The status graph, enforced server-side. Without it the only thing standing
     // between a referral and an arbitrary status was updateReferralStatus() in the
@@ -569,8 +548,9 @@ service cloud.firestore {
                             && request.resource.data.referringUserId == request.auth.uid))
                     && request.resource.data.status == 'pending'
                     && request.resource.data.isEscalated == false
-                    && request.resource.data.statusHistory is list
-                    && request.resource.data.statusHistory.size() == 1
+                    // The audit trail lives in the append-only statusHistory
+                    // subcollection; the legacy array field is never written.
+                    && !('statusHistory' in request.resource.data)
                     && request.resource.data.createdAtMs is number
                     && request.resource.data.createdAtMs <= request.time.toMillis() + 300000
                     && (!('referringDepartment' in request.resource.data)
@@ -584,7 +564,9 @@ service cloud.firestore {
       allow update: if referralIdentityPinned()
                     && receivingFacilityChangeAllowed()
                     && referralContentGuarded()
-                    && auditTrailAppendOnly()
+                    // Legacy statusHistory arrays (pre-migration) are frozen: the
+                    // trail is now the append-only subcollection below.
+                    && !changedKeys().hasAny(['statusHistory'])
                     && validStatusTransition()
                     && transitionActorAllowed()
                     && candidateListNotWidened()
@@ -599,6 +581,21 @@ service cloud.firestore {
                     );
 
       allow delete: if isPrivileged();
+
+      // Audit trail: append-only by construction (create-only, no update or
+      // delete), each entry attributed to its writer or to 'system'.
+      match /statusHistory/{entryId} {
+        allow read: if isPrivileged() || (isVerifiedCaller() && isReferralParty(get(/databases/$(database)/documents/referrals/$(referralId)).data));
+        allow create: if (isPrivileged() || (isVerifiedCaller() && isReferralParty(getAfter(/databases/$(database)/documents/referrals/$(referralId)).data)))
+                      && request.resource.data.keys().hasOnly(['status', 'timestamp', 'userId', 'notes', 'event'])
+                      && request.resource.data.status is string
+                      && request.resource.data.timestamp is string
+                      && request.resource.data.userId is string
+                      && (!('notes' in request.resource.data) || request.resource.data.notes is string)
+                      && (!('event' in request.resource.data) || request.resource.data.event is string)
+                      && (request.resource.data.userId == request.auth.uid || request.resource.data.userId == 'system');
+        allow update, delete: if false;
+      }
     }
 
     // Clinical attachments (audit S1, 3 Oct 2026): one data URL per document,

@@ -439,7 +439,6 @@ describe("Tier 5 White-Box Adversarial Hardening Suite (Milestone 5)", () => {
         transferType: "one_way",
         isEscalated: false,
         deptComments: [],
-        statusHistory: [],
       };
 
       expect(capacityEscalationReason(refAuto, facMap, { facilitiesLoaded: false })).toBeNull();

@@ -2,7 +2,8 @@ import {
   Role,
   User,
   Facility,
-  Referral,
+  Referral as StoredReferral,
+  StatusHistoryEntry,
   Notification,
   ShiftAssignment,
   ShiftLog,
@@ -21,6 +22,10 @@ import {
   CANCEL_LOCKED_STATUSES,
   DirectAdmission,
 } from '../src/contexts/DataContext';
+
+// The harness keeps each referral's audit trail inline for easy assertions; the app
+// stores it in the referrals/{id}/statusHistory subcollection instead.
+export type Referral = StoredReferral & { statusHistory: StatusHistoryEntry[] };
 import { needsAutoEscalation, SLA_MINUTES } from '../src/lib/sla';
 import { CapacityEscalationReason, describeCapacityEscalation } from '../src/lib/routing';
 import { v4 as uuidv4 } from 'uuid';

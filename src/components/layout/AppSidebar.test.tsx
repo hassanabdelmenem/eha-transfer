@@ -59,7 +59,6 @@ const mockReferrals: Referral[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     deptComments: [],
-    statusHistory: [],
   },
 ];
 

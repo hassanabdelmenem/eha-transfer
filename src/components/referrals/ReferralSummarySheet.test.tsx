@@ -24,7 +24,6 @@ function makeReferral(overrides: Partial<Referral> = {}): Referral {
     priority: 'urgent',
     status: 'pending',
     reasonForReferral: 'Needs specialist care',
-    statusHistory: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     deptComments: [],

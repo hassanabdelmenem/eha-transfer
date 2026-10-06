@@ -84,7 +84,6 @@ export function generateMockReferrals(count: number, facilitiesCount: number, us
       priority: priorities[i % priorities.length] as Referral['priority'],
       status: ['pending', 'dept_approved', 'approved', 'in_transit', 'arrived'][i % 5] as any,
       reasonForReferral: 'Higher level of care needed',
-      statusHistory: [{ status: 'pending', timestamp: now.toISOString(), userId: referringUserId, notes: 'Created' }],
       deptComments: [],
       createdAt: new Date(now.getTime() - i * 3600000).toISOString(),
       updatedAt: now.toISOString(),
