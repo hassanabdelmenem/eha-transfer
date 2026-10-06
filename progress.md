@@ -2,6 +2,29 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-06: audit runtime profile (Chrome DevTools) + C5, P3, P4
+
+- Staging cold load (/login): LCP 529 ms unthrottled, 1.26 s on Slow 4G + 4x CPU, CLS 0. The login page
+  pulls a 738 KB (218 KB gzip) shared chunk: Firebase app/auth/firestore (re2js is Firestore's own),
+  i18n en+ar, date-fns. Not avoidable without dropping realtime listeners.
+- Signed-in profiling ran on a production build pointed at the emulators (no staging password on hand),
+  e2e users + 180 referrals + 600 notifications, as the receiving ER official.
+  - Memory: 2 x 10 rounds of all sidebar routes + a referral detail: JS heap 10.38 -> 10.21 MB, DOM event
+    listeners 274 -> 274, no detached trees. Native growth was Chrome's accessibility cache (the DevTools
+    snapshots themselves). No listener leak: all Firestore listeners live in DataContext and unsubscribe.
+  - Re-renders: idle dashboard 0 commits in 65 s. One remote change to a referral or a bed count re-renders
+    ~157 components in 1-2 commits, no long task even at 4x CPU. Broad but cheap at this size; structural
+    sharing of snapshot objects + memoised cards is the fix if it ever shows up.
+- C5: admin notifications listener read every notification in the network (consumers only show the
+  caller's own); notifications now own-only, newest 100; shift logs newest 200. Existing indexes.
+- P3: unused firebase/functions SDK removed. P4: Firebase in its own chunk; hash verified stable across an
+  app change, so returning users keep ~165 KB gzip cached across deploys.
+- Found, not fixed: staging Google sign-in fails `redirect_uri_mismatch` (OAuth client lacks
+  https://eha-transfer-staging.web.app/__/auth/handler) - owner adds it in Google Cloud Console >
+  Credentials. directAdmissions listener is still unbounded (census needs every non-discharged admission;
+  needs an active/discharged split).
+- Verified: lint, unit 1031, rules 133, e2e 11, build.
+
 ## 2026-10-03: escort doctor named by the sending department
 
 - Bug (owner): when a transfer needs an escort doctor, nobody could record the doctor's name and phone
