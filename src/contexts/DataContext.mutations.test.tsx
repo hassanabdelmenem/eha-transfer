@@ -8,7 +8,7 @@ import { DataProvider, useData } from './DataContext';
 
 vi.mock('firebase/firestore', () => createFirestoreModuleMock());
 let fsState: MockFirestoreState;
-vi.mock('../lib/firebase', () => ({ db: {}, auth: {}, functions: {} }));
+vi.mock('../lib/firebase', () => ({ db: {}, auth: {} }));
 vi.mock('../lib/db', () => ({
   saveOfflineReferral: vi.fn().mockResolvedValue(undefined),
   getOfflineReferrals: vi.fn().mockResolvedValue([]),
