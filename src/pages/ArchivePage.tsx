@@ -46,10 +46,8 @@ export const ArchivePage: React.FC = () => {
 
   // 3b: most recently ended case first, using the timestamp of the status
   // history entry that matches the referral's current (ended) status.
-  const endedEntry = (r: (typeof myReferrals)[number]) =>
-    [...(Array.isArray(r.statusHistory) ? r.statusHistory : [])].reverse().find(h => h.status === r.status);
   const endedAt = (r: (typeof myReferrals)[number]) => {
-    const t = Date.parse(endedEntry(r)?.timestamp || r.updatedAt);
+    const t = Date.parse(r.statusUpdatedAt || r.updatedAt);
     return Number.isNaN(t) ? 0 : t;
   };
 
@@ -79,7 +77,7 @@ export const ArchivePage: React.FC = () => {
       facilitiesById.get(r.referringFacilityId)?.name || 'Unknown',
       r.receivingFacilityId === 'auto' ? 'Auto-Routed (Pending)' : facilitiesById.get(r.receivingFacilityId || '')?.name || 'Unknown',
       isoOrEmpty(r.createdAt),
-      isoOrEmpty(endedEntry(r)?.timestamp),
+      isoOrEmpty(r.statusUpdatedAt || r.updatedAt),
     ]);
     downloadCsv(`referrals_archive_${new Date().toISOString().split('T')[0]}.csv`, toCsv(headers, data));
   };
@@ -90,10 +88,10 @@ export const ArchivePage: React.FC = () => {
   // and by whom it was cancelled.
   const closedLine = (r: (typeof myReferrals)[number]) => {
     if (r.status === 'admitted') {
-      const entry = endedEntry(r);
-      const by = entry ? usersById.get(entry.userId)?.name : undefined;
+      const by = r.statusUpdatedBy ? usersById.get(r.statusUpdatedBy)?.name : undefined;
       // English keeps its long date; Arabic gets day, month and a 24-hour clock.
-      const when = entry && (lang === 'ar' ? formatDayMonthClock(new Date(entry.timestamp), lang) : formatDateTime(entry.timestamp));
+      const ts = r.statusUpdatedAt || r.updatedAt;
+      const when = ts ? (lang === 'ar' ? formatDayMonthClock(new Date(ts), lang) : formatDateTime(ts)) : '';
       return [t('archive.admittedLine', { bed: r.requiredBedType }), when, by && t('archive.by', { name: by })].filter(Boolean).join(' ');
     }
     const by = r.cancelledBy ? usersById.get(r.cancelledBy)?.name : undefined;

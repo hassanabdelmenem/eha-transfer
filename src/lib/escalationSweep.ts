@@ -53,28 +53,29 @@ export function stillEscalates(r: SweepReferral, action: EscalationAction, now: 
 }
 
 /** The fields written to the referral. */
-export function escalationUpdate(r: Pick<Referral, 'status' | 'statusHistory'>, action: EscalationAction, nowIso: string) {
+export function escalationUpdate(r: Pick<Referral, 'status'>, action: EscalationAction, nowIso: string) {
   const sla = action.kind === 'sla';
   return {
-    isEscalated: true,
-    escalatedAt: nowIso,
-    escalatedBy: 'system',
-    escalationReason: sla ? 'sla_breach' : action.reason,
-    // SLA silence is the facilities' to chase; no capacity anywhere goes straight
-    // to system administrators, because no receiving facility can act on it.
-    escalationLevel: sla ? 'facility' : 'system',
-    updatedAt: nowIso,
-    statusHistory: [
-      ...(r.statusHistory || []),
-      {
-        status: r.status,
-        timestamp: nowIso,
-        userId: 'system',
-        notes: sla
-          ? `No response within ${SLA_MINUTES} minutes. Automatically escalated for administrative intervention.`
-          : describeCapacityEscalation(action.reason) + ' Escalated for administrative placement.',
-      },
-    ],
+    referralUpdates: {
+      isEscalated: true,
+      escalatedAt: nowIso,
+      escalatedBy: 'system',
+      escalationReason: sla ? 'sla_breach' : action.reason,
+      // SLA silence is the facilities' to chase; no capacity anywhere goes straight
+      // to system administrators, because no receiving facility can act on it.
+      escalationLevel: sla ? 'facility' : 'system',
+      updatedAt: nowIso,
+      statusUpdatedAt: nowIso,
+      statusUpdatedBy: 'system',
+    },
+    historyEntry: {
+      status: r.status,
+      timestamp: nowIso,
+      userId: 'system',
+      notes: sla
+        ? `No response within ${SLA_MINUTES} minutes. Automatically escalated for administrative intervention.`
+        : describeCapacityEscalation(action.reason) + ' Escalated for administrative placement.',
+    },
   };
 }
 

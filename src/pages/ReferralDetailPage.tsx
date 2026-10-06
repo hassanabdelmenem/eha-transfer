@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useStatusHistory } from '../hooks/useStatusHistory';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
@@ -42,6 +43,9 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
   const params = useParams<{ id: string }>();
   const id = referralId ?? params.id;
   const navigate = useNavigate();
+
+  const { history, loading: historyLoading } = useStatusHistory(id);
+
   const {
     referrals,
     referralsById,
@@ -58,8 +62,10 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     facilitiesById,
     usersById,
     shiftAssignmentsByFacility,
-    loading,
+    loading: dataLoading,
   } = useData();
+
+  const loading = dataLoading || historyLoading;
   const { user } = useAuth();
   const { t, lang } = useI18n();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
@@ -474,6 +480,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
             />
             <TransferJourneyCard
               referral={referral}
+              history={history}
               fromFacility={fromFacility}
               toFacility={toFacility}
               usersById={usersById}
@@ -565,7 +572,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
           {!isDesktop && (
             <section aria-label={t('detail.history')}>
               <p className={sectionLabel}>{t('detail.history')}</p>
-              <ReferralTimeline referral={referral} usersById={usersById} />
+              <ReferralTimeline referral={referral} history={history} usersById={usersById} />
             </section>
           )}
           <ClinicalHistoryCard referral={referral} />
@@ -578,7 +585,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
           {isDesktop && (
             <section aria-label={t('detail.history')}>
               <p className={sectionLabel}>{t('detail.history')}</p>
-              <ReferralTimeline referral={referral} usersById={usersById} />
+              <ReferralTimeline referral={referral} history={history} usersById={usersById} />
             </section>
           )}
           {!isDesktop && decisionForms}
@@ -615,7 +622,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
         <PrintableSummary
           ref={printRef}
           referral={referral}
-          history={referral.statusHistory}
+          history={history || []}
           users={users}
           facilities={facilities}
         />

@@ -73,7 +73,6 @@ const referral = (over: Record<string, unknown> = {}) => ({
   createdAtMs: Date.parse('2026-01-01T00:00:00.000Z'),
   updatedAt: '2026-01-01T00:00:00.000Z',
   deptComments: [],
-  statusHistory: [{ status: 'pending', timestamp: '2026-01-01T00:00:00.000Z', userId: F1_DOCTOR }],
   ...over,
 });
 
@@ -112,13 +111,15 @@ beforeEach(async () => {
     await setDoc(doc(db, 'shiftAssignments', 'sa-er'), { id: 'sa-er', facilityId: 'f1', department: 'Emergency', assignedUserId: F1_ONCALL, updatedAt: '2026-10-03T00:00:00.000Z' });
     await setDoc(doc(db, 'shiftAssignments', 'sa-icu'), { id: 'sa-icu', facilityId: 'f1', department: 'ICU', assignedUserId: F1_ONCALL, updatedAt: '2026-10-03T00:00:00.000Z' });
     await setDoc(doc(db, 'shiftAssignments', 'sa-f2'), { id: 'sa-f2', facilityId: 'f2', department: 'Emergency', assignedUserId: F1_ONCALL, updatedAt: '2026-10-03T00:00:00.000Z' });
-    await setDoc(doc(db, 'referrals', 'ref1'), referral());
+await setDoc(doc(db, 'referrals', 'ref1'), referral());
+    await setDoc(doc(db, 'referrals', 'ref1', 'statusHistory', 'entry1'), { status: 'pending', timestamp: '2026-01-01T00:00:00.000Z', userId: F1_DOCTOR });
     // Intra-facility (f1 only) -- unlike ref1, F2_DOCTOR/F3_CANDIDATE are not
     // parties to this one, which is what the notification-relatedness tests
     // below rely on.
     await setDoc(doc(db, 'referrals', 'ref2'), referral({
       id: 'ref2', referringFacilityId: 'f1', receivingFacilityId: 'f1', candidateFacilityIds: [],
     }));
+    await setDoc(doc(db, 'referrals', 'ref2', 'statusHistory', 'entry1'), { status: 'pending', timestamp: '2026-01-01T00:00:00.000Z', userId: F1_DOCTOR });
     await setDoc(doc(db, 'directAdmissions', 'adm1'), { id: 'adm1', facilityId: 'f1', patientName: 'Patient B', hospitalId: 'H-2', department: 'ICU', bedType: 'ICU', admittedAt: '2026-01-01T00:00:00.000Z', admittedBy: F1_DOCTOR, status: 'admitted' });
     await setDoc(doc(db, 'notifications', 'n1'), { id: 'n1', userId: F1_DOCTOR, title: 'T', message: 'Referral for Patient A', type: 'info', read: false, createdAt: '2026-01-01T00:00:00.000Z' });
     await setDoc(doc(db, 'shiftLogs', 'log1'), { id: 'log1', userId: F1_DOCTOR, userName: 'F1 Doc', facilityId: 'f1', timestamp: '2026-01-01T00:00:00.000Z', pendingTransfersCount: 1, admittedPatientsCount: 2, summary: 'Handover: Patient A pending' });
@@ -255,28 +256,15 @@ describe('referral integrity (security review #4 and #5)', () => {
   it('allows a senior at the referring facility to cancel', async () => {
     await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
       status: 'cancelled',
-      statusHistory: [...referral().statusHistory, { status: 'cancelled', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER }],
-    }));
+      }));
   });
 
   it('blocks a candidate facility from reassigning the referring facility', async () => {
     await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { referringFacilityId: 'f3' }));
   });
 
-  it('blocks truncating the audit trail', async () => {
-    await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { statusHistory: [] }));
-  });
-
   it('blocks laundering referringUserId to steal the cancel right', async () => {
     await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { referringUserId: F3_CANDIDATE }));
-  });
-
-  it('allows a candidate facility to accept and append to the trail', async () => {
-    await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), {
-      status: 'dept_approved',
-      receivingFacilityId: 'f3',
-      statusHistory: [...referral().statusHistory, { status: 'dept_approved', timestamp: '2026-01-02T00:00:00.000Z', userId: F3_CANDIDATE }],
-    }));
   });
 
   it('blocks an uninvolved facility from reading a referral', async () => {
@@ -382,10 +370,6 @@ describe('referral list queries (the shapes DataContext issues)', () => {
 describe('referral status transitions', () => {
   const advanceTo = (status: string, extra: Record<string, unknown> = {}) => ({
     status,
-    statusHistory: [
-      ...referral().statusHistory,
-      { status, timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER },
-    ],
     ...extra,
   });
 
@@ -421,29 +405,6 @@ describe('referral status transitions', () => {
     await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), advanceTo('pending')));
   });
 
-  it('blocks smuggling a rewritten history in alongside a status change', async () => {
-    await setStatus('accepted');
-    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
-      status: 'patient_consented',
-      // Correct length for a single append, but the opening entry is forged.
-      statusHistory: [
-        { status: 'pending', timestamp: '2020-01-01T00:00:00.000Z', userId: F1_MANAGER },
-        { status: 'patient_consented', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER },
-      ],
-    }));
-  });
-
-  it('blocks padding the trail with more than one entry per status change', async () => {
-    await setStatus('accepted');
-    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
-      status: 'patient_consented',
-      statusHistory: [
-        ...referral().statusHistory,
-        { status: 'invented', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER },
-        { status: 'patient_consented', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_MANAGER },
-      ],
-    }));
-  });
 });
 
 describe('direct admission integrity', () => {
@@ -615,24 +576,11 @@ describe('escalation writes', () => {
     // auditTrailAppendOnly() tied the allowed trail growth to a status change and
     // so rejected every escalation -- these tests exist to keep that from
     // regressing.
-    statusHistory: [
-      ...referral().statusHistory,
-      { status: 'pending', timestamp: '2026-01-02T00:00:00.000Z', userId: 'system' },
-    ],
     ...over,
   });
 
-  it('allows a party to escalate while appending one audit entry', async () => {
+  it('allows a party to escalate', async () => {
     await assertSucceeds(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), escalate()));
-  });
-
-  it('allows an appended entry with no status change at all', async () => {
-    await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
-      statusHistory: [
-        ...referral().statusHistory,
-        { status: 'pending', timestamp: '2026-01-02T00:00:00.000Z', userId: F1_DOCTOR, notes: 'Chased receiving facility' },
-      ],
-    }));
   });
 
   it('allows de-escalation', async () => {
@@ -651,26 +599,6 @@ describe('escalation writes', () => {
     await assertFails(updateDoc(doc(authed('f9-uid2'), 'referrals', 'ref1'), escalate()));
   });
 
-  it('still blocks appending two entries at once', async () => {
-    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
-      isEscalated: true,
-      statusHistory: [
-        ...referral().statusHistory,
-        { status: 'pending', timestamp: '2026-01-02T00:00:00.000Z', userId: 'system' },
-        { status: 'pending', timestamp: '2026-01-02T00:00:01.000Z', userId: 'system' },
-      ],
-    }));
-  });
-
-  it('still blocks rewriting the opening entry while escalating', async () => {
-    await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), {
-      isEscalated: true,
-      statusHistory: [
-        { status: 'pending', timestamp: '2020-01-01T00:00:00.000Z', userId: F1_MANAGER },
-        { status: 'pending', timestamp: '2026-01-02T00:00:00.000Z', userId: 'system' },
-      ],
-    }));
-  });
 });
 
 /**
@@ -719,10 +647,6 @@ describe('clinical record integrity', () => {
 describe('transition actor binding', () => {
   const advance = (status: string) => ({
     status,
-    statusHistory: [
-      ...referral().statusHistory,
-      { status, timestamp: '2026-01-02T00:00:00.000Z', userId: 'x' },
-    ],
   });
 
   const forceStatus = async (status: string, extra: Record<string, unknown> = {}) => {
@@ -782,10 +706,6 @@ describe('escalation claims', () => {
   const base = (over: Record<string, unknown>) => ({
     isEscalated: true,
     escalatedAt: '2026-01-02T00:00:00.000Z',
-    statusHistory: [
-      ...referral().statusHistory,
-      { status: 'pending', timestamp: '2026-01-02T00:00:00.000Z', userId: 'system' },
-    ],
     ...over,
   });
 
@@ -871,15 +791,6 @@ describe('referral creation shape', () => {
   it('blocks creating a referral that is already escalated', async () => {
     await assertFails(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref-new'), newReferral({
       isEscalated: true, escalatedBy: 'system', escalationReason: 'sla_breach', escalationLevel: 'facility',
-    })));
-  });
-
-  it('blocks creating a referral with a pre-loaded audit trail', async () => {
-    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref-new'), newReferral({
-      statusHistory: [
-        { status: 'pending', timestamp: '2026-01-01T00:00:00.000Z', userId: F1_DOCTOR },
-        { status: 'pending', timestamp: '2026-01-01T00:00:01.000Z', userId: 'system' },
-      ],
     })));
   });
 
@@ -1080,5 +991,51 @@ describe('shiftAssignments: who may appoint a delegate', () => {
   it("blocks moving an assignment to another department or facility", async () => {
     await assertFails(updateDoc(doc(authed(F1_HOD_ER), 'shiftAssignments', 'sa-er'), { department: 'ICU' }));
     await assertFails(updateDoc(doc(authed(F1_MANAGER), 'shiftAssignments', 'sa-er'), { facilityId: 'f2' }));
+  });
+});
+
+describe('statusHistory subcollection', () => {
+  const historyEntry = (over: Record<string, unknown> = {}) => ({
+    status: 'accepted',
+    timestamp: '2026-01-02T00:00:00.000Z',
+    userId: F1_MANAGER,
+    ...over,
+  });
+
+  it('blocks reading statusHistory by uninvolved staff', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'f9-uid'), { id: 'f9-uid', name: 'F9', email: 'f9@x.gov', role: 'consultant', verified: true, facilityId: 'f9' });
+    });
+    await assertFails(getDoc(doc(authed('f9-uid'), 'referrals', 'ref1', 'statusHistory', 'entry1')));
+  });
+
+  it('allows reading statusHistory by involved staff', async () => {
+    await assertSucceeds(getDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry1')));
+  });
+
+  it('blocks appending to statusHistory by uninvolved staff', async () => {
+    await assertFails(setDoc(doc(authed('f9-uid'), 'referrals', 'ref1', 'statusHistory', 'entry2'), historyEntry()));
+  });
+
+  it('allows appending to statusHistory by involved staff', async () => {
+    await assertSucceeds(setDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry2'), historyEntry({ userId: F3_CANDIDATE })));
+  });
+
+  it('blocks updating or deleting a statusHistory entry', async () => {
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'statusHistory', 'entry1'), { notes: 'tampered' }));
+    await assertFails(deleteDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'statusHistory', 'entry1')));
+  });
+
+  it('blocks creating an entry with an unknown field', async () => {
+    await assertFails(setDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry3'), { ...historyEntry({ userId: F3_CANDIDATE }), badField: true }));
+  });
+
+  it('blocks creating an entry claiming to be another user', async () => {
+    await assertFails(setDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry4'), historyEntry({ userId: F1_DOCTOR })));
+  });
+
+  it('allows system to be the user in a history entry', async () => {
+    // Escalate via manual write but signed as system - normally restricted in referral itself, but the statusHistory allows it for automated events if they were directly written, though in practice functions write it. We'll test it using a privileged/involved user claiming system. Wait, only involved users can write, so an involved user writing system could be allowed by the rule if system is allowed.
+    await assertSucceeds(setDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1', 'statusHistory', 'entry5'), historyEntry({ userId: 'system' })));
   });
 });
