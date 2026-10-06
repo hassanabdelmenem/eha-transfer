@@ -494,6 +494,27 @@ service cloud.firestore {
       allow delete: if isPrivileged();
     }
 
+    // Clinical attachments (audit S1, 3 Oct 2026): one data URL per document,
+    // written in the same batch as the referral (getAfter), by its creator, once.
+    // Readable by the referral's parties. Never edited: an attachment is part of
+    // the clinical record the receiving hospital acts on.
+    match /referrals/{referralId}/attachments/{attachmentId} {
+      allow read: if isPrivileged()
+                  || (isVerifiedCaller()
+                      && exists(/databases/$(database)/documents/referrals/$(referralId))
+                      && isReferralParty(get(/databases/$(database)/documents/referrals/$(referralId)).data));
+      allow create: if isVerifiedCaller()
+                    && getAfter(/databases/$(database)/documents/referrals/$(referralId)).data.referringUserId == request.auth.uid
+                    && request.resource.data.keys().hasOnly(['id', 'name', 'mimeType', 'data'])
+                    && request.resource.data.id == attachmentId
+                    && request.resource.data.name is string && request.resource.data.name.size() <= 200
+                    && request.resource.data.mimeType in ['image/jpeg', 'application/pdf']
+                    && request.resource.data.data is string
+                    && request.resource.data.data.size() <= 1000000
+                    && request.resource.data.data.matches('^data:(image/jpeg|application/pdf);base64,.*');
+      allow update, delete: if isPrivileged();
+    }
+
     // -------------------------------------------------------- notifications
     // Fan-out is client-side, so any verified caller who is actually a party to
     // the referenced referral may create a notification addressed to another

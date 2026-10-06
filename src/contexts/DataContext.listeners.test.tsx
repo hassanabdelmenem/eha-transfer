@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { User } from '../types';
 import { createFirestoreModuleMock, getActiveFirestoreState, resetFirestoreState, seedCollection, type MockFirestoreState } from './testUtils/mockFirestore';
 import { makeUser, makeFacility, makeReferral } from './testUtils/fixtures';
-import { DataProvider, useData } from './DataContext';
+import { DataProvider, useData, NOTIFICATIONS_LIMIT, SHIFT_LOGS_LIMIT } from './DataContext';
 
 // createFirestoreModuleMock() is only referenced lazily here (this factory
 // runs while DataContext.tsx's own 'firebase/firestore' import is still being
@@ -13,7 +13,7 @@ import { DataProvider, useData } from './DataContext';
 // itself is never constructed directly in a test file.
 vi.mock('firebase/firestore', () => createFirestoreModuleMock());
 let fsState: MockFirestoreState;
-vi.mock('../lib/firebase', () => ({ db: {}, auth: {}, functions: {} }));
+vi.mock('../lib/firebase', () => ({ db: {}, auth: {} }));
 vi.mock('../lib/db', () => ({
   saveOfflineReferral: vi.fn().mockResolvedValue(undefined),
   getOfflineReferrals: vi.fn().mockResolvedValue([]),
@@ -214,6 +214,28 @@ describe('DataContext Firestore listeners', () => {
     expect(fsState.subscribers['notifications']).toHaveLength(1);
     expect(fsState.subscribers['directAdmissions']).toHaveLength(1);
     expect(fsState.subscribers['shiftLogs']).toHaveLength(1);
+  });
+
+  it('bounds the notifications and shift-log listeners, and scopes notifications to the caller even for an admin', async () => {
+    // Admins used to subscribe to every notification in the network, although
+    // every consumer shows only the caller's own; both lists also grew forever
+    // and were re-read in full on every sign-in.
+    mockUser = makeUser({ role: 'system_admin', verified: true, facilityId: 'f1', id: 'admin-1' });
+    seedCollection(fsState, 'facilities', [makeFacility()]);
+    renderProvider();
+
+    await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
+    const notif = fsState.subscribers['notifications'][0].constraints;
+    expect(notif).toEqual(expect.arrayContaining([
+      { field: 'userId', op: '==', value: 'admin-1' },
+      { orderBy: 'createdAt', direction: 'desc' },
+      { limit: NOTIFICATIONS_LIMIT },
+    ]));
+    const logs = fsState.subscribers['shiftLogs'][0].constraints;
+    expect(logs).toEqual(expect.arrayContaining([
+      { orderBy: 'timestamp', direction: 'desc' },
+      { limit: SHIFT_LOGS_LIMIT },
+    ]));
   });
 
   it('re-subscribes when the signed-in user changes', async () => {

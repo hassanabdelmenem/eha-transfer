@@ -490,6 +490,8 @@ export const ar: Messages = {
     medsReceived: 'الأدوية التي تلقاها',
     attachments: 'المرفقات الطبية',
     quickView: 'عرض سريع',
+    attachmentUnavailable: 'غير متاح (أُرسل قبل أكتوبر 2026)',
+    attachmentLoading: 'جارٍ تحميل {name}',
     download: 'تنزيل',
   },
   review: {
@@ -730,6 +732,9 @@ export const ar: Messages = {
     hint: 'يقرأ الفريق المستقبل رسم القلب قبل القبول. صور أو PDF، حتى 15 ميجابايت لكل ملف.',
     tooLarge: 'الملف {name} يتجاوز حد 15 ميجابايت ({size} ميجابايت).',
     badType: 'نوع ملف غير مدعوم: {name}. المسموح: الصور (JPG, PNG, WEBP, GIF, SVG) وتقارير PDF.',
+    imageTooLarge: 'تعذّر تصغير {name} بما يكفي للإرسال. جرّب صورة مقصوصة لتخطيط القلب.',
+    pdfTooLarge: 'الملف {name} أكبر من المسموح للإرسال (ملفات PDF حتى نحو 500 كيلوبايت). أرفق صورة للصفحة المهمة بدلًا منه.',
+    tooMany: 'حتى {max} ملفات لكل إحالة.',
   },
   destinationStep: {
     heading: 'إلى أين تذهب',

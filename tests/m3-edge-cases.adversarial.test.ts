@@ -23,7 +23,6 @@ import {
   SLA_TRACKED_BED_TYPES,
   SLA_TRACKED_STATUS,
 } from "../src/lib/sla";
-import * as fnSla from "../functions/src/sla";
 import {
   findCandidateFacilities,
   capacityEscalationReason,
@@ -224,47 +223,6 @@ describe("Milestone 3 Adversarial Challenge Suite (Empirical Stress Harness)", (
       }
     });
 
-    it("verifies 100% mathematical and logical parity with Cloud Functions SLA module across all edge cases", () => {
-      const testCases = [
-        { label: "Exact 0s elapsed", nowOffset: 0, priority: "emergency", bedType: "ICU", status: "pending", isEscalated: false, suppressed: false },
-        { label: "1799s elapsed (1s before breach)", nowOffset: 1799, priority: "emergency", bedType: "ICU", status: "pending", isEscalated: false, suppressed: false },
-        { label: "1800s elapsed (exact breach)", nowOffset: 1800, priority: "emergency", bedType: "ICU", status: "pending", isEscalated: false, suppressed: false },
-        { label: "1801s elapsed (1s post breach)", nowOffset: 1801, priority: "emergency", bedType: "ICU", status: "pending", isEscalated: false, suppressed: false },
-        { label: "Negative drift (-120s)", nowOffset: -120, priority: "emergency", bedType: "ICU", status: "pending", isEscalated: false, suppressed: false },
-        { label: "Future timestamp (+3600s)", nowOffset: 3600, priority: "emergency", bedType: "ICU", status: "pending", isEscalated: false, suppressed: false },
-        { label: "Breached but already escalated", nowOffset: 2000, priority: "emergency", bedType: "ICU", status: "pending", isEscalated: true, suppressed: false },
-        { label: "Breached but suppressed", nowOffset: 2000, priority: "emergency", bedType: "ICU", status: "pending", isEscalated: false, suppressed: true },
-        { label: "Breached but routine priority", nowOffset: 2000, priority: "routine", bedType: "ICU", status: "pending", isEscalated: false, suppressed: false },
-        { label: "Breached but Ward bed", nowOffset: 2000, priority: "emergency", bedType: "Ward", status: "pending", isEscalated: false, suppressed: false },
-        { label: "Breached but accepted status", nowOffset: 2000, priority: "emergency", bedType: "ICU", status: "accepted", isEscalated: false, suppressed: false },
-      ];
-
-      for (const tc of testCases) {
-        const ref = {
-          createdAt: createdAtStr,
-          status: tc.status as any,
-          priority: tc.priority as any,
-          requiredBedType: tc.bedType as any,
-          isEscalated: tc.isEscalated,
-          autoEscalationSuppressed: tc.suppressed,
-        };
-
-        const nowMs = baseEpoch + tc.nowOffset * 1000;
-        const nowObj = new Date(nowMs);
-
-        // Core tracking
-        expect(isSlaTracked(ref)).toBe(fnSla.isSlaTracked(ref));
-
-        // Seconds remaining
-        expect(secondsUntilSlaBreach(ref, nowObj)).toBe(fnSla.secondsUntilSlaBreach(ref, nowMs));
-
-        // Has breached
-        expect(hasBreachedSla(ref, nowObj)).toBe(fnSla.hasBreachedSla(ref, nowMs));
-
-        // Needs auto-escalation
-        expect(needsAutoEscalation(ref, nowObj)).toBe(fnSla.needsAutoEscalation(ref, nowMs));
-      }
-    });
   });
 
   // ============================================================================

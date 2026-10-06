@@ -16,7 +16,7 @@ import {
   assertSucceeds,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, collection, getDocs, query, where, orderBy, limit, writeBatch } from 'firebase/firestore';
 import { beforeAll, afterAll, beforeEach, describe, it } from 'vitest';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -1080,5 +1080,57 @@ describe('shiftAssignments: who may appoint a delegate', () => {
   it("blocks moving an assignment to another department or facility", async () => {
     await assertFails(updateDoc(doc(authed(F1_HOD_ER), 'shiftAssignments', 'sa-er'), { department: 'ICU' }));
     await assertFails(updateDoc(doc(authed(F1_MANAGER), 'shiftAssignments', 'sa-er'), { facilityId: 'f2' }));
+  });
+});
+
+/**
+ * Attachments (audit S1, 3 Oct 2026): stored as data URLs in
+ * referrals/{id}/attachments/{id}, written in the same batch as the referral,
+ * readable by the referral's parties only, written once by its creator.
+ */
+describe('referral attachments', () => {
+  const att = (over: Record<string, unknown> = {}) => ({ id: 'a1', name: 'ecg.jpg', mimeType: 'image/jpeg', data: 'data:image/jpeg;base64,AAAA', ...over });
+  const fresh = (id: string) => referral({ id, createdAtMs: Date.now(), statusHistory: [{ status: 'pending', timestamp: new Date().toISOString(), userId: F1_DOCTOR }] });
+
+  it('lets the creator write a referral and its attachment together', async () => {
+    const db = authed(F1_DOCTOR);
+    const b = writeBatch(db);
+    b.set(doc(db, 'referrals', 'refA'), fresh('refA'));
+    b.set(doc(db, 'referrals', 'refA', 'attachments', 'a1'), att());
+    // A realistic compressed ECG: ~700 KB of base64 still passes the size and type checks.
+    b.set(doc(db, 'referrals', 'refA', 'attachments', 'a2'), att({ id: 'a2', data: `data:image/jpeg;base64,${'A'.repeat(699_970)}` }));
+    await assertSucceeds(b.commit());
+  });
+
+  it("blocks someone else adding an attachment to a referral they did not create", async () => {
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1', 'attachments', 'a9'), att({ id: 'a9' })));
+    await assertFails(setDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1', 'attachments', 'a9'), att({ id: 'a9' })));
+  });
+
+  it('blocks oversized, mistyped, mislabelled or extra-field attachments', async () => {
+    const db = authed(F1_DOCTOR);
+    await assertFails(setDoc(doc(db, 'referrals', 'ref1', 'attachments', 'a2'), att({ id: 'a2', data: 'x'.repeat(1_000_001) })));
+    await assertFails(setDoc(doc(db, 'referrals', 'ref1', 'attachments', 'a3'), att({ id: 'a3', mimeType: 'text/html' })));
+    await assertFails(setDoc(doc(db, 'referrals', 'ref1', 'attachments', 'a4'), att({ id: 'other' })));
+    await assertFails(setDoc(doc(db, 'referrals', 'ref1', 'attachments', 'a5'), att({ id: 'a5', extra: true })));
+  });
+
+  it('lets the referral parties read attachments and keeps everyone else out', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'referrals', 'ref1', 'attachments', 'a1'), att());
+    });
+    await assertSucceeds(getDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'attachments', 'a1')));
+    await assertSucceeds(getDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1', 'attachments', 'a1'))); // candidate facility
+    await assertSucceeds(getDocs(collection(authed(F2_DOCTOR), 'referrals', 'ref1', 'attachments')));
+    await assertFails(getDoc(doc(authed(NEWCOMER), 'referrals', 'ref1', 'attachments', 'a1')));
+    await assertFails(getDocs(collection(authed(F1_DOCTOR), 'referrals', 'ref2-missing', 'attachments')));
+  });
+
+  it('never lets a party change or remove a stored attachment', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'referrals', 'ref1', 'attachments', 'a1'), att());
+    });
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'attachments', 'a1'), { name: 'x' }));
+    await assertFails(deleteDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'attachments', 'a1')));
   });
 });
