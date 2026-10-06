@@ -9,6 +9,7 @@ import { needsAutoEscalation } from '../lib/sla';
 import { capacityEscalationReason } from '../lib/routing';
 import { isNotificationRecipient } from '../lib/notificationRecipients';
 import { escortAuthority } from '../lib/escortAuthority';
+import { splitAttachments } from '../lib/attachments';
 import { escalationNotice, escalationUpdate, stillEscalates } from '../lib/escalationSweep';
 import { notificationText, type NotificationKey, type NotificationVars } from '../i18n/notifications';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
@@ -699,7 +700,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ]
     };
 
-    setDoc(doc(db, 'referrals', newReferral.id), newReferral).catch(writeFailed("Could not create the referral."));
+    // The referral and its attachment files in one batch: the rules check the files
+    // against the referral being written (getAfter), and neither lands without the other.
+    const { referral: referralDoc, files } = splitAttachments(newReferral);
+    const createBatch = writeBatch(db);
+    createBatch.set(doc(db, 'referrals', referralDoc.id), referralDoc);
+    files.forEach(f => createBatch.set(doc(db, 'referrals', referralDoc.id, 'attachments', f.id), f));
+    createBatch.commit().catch(writeFailed("Could not create the referral."));
     if (!isOnline) {
       // Firestore runs without persistent cache here (src/lib/firebase.ts), so the
       // write above only lives in memory until it succeeds -- closing the tab or a

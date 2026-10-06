@@ -84,6 +84,12 @@ test.describe('Complete Referral Lifecycle Journey', () => {
     // -------------------------------------------------------------------------
     await loginAs(page, E2E_USERS.hod);
     await page.goto(`/referrals/${referralId}`);
+
+    // The receiving hospital sees the attached ECG itself (audit S1: attachments used
+    // to be saved as blob: links that only opened on the sender's device).
+    const ecgThumb = page.getByRole('img', { name: 'ecg_lead2_trace.png' });
+    await expect(ecgThumb).toBeVisible({ timeout: 15000 });
+    await expect(ecgThumb).toHaveAttribute('src', /^data:image\/jpeg;base64,/);
     await expect(page.locator('body')).toContainText('Sayed Abdel-Rahman', { timeout: 15000 });
 
     // Fill department review

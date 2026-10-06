@@ -90,8 +90,16 @@ export function getActiveFirestoreState(): MockFirestoreState {
 
 export function createFirestoreModuleMock() {
   const state = activeState;
-  const doc = (_db: any, ...parts: string[]) => ({ path: parts.join('/'), __collection: parts[0], __id: parts[1] });
-  const collection = (_db: any, name: string) => ({ path: name, __collection: name });
+  // Nested paths resolve like Firestore: referrals/r1/attachments/a1 is document a1
+  // of the collection "referrals/r1/attachments", stored under that key.
+  const doc = (_db: any, ...parts: string[]) => {
+    const segs = parts.join('/').split('/');
+    return { path: segs.join('/'), __collection: segs.slice(0, -1).join('/'), __id: segs[segs.length - 1] };
+  };
+  const collection = (_db: any, ...parts: string[]) => {
+    const name = parts.join('/');
+    return { path: name, __collection: name };
+  };
   const query = (ref: any, ...constraints: any[]) => ({ ...ref, constraints });
   const where = (field: string, op: string, value: any) => ({ field, op, value });
   const orderBy = (field: string, direction?: string) => ({ orderBy: field, direction });
