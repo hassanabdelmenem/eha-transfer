@@ -21,6 +21,9 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
 Done 1 Oct: the 5-minute escalation trigger is live (cron-job.org → workflow_dispatch; token
 "eha-transfer sweep trigger" expires 30 Sep 2027, rotate before then); staging is seeded.
 
+S2b, about a week after S2a is live: narrow the `users` list/get rule to the caller's facility for non-admins
+and remove the roster fallback in DataContext (findings.md, Network directory).
+
 Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg).
 
 ## Current Phase

@@ -2,6 +2,16 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-06: network directory (audit S2a) and the C1 decision
+
+- `directory/{uid}`: contact fields of verified users, rules-checked against the user document; non-admins now read
+  their own facility's users plus the directory; all user writes mirror into it; daily reconcile in the sweep;
+  self-heal at sign-in. Email no longer shown across hospitals; phone note on the profile. Logout does a full page
+  load; open tabs reload at the next navigation after a release (`/version.json`). e2e helpers wait for that load.
+- C1: persistent cache stays off (findings.md).
+- Verified: lint, unit 1043, rules 140, e2e 11, build; sweep reconcile exercised on the emulator (adds a verified
+  user's entry without email, removes an unverified one, skips until due).
+
 ## 2026-10-06: audit runtime profile (Chrome DevTools) + C5, P3, P4
 
 - Staging cold load (/login): LCP 529 ms unthrottled, 1.26 s on Slow 4G + 4x CPU, CLS 0. The login page
