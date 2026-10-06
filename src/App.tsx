@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { isStale, watchForNewRelease } from './lib/appVersion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -103,6 +104,16 @@ const RoleBasedDashboard = () => {
 
 const AppRoutes = () => {
   const { user, authReady } = useAuth();
+
+  // A newer release is live: load it at the next route change (src/lib/appVersion.ts).
+  const location = useLocation();
+  useEffect(() => watchForNewRelease(), []);
+  const lastPath = useRef(location.pathname);
+  useEffect(() => {
+    if (location.pathname === lastPath.current) return;
+    lastPath.current = location.pathname;
+    if (isStale()) window.location.reload();
+  }, [location.pathname]);
 
   // Same reason as ProtectedRoute: /login and /onboarding branch on `user`, so
   // rendering them before auth resolves flashes the login form at a signed-in

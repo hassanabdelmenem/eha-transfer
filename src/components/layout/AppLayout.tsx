@@ -428,8 +428,10 @@ export const AppLayout: React.FC = () => {
                   value={profilePhone}
                   onChange={(e) => setProfilePhone(e.target.value)}
                   placeholder={t('shell.phonePlaceholder')}
+                  aria-describedby="profilePhoneHint"
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 outline-none text-slate-900 dark:text-white transition-all"
                 />
+                <p id="profilePhoneHint" className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('shell.phoneHint')}</p>
               </div>
 
               <div>

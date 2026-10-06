@@ -38,9 +38,6 @@ export const TransferContextCard: React.FC<TransferContextCardProps> = ({ referr
             {referringUser?.phoneNumber && (
               <p className="text-xs text-slate-600 font-mono mt-0.5">📞 {referringUser.phoneNumber}</p>
             )}
-            {referringUser?.email && (
-              <p className="text-xs text-slate-600 mt-0.5">✉️ {referringUser.email}</p>
-            )}
           </div>
           <div>
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('cards.targetDept')}</p>
