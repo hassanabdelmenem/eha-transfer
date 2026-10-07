@@ -131,8 +131,14 @@ service cloud.firestore {
                     && request.resource.data.get('email', '') == request.auth.token.get('email', '')
                     && facilityIsReal();
 
+      // Self-edits need a confirmed email (audit run-1, lead 12): with one account
+      // per email, someone who registers a colleague's address with a password
+      // and never confirms it could otherwise seed the profile (facility,
+      // requested role) that the colleague inherits when they sign in with Google.
       allow update: if isPrivileged()
-                    || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged());
+                    || (signedIn() && request.auth.uid == userId
+                        && request.auth.token.email_verified == true
+                        && privilegeFieldsUnchanged());
       allow delete: if isPrivileged();
     }
 
@@ -233,6 +239,36 @@ service cloud.firestore {
               && candidates is list && callerFacility() in candidates)
           || (after == 'auto' && resource.data.status == 'accepted'
               && request.resource.data.status == 'pending');
+    }
+    // Referral content that is not workflow state (audit run-1, deferred unit).
+    // The requested care is the referrer's to set: only its creator (or a
+    // privileged user) may change it, like patientData. Department comments are a
+    // record: each write appends one comment, by its own author, and leaves the
+    // rest untouched. Rejection, cancellation and decline details exist only in
+    // their own transitions, attributed to the caller.
+    function referralContentGuarded() {
+      let b = resource.data;
+      let a = request.resource.data;
+      return (mayEditClinicalData()
+              || (a.get('priority', null) == b.get('priority', null)
+                  && a.get('reasonForReferral', null) == b.get('reasonForReferral', null)
+                  && a.get('receivingDepartments', null) == b.get('receivingDepartments', null)))
+          && deptCommentsAppendOnly()
+          && (!changedKeys().hasAny(['rejectionReason', 'rejectedBy', 'rejectedAt'])
+              || (a.status == 'rejected' && b.status != 'rejected' && a.get('rejectedBy', null) == request.auth.uid))
+          && (!changedKeys().hasAny(['cancelReason', 'cancelledBy', 'cancelledAt'])
+              || (a.status == 'cancelled' && b.status != 'cancelled' && a.get('cancelledBy', null) == request.auth.uid))
+          && (!changedKeys().hasAny(['patientDeclinedFacilityIds'])
+              || (b.status == 'accepted' && a.status == 'pending'
+                  && a.patientDeclinedFacilityIds == b.get('patientDeclinedFacilityIds', []).concat([b.receivingFacilityId])));
+    }
+    function deptCommentsAppendOnly() {
+      let before = resource.data.get('deptComments', []);
+      let after = request.resource.data.get('deptComments', []);
+      return after == before
+          || (after is list && after.size() == before.size() + 1
+              && (before.size() == 0 || after[0:before.size()] == before)
+              && after[before.size()].userId == request.auth.uid);
     }
     function isReferralParty(data) {
       return ('referringFacilityId' in data && callerFacility() == data.referringFacilityId)
@@ -545,6 +581,7 @@ service cloud.firestore {
 
       allow update: if referralIdentityPinned()
                     && receivingFacilityChangeAllowed()
+                    && referralContentGuarded()
                     && auditTrailAppendOnly()
                     && validStatusTransition()
                     && transitionActorAllowed()
