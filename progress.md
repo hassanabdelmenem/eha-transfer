@@ -2,6 +2,21 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-07 (later): audit run-1 follow-ups
+
+- #75 and #76 merged and deployed. The production deploy is keyless (WIF as github-deployer@, first run
+  37625562306 green). FIREBASE_SERVICE_ACCOUNT and all three user-managed keys on github-deployer@ were deleted.
+- The WIF provider maps attribute.workflow = job_workflow_ref and admits only escalation-sweep.yml and
+  firebase-deploy.yml on main. Each service account is bound to its own workflow, and the repository-wide binding
+  was removed (sweep dry run 37623185275 green).
+- Lead 12: production Auth has one account per email, with email/password and Google both on. Self-edits of a
+  user profile now need a confirmed email, and the app confirms the email before onboarding. A password
+  pre-registrant can no longer seed the profile that the real owner inherits through Google.
+- Deferred unit (referral content integrity): priority, reason and requested departments are creator-only;
+  deptComments are append-only, one comment per write, by its author; rejection, cancellation and decline details
+  only appear in their own transition, attributed to the caller.
+- Verified: lint, unit 1055, rules 166, e2e 11.
+
 ## 2026-10-07: security audit run-1 fixes
 
 - Fixed 9 of 12 audit leads test-first (findings.md, Security audit run-1). Rules: receivingFacilityId change
