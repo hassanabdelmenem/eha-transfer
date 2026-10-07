@@ -78,5 +78,15 @@ describe('isUnavailableUrl', () => {
     expect(isUnavailableUrl('blob:https://eha/abc')).toBe(true);
     expect(isUnavailableUrl(undefined)).toBe(true);
     expect(isUnavailableUrl(dataUrl('image/jpeg', 4))).toBe(false);
+    expect(isUnavailableUrl(dataUrl('application/pdf', 4))).toBe(false);
+  });
+
+  it('refuses anything but an inline image or PDF (audit run-1, lead 11)', () => {
+    // A referral creator could plant these on the referral document directly.
+    expect(isUnavailableUrl('https://example.invalid/phish')).toBe(true);
+    expect(isUnavailableUrl('data:text/html;base64,PGgxPg==')).toBe(true);
+    expect(isUnavailableUrl('data:application/octet-stream;base64,AAAA')).toBe(true);
+    expect(isUnavailableUrl('data:image/svg+xml;base64,PHN2Zy8+')).toBe(true);
+    expect(isUnavailableUrl('javascript:alert(1)')).toBe(true);
   });
 });

@@ -1,7 +1,7 @@
 name: Deploy to Firebase
 
-# Production deploy. Runs only after CI passes on the default branch, so a red
-# test suite can never reach the live site.
+# Production deploy. Runs after CI passes on the default branch, so a red test
+# suite can never reach the live site; a manual run is accepted from main only.
 on:
   workflow_run:
     workflows: ["CI"]
@@ -26,9 +26,14 @@ jobs:
     name: Build and deploy
     runs-on: ubuntu-latest
     # workflow_run fires regardless of outcome; only proceed on success.
+    # A manual run deploys only from main (audit run-1, lead 4): dispatching on
+    # another branch would ship that branch's firestore.rules without CI. The
+    # 'production' environment holds the deploy key and is restricted to main, which
+    # also stops the copy of this file on any older branch from deploying.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
       github.event.workflow_run.conclusion == 'success'
+    environment: production
 
     steps:
       - uses: actions/checkout@v5
