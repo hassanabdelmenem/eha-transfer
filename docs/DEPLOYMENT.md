@@ -50,7 +50,11 @@ local commit  →  push branch  →  CI (every branch)  →  PR  →  preview ch
 
 Deploy is chained to CI via `workflow_run`, so a red test suite cannot reach
 production. It checks out `workflow_run.head_sha` — the exact commit CI
-validated, not whatever `main` points at by the time it runs.
+validated, not whatever `main` points at by the time it runs. A manual run
+(workflow_dispatch) is accepted from `main` only, and the deploy key lives in the
+`production` environment (`staging` for the staging deploy), whose deployment
+branch policy allows `main` only — so the older copy of a workflow file on any
+other branch cannot deploy that branch's rules (security audit run-1, lead 4).
 
 ## Setup status — already done
 
@@ -199,9 +203,10 @@ that starts the workflow through the API:
 3. Check it: a successful call returns `204`, and new "workflow_dispatch" runs appear under
    Actions → Escalation sweep every 5 minutes.
 
-The token can start, re-run and cancel workflow runs in this repository, but cannot change code,
-read secrets or reach Firebase; the sweep still runs from `main` as the `escalation-sweep` service
-account. Overlapping calls do not stack: one run executes and at most one waits (concurrency group
+The token can start, re-run and cancel workflow runs in this repository, on any branch. It cannot
+change code or read secrets. Deploys and the sweep act only from `main`: both jobs check the ref,
+and the deploy keys are environment secrets restricted to `main`. The sweep runs as the
+`escalation-sweep` service account. Overlapping calls do not stack: one run executes and at most one waits (concurrency group
 `escalation-sweep`). Public-repository Actions minutes are free.
 
 ## Manual deploy (escape hatch)

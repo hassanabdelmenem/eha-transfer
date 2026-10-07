@@ -37,6 +37,8 @@ jobs:
   sweep:
     name: Sweep
     runs-on: ubuntu-latest
+    # Only main's sweep may run with the production identity (audit run-1, lead 5).
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 8
     permissions:
       contents: read

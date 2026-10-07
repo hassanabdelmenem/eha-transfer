@@ -2,6 +2,15 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-07: security audit run-1 fixes
+
+- Fixed 9 of 12 audit leads test-first (findings.md, Security audit run-1). Rules: receivingFacilityId change
+  allowance, real facilityId, email bound to the token, notification recipient + key, no escort at create. Client:
+  i18n crash, draft cleared on logout, attachment URL allowlist, notification fan-out chunked to 15. CI: deploys
+  and sweep main-only, deploy jobs use environments.
+- Lead 5 confirmed with gcloud (WIF condition lacks a workflow binding). Owner-approved IAM change pending.
+- Verified: lint, unit 1053, rules 157, e2e 11, build.
+
 ## 2026-10-06: network directory (audit S2a) and the C1 decision
 
 - `directory/{uid}`: contact fields of verified users, rules-checked against the user document; non-admins now read
