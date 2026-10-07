@@ -140,7 +140,8 @@ describe('privilege escalation (security review #1)', () => {
   });
 
   it('allows an unverified user to pick a facility and request a role during onboarding', async () => {
-    await assertSucceeds(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), {
+    // Admin-unverified, email confirmed (onboarding follows email confirmation, audit run-1 lead 12).
+    await assertSucceeds(updateDoc(doc(testEnv.authenticatedContext(NEWCOMER, { email_verified: true }).firestore(), 'users', NEWCOMER), {
       facilityId: 'f1', department: 'ICU', requestedRole: 'hospital_manager', profileCompleted: true,
     }));
   });
@@ -673,7 +674,7 @@ describe('security audit run-1 (7 Oct 2026)', () => {
       await assertFails(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'no-such-facility' }));
     });
     it('allows an existing facility during onboarding', async () => {
-      await assertSucceeds(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'f1', profileCompleted: true }));
+      await assertSucceeds(updateDoc(doc(testEnv.authenticatedContext(NEWCOMER, { email_verified: true }).firestore(), 'users', NEWCOMER), { facilityId: 'f1', profileCompleted: true }));
     });
   });
 
@@ -722,6 +723,54 @@ describe('security audit run-1 (7 Oct 2026)', () => {
     it('still allows a referral without an escort record', async () => {
       await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'refY'), referral({ id: 'refY', createdAtMs: Date.now() })));
     });
+  });
+});
+
+describe('referral content integrity (audit run-1, deferred unit)', () => {
+  const comment = (userId: string, id = 'c1') => ({ id, userId, timestamp: '2026-10-07T00:00:00.000Z', status: 'direct_approval', comment: 'ok' });
+  const seedRef = (over: Record<string, unknown>) => testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), over);
+  });
+
+  it('denies a receiving party changing priority, reason or requested departments', async () => {
+    await seedRef({ receivingFacilityId: 'f2' });
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { priority: 'routine' }));
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { reasonForReferral: 'changed' }));
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { receivingDepartments: ['Ward'] }));
+  });
+  it('still lets the referral creator correct its own clinical request', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), { priority: 'urgent' }));
+  });
+
+  it('lets a party append its own department comment', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { deptComments: [comment(F2_DOCTOR)] }));
+  });
+  it('denies a comment attributed to someone else', async () => {
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { deptComments: [comment(F3_CANDIDATE)] }));
+  });
+  it('denies rewriting or removing an existing comment', async () => {
+    await seedRef({ deptComments: [comment(F3_CANDIDATE)] });
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { deptComments: [{ ...comment(F3_CANDIDATE), comment: 'forged' }] }));
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { deptComments: [] }));
+  });
+
+  it('denies writing rejection or cancellation details outside those transitions, or for someone else', async () => {
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { rejectionReason: 'x', rejectedBy: F2_DOCTOR }));
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), { cancelReason: 'x', cancelledBy: F1_MANAGER }));
+  });
+
+  it('denies editing the declined-facilities list outside the decline flow', async () => {
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { patientDeclinedFacilityIds: ['f3'] }));
+  });
+});
+
+describe('profile edits need a confirmed email (audit run-1, lead 12)', () => {
+  it('denies an unconfirmed account seeding its profile (facility, requested role)', async () => {
+    await assertFails(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'f1', requestedRole: 'medical_director', profileCompleted: true }));
+  });
+  it('allows the same edit once the email is confirmed', async () => {
+    const confirmed = testEnv.authenticatedContext(NEWCOMER, { email_verified: true }).firestore();
+    await assertSucceeds(updateDoc(doc(confirmed, 'users', NEWCOMER), { facilityId: 'f1', requestedRole: 'medical_director', profileCompleted: true }));
   });
 });
 
@@ -1178,7 +1227,7 @@ describe('department is a privilege field once verified (escort authority depend
     await assertFails(updateDoc(doc(authed(F1_HOD_ICU), 'users', F1_HOD_ICU), { department: 'Emergency' }));
   });
   it('still lets an unverified user choose a department during onboarding', async () => {
-    await assertSucceeds(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'f1', department: 'ICU' }));
+    await assertSucceeds(updateDoc(doc(testEnv.authenticatedContext(NEWCOMER, { email_verified: true }).firestore(), 'users', NEWCOMER), { facilityId: 'f1', department: 'ICU' }));
   });
 });
 

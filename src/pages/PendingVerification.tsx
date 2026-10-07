@@ -18,6 +18,8 @@ export const PendingVerification: React.FC = () => {
 
   if (!user) return <Navigate to="/login" replace />;
   if (user.verified && emailVerified) return <Navigate to="/" replace />;
+  // Email confirmed but no profile yet: onboarding comes next (audit run-1, lead 12).
+  if (emailVerified && !user.profileCompleted) return <Navigate to="/onboarding" replace />;
 
   const handleResend = async () => {
     setResendStatus('sending');
