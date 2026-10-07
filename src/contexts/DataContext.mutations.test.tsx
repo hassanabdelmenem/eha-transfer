@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { User } from '../types';
 import { createFirestoreModuleMock, getActiveFirestoreState, resetFirestoreState, seedCollection, type MockFirestoreState } from './testUtils/mockFirestore';
 import { makeUser, makeFacility, makeReferral, makeDirectAdmission } from './testUtils/fixtures';
-import { DataProvider, useData } from './DataContext';
+import { DataProvider, useData, NOTIFICATION_BATCH_SIZE } from './DataContext';
 
 vi.mock('firebase/firestore', () => createFirestoreModuleMock());
 let fsState: MockFirestoreState;
@@ -236,6 +236,30 @@ describe('createNotification on-call delegation', () => {
 
     const notifs: any[] = Object.values(fsState.stores['notifications'] || {});
     expect(notifs.some(n => n.userId === 'resident-f3')).toBe(false);
+  });
+});
+
+describe('createNotification batching (audit run-1, lead 7)', () => {
+  beforeEach(() => {
+    fsState = getActiveFirestoreState();
+    resetFirestoreState(fsState);
+    mockUser = makeUser({ id: 'u1', role: 'hospital_manager', facilityId: 'f2', verified: true });
+    seedCollection(fsState, 'facilities', [makeFacility({ id: 'f1' }), makeFacility({ id: 'f2' })]);
+    // Privileged users receive every notification, so these 40 are all recipients.
+    seedCollection(fsState, 'users', [
+      makeUser({ id: 'u1', facilityId: 'f2', role: 'hospital_manager' }),
+      ...Array.from({ length: 40 }, (_, i) => makeUser({ id: `admin-${i}`, role: 'system_admin', facilityId: 'branch' })),
+    ]);
+  });
+
+  it('splits a large fan-out into batches small enough for the rules\' per-batch read limit', async () => {
+    const firestore: any = await import('firebase/firestore');
+    renderProvider();
+    await act(async () => { screen.getByText('AddDirect').click(); });
+    await waitFor(() => expect(Object.keys(fsState.stores['referrals'] || {}).length).toBe(1));
+    await waitFor(() => expect(Object.values(fsState.stores['notifications'] || {}).filter((n: any) => n.userId.startsWith('admin-')).length).toBe(40));
+    const sizes = firestore.writeBatch.mock.results.map((r: any) => r.value.set.mock.calls.filter((c: any) => c[0].__collection === 'notifications').length).filter((n: number) => n > 0);
+    expect(Math.max(...sizes)).toBeLessThanOrEqual(NOTIFICATION_BATCH_SIZE);
   });
 });
 

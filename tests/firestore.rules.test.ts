@@ -219,7 +219,7 @@ describe('PHI collections (security review #2)', () => {
   it('allows verified staff to fan out a notification to another user, when they are a party to the referenced referral', async () => {
     await assertSucceeds(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n2'), {
       id: 'n2', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false,
-      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1',
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1', key: 'receivingStatus', vars: {},
     }));
   });
 
@@ -577,7 +577,7 @@ describe('notification relatedness (security review follow-up)', () => {
   it('allows the actual party to notify about that same referral', async () => {
     await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n8'), {
       id: 'n8', userId: F1_MANAGER, title: 'T', message: 'M', type: 'info', read: false,
-      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref2',
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref2', key: 'receivingStatus', vars: {},
     }));
   });
 
@@ -635,6 +635,96 @@ describe('shift log shape', () => {
   });
 });
 
+describe('security audit run-1 (7 Oct 2026)', () => {
+  const notif = (over: Record<string, unknown> = {}) => ({
+    id: 'n-x', userId: F2_DOCTOR, title: 'Referral update', message: 'm', type: 'info', read: false,
+    createdAt: '2026-10-07T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1', key: 'receivingStatus', vars: {}, ...over,
+  });
+  const seed = (fn: (db: any) => Promise<unknown>) => testEnv.withSecurityRulesDisabled(async (ctx) => { await fn(ctx.firestore()); });
+
+  describe('receivingFacilityId cannot be rewritten by a party (lead 1)', () => {
+    it('denies a candidate pointing an auto referral at an uninvolved facility', async () => {
+      await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { receivingFacilityId: 'f9' }));
+    });
+    it('denies the referring facility making itself the destination', async () => {
+      await seed(db => updateDoc(doc(db, 'referrals', 'ref1'), { receivingFacilityId: 'f2', status: 'in_transit' }));
+      await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), { receivingFacilityId: 'f1' }));
+    });
+    it('still lets a candidate claim an auto referral for its own facility', async () => {
+      await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { receivingFacilityId: 'f3' }));
+    });
+    it('still lets the patient-decline flow reset an accepted referral to auto', async () => {
+      await seed(db => updateDoc(doc(db, 'referrals', 'ref1'), { receivingFacilityId: 'f2', status: 'accepted', statusHistory: [{ status: 'accepted', timestamp: '2026-01-01T00:00:00.000Z', userId: F2_DOCTOR }] }));
+      await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
+        receivingFacilityId: 'auto', status: 'pending', candidateFacilityIds: ['f3'],
+        statusHistory: [{ status: 'accepted', timestamp: '2026-01-01T00:00:00.000Z', userId: F2_DOCTOR }, { status: 'pending', timestamp: '2026-10-07T00:00:00.000Z', userId: F1_DOCTOR }],
+      }));
+    });
+    it('still lets a privileged user override the destination', async () => {
+      await assertSucceeds(updateDoc(doc(authed(OWNER), 'referrals', 'ref1'), { receivingFacilityId: 'f9' }));
+    });
+  });
+
+  describe('users.facilityId must name a real facility (lead 2)', () => {
+    it('denies an unverified user choosing the routing sentinel auto', async () => {
+      await assertFails(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'auto' }));
+    });
+    it('denies a facility that does not exist', async () => {
+      await assertFails(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'no-such-facility' }));
+    });
+    it('allows an existing facility during onboarding', async () => {
+      await assertSucceeds(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'f1', profileCompleted: true }));
+    });
+  });
+
+  describe('users.email is bound to the signed-in identity (lead 3)', () => {
+    const ctx = (uid: string, email?: string) => testEnv.authenticatedContext(uid, email ? { email, email_verified: true } : {}).firestore();
+    it('denies creating a profile under someone else\'s address', async () => {
+      await assertFails(setDoc(doc(ctx('imp', 'attacker@gmail.com'), 'users', 'imp'), { id: 'imp', name: 'Victim', email: 'victim@x.gov', role: 'resident', verified: false }));
+    });
+    it('allows creating a profile with the token\'s own address', async () => {
+      await assertSucceeds(setDoc(doc(ctx('own', 'me@gmail.com'), 'users', 'own'), { id: 'own', name: 'Me', email: 'me@gmail.com', role: 'resident', verified: false }));
+    });
+    it('denies changing the email on an existing profile', async () => {
+      await assertFails(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { email: 'someone@x.gov' }));
+    });
+  });
+
+  describe('notification recipients belong to the referral (lead 7)', () => {
+    it('denies addressing a user at an uninvolved facility', async () => {
+      await seed(db => setDoc(doc(db, 'users', 'f9-doc'), { id: 'f9-doc', name: 'F9', email: 'f9@x.gov', role: 'consultant', verified: true, facilityId: 'f9' }));
+      await assertFails(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n-x'), notif({ userId: 'f9-doc' })));
+    });
+    it('denies a free-text notification with no catalogue key', async () => {
+      const { key, vars, ...free } = notif();
+      await assertFails(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n-x'), free));
+    });
+    it('accepts a full batch of NOTIFICATION_BATCH_SIZE (15) recipients within the rules read limit', async () => {
+      await seed(async db => { for (let i = 0; i < 15; i++) await setDoc(doc(db, 'users', `f2-staff-${i}`), { id: `f2-staff-${i}`, name: `S${i}`, email: `s${i}@x.gov`, role: 'consultant', verified: true, facilityId: 'f2' }); });
+      const db = authed(F1_DOCTOR);
+      const b = writeBatch(db);
+      for (let i = 0; i < 15; i++) b.set(doc(db, 'notifications', `nb-${i}`), notif({ id: `nb-${i}`, userId: `f2-staff-${i}` }));
+      await assertSucceeds(b.commit());
+    });
+    it('allows a candidate-facility recipient and a privileged recipient', async () => {
+      await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n-x'), notif()));
+      await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n-y'), notif({ id: 'n-y', userId: OWNER })));
+    });
+  });
+
+  describe('escort record cannot be pre-filled at create (lead 10)', () => {
+    it('denies a referral created with an accompanyingDoctor already set', async () => {
+      await assertFails(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'refX'), referral({
+        id: 'refX', requiresAccompanyingDoctor: true, referringDepartment: 'ICU', createdAtMs: Date.now(),
+        accompanyingDoctor: { name: 'Dr X', phoneNumber: '1', addedBy: F1_HOD_ICU, addedAt: '2026-10-07T00:00:00.000Z' },
+      })));
+    });
+    it('still allows a referral without an escort record', async () => {
+      await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'refY'), referral({ id: 'refY', createdAtMs: Date.now() })));
+    });
+  });
+});
+
 describe('user self-signup', () => {
   it('blocks self-signup with an elevated role', async () => {
     await assertFails(setDoc(doc(testEnv.authenticatedContext('brand-new').firestore(), 'users', 'brand-new'), {
@@ -643,7 +733,7 @@ describe('user self-signup', () => {
   });
 
   it('allows self-signup as an unverified resident', async () => {
-    await assertSucceeds(setDoc(doc(testEnv.authenticatedContext('brand-new-2').firestore(), 'users', 'brand-new-2'), {
+    await assertSucceeds(setDoc(doc(testEnv.authenticatedContext('brand-new-2', { email: 'new2@x.gov' }).firestore(), 'users', 'brand-new-2'), {
       id: 'brand-new-2', name: 'New', email: 'new2@x.gov', role: 'resident', verified: false,
     }));
   });

@@ -94,7 +94,19 @@ service cloud.firestore {
           // verified it carries authority (who records a transfer's escort doctor,
           // accompanyingDoctorWriteAuthorized), so a user cannot move themselves.
           && (resource.data.verified != true
-              || request.resource.data.get('department', null) == resource.data.get('department', null));
+              || request.resource.data.get('department', null) == resource.data.get('department', null))
+          // The email the approver sees is the account's own (audit run-1, lead 3).
+          && request.resource.data.get('email', '') == resource.data.get('email', '')
+          && facilityIsReal();
+    }
+    // A self-chosen facilityId must name a real facility (audit run-1, lead 2):
+    // otherwise 'auto' -- the receivingFacilityId of every unclaimed auto-routed
+    // referral -- would make its holder a party to all of them once verified.
+    function facilityIsReal() {
+      let after = request.resource.data.get('facilityId', null);
+      return after == null
+          || (resource != null && after == resource.data.get('facilityId', null))
+          || exists(/databases/$(database)/documents/facilities/$(after));
     }
 
     match /users/{userId} {
@@ -112,7 +124,12 @@ service cloud.firestore {
       // rule — the prior bootstrap hatch was revoked once that tooling shipped.
       allow create: if signedIn() && request.auth.uid == userId
                     && request.resource.data.verified == false
-                    && request.resource.data.role == 'resident';
+                    && request.resource.data.role == 'resident'
+                    // The email the approver sees is the signed-in account's own
+                    // (audit run-1, lead 3); impersonating a colleague's address
+                    // was the gap behind 'admin-verified by mistake'.
+                    && request.resource.data.get('email', '') == request.auth.token.get('email', '')
+                    && facilityIsReal();
 
       allow update: if isPrivileged()
                     || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged());
@@ -200,6 +217,22 @@ service cloud.firestore {
           || (data.receivingFacilityId == 'auto'
               && data.candidateFacilityIds is list
               && callerFacility() in data.candidateFacilityIds);
+    }
+    // receivingFacilityId decides who may read the referral and who acts as its
+    // destination, so it changes only in the three ways the app does it (audit
+    // run-1, lead 1): a candidate claims an auto-routed referral for its own
+    // facility; the patient declines an accepted transfer and it goes back to
+    // 'auto'; or a privileged user overrides the destination.
+    function receivingFacilityChangeAllowed() {
+      let before = resource.data.get('receivingFacilityId', null);
+      let after = request.resource.data.get('receivingFacilityId', null);
+      let candidates = resource.data.get('candidateFacilityIds', []);
+      return after == before
+          || isPrivileged()
+          || (before == 'auto' && after == callerFacility()
+              && candidates is list && callerFacility() in candidates)
+          || (after == 'auto' && resource.data.status == 'accepted'
+              && request.resource.data.status == 'pending');
     }
     function isReferralParty(data) {
       return ('referringFacilityId' in data && callerFacility() == data.referringFacilityId)
@@ -504,9 +537,14 @@ service cloud.firestore {
                     && request.resource.data.createdAtMs <= request.time.toMillis() + 300000
                     && (!('referringDepartment' in request.resource.data)
                         || (request.resource.data.referringDepartment is string
-                            && request.resource.data.referringDepartment.size() <= 100));
+                            && request.resource.data.referringDepartment.size() <= 100))
+                    // The escort is recorded later, by the sending department head
+                    // or delegate (accompanyingDoctorWriteAuthorized); a value set
+                    // at create would never pass through that check (audit run-1, lead 10).
+                    && request.resource.data.get('accompanyingDoctor', null) == null;
 
       allow update: if referralIdentityPinned()
+                    && receivingFacilityChangeAllowed()
                     && auditTrailAppendOnly()
                     && validStatusTransition()
                     && transitionActorAllowed()
@@ -550,6 +588,14 @@ service cloud.firestore {
     // the referenced referral may create a notification addressed to another
     // user — but reads stay strictly per-recipient, and the only mutable field
     // is the read flag.
+    function recipientConcerned(ref) {
+      let r = get(/databases/$(database)/documents/users/$(request.resource.data.userId)).data;
+      let f = r.get('facilityId', '');
+      return r.role in ['owner', 'system_admin']
+          || f == ref.referringFacilityId
+          || f == ref.get('receivingFacilityId', '')
+          || (ref.get('candidateFacilityIds', []) is list && f in ref.get('candidateFacilityIds', []));
+    }
     match /notifications/{notificationId} {
       // isVerifiedCaller(), not signedIn(): notification bodies name patients, and
       // fan-out picks recipients from the roster without looking at email status.
@@ -595,7 +641,13 @@ service cloud.firestore {
                     && request.resource.data.createdAtMs <= request.time.toMillis() + 300000
                     && request.resource.data.referralId is string
                     && exists(/databases/$(database)/documents/referrals/$(request.resource.data.referralId))
-                    && (isPrivileged() || isReferralParty(referralData(request.resource.data.referralId)));
+                    && (isPrivileged()
+                        || (isReferralParty(referralData(request.resource.data.referralId))
+                            // Catalogue-rendered only, and only to someone the referral
+                            // concerns (audit run-1, lead 7): free text to any uid let a
+                            // party forge 'escalation' alerts network-wide.
+                            && request.resource.data.key is string
+                            && recipientConcerned(referralData(request.resource.data.referralId))));
       allow update: if signedIn() && resource.data.userId == request.auth.uid
                     && changedKeys().hasOnly(['read']);
       // The recipient can clear their own tray. Previously only an admin could
