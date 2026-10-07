@@ -148,6 +148,34 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
 - The project's default site `eha-transfer-1785622025` (.web.app / .firebaseapp.com) only 301-redirects to
   production since 6 Oct 2026 (it served a stale build against prod data). Config: `ops/legacy-site-redirect/`.
 
+## Security audit run-1 (7 Oct 2026, Cloudflare security-audit skill)
+
+Report: ~/security-audit-skill/eha-transfer/run-1 (REPORT.md, NEEDS-VALIDATION.md). There were 12 leads. Each fix
+below has a regression test (rules, Vitest or e2e) that failed before the change:
+- **Lead 1:** `receivingFacilityId` changes only by candidate claim of an 'auto' referral, decline reset
+  (accepted -> pending, 'auto'), or privileged override (`receivingFacilityChangeAllowed`).
+- **Lead 2:** a self-chosen `users.facilityId` must name an existing facility (`facilityIsReal`), so the 'auto'
+  sentinel can no longer make a user a party to every auto-routed referral.
+- **Lead 3:** `users.email` must equal the token email at create and is pinned on self-update.
+- **Lead 7:** notifications need a catalogue `key` (no free text) and a recipient at the referral's facilities, or a
+  privileged recipient. The rule reads each recipient's user doc, so client fan-out is chunked into batches of
+  `NOTIFICATION_BATCH_SIZE` = 15 (the rules allow at most 20 reads per batch; a rules test proves 15 fits).
+- **Lead 10:** referral create must not carry `accompanyingDoctor`.
+- **Lead 6:** i18n `lookup` uses own properties only; `translate` returns the key for any non-message node.
+  Previously '@__proto__' or '@notif' crashed the app.
+- **Lead 8:** logout removes the `newReferralDraft` localStorage entry.
+- **Lead 11:** attachment links open only for `data:(image/jpeg|png|webp|gif|application/pdf);base64` URLs.
+- **Lead 4:** deploy jobs accept a manual run from `main` only and use environments `production` / `staging`.
+  Owner steps: restrict both environments to `main`, move the deploy keys into them, delete the repo-level secrets.
+- **Lead 5 (confirmed by a read-only gcloud check):** the WIF provider condition is
+  `assertion.repository=='hassanabdelmenem/eha-transfer' && assertion.ref=='refs/heads/main'`, and the SA binding is
+  repository-wide. Any main-ref job in the repo, including claude.yml issue/comment runs, matches it. The sweep job
+  now checks the ref; the condition still needs `assertion.job_workflow_ref == '.../escalation-sweep.yml@refs/heads/main'`
+  (IAM change, owner approval).
+- **Open:** lead 9 is S2b (narrow the `users` list, ~13 Oct). Lead 12 (email/password pre-registration vs Google)
+  needs the owner to check the Auth account-linking setting. The deferred unit (referral content-field integrity:
+  deptComments/priority/reason) has not been hunted.
+
 ## Gotchas
 
 - Hooks after an early `if (!user) return null` break React's hook order once the user loads (found and fixed
