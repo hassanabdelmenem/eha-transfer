@@ -6,6 +6,7 @@ import { doc, getDoc, setDoc, onSnapshot, writeBatch } from 'firebase/firestore'
 import { DIRECTORY_COLLECTION, directoryEntryFor, sameEntry, type DirectoryEntry } from '../lib/directory';
 import { markActivity, clearActivity, hasActivity, isIdleExpired } from '../lib/idleSession';
 import { clearOfflineReferrals } from '../lib/db';
+import { DRAFT_STORAGE_KEY } from '../components/referrals/wizard/types';
 
 // Mobile browsers (especially iOS Safari) routinely block or break signInWithPopup —
 // third-party storage restrictions and popup blockers make the popup either never
@@ -250,6 +251,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     try {
       localStorage.removeItem('auth_user');
+      // An unsent referral draft holds a patient's details; on a shared
+      // workstation it must not greet the next account (audit run-1, lead 8).
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
     } catch (e) {}
     // Patient records queued for offline sync are cached in IndexedDB
     // (src/lib/db.ts) so a flaky connection doesn't lose a referral. On a

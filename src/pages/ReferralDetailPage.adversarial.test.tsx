@@ -69,9 +69,9 @@ function makeReferral(overrides: Partial<Referral> = {}): Referral {
       diagnosis: 'Acute Anterior STEMI',
       investigations: 'Pending bedside echo',
       attachments: [
-        { id: 'att-1', name: '12_lead_ecg.png', type: 'image', url: 'https://storage.eha.gov.eg/12_lead_ecg.png', size: 1024 * 500, mimeType: 'image/png' },
-        { id: 'att-2', name: 'rhythm_strip.jpg', type: 'image', url: 'https://storage.eha.gov.eg/rhythm_strip.jpg', size: 1024 * 300, mimeType: 'image/jpeg' },
-        { id: 'att-3', name: 'lab_report.pdf', type: 'document', url: 'https://storage.eha.gov.eg/lab_report.pdf', size: 1024 * 1024, mimeType: 'application/pdf' },
+        { id: 'att-1', name: '12_lead_ecg.png', type: 'image', url: 'data:image/png;base64,ZWNnMTI=', size: 1024 * 500, mimeType: 'image/png' },
+        { id: 'att-2', name: 'rhythm_strip.jpg', type: 'image', url: 'data:image/jpeg;base64,cmh5dGht', size: 1024 * 300, mimeType: 'image/jpeg' },
+        { id: 'att-3', name: 'lab_report.pdf', type: 'document', url: 'data:application/pdf;base64,bGFicw==', size: 1024 * 1024, mimeType: 'application/pdf' },
       ],
     },
     referringFacilityId: 'f1',
@@ -122,7 +122,7 @@ describe('ReferralDetailPage - Adversarial ECG Viewer Integration', () => {
 
     const downloadLinks = screen.getAllByRole('link', { name: /download/i });
     expect(downloadLinks.length).toBe(1); // 1 document attachment
-    expect(downloadLinks[0]).toHaveAttribute('href', 'https://storage.eha.gov.eg/lab_report.pdf');
+    expect(downloadLinks[0]).toHaveAttribute('href', 'data:application/pdf;base64,bGFicw==');
   });
 
   it('mounts ECGViewerOverlay with first image URL on first Quick View click, zooms, and closes cleanly', async () => {
@@ -139,7 +139,7 @@ describe('ReferralDetailPage - Adversarial ECG Viewer Integration', () => {
     expect(dialog).toBeInTheDocument();
 
     const image = screen.getByAltText(/ecg diagnostic view/i);
-    expect(image).toHaveAttribute('src', 'https://storage.eha.gov.eg/12_lead_ecg.png');
+    expect(image).toHaveAttribute('src', 'data:image/png;base64,ZWNnMTI=');
 
     // Test zoom controls inside ReferralDetailPage
     const zoomInBtn = screen.getByRole('button', { name: /zoom in/i });
@@ -162,7 +162,7 @@ describe('ReferralDetailPage - Adversarial ECG Viewer Integration', () => {
     fireEvent.click(quickViewButtons[1]);
 
     const image = screen.getByAltText(/ecg diagnostic view/i);
-    expect(image).toHaveAttribute('src', 'https://storage.eha.gov.eg/rhythm_strip.jpg');
+    expect(image).toHaveAttribute('src', 'data:image/jpeg;base64,cmh5dGht');
 
     // Close via Escape key
     fireEvent.keyDown(window, { key: 'Escape' });
