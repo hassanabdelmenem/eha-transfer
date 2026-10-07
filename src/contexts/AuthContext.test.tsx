@@ -130,6 +130,14 @@ describe('AuthContext dev mock login', () => {
     expect(clearOfflineReferralsMock).toHaveBeenCalled();
   });
 
+  it('removes an unsent referral draft so the next account on a shared PC never sees it (audit run-1, lead 8)', async () => {
+    localStorage.setItem('newReferralDraft', JSON.stringify({ patientData: { name: 'Previous Patient' } }));
+    renderAuth();
+    await userEvent.click(screen.getByText('Login U1'));
+    await userEvent.click(screen.getByText('Logout'));
+    await waitFor(() => expect(localStorage.getItem('newReferralDraft')).toBeNull());
+  });
+
   it('picks the mock user back up from localStorage on the next mount, bypassing the Firebase listener', async () => {
     localStorage.setItem('auth_user', JSON.stringify({ id: 'u2', name: 'u2', email: 'u2@example.com', role: 'resident' }));
     renderAuth();

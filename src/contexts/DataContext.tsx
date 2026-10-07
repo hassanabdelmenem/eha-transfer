@@ -39,6 +39,8 @@ export const OFFLINE_SYNC_STALL_TIMEOUT_MS = 15_000;
 // its whole result on every sign-in and page load, so these cap the read cost.
 export const NOTIFICATIONS_LIMIT = 100;
 export const SHIFT_LOGS_LIMIT = 200;
+// Recipients per notification batch; see createNotification.
+export const NOTIFICATION_BATCH_SIZE = 15;
 
 export interface DirectAdmission {
   id: string;
@@ -506,28 +508,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       { facilityIds: targetFacilityIds, targetRoles: params.targetRoles, departments: params.departments, targetUserIds: params.targetUserIds }
     ));
 
-    const batch = writeBatch(db);
+    // One batch per NOTIFICATION_BATCH_SIZE recipients: the create rule reads each
+    // recipient's user document (audit run-1, lead 7), and a batch may make at
+    // most 20 document reads in rules, two of which are the caller and the referral.
     const createdAt = new Date().toISOString();
     const createdAtMs = Date.parse(createdAt);
-    relevantUsers.forEach(u => {
-      const id = uuidv4();
-      const notif: Notification = {
-        id,
-        userId: u.id,
-        title,
-        message,
-        key: params.key,
-        vars: params.vars,
-        type: params.type,
-        read: false,
-        createdAt,
-        // Bounded against server time by the rules; also what the tray sorts on.
-        createdAtMs,
-        referralId: params.referralId
-      };
-      batch.set(doc(db, 'notifications', id), notif);
-    });
-    batch.commit().catch(writeFailed("Could not send notifications for that update."));
+    for (let i = 0; i < relevantUsers.length; i += NOTIFICATION_BATCH_SIZE) {
+      const batch = writeBatch(db);
+      relevantUsers.slice(i, i + NOTIFICATION_BATCH_SIZE).forEach(u => {
+        const id = uuidv4();
+        const notif: Notification = {
+          id,
+          userId: u.id,
+          title,
+          message,
+          key: params.key,
+          vars: params.vars,
+          type: params.type,
+          read: false,
+          createdAt,
+          // Bounded against server time by the rules; also what the tray sorts on.
+          createdAtMs,
+          referralId: params.referralId
+        };
+        batch.set(doc(db, 'notifications', id), notif);
+      });
+      batch.commit().catch(writeFailed("Could not send notifications for that update."));
+    }
   }, [users, shiftAssignmentsByFacility]);
 
   // Flushes referrals cached in IndexedDB while offline (see addReferral) to

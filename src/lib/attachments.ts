@@ -129,5 +129,12 @@ export function splitAttachments(referral: Referral): { referral: Referral; file
   return { referral: { ...referral, patientData: { ...referral.patientData, attachments: kept } }, files };
 }
 
-/** True for a link that cannot be opened here: missing, or a blob: URL from another device. */
-export const isUnavailableUrl = (url: string | undefined) => !url || url.startsWith('blob:');
+/**
+ * True for a link this app will not open. Only an inline image or PDF qualifies:
+ * old blob: links worked only on the sending device, and anything else on a
+ * referral document (an https page, data:text/html, an SVG) could have been
+ * written there directly by its creator to phish or drop a file on the
+ * receiving clinician (audit run-1, lead 11).
+ */
+const OPENABLE = /^data:(image\/(jpeg|png|webp|gif)|application\/pdf);base64,/;
+export const isUnavailableUrl = (url: string | undefined) => !url || !OPENABLE.test(url);
