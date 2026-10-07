@@ -64,7 +64,7 @@ function makeReferral(overrides: Partial<Referral> = {}): Referral {
       medications: 'Aspirin', clinicalNotes: 'ECG shows ST depression', diagnosis: 'NSTEMI',
       investigations: 'Troponin elevated',
       attachments: [
-        { id: 'att1', name: 'ecg.png', type: 'image', url: 'https://example.com/ecg.png' }
+        { id: 'att1', name: 'ecg.png', type: 'image', url: 'data:image/png;base64,ZWNn' }
       ],
     },
     referringFacilityId: 'f1',

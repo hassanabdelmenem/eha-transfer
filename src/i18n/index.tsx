@@ -79,7 +79,9 @@ const isolate = (v: string) => (/[A-Za-z]/.test(v) ? `\u2068${v}\u2069` : v);
 function lookup(messages: Messages, key: string): string | PluralForms | undefined {
   let node: unknown = messages;
   for (const part of key.split('.')) {
-    if (node && typeof node === 'object' && part in (node as Record<string, unknown>)) node = (node as Record<string, unknown>)[part];
+    // Own properties only: 'in' also matched inherited names such as __proto__
+    // or constructor, which stored notification values can name (audit run-1).
+    if (node && typeof node === 'object' && Object.prototype.hasOwnProperty.call(node, part)) node = (node as Record<string, unknown>)[part];
     else return undefined;
   }
   return node as string | PluralForms | undefined;
@@ -103,7 +105,10 @@ export function translate(lang: Language, key: MessageKey, vars?: MessageVars): 
     const category = new Intl.PluralRules(lang === 'ar' ? 'ar-EG' : 'en-GB').select(count) as keyof PluralForms;
     entry = entry[category] ?? entry.other;
   }
-  return (entry as string).replace(/\{(\w+)\}/g, (m, name) => {
+  // A namespace (or anything else that is not a message) is not translatable:
+  // answer with the key, as for a missing entry, rather than throw mid-render.
+  if (typeof entry !== 'string') return key;
+  return entry.replace(/\{(\w+)\}/g, (m, name) => {
     const v = vars?.[name];
     if (v === undefined) return m;
     if (typeof v === 'number') return formatNumber(v, lang);
