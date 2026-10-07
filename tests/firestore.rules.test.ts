@@ -240,8 +240,20 @@ describe('staff directory (security review #3)', () => {
     await assertSucceeds(getDoc(doc(authed(NEWCOMER), 'users', NEWCOMER)));
   });
 
-  it('allows verified staff to list users (client-side notification fan-out)', async () => {
-    await assertSucceeds(getDocs(collection(authed(F1_DOCTOR), 'users')));
+  it('lets verified staff list their own facility\'s users only (S2b)', async () => {
+    await assertSucceeds(getDocs(query(collection(authed(F1_DOCTOR), 'users'), where('facilityId', '==', 'f1'))));
+    await assertFails(getDocs(collection(authed(F1_DOCTOR), 'users')));
+    await assertFails(getDocs(query(collection(authed(F1_DOCTOR), 'users'), where('facilityId', '==', 'f2'))));
+  });
+
+  it('denies reading a single user record at another facility (S2b)', async () => {
+    await assertFails(getDoc(doc(authed(F2_DOCTOR), 'users', F1_DOCTOR)));
+    await assertFails(getDoc(doc(authed(F2_DOCTOR), 'users', NEWCOMER)));
+    await assertSucceeds(getDoc(doc(authed(F1_MANAGER), 'users', F1_DOCTOR)));
+  });
+
+  it('keeps the full roster for privileged users (S2b)', async () => {
+    await assertSucceeds(getDocs(collection(authed(OWNER), 'users')));
   });
 });
 

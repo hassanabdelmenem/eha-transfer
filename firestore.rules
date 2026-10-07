@@ -110,14 +110,16 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Own document must stay readable before verification — AuthContext
-      // subscribes to it to discover that verification has landed.
-      allow get: if signedIn() && (request.auth.uid == userId || isVerifiedCaller());
-      // The full roster is read by verified staff only. It is needed in full (not
-      // facility-scoped) because notification fan-out is done client-side and has
-      // to find recipients at the *receiving* facility. Moving fan-out into a
-      // Cloud Function would let this be narrowed to one facility.
-      allow list: if isVerifiedCaller();
+      // Own document must stay readable before verification -- AuthContext
+      // subscribes to it to discover that verification has landed. Other staff
+      // read full records for their own facility only; other hospitals get the
+      // contact fields from directory/ (audit S2b). Privileged users manage every
+      // account and keep the whole roster.
+      allow get: if signedIn() && (request.auth.uid == userId
+                                   || isPrivileged()
+                                   || (isVerifiedCaller() && resource.data.get('facilityId', null) == callerFacility()));
+      allow list: if isPrivileged()
+                  || (isVerifiedCaller() && resource.data.get('facilityId', null) == callerFacility());
 
       // Self-signup is always an unverified resident. The owner account is promoted
       // server-side (admin tooling / emulator seeding), never via a client-writable
