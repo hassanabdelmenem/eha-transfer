@@ -12,6 +12,8 @@ on:
 
 permissions:
   contents: read
+  # Keyless deploy: lets the job request GitHub's OIDC token.
+  id-token: write
 
 # Never let two deploys race for the same hosting site.
 concurrency:
@@ -49,21 +51,20 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Build
         run: npm run build
 
-      - name: Authenticate to Firebase
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set. See docs/DEPLOYMENT.md."
-            exit 1
-          fi
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/gcp-key.json"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/gcp-key.json" >> "$GITHUB_ENV"
+      # Keyless (Workload Identity Federation): GitHub's OIDC token for this exact
+      # workflow on main is exchanged for the deploy service account. There is no
+      # long-lived key to leak, and no other workflow or branch can obtain it
+      # (provider condition + job_workflow_ref binding; docs/DEPLOYMENT.md).
+      - name: Authenticate (keyless)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/467744756760/locations/global/workloadIdentityPools/github/providers/eha-transfer
+          service_account: github-deployer@eha-transfer-1785622025.iam.gserviceaccount.com
 
       # Rules and indexes go out before hosting: if the new bundle depends on a
       # tightened rule or a new index, deploying the app first would leave a
@@ -73,7 +74,3 @@ jobs:
 
       - name: Deploy Hosting
         run: npx firebase-tools deploy --only hosting --project "$FIREBASE_PROJECT" --non-interactive
-
-      - name: Clean up credentials
-        if: always()
-        run: rm -f "$RUNNER_TEMP/gcp-key.json"

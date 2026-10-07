@@ -56,6 +56,57 @@ validated, not whatever `main` points at by the time it runs. A manual run
 branch policy allows `main` only — so the older copy of a workflow file on any
 other branch cannot deploy that branch's rules (security audit run-1, lead 4).
 
+## Keyless production deploy (security audit run-1, 7 Oct 2026)
+
+The production deploy authenticates through Workload Identity Federation instead of the long-lived
+`FIREBASE_SERVICE_ACCOUNT` key. Each service account trusts exactly one workflow file on `main`:
+
+| Service account | Workflow allowed |
+|---|---|
+| `escalation-sweep@` (roles/datastore.user) | `.github/workflows/escalation-sweep.yml@refs/heads/main` |
+| `github-deployer@` (deploy roles above) | `.github/workflows/firebase-deploy.yml@refs/heads/main` |
+
+One-time setup (owner, run in order; each step is reversible):
+
+```sh
+P=eha-transfer-1785622025
+POOL=projects/467744756760/locations/global/workloadIdentityPools/github
+SWEEP=hassanabdelmenem/eha-transfer/.github/workflows/escalation-sweep.yml@refs/heads/main
+DEPLOY=hassanabdelmenem/eha-transfer/.github/workflows/firebase-deploy.yml@refs/heads/main
+
+# 1. Map the workflow into an attribute and admit both workflows (main only).
+gcloud iam workload-identity-pools providers update-oidc eha-transfer --workload-identity-pool=github \
+  --location=global --project=$P \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref,attribute.workflow=assertion.job_workflow_ref" \
+  --attribute-condition="assertion.repository=='hassanabdelmenem/eha-transfer' && assertion.ref=='refs/heads/main' && assertion.job_workflow_ref in ['$SWEEP', '$DEPLOY']"
+
+# 2. Bind each service account to its own workflow.
+gcloud iam service-accounts add-iam-policy-binding escalation-sweep@$P.iam.gserviceaccount.com --project=$P \
+  --role=roles/iam.workloadIdentityUser --member="principalSet://iam.googleapis.com/$POOL/attribute.workflow/$SWEEP"
+gcloud iam service-accounts add-iam-policy-binding github-deployer@$P.iam.gserviceaccount.com --project=$P \
+  --role=roles/iam.workloadIdentityUser --member="principalSet://iam.googleapis.com/$POOL/attribute.workflow/$DEPLOY"
+
+# 3. Drop the old repository-wide binding on the sweep account, then prove the sweep still authenticates.
+gcloud iam service-accounts remove-iam-policy-binding escalation-sweep@$P.iam.gserviceaccount.com --project=$P \
+  --role=roles/iam.workloadIdentityUser --member="principalSet://iam.googleapis.com/$POOL/attribute.repository/hassanabdelmenem/eha-transfer"
+gh workflow run escalation-sweep.yml --repo hassanabdelmenem/eha-transfer --ref main -f dry_run=true
+#    Rollback if that run fails to authenticate: re-run the add-iam-policy-binding with the
+#    attribute.repository member removed above.
+```
+
+After the first keyless production deploy succeeds, retire the key:
+
+```sh
+gh secret delete FIREBASE_SERVICE_ACCOUNT --repo hassanabdelmenem/eha-transfer
+for k in $(gcloud iam service-accounts keys list --iam-account github-deployer@$P.iam.gserviceaccount.com \
+           --managed-by=user --format='value(name.basename())'); do
+  gcloud iam service-accounts keys delete "$k" --iam-account github-deployer@$P.iam.gserviceaccount.com --quiet
+done
+```
+
+Older copies of `firebase-deploy.yml` on other branches still name the deleted secret, so they can no longer
+deploy.
+
 ## Setup status — already done
 
 Nothing is required to make the pipeline run. For reference, this is what exists:
