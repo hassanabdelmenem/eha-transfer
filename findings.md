@@ -172,9 +172,13 @@ below has a regression test (rules, Vitest or e2e) that failed before the change
   repository-wide. Any main-ref job in the repo, including claude.yml issue/comment runs, matches it. The sweep job
   now checks the ref; the condition still needs `assertion.job_workflow_ref == '.../escalation-sweep.yml@refs/heads/main'`
   (IAM change, owner approval).
-- **Open:** lead 9 is S2b (narrow the `users` list, ~13 Oct). Lead 12 (email/password pre-registration vs Google)
-  needs the owner to check the Auth account-linking setting. The deferred unit (referral content-field integrity:
-  deptComments/priority/reason) has not been hunted.
+- **Lead 5 completed:** the provider admits only escalation-sweep.yml and firebase-deploy.yml on main, each SA is
+  bound to its own workflow, and the production deploy is keyless. The old key and secret are deleted.
+- **Lead 12:** Auth is one account per email (password + Google). Profile self-edits need a confirmed email, and
+  email confirmation comes before onboarding.
+- **Deferred unit (fixed):** see referralContentGuarded / deptCommentsAppendOnly in firestore.rules.
+- **Open:** lead 9 is S2b (narrow the `users` list, ~13 Oct). The staging deploy and PR previews still use a staging
+  key (staging data only).
 
 ## Gotchas
 
