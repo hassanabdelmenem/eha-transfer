@@ -32,8 +32,11 @@ const mockAddReferral = vi.fn();
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({ user: mockUser }),
 }));
+vi.mock('../hooks/useStatusHistory', () => ({ useStatusHistory: () => ({ history: [], loading: false }) }));
+
 
 vi.mock('../contexts/DataContext', () => ({
+
   useData: () => ({
     referrals: mockReferrals,
     referralsById: new Map(mockReferrals.map(r => [r.id, r])),

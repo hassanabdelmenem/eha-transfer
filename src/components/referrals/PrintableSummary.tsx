@@ -1,10 +1,10 @@
 import React, { forwardRef } from 'react';
-import { Referral, User, Facility } from '../../types';
+import { Referral, User, Facility, StatusHistoryEntry } from '../../types';
 import { format } from 'date-fns';
 
 interface PrintableSummaryProps {
   referral: Referral;
-  history: Referral['statusHistory'];
+  history: StatusHistoryEntry[];
   users: User[];
   facilities: Facility[];
 }

@@ -7,6 +7,7 @@ import { formatClock, formatDayMonthClock } from '../../i18n/format';
 
 export interface ReferralTimelineProps {
   referral: Referral;
+  history?: StatusHistoryEntry[] | null;
   users?: User[];
   usersById?: Map<string, User>;
 }
@@ -56,30 +57,30 @@ function whenShort(iso: string | undefined, t: ReturnType<typeof useI18n>['t'], 
   return isSameDay(d, new Date()) ? formatClock(d, lang) : formatDayMonthClock(d, lang);
 }
 
-export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({ referral, users, usersById }) => {
+export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({ referral, history, users, usersById }) => {
   const { t, lang } = useI18n();
   const userOf = (id: string) => (usersById ? usersById.get(id) : users?.find(u => u.id === id));
   const events: TimelineEvent[] = [];
 
-  const history = Array.isArray(referral.statusHistory) ? referral.statusHistory : [];
+  const actualHistory = history || [];
   const comments = Array.isArray(referral.deptComments) ? referral.deptComments : [];
   const APPROVALS = ['direct_approval', 'urgent_approval', 'scheduled_approval'];
   // A department head's approval writes a comment and moves the status in the
   // same click; shown as one entry, the comment's ("Approved by Cardiology").
   const foldedInto = new Map<number, string>();
-  history.forEach((sh, idx) => {
+  actualHistory.forEach((sh, idx) => {
     if (sh.status !== 'dept_approved') return;
     const dc = comments.find(c => APPROVALS.includes(c.status) && c.userId === sh.userId
       && Math.abs(Date.parse(c.timestamp) - Date.parse(sh.timestamp)) <= 2 * 60 * 1000);
     if (dc) foldedInto.set(idx, dc.id);
   });
 
-  history.forEach((sh, idx) => {
+  actualHistory.forEach((sh, idx) => {
     if (foldedInto.has(idx)) return;
     const known = sh.status && sh.status in STATUS_DOT;
     // An entry that leaves the status where it was (escort, destination override)
     // was titled by that status, so the escort read as a second "Consent recorded".
-    const unchanged = idx > 0 && history[idx - 1]?.status === sh.status;
+    const unchanged = idx > 0 && actualHistory[idx - 1]?.status === sh.status;
     const title = sh.event
       ? t(`timeline.event.${sh.event}`)
       : unchanged
@@ -97,7 +98,7 @@ export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({ referral, us
   });
 
   const foldedNotes = new Map<string, string | undefined>();
-  foldedInto.forEach((dcId, idx) => foldedNotes.set(dcId, history[idx].notes));
+  foldedInto.forEach((dcId, idx) => foldedNotes.set(dcId, actualHistory[idx].notes));
 
   comments.forEach(dc => {
     const dept = userOf(dc.userId)?.department || referral.receivingDepartments?.[0] || t('timeline.department');

@@ -90,8 +90,18 @@ export function getActiveFirestoreState(): MockFirestoreState {
 
 export function createFirestoreModuleMock() {
   const state = activeState;
-  const doc = (_db: any, ...parts: string[]) => ({ path: parts.join('/'), __collection: parts[0], __id: parts[1] });
-  const collection = (_db: any, name: string) => ({ path: name, __collection: name });
+  const buildPath = (...args: any[]) => {
+    return args.filter(a => a != null).map(a => typeof a === 'object' && a.path ? a.path : a).join('/');
+  };
+  const doc = (...args: any[]) => {
+    const fullPath = buildPath(...args).replace(/\[object Object\]\/?/g, '');
+    const split = fullPath.split('/');
+    return { path: fullPath, __collection: split.slice(0, -1).join('/'), __id: split[split.length - 1] };
+  };
+  const collection = (...args: any[]) => {
+    const fullPath = buildPath(...args).replace(/\[object Object\]\/?/g, '');
+    return { path: fullPath, __collection: fullPath };
+  };
   const query = (ref: any, ...constraints: any[]) => ({ ...ref, constraints });
   const where = (field: string, op: string, value: any) => ({ field, op, value });
   const orderBy = (field: string, direction?: string) => ({ orderBy: field, direction });

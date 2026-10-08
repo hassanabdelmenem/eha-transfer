@@ -191,7 +191,7 @@ describe('toggleReferralEscalation', () => {
     expect(update.escalationReason).toBe('manual');
     expect(update.escalationLevel).toBe('facility');
     expect(update.autoEscalationSuppressed).toBe(false);
-    expect(update.statusHistory.at(-1).notes).toMatch(/Marked as Escalated/);
+    expect(capturedUpdates[1].data.notes).toMatch(/Marked as Escalated/);
   });
 
   it('clears escalation fields and suppresses auto-escalation when de-escalated', async () => {
@@ -208,7 +208,7 @@ describe('toggleReferralEscalation', () => {
     expect(update.escalationReason).toBeNull();
     expect(update.escalationLevel).toBeNull();
     expect(update.autoEscalationSuppressed).toBe(true);
-    expect(update.statusHistory.at(-1).notes).toBe('De-escalated referral');
+    expect(capturedUpdates[1].data.notes).toBe('De-escalated referral');
   });
 
   it('does nothing when the referral no longer exists', async () => {
@@ -229,7 +229,7 @@ describe('toggleReferralEscalation', () => {
     await waitFor(() => expect(capturedUpdates.length).toBeGreaterThan(0));
 
     expect(capturedUpdates[0].data.escalatedBy).toBe('system');
-    expect(capturedUpdates[0].data.statusHistory.at(-1).userId).toBe('system');
+    expect(capturedUpdates[1].data.userId).toBe('system');
   });
 });
 
@@ -260,7 +260,7 @@ describe('SLA/capacity sweep -> autoEscalateReferral', () => {
     expect(update.escalatedBy).toBe('system');
     expect(update.escalationReason).toBe('sla_breach');
     expect(update.escalationLevel).toBe('facility');
-    expect(update.statusHistory.at(-1).notes).toMatch(/Automatically escalated/);
+    expect(capturedUpdates[1].data.notes).toMatch(/Automatically escalated/);
   });
 
   it('is a no-op for a tracked referral still inside its SLA window', async () => {
@@ -341,7 +341,7 @@ describe('SLA/capacity sweep -> escalateForCapacity', () => {
     expect(update.escalatedBy).toBe('system');
     expect(update.escalationReason).toBe('no_beds_available');
     expect(update.escalationLevel).toBe('system');
-    expect(update.statusHistory.at(-1).notes).toMatch(/administrative placement/);
+    expect(capturedUpdates[1].data.notes).toMatch(/administrative placement/);
   });
 
   it('logs but does not crash the sweep when the capacity-escalation transaction itself fails', async () => {
@@ -450,7 +450,7 @@ describe('recordPatientDecline exhausting all candidates', () => {
     await act(async () => { screen.getByText('DeclineNoReason').click(); });
     await waitFor(() => expect(capturedUpdates.length).toBeGreaterThan(0));
 
-    expect(capturedUpdates[0].data.statusHistory.at(-1).notes).toMatch(/Reason: Not specified/);
+    expect(capturedUpdates[1].data.notes).toMatch(/Reason: Not specified/);
   });
 
   it('tolerates a referral with no candidateFacilityIds field at all', async () => {

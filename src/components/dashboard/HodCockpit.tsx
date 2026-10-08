@@ -113,9 +113,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
           name: r.patientData.name,
           hospitalId: r.patientData.hospitalId,
           type: 'referral' as const,
-          admittedAt:
-            (Array.isArray(r.statusHistory) ? r.statusHistory : []).find(h => h.status === 'admitted')
-              ?.timestamp || r.updatedAt,
+          admittedAt: r.statusUpdatedAt || r.updatedAt,
           bedType: r.requiredBedType,
         })),
       ].sort((a, b) => (b.admittedAt || '').localeCompare(a.admittedAt || '')),

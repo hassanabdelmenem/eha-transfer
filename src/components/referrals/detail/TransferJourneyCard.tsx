@@ -2,7 +2,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { Building, Truck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/Card';
-import { Referral, Facility, User } from '../../../types';
+import { Referral, Facility, User, StatusHistoryEntry } from '../../../types';
 import { useI18n } from '../../../i18n';
 
 const hhmm = (iso?: string) => {
@@ -11,11 +11,12 @@ const hhmm = (iso?: string) => {
 };
 
 /** When the referral last entered `status`, from its history. */
-const enteredAt = (referral: Referral, status: Referral['status']) =>
-  [...(Array.isArray(referral.statusHistory) ? referral.statusHistory : [])].reverse().find(h => h.status === status)?.timestamp;
+const enteredAt = (history: StatusHistoryEntry[] | null | undefined, status: Referral['status']) =>
+  [...(history || [])].reverse().find(h => h.status === status)?.timestamp;
 
 export interface TransferJourneyCardProps {
   referral: Referral;
+  history?: StatusHistoryEntry[] | null;
   fromFacility?: Facility;
   toFacility?: Partial<Facility> & { name: string; isExternal?: boolean };
   usersById: Map<string, User>;
@@ -23,14 +24,15 @@ export interface TransferJourneyCardProps {
 
 export const TransferJourneyCard: React.FC<TransferJourneyCardProps> = ({
   referral,
+  history,
   fromFacility,
   toFacility,
 }) => {
   const { t } = useI18n();
   // The outbound leg follows the referral. It used to read "Pending" both before
   // dispatch and after arrival, so an admitted patient looked never to have left.
-  const leftAt = hhmm(enteredAt(referral, 'in_transit'));
-  const arrivedAt = hhmm(enteredAt(referral, 'arrived'));
+  const leftAt = hhmm(enteredAt(history, 'in_transit'));
+  const arrivedAt = hhmm(enteredAt(history, 'arrived'));
   const moved = referral.status === 'in_transit';
   const landed = ['arrived', 'admitted', 'discharged'].includes(referral.status);
   const outboundLine = moved

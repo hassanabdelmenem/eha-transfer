@@ -57,7 +57,7 @@ describe('ReferralTimeline', () => {
       ['user-3', { id: 'user-3', name: 'ER Dispatch', role: 'er_official', facilityId: 'fac-1', verified: true, email: 'er@eha.eg' }],
     ]);
 
-    render(<ReferralTimeline referral={referral} usersById={usersById} />);
+    render(<ReferralTimeline referral={referral} history={(referral as any).statusHistory} usersById={usersById} />);
 
     expect(screen.getByText('Referral sent')).toBeInTheDocument();
     expect(screen.getByText('Dispatched')).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe('ReferralTimeline', () => {
       deptComments: [],
     });
 
-    render(<ReferralTimeline referral={referral} />);
+    render(<ReferralTimeline referral={referral} history={(referral as any).statusHistory} />);
 
     expect(screen.getByText('Declined')).toBeInTheDocument();
     expect(screen.getByText('No bed capacity')).toBeInTheDocument();
@@ -99,7 +99,7 @@ describe('ReferralTimeline', () => {
         { status: 'patient_consented', timestamp: '2026-08-29T10:05:00.000Z', userId: 'u', notes: 'Accompanying doctor assigned: Dr. X (0100)', event: 'escort_assigned' },
       ],
     });
-    render(<ReferralTimeline referral={referral} />);
+    render(<ReferralTimeline referral={referral} history={(referral as any).statusHistory} />);
     expect(screen.getAllByText('Consent recorded')).toHaveLength(1);
     expect(screen.getByText('Escort assigned')).toBeInTheDocument();
   });
@@ -113,7 +113,7 @@ describe('ReferralTimeline', () => {
         { status: 'patient_consented', timestamp: '2026-08-29T10:05:00.000Z', userId: 'u', notes: 'Accompanying doctor assigned: Dr. X (0100)' },
       ],
     });
-    render(<ReferralTimeline referral={referral} />);
+    render(<ReferralTimeline referral={referral} history={(referral as any).statusHistory} />);
     expect(screen.getAllByText('Consent recorded')).toHaveLength(1);
     expect(screen.getByText('Updated')).toBeInTheDocument();
   });

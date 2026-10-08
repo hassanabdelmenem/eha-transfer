@@ -9,8 +9,8 @@ const base = {
   id: 'r1', requiredBedType: 'CCU', transferType: 'one_way',
   statusHistory: [at('pending', '2026-10-02T08:00:00'), at('accepted', '2026-10-02T08:30:00')],
 } as unknown as Referral;
-const renderAt = (r: Partial<Referral>) =>
-  render(<TransferJourneyCard referral={{ ...base, ...r } as Referral} fromFacility={{ name: 'District' } as any} toFacility={{ name: 'General' }} usersById={new Map()} />);
+const renderAt = (r: Partial<Referral> & { statusHistory?: any }) =>
+  render(<TransferJourneyCard referral={{ ...base, ...r } as Referral} history={r.statusHistory} fromFacility={{ name: 'District' } as any} toFacility={{ name: 'General' }} usersById={new Map()} />);
 
 // The outbound leg read "Pending" before dispatch and again after arrival, so a
 // patient already in a bed looked as if the ambulance had not left.
