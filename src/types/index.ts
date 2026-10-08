@@ -63,7 +63,12 @@ export type ReferralStatus =
 
 export interface Attachment {
   id: string;
-  url: string;
+  /** A data URL while the referral is being written (or for a file stored inline);
+   *  absent once `stored`: the data then lives in referrals/{id}/attachments/{id}.
+   *  Referrals made before 3 Oct 2026 may hold a dead blob: URL. */
+  url?: string;
+  /** The data is in the attachments subcollection (src/lib/attachments.ts). */
+  stored?: boolean;
   type: 'image' | 'video' | 'document';
   name: string;
   size?: number;

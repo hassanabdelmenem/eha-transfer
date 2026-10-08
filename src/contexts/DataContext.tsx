@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User, ShiftLog } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
+import { DIRECTORY_COLLECTION, directoryEntryFor, mergeRoster, type DirectoryEntry } from '../lib/directory';
 import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
 import { toastError } from '../lib/toast';
@@ -9,6 +10,7 @@ import { needsAutoEscalation } from '../lib/sla';
 import { capacityEscalationReason } from '../lib/routing';
 import { isNotificationRecipient } from '../lib/notificationRecipients';
 import { escortAuthority } from '../lib/escortAuthority';
+import { splitAttachments } from '../lib/attachments';
 import { escalationNotice, escalationUpdate, stillEscalates } from '../lib/escalationSweep';
 import { notificationText, type NotificationKey, type NotificationVars } from '../i18n/notifications';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
@@ -32,6 +34,13 @@ export const CANCEL_LOCKED_STATUSES: Referral['status'][] = ['in_transit', 'arri
 // close, short enough that a stalled attempt against a network that is
 // actually down doesn't block every later sync for the rest of the outage.
 export const OFFLINE_SYNC_STALL_TIMEOUT_MS = 15_000;
+
+// Realtime windows for lists that otherwise grow forever. Each listener re-reads
+// its whole result on every sign-in and page load, so these cap the read cost.
+export const NOTIFICATIONS_LIMIT = 100;
+export const SHIFT_LOGS_LIMIT = 200;
+// Recipients per notification batch; see createNotification.
+export const NOTIFICATION_BATCH_SIZE = 15;
 
 export interface DirectAdmission {
   id: string;
@@ -318,22 +327,51 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return () => unsubs.forEach(u => u());
     }
 
-    // Users: the full roster, needed because notification fan-out runs client-side
-    // and has to resolve recipients at other facilities.
-    unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
-      markOnline();
-      const data = snapshot.docs.map(doc => doc.data() as User);
-      if (data.length === 0) {
-        const batch = writeBatch(db);
-        INITIAL_USERS.forEach(u => batch.set(doc(db, 'users', u.id), u));
-        batch.commit().catch(writeFailed("Could not seed the user roster."));
-      } else {
-        setUsers(data);
-        // Guards the notification fan-out, which resolves recipients from this
-        // list and would otherwise address real alerts to mock user ids.
+    // Users. Notification fan-out runs client-side and has to resolve recipients
+    // at other facilities, but it only needs their role/facility/department, and
+    // the screens only need a name and a callback phone. Privileged users manage
+    // every account and keep the full roster; everyone else gets full records for
+    // their own facility plus the network directory (audit S2, src/lib/directory.ts).
+    if (isAdmin) {
+      unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
+        markOnline();
+        const data = snapshot.docs.map(doc => doc.data() as User);
+        if (data.length === 0) {
+          const batch = writeBatch(db);
+          INITIAL_USERS.forEach(u => batch.set(doc(db, 'users', u.id), u));
+          batch.commit().catch(writeFailed("Could not seed the user roster."));
+        } else {
+          setUsers(data);
+          // Guards the notification fan-out, which resolves recipients from this
+          // list and would otherwise address real alerts to mock user ids.
+          usersLoadedRef.current = true;
+        }
+      }, logAndCheckOffline));
+    } else {
+      let facilityUsers: User[] = [];
+      let entries: DirectoryEntry[] = [];
+      let haveFacilityUsers = false;
+      let haveEntries = false;
+      const publish = () => {
+        if (!haveFacilityUsers || !haveEntries) return;
+        setUsers(mergeRoster(entries, facilityUsers));
         usersLoadedRef.current = true;
-      }
-    }, logAndCheckOffline));
+      };
+      unsubs.push(onSnapshot(
+        query(collection(db, 'users'), where('facilityId', '==', user.facilityId || '')),
+        (snapshot) => {
+          markOnline();
+          facilityUsers = snapshot.docs.map(d => d.data() as User);
+          haveFacilityUsers = true;
+          publish();
+        }, logAndCheckOffline));
+      unsubs.push(onSnapshot(collection(db, DIRECTORY_COLLECTION), (snapshot) => {
+        markOnline();
+        entries = snapshot.docs.map(d => d.data() as DirectoryEntry);
+        haveEntries = true;
+        publish();
+      }, logAndCheckOffline));
+    }
 
     // Referrals: one bounded realtime listener per party-shape (see
     // referralQueryShapes). An unfiltered query here is rejected outright for
@@ -385,8 +423,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Notifications: readable only by their recipient, so the query must say so.
+    // Admins too: every consumer (tray badge, inbox, mark-all-read) shows only the
+    // caller's own, so an unfiltered admin listener read the whole network's
+    // notifications for nothing. Bounded to the newest NOTIFICATIONS_LIMIT, which
+    // every sign-in otherwise re-read in full (index: userId + createdAt desc).
     unsubs.push(onSnapshot(
-      isAdmin ? collection(db, 'notifications') : query(collection(db, 'notifications'), where('userId', '==', user.id)),
+      query(collection(db, 'notifications'), where('userId', '==', user.id), orderBy('createdAt', 'desc'), firestoreLimit(NOTIFICATIONS_LIMIT)),
       (snapshot) => {
         markOnline();
         // Sorted on createdAtMs, which the rules bound against server time.
@@ -416,8 +458,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, logAndCheckOffline));
 
     // Shift Logs: handover summaries quote patient names — facility-scoped.
+    // The feed shows only the last few per department; the newest
+    // SHIFT_LOGS_LIMIT keep that covered without re-reading every handover ever
+    // written on each sign-in (index: facilityId + timestamp desc).
     unsubs.push(onSnapshot(
-      isAdmin ? collection(db, 'shiftLogs') : query(collection(db, 'shiftLogs'), where('facilityId', '==', user.facilityId || '')),
+      isAdmin
+        ? query(collection(db, 'shiftLogs'), orderBy('timestamp', 'desc'), firestoreLimit(SHIFT_LOGS_LIMIT))
+        : query(collection(db, 'shiftLogs'), where('facilityId', '==', user.facilityId || ''), orderBy('timestamp', 'desc'), firestoreLimit(SHIFT_LOGS_LIMIT)),
       (snapshot) => {
         markOnline();
         setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')));
@@ -446,28 +493,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       { facilityIds: targetFacilityIds, targetRoles: params.targetRoles, departments: params.departments, targetUserIds: params.targetUserIds }
     ));
 
-    const batch = writeBatch(db);
+    // One batch per NOTIFICATION_BATCH_SIZE recipients: the create rule reads each
+    // recipient's user document (audit run-1, lead 7), and a batch may make at
+    // most 20 document reads in rules, two of which are the caller and the referral.
     const createdAt = new Date().toISOString();
     const createdAtMs = Date.parse(createdAt);
-    relevantUsers.forEach(u => {
-      const id = uuidv4();
-      const notif: Notification = {
-        id,
-        userId: u.id,
-        title,
-        message,
-        key: params.key,
-        vars: params.vars,
-        type: params.type,
-        read: false,
-        createdAt,
-        // Bounded against server time by the rules; also what the tray sorts on.
-        createdAtMs,
-        referralId: params.referralId
-      };
-      batch.set(doc(db, 'notifications', id), notif);
-    });
-    batch.commit().catch(writeFailed("Could not send notifications for that update."));
+    for (let i = 0; i < relevantUsers.length; i += NOTIFICATION_BATCH_SIZE) {
+      const batch = writeBatch(db);
+      relevantUsers.slice(i, i + NOTIFICATION_BATCH_SIZE).forEach(u => {
+        const id = uuidv4();
+        const notif: Notification = {
+          id,
+          userId: u.id,
+          title,
+          message,
+          key: params.key,
+          vars: params.vars,
+          type: params.type,
+          read: false,
+          createdAt,
+          // Bounded against server time by the rules; also what the tray sorts on.
+          createdAtMs,
+          referralId: params.referralId
+        };
+        batch.set(doc(db, 'notifications', id), notif);
+      });
+      batch.commit().catch(writeFailed("Could not send notifications for that update."));
+    }
   }, [users, shiftAssignmentsByFacility]);
 
   // Flushes referrals cached in IndexedDB while offline (see addReferral) to
@@ -514,16 +566,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
   }, [isOnline, dataLoading, createNotification, facilities]);
 
+  // A change to a user rewrites their directory entry in the same batch, so the
+  // two never disagree (firestore.rules checks it field by field). If the batch is
+  // refused -- say our copy of the user was stale -- the user change still goes
+  // through on its own, and the sweep's daily reconcile fixes the entry.
+  const writeUser = useCallback((id: string, updates: Partial<User> | null, failMessage: string) => {
+    const userRef = doc(db, 'users', id);
+    const entryRef = doc(db, DIRECTORY_COLLECTION, id);
+    const batch = writeBatch(db);
+    if (updates === null) {
+      batch.delete(userRef);
+      batch.delete(entryRef);
+    } else {
+      batch.update(userRef, updates);
+      const before = usersById.get(id);
+      if (before) {
+        const entry = directoryEntryFor({ ...before, ...updates, id });
+        if (entry) batch.set(entryRef, entry); else batch.delete(entryRef);
+      }
+    }
+    batch.commit().catch(() =>
+      (updates === null ? deleteDoc(userRef) : updateDoc(userRef, updates)).catch(writeFailed(failMessage))
+    );
+  }, [usersById]);
+
   const updateUserVerified = useCallback((id: string, verified: boolean) => {
-    updateDoc(doc(db, 'users', id), { verified }).catch(writeFailed("Could not change that user's verification status."));
-  }, []);
+    writeUser(id, { verified }, "Could not change that user's verification status.");
+  }, [writeUser]);
 
   const updateUserRole = useCallback((id: string, role: Role, department?: string) => {
     const updates: any = { role };
     if (department !== undefined) updates.department = department;
     if (role === 'system_admin') updates.facilityId = 'branch';
-    updateDoc(doc(db, 'users', id), updates).catch(writeFailed("Could not change that user's role."));
-  }, []);
+    writeUser(id, updates, "Could not change that user's role.");
+  }, [writeUser]);
 
   // Returns the write promise so callers that are about to tear down the session
   // (e.g. logout) can await it -- signing out first would revoke the token this
@@ -699,7 +775,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ]
     };
 
-    setDoc(doc(db, 'referrals', newReferral.id), newReferral).catch(writeFailed("Could not create the referral."));
+    // The referral and its attachment files in one batch: the rules check the files
+    // against the referral being written (getAfter), and neither lands without the other.
+    const { referral: referralDoc, files } = splitAttachments(newReferral);
+    const createBatch = writeBatch(db);
+    createBatch.set(doc(db, 'referrals', referralDoc.id), referralDoc);
+    files.forEach(f => createBatch.set(doc(db, 'referrals', referralDoc.id, 'attachments', f.id), f));
+    createBatch.commit().catch(writeFailed("Could not create the referral."));
     if (!isOnline) {
       // Firestore runs without persistent cache here (src/lib/firebase.ts), so the
       // write above only lives in memory until it succeeds -- closing the tab or a
@@ -1016,12 +1098,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserFacility = useCallback((id: string, facilityId: string, department?: string) => {
     const updates: any = { facilityId };
     if (department !== undefined) updates.department = department;
-    updateDoc(doc(db, 'users', id), updates).catch(writeFailed("Could not change that user's facility."));
-  }, []);
+    writeUser(id, updates, "Could not change that user's facility.");
+  }, [writeUser]);
 
   const removeUser = useCallback((id: string) => {
-    deleteDoc(doc(db, 'users', id)).catch(writeFailed("Could not remove that user."));
-  }, []);
+    writeUser(id, null, "Could not remove that user.");
+  }, [writeUser]);
 
   const addFacility = useCallback((facilityData: Omit<Facility, 'id'>) => {
     const id = uuidv4();

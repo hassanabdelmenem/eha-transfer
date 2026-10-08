@@ -17,7 +17,7 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
 
 - Workflows: `ci.yml` (every branch; lint, vitest, rules, e2e), `firebase-deploy.yml` (push to `main` or manual:
   Firestore rules + indexes + hosting only), `firebase-preview.yml` (PR preview channel), `claude.yml`,
-  `claude-code-review.yml`, `stryker-nightly.yml`. Runners use Node 24; `functions/` targets Node 20.
+  `claude-code-review.yml`, `stryker-nightly.yml`. Runners use Node 24. (`functions/` was removed 3 Oct 2026: unused on the Spark plan.)
 - The repo is **public** since 27 Sep (Actions minutes free). Before that, GitHub refused every job for billing:
   jobs failing in 2–3 s with zero steps mean that, not test failures. CI on `main` cancels superseded runs;
   the deploy only runs after CI succeeds on `main`.
@@ -109,6 +109,78 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
 - The desktop case header shows the role's actions; the action console takes `headerActions` (lower-case
   labels) and skips those buttons, so each accessible name exists once (Playwright strict mode, E2E contract).
 - Playwright's default viewport is 1280px, so e2e runs exercise the workspace.
+
+## Accepted dependency advisories (audit S3, 3 Oct 2026)
+
+- `@grpc/grpc-js` 1.9.x (4 "high" via `firebase` → `@firebase/firestore`): Firestore's Node transport only.
+  The browser bundle contains none of it (checked: 0 references in `dist/`), so it cannot run for users.
+  npm's suggested fix is a downgrade to firebase 9; there is no 12.x release with a newer pin yet. Re-check
+  on each Firebase upgrade; dismiss the matching Dependabot alerts with this reason.
+
+## Network directory and roster (audit S2, owner decisions 6 Oct 2026)
+
+- `directory/{uid}` holds id, name, role, facilityId, department, phoneNumber for VERIFIED users only
+  (`src/lib/directory.ts`). Rules accept an entry only if it equals the user's own document field for field
+  (`getAfter`, so a batch may change both); any signed-in user may write a true entry (self-heal), never a false one.
+- Non-admins read `users` for their own facility only, plus the directory; admins (owner/system_admin) read the full
+  roster. Notification fan-out, the Network Directory page and cockpit callback phones work from the merged roster.
+- Every user change in the app (verify, role, facility, remove, own profile) writes the entry in the same batch; if
+  the batch is refused the user change goes through alone. AuthContext self-heals the signed-in user's own entry.
+  The escalation sweep rebuilds the directory once a day (`meta/directoryReconcile`), which is also the release-day
+  backfill. Until the directory has entries, clients fall back to the full roster (remove in S2b).
+- Owner decisions: no email across hospitals (the referral context card no longer shows it); phones stay visible
+  network-wide (callbacks) with a note under the profile phone field; backfill by the sweep + self-heal.
+- S2b (pending): narrow `users` list/get to the caller's facility for non-admins and drop the fallback. Only once
+  pre-S2a tabs are gone: since S2a, logout does a full page load and an open tab reloads at the next route change
+  after a new release (`/version.json`, `src/lib/appVersion.ts`), but tabs opened before S2a have neither.
+- Monthly schedule is not shown anywhere but the user's own profile (its hint used to say it was published to the
+  Network Directory; corrected).
+
+## Offline cache (audit C1, owner decision 6 Oct 2026)
+
+- Firestore persistent (IndexedDB) cache stays OFF. Patient data cached on shared hospital PCs outlives the session;
+  the read savings it would bring are mostly covered by C5. Revisit only as a per-device opt-in for dedicated ER
+  terminals. The offline referral queue (`src/lib/db.ts`) is separate and is cleared on every logout.
+
+## Hosting sites
+
+- Production is the `eha-transfer` site: https://eha-transfer.web.app (also the auth domain).
+- The project's default site `eha-transfer-1785622025` (.web.app / .firebaseapp.com) only 301-redirects to
+  production since 6 Oct 2026 (it served a stale build against prod data). Config: `ops/legacy-site-redirect/`.
+
+## Security audit run-1 (7 Oct 2026, Cloudflare security-audit skill)
+
+Report: ~/security-audit-skill/eha-transfer/run-1 (REPORT.md, NEEDS-VALIDATION.md). There were 12 leads. Each fix
+below has a regression test (rules, Vitest or e2e) that failed before the change:
+- **Lead 1:** `receivingFacilityId` changes only by candidate claim of an 'auto' referral, decline reset
+  (accepted -> pending, 'auto'), or privileged override (`receivingFacilityChangeAllowed`).
+- **Lead 2:** a self-chosen `users.facilityId` must name an existing facility (`facilityIsReal`), so the 'auto'
+  sentinel can no longer make a user a party to every auto-routed referral.
+- **Lead 3:** `users.email` must equal the token email at create and is pinned on self-update.
+- **Lead 7:** notifications need a catalogue `key` (no free text) and a recipient at the referral's facilities, or a
+  privileged recipient. The rule reads each recipient's user doc, so client fan-out is chunked into batches of
+  `NOTIFICATION_BATCH_SIZE` = 15 (the rules allow at most 20 reads per batch; a rules test proves 15 fits).
+- **Lead 10:** referral create must not carry `accompanyingDoctor`.
+- **Lead 6:** i18n `lookup` uses own properties only; `translate` returns the key for any non-message node.
+  Previously '@__proto__' or '@notif' crashed the app.
+- **Lead 8:** logout removes the `newReferralDraft` localStorage entry.
+- **Lead 11:** attachment links open only for `data:(image/jpeg|png|webp|gif|application/pdf);base64` URLs.
+- **Lead 4:** deploy jobs accept a manual run from `main` only and use environments `production` / `staging`.
+  Owner steps: restrict both environments to `main`, move the deploy keys into them, delete the repo-level secrets.
+- **Lead 5 (confirmed by a read-only gcloud check):** the WIF provider condition is
+  `assertion.repository=='hassanabdelmenem/eha-transfer' && assertion.ref=='refs/heads/main'`, and the SA binding is
+  repository-wide. Any main-ref job in the repo, including claude.yml issue/comment runs, matches it. The sweep job
+  now checks the ref; the condition still needs `assertion.job_workflow_ref == '.../escalation-sweep.yml@refs/heads/main'`
+  (IAM change, owner approval).
+- **Lead 5 completed:** the provider admits only escalation-sweep.yml and firebase-deploy.yml on main, each SA is
+  bound to its own workflow, and the production deploy is keyless. The old key and secret are deleted.
+- **Lead 12:** Auth is one account per email (password + Google). Profile self-edits need a confirmed email, and
+  email confirmation comes before onboarding.
+- **Deferred unit (fixed):** see referralContentGuarded / deptCommentsAppendOnly in firestore.rules.
+- **Lead 9 / S2b:** `users` get/list narrowed to the caller's own facility (privileged keep the full roster) and the
+  client's roster fallback removed: PR feat/s2b-narrow-users, to merge on or after 13 Oct.
+- **Open:** The staging deploy and PR previews still use a staging
+  key (staging data only).
 
 ## Gotchas
 

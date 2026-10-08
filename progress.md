@@ -2,6 +2,63 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-07 (later): audit run-1 follow-ups
+
+- #75 and #76 merged and deployed. The production deploy is keyless (WIF as github-deployer@, first run
+  37625562306 green). FIREBASE_SERVICE_ACCOUNT and all three user-managed keys on github-deployer@ were deleted.
+- The WIF provider maps attribute.workflow = job_workflow_ref and admits only escalation-sweep.yml and
+  firebase-deploy.yml on main. Each service account is bound to its own workflow, and the repository-wide binding
+  was removed (sweep dry run 37623185275 green).
+- Lead 12: production Auth has one account per email, with email/password and Google both on. Self-edits of a
+  user profile now need a confirmed email, and the app confirms the email before onboarding. A password
+  pre-registrant can no longer seed the profile that the real owner inherits through Google.
+- Deferred unit (referral content integrity): priority, reason and requested departments are creator-only;
+  deptComments are append-only, one comment per write, by its author; rejection, cancellation and decline details
+  only appear in their own transition, attributed to the caller.
+- Verified: lint, unit 1055, rules 166, e2e 11.
+
+## 2026-10-07: security audit run-1 fixes
+
+- Fixed 9 of 12 audit leads test-first (findings.md, Security audit run-1). Rules: receivingFacilityId change
+  allowance, real facilityId, email bound to the token, notification recipient + key, no escort at create. Client:
+  i18n crash, draft cleared on logout, attachment URL allowlist, notification fan-out chunked to 15. CI: deploys
+  and sweep main-only, deploy jobs use environments.
+- Lead 5 confirmed with gcloud (WIF condition lacks a workflow binding). Owner-approved IAM change pending.
+- Verified: lint, unit 1053, rules 157, e2e 11, build.
+
+## 2026-10-06: network directory (audit S2a) and the C1 decision
+
+- `directory/{uid}`: contact fields of verified users, rules-checked against the user document; non-admins now read
+  their own facility's users plus the directory; all user writes mirror into it; daily reconcile in the sweep;
+  self-heal at sign-in. Email no longer shown across hospitals; phone note on the profile. Logout does a full page
+  load; open tabs reload at the next navigation after a release (`/version.json`). e2e helpers wait for that load.
+- C1: persistent cache stays off (findings.md).
+- Verified: lint, unit 1043, rules 140, e2e 11, build; sweep reconcile exercised on the emulator (adds a verified
+  user's entry without email, removes an unverified one, skips until due).
+
+## 2026-10-06: audit runtime profile (Chrome DevTools) + C5, P3, P4
+
+- Staging cold load (/login): LCP 529 ms unthrottled, 1.26 s on Slow 4G + 4x CPU, CLS 0. The login page
+  pulls a 738 KB (218 KB gzip) shared chunk: Firebase app/auth/firestore (re2js is Firestore's own),
+  i18n en+ar, date-fns. Not avoidable without dropping realtime listeners.
+- Signed-in profiling ran on a production build pointed at the emulators (no staging password on hand),
+  e2e users + 180 referrals + 600 notifications, as the receiving ER official.
+  - Memory: 2 x 10 rounds of all sidebar routes + a referral detail: JS heap 10.38 -> 10.21 MB, DOM event
+    listeners 274 -> 274, no detached trees. Native growth was Chrome's accessibility cache (the DevTools
+    snapshots themselves). No listener leak: all Firestore listeners live in DataContext and unsubscribe.
+  - Re-renders: idle dashboard 0 commits in 65 s. One remote change to a referral or a bed count re-renders
+    ~157 components in 1-2 commits, no long task even at 4x CPU. Broad but cheap at this size; structural
+    sharing of snapshot objects + memoised cards is the fix if it ever shows up.
+- C5: admin notifications listener read every notification in the network (consumers only show the
+  caller's own); notifications now own-only, newest 100; shift logs newest 200. Existing indexes.
+- P3: unused firebase/functions SDK removed. P4: Firebase in its own chunk; hash verified stable across an
+  app change, so returning users keep ~165 KB gzip cached across deploys.
+- Found, not fixed: staging Google sign-in fails `redirect_uri_mismatch` (OAuth client lacks
+  https://eha-transfer-staging.web.app/__/auth/handler) - owner adds it in Google Cloud Console >
+  Credentials. directAdmissions listener is still unbounded (census needs every non-discharged admission;
+  needs an active/discharged split).
+- Verified: lint, unit 1031, rules 133, e2e 11, build.
+
 ## 2026-10-03: escort doctor named by the sending department
 
 - Bug (owner): when a transfer needs an escort doctor, nobody could record the doctor's name and phone

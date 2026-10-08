@@ -16,7 +16,7 @@ import {
   assertSucceeds,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, collection, getDocs, query, where, orderBy, limit, writeBatch } from 'firebase/firestore';
 import { beforeAll, afterAll, beforeEach, describe, it } from 'vitest';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -140,7 +140,8 @@ describe('privilege escalation (security review #1)', () => {
   });
 
   it('allows an unverified user to pick a facility and request a role during onboarding', async () => {
-    await assertSucceeds(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), {
+    // Admin-unverified, email confirmed (onboarding follows email confirmation, audit run-1 lead 12).
+    await assertSucceeds(updateDoc(doc(testEnv.authenticatedContext(NEWCOMER, { email_verified: true }).firestore(), 'users', NEWCOMER), {
       facilityId: 'f1', department: 'ICU', requestedRole: 'hospital_manager', profileCompleted: true,
     }));
   });
@@ -219,7 +220,7 @@ describe('PHI collections (security review #2)', () => {
   it('allows verified staff to fan out a notification to another user, when they are a party to the referenced referral', async () => {
     await assertSucceeds(setDoc(doc(authed(F2_DOCTOR), 'notifications', 'n2'), {
       id: 'n2', userId: F1_DOCTOR, title: 'T', message: 'M', type: 'info', read: false,
-      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1',
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1', key: 'receivingStatus', vars: {},
     }));
   });
 
@@ -239,8 +240,66 @@ describe('staff directory (security review #3)', () => {
     await assertSucceeds(getDoc(doc(authed(NEWCOMER), 'users', NEWCOMER)));
   });
 
-  it('allows verified staff to list users (client-side notification fan-out)', async () => {
-    await assertSucceeds(getDocs(collection(authed(F1_DOCTOR), 'users')));
+  it('lets verified staff list their own facility\'s users only (S2b)', async () => {
+    await assertSucceeds(getDocs(query(collection(authed(F1_DOCTOR), 'users'), where('facilityId', '==', 'f1'))));
+    await assertFails(getDocs(collection(authed(F1_DOCTOR), 'users')));
+    await assertFails(getDocs(query(collection(authed(F1_DOCTOR), 'users'), where('facilityId', '==', 'f2'))));
+  });
+
+  it('denies reading a single user record at another facility (S2b)', async () => {
+    await assertFails(getDoc(doc(authed(F2_DOCTOR), 'users', F1_DOCTOR)));
+    await assertFails(getDoc(doc(authed(F2_DOCTOR), 'users', NEWCOMER)));
+    await assertSucceeds(getDoc(doc(authed(F1_MANAGER), 'users', F1_DOCTOR)));
+  });
+
+  it('keeps the full roster for privileged users (S2b)', async () => {
+    await assertSucceeds(getDocs(collection(authed(OWNER), 'users')));
+  });
+});
+
+describe('network directory (audit S2): contact fields only, always matching the user document', () => {
+  const entry = (over: Record<string, unknown> = {}) => ({ id: F1_DOCTOR, name: 'F1 Doc', role: 'resident', facilityId: 'f1', department: 'ICU', ...over });
+
+  it('is readable by verified staff at any facility, and not by an unverified account', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => { await setDoc(doc(ctx.firestore(), 'directory', F1_DOCTOR), entry()); });
+    await assertSucceeds(getDocs(collection(authed(F2_DOCTOR), 'directory')));
+    await assertFails(getDocs(collection(authed(NEWCOMER), 'directory')));
+  });
+
+  it('accepts an entry that matches the user document', async () => {
+    await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry()));
+  });
+
+  it('rejects a false role, facility or department (it decides who gets notified)', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry({ role: 'head_of_department' })));
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry({ facilityId: 'f2' })));
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry({ department: 'Emergency' })));
+  });
+
+  it('rejects private fields such as email', async () => {
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry({ email: 'd@x.gov' })));
+  });
+
+  it('never lists an unverified account', async () => {
+    await assertFails(setDoc(doc(authed(NEWCOMER), 'directory', NEWCOMER), { id: NEWCOMER, name: 'New', role: 'resident' }));
+  });
+
+  it('follows a profile change written in the same batch', async () => {
+    const db = authed(F1_DOCTOR);
+    const b = writeBatch(db);
+    b.update(doc(db, 'users', F1_DOCTOR), { phoneNumber: '0100' });
+    b.set(doc(db, 'directory', F1_DOCTOR), entry({ phoneNumber: '0100' }));
+    await assertSucceeds(b.commit());
+    await assertFails(setDoc(doc(authed(F1_DOCTOR), 'directory', F1_DOCTOR), entry({ phoneNumber: '0199' })));
+  });
+
+  it('lets an entry be deleted only once its user is gone or unverified', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'directory', F1_DOCTOR), entry());
+      await setDoc(doc(ctx.firestore(), 'directory', 'ghost'), { id: 'ghost', name: 'Gone', role: 'resident' });
+    });
+    await assertFails(deleteDoc(doc(authed(F2_DOCTOR), 'directory', F1_DOCTOR)));
+    await assertSucceeds(deleteDoc(doc(authed(F2_DOCTOR), 'directory', 'ghost')));
   });
 });
 
@@ -531,7 +590,7 @@ describe('notification relatedness (security review follow-up)', () => {
   it('allows the actual party to notify about that same referral', async () => {
     await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n8'), {
       id: 'n8', userId: F1_MANAGER, title: 'T', message: 'M', type: 'info', read: false,
-      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref2',
+      createdAt: '2026-01-02T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref2', key: 'receivingStatus', vars: {},
     }));
   });
 
@@ -589,6 +648,144 @@ describe('shift log shape', () => {
   });
 });
 
+describe('security audit run-1 (7 Oct 2026)', () => {
+  const notif = (over: Record<string, unknown> = {}) => ({
+    id: 'n-x', userId: F2_DOCTOR, title: 'Referral update', message: 'm', type: 'info', read: false,
+    createdAt: '2026-10-07T00:00:00.000Z', createdAtMs: Date.now(), referralId: 'ref1', key: 'receivingStatus', vars: {}, ...over,
+  });
+  const seed = (fn: (db: any) => Promise<unknown>) => testEnv.withSecurityRulesDisabled(async (ctx) => { await fn(ctx.firestore()); });
+
+  describe('receivingFacilityId cannot be rewritten by a party (lead 1)', () => {
+    it('denies a candidate pointing an auto referral at an uninvolved facility', async () => {
+      await assertFails(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { receivingFacilityId: 'f9' }));
+    });
+    it('denies the referring facility making itself the destination', async () => {
+      await seed(db => updateDoc(doc(db, 'referrals', 'ref1'), { receivingFacilityId: 'f2', status: 'in_transit' }));
+      await assertFails(updateDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1'), { receivingFacilityId: 'f1' }));
+    });
+    it('still lets a candidate claim an auto referral for its own facility', async () => {
+      await assertSucceeds(updateDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1'), { receivingFacilityId: 'f3' }));
+    });
+    it('still lets the patient-decline flow reset an accepted referral to auto', async () => {
+      await seed(db => updateDoc(doc(db, 'referrals', 'ref1'), { receivingFacilityId: 'f2', status: 'accepted', statusHistory: [{ status: 'accepted', timestamp: '2026-01-01T00:00:00.000Z', userId: F2_DOCTOR }] }));
+      await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
+        receivingFacilityId: 'auto', status: 'pending', candidateFacilityIds: ['f3'],
+        statusHistory: [{ status: 'accepted', timestamp: '2026-01-01T00:00:00.000Z', userId: F2_DOCTOR }, { status: 'pending', timestamp: '2026-10-07T00:00:00.000Z', userId: F1_DOCTOR }],
+      }));
+    });
+    it('still lets a privileged user override the destination', async () => {
+      await assertSucceeds(updateDoc(doc(authed(OWNER), 'referrals', 'ref1'), { receivingFacilityId: 'f9' }));
+    });
+  });
+
+  describe('users.facilityId must name a real facility (lead 2)', () => {
+    it('denies an unverified user choosing the routing sentinel auto', async () => {
+      await assertFails(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'auto' }));
+    });
+    it('denies a facility that does not exist', async () => {
+      await assertFails(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'no-such-facility' }));
+    });
+    it('allows an existing facility during onboarding', async () => {
+      await assertSucceeds(updateDoc(doc(testEnv.authenticatedContext(NEWCOMER, { email_verified: true }).firestore(), 'users', NEWCOMER), { facilityId: 'f1', profileCompleted: true }));
+    });
+  });
+
+  describe('users.email is bound to the signed-in identity (lead 3)', () => {
+    const ctx = (uid: string, email?: string) => testEnv.authenticatedContext(uid, email ? { email, email_verified: true } : {}).firestore();
+    it('denies creating a profile under someone else\'s address', async () => {
+      await assertFails(setDoc(doc(ctx('imp', 'attacker@gmail.com'), 'users', 'imp'), { id: 'imp', name: 'Victim', email: 'victim@x.gov', role: 'resident', verified: false }));
+    });
+    it('allows creating a profile with the token\'s own address', async () => {
+      await assertSucceeds(setDoc(doc(ctx('own', 'me@gmail.com'), 'users', 'own'), { id: 'own', name: 'Me', email: 'me@gmail.com', role: 'resident', verified: false }));
+    });
+    it('denies changing the email on an existing profile', async () => {
+      await assertFails(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { email: 'someone@x.gov' }));
+    });
+  });
+
+  describe('notification recipients belong to the referral (lead 7)', () => {
+    it('denies addressing a user at an uninvolved facility', async () => {
+      await seed(db => setDoc(doc(db, 'users', 'f9-doc'), { id: 'f9-doc', name: 'F9', email: 'f9@x.gov', role: 'consultant', verified: true, facilityId: 'f9' }));
+      await assertFails(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n-x'), notif({ userId: 'f9-doc' })));
+    });
+    it('denies a free-text notification with no catalogue key', async () => {
+      const { key, vars, ...free } = notif();
+      await assertFails(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n-x'), free));
+    });
+    it('accepts a full batch of NOTIFICATION_BATCH_SIZE (15) recipients within the rules read limit', async () => {
+      await seed(async db => { for (let i = 0; i < 15; i++) await setDoc(doc(db, 'users', `f2-staff-${i}`), { id: `f2-staff-${i}`, name: `S${i}`, email: `s${i}@x.gov`, role: 'consultant', verified: true, facilityId: 'f2' }); });
+      const db = authed(F1_DOCTOR);
+      const b = writeBatch(db);
+      for (let i = 0; i < 15; i++) b.set(doc(db, 'notifications', `nb-${i}`), notif({ id: `nb-${i}`, userId: `f2-staff-${i}` }));
+      await assertSucceeds(b.commit());
+    });
+    it('allows a candidate-facility recipient and a privileged recipient', async () => {
+      await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n-x'), notif()));
+      await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'notifications', 'n-y'), notif({ id: 'n-y', userId: OWNER })));
+    });
+  });
+
+  describe('escort record cannot be pre-filled at create (lead 10)', () => {
+    it('denies a referral created with an accompanyingDoctor already set', async () => {
+      await assertFails(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'refX'), referral({
+        id: 'refX', requiresAccompanyingDoctor: true, referringDepartment: 'ICU', createdAtMs: Date.now(),
+        accompanyingDoctor: { name: 'Dr X', phoneNumber: '1', addedBy: F1_HOD_ICU, addedAt: '2026-10-07T00:00:00.000Z' },
+      })));
+    });
+    it('still allows a referral without an escort record', async () => {
+      await assertSucceeds(setDoc(doc(authed(F1_DOCTOR), 'referrals', 'refY'), referral({ id: 'refY', createdAtMs: Date.now() })));
+    });
+  });
+});
+
+describe('referral content integrity (audit run-1, deferred unit)', () => {
+  const comment = (userId: string, id = 'c1') => ({ id, userId, timestamp: '2026-10-07T00:00:00.000Z', status: 'direct_approval', comment: 'ok' });
+  const seedRef = (over: Record<string, unknown>) => testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), over);
+  });
+
+  it('denies a receiving party changing priority, reason or requested departments', async () => {
+    await seedRef({ receivingFacilityId: 'f2' });
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { priority: 'routine' }));
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { reasonForReferral: 'changed' }));
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { receivingDepartments: ['Ward'] }));
+  });
+  it('still lets the referral creator correct its own clinical request', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), { priority: 'urgent' }));
+  });
+
+  it('lets a party append its own department comment', async () => {
+    await assertSucceeds(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { deptComments: [comment(F2_DOCTOR)] }));
+  });
+  it('denies a comment attributed to someone else', async () => {
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { deptComments: [comment(F3_CANDIDATE)] }));
+  });
+  it('denies rewriting or removing an existing comment', async () => {
+    await seedRef({ deptComments: [comment(F3_CANDIDATE)] });
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { deptComments: [{ ...comment(F3_CANDIDATE), comment: 'forged' }] }));
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { deptComments: [] }));
+  });
+
+  it('denies writing rejection or cancellation details outside those transitions, or for someone else', async () => {
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { rejectionReason: 'x', rejectedBy: F2_DOCTOR }));
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), { cancelReason: 'x', cancelledBy: F1_MANAGER }));
+  });
+
+  it('denies editing the declined-facilities list outside the decline flow', async () => {
+    await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { patientDeclinedFacilityIds: ['f3'] }));
+  });
+});
+
+describe('profile edits need a confirmed email (audit run-1, lead 12)', () => {
+  it('denies an unconfirmed account seeding its profile (facility, requested role)', async () => {
+    await assertFails(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'f1', requestedRole: 'medical_director', profileCompleted: true }));
+  });
+  it('allows the same edit once the email is confirmed', async () => {
+    const confirmed = testEnv.authenticatedContext(NEWCOMER, { email_verified: true }).firestore();
+    await assertSucceeds(updateDoc(doc(confirmed, 'users', NEWCOMER), { facilityId: 'f1', requestedRole: 'medical_director', profileCompleted: true }));
+  });
+});
+
 describe('user self-signup', () => {
   it('blocks self-signup with an elevated role', async () => {
     await assertFails(setDoc(doc(testEnv.authenticatedContext('brand-new').firestore(), 'users', 'brand-new'), {
@@ -597,7 +794,7 @@ describe('user self-signup', () => {
   });
 
   it('allows self-signup as an unverified resident', async () => {
-    await assertSucceeds(setDoc(doc(testEnv.authenticatedContext('brand-new-2').firestore(), 'users', 'brand-new-2'), {
+    await assertSucceeds(setDoc(doc(testEnv.authenticatedContext('brand-new-2', { email: 'new2@x.gov' }).firestore(), 'users', 'brand-new-2'), {
       id: 'brand-new-2', name: 'New', email: 'new2@x.gov', role: 'resident', verified: false,
     }));
   });
@@ -1042,7 +1239,7 @@ describe('department is a privilege field once verified (escort authority depend
     await assertFails(updateDoc(doc(authed(F1_HOD_ICU), 'users', F1_HOD_ICU), { department: 'Emergency' }));
   });
   it('still lets an unverified user choose a department during onboarding', async () => {
-    await assertSucceeds(updateDoc(doc(authed(NEWCOMER), 'users', NEWCOMER), { facilityId: 'f1', department: 'ICU' }));
+    await assertSucceeds(updateDoc(doc(testEnv.authenticatedContext(NEWCOMER, { email_verified: true }).firestore(), 'users', NEWCOMER), { facilityId: 'f1', department: 'ICU' }));
   });
 });
 
@@ -1080,5 +1277,57 @@ describe('shiftAssignments: who may appoint a delegate', () => {
   it("blocks moving an assignment to another department or facility", async () => {
     await assertFails(updateDoc(doc(authed(F1_HOD_ER), 'shiftAssignments', 'sa-er'), { department: 'ICU' }));
     await assertFails(updateDoc(doc(authed(F1_MANAGER), 'shiftAssignments', 'sa-er'), { facilityId: 'f2' }));
+  });
+});
+
+/**
+ * Attachments (audit S1, 3 Oct 2026): stored as data URLs in
+ * referrals/{id}/attachments/{id}, written in the same batch as the referral,
+ * readable by the referral's parties only, written once by its creator.
+ */
+describe('referral attachments', () => {
+  const att = (over: Record<string, unknown> = {}) => ({ id: 'a1', name: 'ecg.jpg', mimeType: 'image/jpeg', data: 'data:image/jpeg;base64,AAAA', ...over });
+  const fresh = (id: string) => referral({ id, createdAtMs: Date.now(), statusHistory: [{ status: 'pending', timestamp: new Date().toISOString(), userId: F1_DOCTOR }] });
+
+  it('lets the creator write a referral and its attachment together', async () => {
+    const db = authed(F1_DOCTOR);
+    const b = writeBatch(db);
+    b.set(doc(db, 'referrals', 'refA'), fresh('refA'));
+    b.set(doc(db, 'referrals', 'refA', 'attachments', 'a1'), att());
+    // A realistic compressed ECG: ~700 KB of base64 still passes the size and type checks.
+    b.set(doc(db, 'referrals', 'refA', 'attachments', 'a2'), att({ id: 'a2', data: `data:image/jpeg;base64,${'A'.repeat(699_970)}` }));
+    await assertSucceeds(b.commit());
+  });
+
+  it("blocks someone else adding an attachment to a referral they did not create", async () => {
+    await assertFails(setDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1', 'attachments', 'a9'), att({ id: 'a9' })));
+    await assertFails(setDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1', 'attachments', 'a9'), att({ id: 'a9' })));
+  });
+
+  it('blocks oversized, mistyped, mislabelled or extra-field attachments', async () => {
+    const db = authed(F1_DOCTOR);
+    await assertFails(setDoc(doc(db, 'referrals', 'ref1', 'attachments', 'a2'), att({ id: 'a2', data: 'x'.repeat(1_000_001) })));
+    await assertFails(setDoc(doc(db, 'referrals', 'ref1', 'attachments', 'a3'), att({ id: 'a3', mimeType: 'text/html' })));
+    await assertFails(setDoc(doc(db, 'referrals', 'ref1', 'attachments', 'a4'), att({ id: 'other' })));
+    await assertFails(setDoc(doc(db, 'referrals', 'ref1', 'attachments', 'a5'), att({ id: 'a5', extra: true })));
+  });
+
+  it('lets the referral parties read attachments and keeps everyone else out', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'referrals', 'ref1', 'attachments', 'a1'), att());
+    });
+    await assertSucceeds(getDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'attachments', 'a1')));
+    await assertSucceeds(getDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1', 'attachments', 'a1'))); // candidate facility
+    await assertSucceeds(getDocs(collection(authed(F2_DOCTOR), 'referrals', 'ref1', 'attachments')));
+    await assertFails(getDoc(doc(authed(NEWCOMER), 'referrals', 'ref1', 'attachments', 'a1')));
+    await assertFails(getDocs(collection(authed(F1_DOCTOR), 'referrals', 'ref2-missing', 'attachments')));
+  });
+
+  it('never lets a party change or remove a stored attachment', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'referrals', 'ref1', 'attachments', 'a1'), att());
+    });
+    await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'attachments', 'a1'), { name: 'x' }));
+    await assertFails(deleteDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1', 'attachments', 'a1')));
   });
 });

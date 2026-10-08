@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import * as fnSla from '../../functions/src/sla';
 import {
   SLA_MINUTES,
   SLA_SECONDS,
@@ -120,41 +119,5 @@ describe('needsAutoEscalation', () => {
     // The clinically important case: responded to at 29 minutes, so it must not
     // escalate at 31 just because the document is still around.
     expect(needsAutoEscalation(referral({ status: 'accepted' }), at(SLA_SECONDS + 600))).toBe(false);
-  });
-});
-
-/**
- * The Functions package keeps its own copy of this module (see the header in
- * functions/src/sla.ts for why). These assertions are what make that copy safe:
- * if the threshold or the tracked scope is changed in one file and not the
- * other, the badge staff see and the job that escalates would silently disagree
- * about when a referral has breached, and nobody would notice until an
- * escalation failed to happen.
- */
-describe('functions/src/sla.ts stays in step with this module', () => {
-  it('agrees on the threshold', () => {
-    expect(fnSla.SLA_MINUTES).toBe(SLA_MINUTES);
-    expect(fnSla.SLA_SECONDS).toBe(SLA_SECONDS);
-  });
-
-  it('agrees on the tracked scope', () => {
-    expect([...fnSla.SLA_TRACKED_PRIORITIES]).toEqual([...SLA_TRACKED_PRIORITIES]);
-    expect([...fnSla.SLA_TRACKED_BED_TYPES]).toEqual([...SLA_TRACKED_BED_TYPES]);
-    expect(fnSla.SLA_TRACKED_STATUS).toBe(SLA_TRACKED_STATUS);
-  });
-
-  it.each([
-    ['tracked, not yet breached', referral(), 0, false],
-    ['tracked, breached', referral(), SLA_SECONDS + 1, true],
-    ['already escalated', referral({ isEscalated: true }), SLA_SECONDS + 1, false],
-    ['routine priority', referral({ priority: 'routine' }), SLA_SECONDS + 1, false],
-    ['ward bed', referral({ requiredBedType: 'Ward' }), SLA_SECONDS + 1, false],
-    ['already accepted', referral({ status: 'accepted' }), SLA_SECONDS + 1, false],
-    ['unparseable timestamp', referral({ createdAt: 'nope' }), SLA_SECONDS + 1, false],
-    ['manually de-escalated', referral({ autoEscalationSuppressed: true }), SLA_SECONDS + 1, false],
-  ] as const)('reaches the same verdict: %s', (_label, r, offset, expected) => {
-    const now = at(offset);
-    expect(needsAutoEscalation(r, now)).toBe(expected);
-    expect(fnSla.needsAutoEscalation(r, now.getTime())).toBe(expected);
   });
 });

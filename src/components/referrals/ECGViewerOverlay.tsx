@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { LazyMotion, m, AnimatePresence } from 'motion/react';
+
+const loadMotionFeatures = () => import('./motionFeatures').then((mod) => mod.default);
 import { X, ZoomIn, ZoomOut, RefreshCcw, Contrast, Activity } from 'lucide-react';
 import { useDialogA11y } from '../../hooks/useDialogA11y';
 import { useI18n } from '../../i18n';
@@ -49,9 +51,10 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
   };
 
   return (
+    <LazyMotion features={loadMotionFeatures} strict>
     <AnimatePresence>
       {isOpen && (
-        <motion.div
+        <m.div
           ref={dialogRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -162,14 +165,14 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
                 </div>
               </div>
             ) : (
-              <motion.div
+              <m.div
                 drag
                 dragConstraints={{ left: -1500, right: 1500, top: -1500, bottom: 1500 }}
                 dragElastic={0.1}
                 dragMomentum={false}
                 className="relative cursor-grab active:cursor-grabbing"
               >
-                <motion.img 
+                <m.img 
                   src={imageUrl!} 
                   alt={t('ecg.imageAlt')} 
                   draggable={false}
@@ -184,11 +187,12 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
                     filter: highContrast ? 'contrast(1.6) brightness(0.9) grayscale(0.5)' : 'none' 
                   }}
                 />
-              </motion.div>
+              </m.div>
             )}
           </div>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
+    </LazyMotion>
   );
 };

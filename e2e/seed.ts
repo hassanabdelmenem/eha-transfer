@@ -100,6 +100,14 @@ async function seed() {
       verified: { booleanValue: true },
       profileCompleted: { booleanValue: true },
     });
+    // The network directory entry the app reads for other facilities (src/lib/directory.ts).
+    await write(`directory/${localId}`, {
+      id: str(localId),
+      name: str(user.name),
+      role: str(user.role),
+      facilityId: str(user.facilityId),
+      department: str('ICU'),
+    });
   }
   
   // also create the old single user so old tests pass

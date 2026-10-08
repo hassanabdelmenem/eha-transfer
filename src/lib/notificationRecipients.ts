@@ -6,12 +6,10 @@ import { Role } from '../types';
  * candidate user plus their facility's on-call shift assignments.
  *
  * Pulled out of DataContext's createNotification so the exact same verdict is
- * reachable from the Cloud Function in functions/src/notificationRecipients.ts,
- * which fans out identically but resolves its candidate users via Firestore
- * queries instead of an in-memory `users` array. That Function's copy is a
- * deliberate, self-contained duplicate for the same reason functions/src/sla.ts
- * is (see its header) -- src/lib/sla.test.ts's parity block is the template;
- * this module's parity block lives in the same file.
+ * used by the escalation sweep (scripts/escalation-sweep.ts, on GitHub Actions),
+ * which resolves its candidate users via Firestore queries instead of the app's
+ * in-memory `users` array. (The unused Cloud Functions copy was removed on
+ * 3 Oct 2026: functions cannot deploy on the free Spark plan.)
  */
 export interface NotificationRecipientCandidate {
   id: string;

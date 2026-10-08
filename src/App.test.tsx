@@ -91,6 +91,22 @@ describe('App routing', () => {
     await waitFor(() => expect(screen.getByText('Onboarding Page')).toBeInTheDocument());
   });
 
+  it('confirms the email before onboarding (audit run-1, lead 12)', async () => {
+    // A profile is only writable once the email is confirmed (firestore.rules),
+    // so an unconfirmed account goes to the verification screen first.
+    mockAuthState = { user: makeUser({ profileCompleted: false, verified: false }), authReady: true, emailVerified: false };
+    render(<App />);
+    await waitFor(() => expect(screen.getByText('Pending Verification Page')).toBeInTheDocument());
+    expect(screen.queryByText('Onboarding Page')).not.toBeInTheDocument();
+  });
+
+  it('keeps an unconfirmed account off /onboarding even when typed directly', async () => {
+    mockAuthState = { user: makeUser({ profileCompleted: false, verified: false }), authReady: true, emailVerified: false };
+    window.history.pushState({}, '', '/onboarding');
+    render(<App />);
+    await waitFor(() => expect(screen.getByText('Pending Verification Page')).toBeInTheDocument());
+  });
+
   it('sends a completed-but-unverified user to the pending-verification screen', async () => {
     mockAuthState = { user: makeUser({ verified: false }), authReady: true };
     render(<App />);

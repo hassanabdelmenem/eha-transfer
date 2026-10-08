@@ -110,6 +110,11 @@ for (const u of USERS) {
       id: localId, name: u.name, email: u.email, role: u.role, facilityId: u.facilityId,
       department: u.department, verified: true, profileCompleted: true,
     });
+    // Network directory entry (src/lib/directory.ts): contact fields only.
+    await writeDoc(`directory/${localId}`, {
+      id: localId, name: u.name, role: u.role, facilityId: u.facilityId,
+      ...(u.department !== undefined ? { department: u.department } : {}),
+    });
   }
 }
 

@@ -94,29 +94,84 @@ service cloud.firestore {
           // verified it carries authority (who records a transfer's escort doctor,
           // accompanyingDoctorWriteAuthorized), so a user cannot move themselves.
           && (resource.data.verified != true
-              || request.resource.data.get('department', null) == resource.data.get('department', null));
+              || request.resource.data.get('department', null) == resource.data.get('department', null))
+          // The email the approver sees is the account's own (audit run-1, lead 3).
+          && request.resource.data.get('email', '') == resource.data.get('email', '')
+          && facilityIsReal();
+    }
+    // A self-chosen facilityId must name a real facility (audit run-1, lead 2):
+    // otherwise 'auto' -- the receivingFacilityId of every unclaimed auto-routed
+    // referral -- would make its holder a party to all of them once verified.
+    function facilityIsReal() {
+      let after = request.resource.data.get('facilityId', null);
+      return after == null
+          || (resource != null && after == resource.data.get('facilityId', null))
+          || exists(/databases/$(database)/documents/facilities/$(after));
     }
 
     match /users/{userId} {
-      // Own document must stay readable before verification — AuthContext
-      // subscribes to it to discover that verification has landed.
-      allow get: if signedIn() && (request.auth.uid == userId || isVerifiedCaller());
-      // The full roster is read by verified staff only. It is needed in full (not
-      // facility-scoped) because notification fan-out is done client-side and has
-      // to find recipients at the *receiving* facility. Moving fan-out into a
-      // Cloud Function would let this be narrowed to one facility.
-      allow list: if isVerifiedCaller();
+      // Own document must stay readable before verification -- AuthContext
+      // subscribes to it to discover that verification has landed. Other staff
+      // read full records for their own facility only; other hospitals get the
+      // contact fields from directory/ (audit S2b). Privileged users manage every
+      // account and keep the whole roster.
+      allow get: if signedIn() && (request.auth.uid == userId
+                                   || isPrivileged()
+                                   || (isVerifiedCaller() && resource.data.get('facilityId', null) == callerFacility()));
+      allow list: if isPrivileged()
+                  || (isVerifiedCaller() && resource.data.get('facilityId', null) == callerFacility());
 
       // Self-signup is always an unverified resident. The owner account is promoted
       // server-side (admin tooling / emulator seeding), never via a client-writable
       // rule — the prior bootstrap hatch was revoked once that tooling shipped.
       allow create: if signedIn() && request.auth.uid == userId
                     && request.resource.data.verified == false
-                    && request.resource.data.role == 'resident';
+                    && request.resource.data.role == 'resident'
+                    // The email the approver sees is the signed-in account's own
+                    // (audit run-1, lead 3); impersonating a colleague's address
+                    // was the gap behind 'admin-verified by mistake'.
+                    && request.resource.data.get('email', '') == request.auth.token.get('email', '')
+                    && facilityIsReal();
 
+      // Self-edits need a confirmed email (audit run-1, lead 12): with one account
+      // per email, someone who registers a colleague's address with a password
+      // and never confirms it could otherwise seed the profile (facility,
+      // requested role) that the colleague inherits when they sign in with Google.
       allow update: if isPrivileged()
-                    || (signedIn() && request.auth.uid == userId && privilegeFieldsUnchanged());
+                    || (signedIn() && request.auth.uid == userId
+                        && request.auth.token.email_verified == true
+                        && privilegeFieldsUnchanged());
       allow delete: if isPrivileged();
+    }
+
+    // ------------------------------------------------------------ directory
+    // The network staff directory (audit S2, src/lib/directory.ts): the contact
+    // fields other hospitals need -- name, role, facility, department, phone --
+    // for verified users only. Notification fan-out reads role/facility/department
+    // from here, so an entry is accepted only when it matches the user's own
+    // document field for field (getAfter: the same batch may be changing both).
+    // Writing a true entry needs no privilege, which is what lets the app heal a
+    // stale one; a false one is impossible.
+    function mirrorsUser(userId) {
+      let u = getAfter(/databases/$(database)/documents/users/$(userId)).data;
+      let d = request.resource.data;
+      return u.get('verified', false) == true
+          && d.keys().hasOnly(['id', 'name', 'role', 'facilityId', 'department', 'phoneNumber'])
+          && d.id == userId
+          && d.get('name', null) == u.get('name', null)
+          && d.role == u.role
+          && d.get('facilityId', null) == u.get('facilityId', null)
+          && d.get('department', null) == u.get('department', null)
+          && d.get('phoneNumber', null) == u.get('phoneNumber', null);
+    }
+    match /directory/{userId} {
+      allow read: if isVerifiedCaller();
+      allow create, update: if signedIn()
+                            && existsAfter(/databases/$(database)/documents/users/$(userId))
+                            && mirrorsUser(userId);
+      allow delete: if signedIn()
+                    && (!existsAfter(/databases/$(database)/documents/users/$(userId))
+                        || getAfter(/databases/$(database)/documents/users/$(userId)).data.get('verified', false) != true);
     }
 
     // ----------------------------------------------------------- facilities
@@ -170,6 +225,52 @@ service cloud.firestore {
           || (data.receivingFacilityId == 'auto'
               && data.candidateFacilityIds is list
               && callerFacility() in data.candidateFacilityIds);
+    }
+    // receivingFacilityId decides who may read the referral and who acts as its
+    // destination, so it changes only in the three ways the app does it (audit
+    // run-1, lead 1): a candidate claims an auto-routed referral for its own
+    // facility; the patient declines an accepted transfer and it goes back to
+    // 'auto'; or a privileged user overrides the destination.
+    function receivingFacilityChangeAllowed() {
+      let before = resource.data.get('receivingFacilityId', null);
+      let after = request.resource.data.get('receivingFacilityId', null);
+      let candidates = resource.data.get('candidateFacilityIds', []);
+      return after == before
+          || isPrivileged()
+          || (before == 'auto' && after == callerFacility()
+              && candidates is list && callerFacility() in candidates)
+          || (after == 'auto' && resource.data.status == 'accepted'
+              && request.resource.data.status == 'pending');
+    }
+    // Referral content that is not workflow state (audit run-1, deferred unit).
+    // The requested care is the referrer's to set: only its creator (or a
+    // privileged user) may change it, like patientData. Department comments are a
+    // record: each write appends one comment, by its own author, and leaves the
+    // rest untouched. Rejection, cancellation and decline details exist only in
+    // their own transitions, attributed to the caller.
+    function referralContentGuarded() {
+      let b = resource.data;
+      let a = request.resource.data;
+      return (mayEditClinicalData()
+              || (a.get('priority', null) == b.get('priority', null)
+                  && a.get('reasonForReferral', null) == b.get('reasonForReferral', null)
+                  && a.get('receivingDepartments', null) == b.get('receivingDepartments', null)))
+          && deptCommentsAppendOnly()
+          && (!changedKeys().hasAny(['rejectionReason', 'rejectedBy', 'rejectedAt'])
+              || (a.status == 'rejected' && b.status != 'rejected' && a.get('rejectedBy', null) == request.auth.uid))
+          && (!changedKeys().hasAny(['cancelReason', 'cancelledBy', 'cancelledAt'])
+              || (a.status == 'cancelled' && b.status != 'cancelled' && a.get('cancelledBy', null) == request.auth.uid))
+          && (!changedKeys().hasAny(['patientDeclinedFacilityIds'])
+              || (b.status == 'accepted' && a.status == 'pending'
+                  && a.patientDeclinedFacilityIds == b.get('patientDeclinedFacilityIds', []).concat([b.receivingFacilityId])));
+    }
+    function deptCommentsAppendOnly() {
+      let before = resource.data.get('deptComments', []);
+      let after = request.resource.data.get('deptComments', []);
+      return after == before
+          || (after is list && after.size() == before.size() + 1
+              && (before.size() == 0 || after[0:before.size()] == before)
+              && after[before.size()].userId == request.auth.uid);
     }
     function isReferralParty(data) {
       return ('referringFacilityId' in data && callerFacility() == data.referringFacilityId)
@@ -474,9 +575,15 @@ service cloud.firestore {
                     && request.resource.data.createdAtMs <= request.time.toMillis() + 300000
                     && (!('referringDepartment' in request.resource.data)
                         || (request.resource.data.referringDepartment is string
-                            && request.resource.data.referringDepartment.size() <= 100));
+                            && request.resource.data.referringDepartment.size() <= 100))
+                    // The escort is recorded later, by the sending department head
+                    // or delegate (accompanyingDoctorWriteAuthorized); a value set
+                    // at create would never pass through that check (audit run-1, lead 10).
+                    && request.resource.data.get('accompanyingDoctor', null) == null;
 
       allow update: if referralIdentityPinned()
+                    && receivingFacilityChangeAllowed()
+                    && referralContentGuarded()
                     && auditTrailAppendOnly()
                     && validStatusTransition()
                     && transitionActorAllowed()
@@ -494,11 +601,40 @@ service cloud.firestore {
       allow delete: if isPrivileged();
     }
 
+    // Clinical attachments (audit S1, 3 Oct 2026): one data URL per document,
+    // written in the same batch as the referral (getAfter), by its creator, once.
+    // Readable by the referral's parties. Never edited: an attachment is part of
+    // the clinical record the receiving hospital acts on.
+    match /referrals/{referralId}/attachments/{attachmentId} {
+      allow read: if isPrivileged()
+                  || (isVerifiedCaller()
+                      && exists(/databases/$(database)/documents/referrals/$(referralId))
+                      && isReferralParty(get(/databases/$(database)/documents/referrals/$(referralId)).data));
+      allow create: if isVerifiedCaller()
+                    && getAfter(/databases/$(database)/documents/referrals/$(referralId)).data.referringUserId == request.auth.uid
+                    && request.resource.data.keys().hasOnly(['id', 'name', 'mimeType', 'data'])
+                    && request.resource.data.id == attachmentId
+                    && request.resource.data.name is string && request.resource.data.name.size() <= 200
+                    && request.resource.data.mimeType in ['image/jpeg', 'application/pdf']
+                    && request.resource.data.data is string
+                    && request.resource.data.data.size() <= 1000000
+                    && request.resource.data.data.matches('^data:(image/jpeg|application/pdf);base64,.*');
+      allow update, delete: if isPrivileged();
+    }
+
     // -------------------------------------------------------- notifications
     // Fan-out is client-side, so any verified caller who is actually a party to
     // the referenced referral may create a notification addressed to another
     // user — but reads stay strictly per-recipient, and the only mutable field
     // is the read flag.
+    function recipientConcerned(ref) {
+      let r = get(/databases/$(database)/documents/users/$(request.resource.data.userId)).data;
+      let f = r.get('facilityId', '');
+      return r.role in ['owner', 'system_admin']
+          || f == ref.referringFacilityId
+          || f == ref.get('receivingFacilityId', '')
+          || (ref.get('candidateFacilityIds', []) is list && f in ref.get('candidateFacilityIds', []));
+    }
     match /notifications/{notificationId} {
       // isVerifiedCaller(), not signedIn(): notification bodies name patients, and
       // fan-out picks recipients from the roster without looking at email status.
@@ -544,7 +680,13 @@ service cloud.firestore {
                     && request.resource.data.createdAtMs <= request.time.toMillis() + 300000
                     && request.resource.data.referralId is string
                     && exists(/databases/$(database)/documents/referrals/$(request.resource.data.referralId))
-                    && (isPrivileged() || isReferralParty(referralData(request.resource.data.referralId)));
+                    && (isPrivileged()
+                        || (isReferralParty(referralData(request.resource.data.referralId))
+                            // Catalogue-rendered only, and only to someone the referral
+                            // concerns (audit run-1, lead 7): free text to any uid let a
+                            // party forge 'escalation' alerts network-wide.
+                            && request.resource.data.key is string
+                            && recipientConcerned(referralData(request.resource.data.referralId))));
       allow update: if signedIn() && resource.data.userId == request.auth.uid
                     && changedKeys().hasOnly(['read']);
       // The recipient can clear their own tray. Previously only an admin could

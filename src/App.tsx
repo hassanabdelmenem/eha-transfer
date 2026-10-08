@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { isStale, watchForNewRelease } from './lib/appVersion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -78,13 +79,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+  // The email is confirmed first: the rules accept profile edits (onboarding)
+  // only from a confirmed address (audit run-1, lead 12).
+  if (!emailVerified) {
+    return <Navigate to="/pending-verification" replace />;
+  }
   if (!user.profileCompleted) {
     return <Navigate to="/onboarding" replace />;
   }
   // Both gates mirror isVerifiedCaller() in firestore.rules: admin-verified AND
   // a confirmed email. Letting either through would mount DataContext listeners
   // the rules reject, and a rejected listener dies silently for the session.
-  if (!user.verified || !emailVerified) {
+  if (!user.verified) {
     return <Navigate to="/pending-verification" replace />;
   }
   return <>{children}</>;
@@ -102,7 +108,17 @@ const RoleBasedDashboard = () => {
 };
 
 const AppRoutes = () => {
-  const { user, authReady } = useAuth();
+  const { user, authReady, emailVerified } = useAuth();
+
+  // A newer release is live: load it at the next route change (src/lib/appVersion.ts).
+  const location = useLocation();
+  useEffect(() => watchForNewRelease(), []);
+  const lastPath = useRef(location.pathname);
+  useEffect(() => {
+    if (location.pathname === lastPath.current) return;
+    lastPath.current = location.pathname;
+    if (isStale()) window.location.reload();
+  }, [location.pathname]);
 
   // Same reason as ProtectedRoute: /login and /onboarding branch on `user`, so
   // rendering them before auth resolves flashes the login form at a signed-in
@@ -115,7 +131,7 @@ const AppRoutes = () => {
     <Suspense fallback={<AuthLoading />}>
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-        <Route path="/onboarding" element={user ? (user.profileCompleted ? <Navigate to="/" replace /> : <Onboarding />) : <Navigate to="/login" replace />} />
+        <Route path="/onboarding" element={!user ? <Navigate to="/login" replace /> : user.profileCompleted ? <Navigate to="/" replace /> : !emailVerified ? <Navigate to="/pending-verification" replace /> : <Onboarding />} />
         <Route path="/pending-verification" element={<PendingVerification />} />
         
         <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
