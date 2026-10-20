@@ -65,7 +65,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
               id="bedMgmtFacility"
               value={selectedFacilityId || facility.id}
               onChange={(e) => onSelectFacility(e.target.value)}
-              className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[44px]"
+              className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[48px]"
             >
               <option value="">{t('beds.selectToManage')}</option>
               {facilities.map((f) => (
@@ -159,7 +159,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
             {canEditTotal && (
               <Link
                 to="/facility-settings"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                className="inline-flex min-h-[48px] items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
               >
                 <Settings className="w-3.5 h-3.5" />
                 {t('beds.editTotal')}
@@ -186,7 +186,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
           {canEditTotal && (
             <Link
               to="/facility-settings"
-              className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+              className="inline-flex min-h-[48px] items-center text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
             >
               {t('beds.setUp')} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
             </Link>

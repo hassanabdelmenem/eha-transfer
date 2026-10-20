@@ -309,7 +309,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                 <Link
                   to={`/referrals/${referral.id}`}
-                  className="inline-flex items-center justify-center gap-1 min-h-[44px] px-3 rounded text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs font-semibold transition-colors"
+                  className="inline-flex items-center justify-center gap-1 min-h-[48px] px-3 rounded text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs font-semibold transition-colors"
                 >
                   {t('referralList.viewCard')}
                   <ChevronRight className="w-3.5 h-3.5 rtl:-scale-x-100" />
@@ -369,7 +369,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
                     </div>
                   </td>
                   <td className="px-6 py-4 text-end">
-                    <Link to={`/referrals/${referral.id}`} className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-400 font-semibold text-xs border border-blue-200 dark:border-blue-800 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors whitespace-nowrap">
+                    <Link to={`/referrals/${referral.id}`} className="inline-flex min-h-[48px] items-center gap-1 text-blue-700 dark:text-blue-400 font-semibold text-xs border border-blue-200 dark:border-blue-800 px-3 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors whitespace-nowrap">
                       {t('referralList.viewCard')}
                       <ChevronRight className="w-3 h-3 rtl:-scale-x-100" />
                     </Link>

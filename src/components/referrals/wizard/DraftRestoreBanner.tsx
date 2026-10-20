@@ -21,10 +21,10 @@ export const DraftRestoreBanner: React.FC<DraftRestoreBannerProps> = ({ lastSave
         <span className="font-semibold">{t('wizard.restored')}</span>
         <span className="text-slate-700 dark:text-white/65">{when ? t('wizard.restoredAt', { time: when }) : t('wizard.restoredLast')}</span>
       </p>
-      <button type="button" onClick={onDiscard} className="min-h-[44px] shrink-0 rounded-[8px] px-3 text-[14px] font-semibold text-critical-700 hover:bg-critical-50 dark:text-critical-300 dark:hover:bg-critical-950/40">
+      <button type="button" onClick={onDiscard} className="min-h-[48px] shrink-0 rounded-[8px] px-3 text-[14px] font-semibold text-critical-700 hover:bg-critical-50 dark:text-critical-300 dark:hover:bg-critical-950/40">
         {t('wizard.discardDraft')}
       </button>
-      <button type="button" onClick={onDismiss} aria-label={t('wizard.dismissBanner')} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] text-slate-700 hover:bg-slate-100 dark:text-white/70 dark:hover:bg-white/10">
+      <button type="button" onClick={onDismiss} aria-label={t('wizard.dismissBanner')} className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[8px] text-slate-700 hover:bg-slate-100 dark:text-white/70 dark:hover:bg-white/10">
         <X className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>

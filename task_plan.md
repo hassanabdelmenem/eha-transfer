@@ -17,12 +17,17 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
    (VITE_ENABLE_ARABIC in the production build).
 2. Arabic stays off in production until the clinician review is done (owner, 1 Oct); the owner
    says when to set VITE_ENABLE_ARABIC.
+3. Phase 5 pilot plan: one referring and one receiving facility, real non-admin accounts per role.
+4. 2c `statusHistory` subcollection: in review on its own branch (supersedes PR #70); merge after review.
+
+Done 21 Oct: S2b (users list/get narrowed to the caller's facility for non-admins) merged as #78
+(squash f131f4f) and live; deps #79 merged (a9d7e8b), Dependabot 0 open (the 2 grpc alerts dismissed
+as not_used: the browser SDK uses WebChannel). Lead 12 and the referral content-integrity unit are fixed
+(referralContentGuarded, deptCommentsAppendOnly). 2e re-audited: every target at the 48px floor and no
+text under 11px.
 
 Done 1 Oct: the 5-minute escalation trigger is live (cron-job.org → workflow_dispatch; token
 "eha-transfer sweep trigger" expires 30 Sep 2027, rotate before then); staging is seeded.
-
-S2b, about a week after S2a is live: narrow the `users` list/get rule to the caller's facility for non-admins
-and remove the roster fallback in DataContext (findings.md, Network directory).
 
 Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg).
 
@@ -114,9 +119,10 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
       WIF, `escalation-sweep` SA with datastore.user) runs `scripts/escalation-sweep.ts`; rules shared with the
       in-app sweep in `src/lib/escalationSweep.ts`. Stale `overnight-sweep.ts` removed (30 Sep)
 - [x] 2a' External 5-minute trigger: cron-job.org job calls workflow_dispatch (live 1 Oct 06:00 UTC)
-- [ ] 2c `statusHistory` as a subcollection (not started)
+- [ ] 2c `statusHistory` as a subcollection (in review on its own branch, supersedes PR #70)
 - [x] 2d idle sign-out: 15 min on the wall clock, shared across tabs, and enforced on a restored session (src/lib/idleSession.ts; the unused useIdleTimeout hook removed)
-- [ ] 2e small text / 28px buttons (largely superseded by the redesign; re-audit after phase 6)
+- [x] 2e small text / 28px buttons: re-audited 21 Oct; Button `sm`, every 44px control and the remaining
+      small links/icon buttons raised to the 48px floor; 10px chips raised to 11px
 - [x] Emulator Playwright tests for the four escalation scenarios (`e2e/escalation.spec.ts`, 27 Sep)
 - **Status:** open
 

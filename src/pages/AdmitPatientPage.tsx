@@ -86,7 +86,7 @@ export const AdmitPatientPage: React.FC = () => {
       <div className="flex flex-col gap-2">
         <Link
           to="/bed-management"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline w-fit"
+          className="inline-flex min-h-[48px] items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline w-fit"
         >
           <ArrowLeft className="w-3.5 h-3.5 rtl:-scale-x-100" />
           {t('admission.back')}
@@ -103,7 +103,7 @@ export const AdmitPatientPage: React.FC = () => {
           <div className="hidden sm:flex items-center gap-2">
             <Link
               to="/bed-management"
-              className="inline-flex items-center gap-2 min-h-[44px] px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-2 min-h-[48px] px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               <BedDouble className="w-4 h-4" />
               {t('admission.viewCensus')}

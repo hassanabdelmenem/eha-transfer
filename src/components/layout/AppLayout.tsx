@@ -368,7 +368,7 @@ export const AppLayout: React.FC = () => {
               </div>
               <button
                 onClick={() => setShowProfile(false)}
-                className="text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg"
                 aria-label={t('shell.closeProfile')}
               >
                 <X className="w-5 h-5" aria-hidden="true" />

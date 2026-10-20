@@ -216,7 +216,7 @@ export const NurseCockpit: React.FC = () => {
         </Link>
         <Link
           to="/bed-management"
-          className="self-center py-2 text-[14px] font-semibold text-slate-700 underline underline-offset-4 hover:text-ink dark:text-white/70 dark:hover:text-paper"
+          className="self-center inline-flex min-h-[48px] items-center text-[14px] font-semibold text-slate-700 underline underline-offset-4 hover:text-ink dark:text-white/70 dark:hover:text-paper"
         >
           {t('nurse.census')}
         </Link>

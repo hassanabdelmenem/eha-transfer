@@ -208,7 +208,7 @@ export const BedManagementPage: React.FC = () => {
             <select
               value={selectedFacilityId || ''}
               onChange={(e) => setSelectedFacilityId(e.target.value)}
-              className="w-full sm:w-72 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-72 min-h-[48px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">{t('beds.selectFacility')}</option>
               {facilities.map(f => (
@@ -222,7 +222,7 @@ export const BedManagementPage: React.FC = () => {
           {facility && isLeadership && (
             <Link
               to="/facility-settings"
-              className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-1.5 min-h-[48px] px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               <Settings className="w-4 h-4" />
               {t('beds.editTotal')}
@@ -232,7 +232,7 @@ export const BedManagementPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsDirectAdmitOpen(true)}
-            className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95"
+            className="inline-flex items-center gap-2 min-h-[48px] px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95"
           >
             <UserPlus className="w-4 h-4" />
             {t('beds.directAdmit')}

@@ -166,7 +166,7 @@ export const ReferralsPage: React.FC = () => {
           <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('referralsPage.grid')}</h3>
           <button 
             onClick={() => setPrioritySort(!prioritySort)}
-            className={`flex items-center gap-2 px-3 min-h-[44px] text-xs font-bold rounded-xl transition-colors ${prioritySort ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+            className={`flex items-center gap-2 px-3 min-h-[48px] text-xs font-bold rounded-xl transition-colors ${prioritySort ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
           >
             <ArrowDownUp className="w-3.5 h-3.5" />
             {t('referralsPage.prioritySort')}

@@ -117,7 +117,7 @@ export const Login: React.FC = () => {
                 lang={l}
                 aria-pressed={lang === l}
                 onClick={() => setLanguage(l)}
-                className={`min-h-[44px] rounded-full border px-4 text-sm font-semibold ${lang === l ? 'border-ink bg-ink text-paper dark:border-paper dark:bg-paper dark:text-ink' : 'border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/25 dark:text-white/80 dark:hover:bg-white/10'}`}
+                className={`min-h-[48px] rounded-full border px-4 text-sm font-semibold ${lang === l ? 'border-ink bg-ink text-paper dark:border-paper dark:bg-paper dark:text-ink' : 'border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/25 dark:text-white/80 dark:hover:bg-white/10'}`}
               >
                 {l === 'ar' ? t('language.arabic') : t('language.english')}
               </button>
@@ -216,7 +216,7 @@ export const Login: React.FC = () => {
             <div className="text-center mt-4">
               <button
                 type="button"
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                className="min-h-[48px] px-2 text-xs text-blue-600 dark:text-blue-400 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                 onClick={() => { setIsRegistering(!isRegistering); setError(null); }}
               >
                 {isRegistering ? t('auth.haveAccount') : t('auth.noAccount')}

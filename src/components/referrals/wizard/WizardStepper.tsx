@@ -29,7 +29,7 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({ currentStep, compl
             onClick={() => onStepClick(step.id)}
             aria-current={current ? 'step' : undefined}
             aria-label={t(done ? 'wizard.stepButtonDone' : 'wizard.stepButton', { step: step.id, title: t(`wizard.step.${step.key}`) })}
-            className="group flex h-11 w-full items-center focus-visible:outline-none"
+            className="group flex h-12 w-full items-center focus-visible:outline-none"
           >
             <span
               aria-hidden="true"

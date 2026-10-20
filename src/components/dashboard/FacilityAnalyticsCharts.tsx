@@ -93,7 +93,7 @@ const TableView: React.FC<{ caption: string; rows: Row[]; series: Series; rowHea
   const { t } = useI18n();
   return (
   <details className="group mt-2">
-    <summary className="inline-flex min-h-[44px] cursor-pointer items-center text-[13px] font-semibold text-slate-700 underline-offset-4 hover:underline dark:text-white/70">
+    <summary className="inline-flex min-h-[48px] cursor-pointer items-center text-[13px] font-semibold text-slate-700 underline-offset-4 hover:underline dark:text-white/70">
       {t('reports.viewTable')}
     </summary>
     <div className="overflow-x-auto">
