@@ -294,6 +294,7 @@ export const ar: Messages = {
     backToReferrals: 'العودة إلى الإحالات',
     autoRouted: 'توجيه تلقائي (الجهة لم تُحدد بعد)',
     history: 'السجل',
+    historyError: 'تعذر تحميل سجل الحالة المباشر.',
     unknownPatient: 'مريض غير معروف',
     bed: 'سرير {bed}',
     printTitle: 'تفاصيل الإحالة',

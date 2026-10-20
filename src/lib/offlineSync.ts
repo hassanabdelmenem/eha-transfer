@@ -66,8 +66,20 @@ export async function syncOfflineReferrals(options: {
           // The cached copy still carries its files as data URLs: split them out
           // exactly as addReferral does online (src/lib/attachments.ts).
           const { referral: referralDoc, files } = splitAttachments(ref);
-          transaction.set(refDocRef, referralDoc);
+          const cleanDoc = { ...referralDoc };
+          delete (cleanDoc as { statusHistory?: unknown }).statusHistory;
+          const docUpdatedAt = cleanDoc.updatedAt || cleanDoc.createdAt || new Date().toISOString();
+          cleanDoc.updatedAt = docUpdatedAt;
+          transaction.set(refDocRef, cleanDoc);
           files.forEach(f => transaction.set(doc(db, 'referrals', ref.id, 'attachments', f.id), f));
+
+          const historyRef = doc(db, 'referrals', ref.id, 'statusHistory', `open-${ref.id}`);
+          transaction.set(historyRef, {
+            status: 'pending',
+            timestamp: docUpdatedAt,
+            userId: cleanDoc.referringUserId,
+            notes: 'Referral submitted offline and synced',
+          });
         }
       });
     } catch (err) {

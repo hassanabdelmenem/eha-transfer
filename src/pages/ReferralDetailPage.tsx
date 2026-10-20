@@ -94,9 +94,10 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
 
   const referral = referralsById.get(id || '');
   // Pre-migration referrals still carry the legacy array (see useStatusHistory).
-  const { history, loading: historyLoading } = useStatusHistory(
+  const { history, loading: historyLoading, error: historyError } = useStatusHistory(
     id,
     (referral as { statusHistory?: StatusHistoryEntry[] } | undefined)?.statusHistory,
+    referral,
   );
   const loading = dataLoading || historyLoading;
   useEffect(() => {
@@ -575,6 +576,11 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
           {!isDesktop && (
             <section aria-label={t('detail.history')}>
               <p className={sectionLabel}>{t('detail.history')}</p>
+              {historyError && (
+                <p className="text-xs text-rose-600 dark:text-rose-400 py-1" role="alert">
+                  {t('detail.historyError')}
+                </p>
+              )}
               <ReferralTimeline referral={referral} history={history} usersById={usersById} />
             </section>
           )}
@@ -588,6 +594,11 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
           {isDesktop && (
             <section aria-label={t('detail.history')}>
               <p className={sectionLabel}>{t('detail.history')}</p>
+              {historyError && (
+                <p className="text-xs text-rose-600 dark:text-rose-400 py-1" role="alert">
+                  {t('detail.historyError')}
+                </p>
+              )}
               <ReferralTimeline referral={referral} history={history} usersById={usersById} />
             </section>
           )}

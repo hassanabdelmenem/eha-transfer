@@ -260,6 +260,18 @@ service cloud.firestore {
               || (a.status == 'rejected' && b.status != 'rejected' && a.get('rejectedBy', null) == request.auth.uid))
           && (!changedKeys().hasAny(['cancelReason', 'cancelledBy', 'cancelledAt'])
               || (a.status == 'cancelled' && b.status != 'cancelled' && a.get('cancelledBy', null) == request.auth.uid))
+          // Transition stamps (security review of 2c): each is written only by
+          // the transition it records, and attribution is the caller's own.
+          && (!changedKeys().hasAny(['patientConsentedAt', 'patientConsentedBy'])
+              || (a.status == 'patient_consented' && b.status != 'patient_consented'
+                  && a.get('patientConsentedBy', null) == request.auth.uid))
+          && (!changedKeys().hasAny(['inTransitAt'])
+              || (a.status == 'in_transit' && b.status != 'in_transit'))
+          && (!changedKeys().hasAny(['arrivedAt'])
+              || (a.status == 'arrived' && b.status != 'arrived'))
+          && (!changedKeys().hasAny(['statusUpdatedBy'])
+              || a.get('statusUpdatedBy', null) == request.auth.uid
+              || isPrivileged())
           && (!changedKeys().hasAny(['patientDeclinedFacilityIds'])
               || (b.status == 'accepted' && a.status == 'pending'
                   && a.patientDeclinedFacilityIds == b.get('patientDeclinedFacilityIds', []).concat([b.receivingFacilityId])));
@@ -583,17 +595,41 @@ service cloud.firestore {
       allow delete: if isPrivileged();
 
       // Audit trail: append-only by construction (create-only, no update or
-      // delete), each entry attributed to its writer or to 'system'.
+      // delete). Each entry is bound to a real write of its parent in the same
+      // batch or transaction (security review of 2c):
+      //   - signed by the caller -- 'system' is reserved for the Admin SDK sweep,
+      //     which bypasses these rules;
+      //   - its status is the parent's status after the write;
+      //   - its timestamp is the parent's updatedAt after the write, and that
+      //     updatedAt actually changed in this write (or the parent is being
+      //     created in it, as 'pending'). A standalone entry, or one replaying an
+      //     old timestamp, has no parent write to match and is denied.
       match /statusHistory/{entryId} {
-        allow read: if isPrivileged() || (isVerifiedCaller() && isReferralParty(get(/databases/$(database)/documents/referrals/$(referralId)).data));
-        allow create: if (isPrivileged() || (isVerifiedCaller() && isReferralParty(getAfter(/databases/$(database)/documents/referrals/$(referralId)).data)))
+        function parentPath() {
+          return /databases/$(database)/documents/referrals/$(referralId);
+        }
+        function entryBoundToParentWrite() {
+          let e = request.resource.data;
+          let after = getAfter(parentPath()).data;
+          return existsAfter(parentPath())
+              && e.status == after.status
+              && e.timestamp == after.get('updatedAt', null)
+              && (exists(parentPath())
+                  ? get(parentPath()).data.get('updatedAt', null) != after.get('updatedAt', null)
+                  : after.status == 'pending');
+        }
+        allow read: if isPrivileged() || (isVerifiedCaller() && isReferralParty(get(parentPath()).data));
+        allow create: if (isPrivileged() || (isVerifiedCaller() && isReferralParty(getAfter(parentPath()).data)))
                       && request.resource.data.keys().hasOnly(['status', 'timestamp', 'userId', 'notes', 'event'])
                       && request.resource.data.status is string
                       && request.resource.data.timestamp is string
                       && request.resource.data.userId is string
-                      && (!('notes' in request.resource.data) || request.resource.data.notes is string)
-                      && (!('event' in request.resource.data) || request.resource.data.event is string)
-                      && (request.resource.data.userId == request.auth.uid || request.resource.data.userId == 'system');
+                      && (!('notes' in request.resource.data)
+                          || (request.resource.data.notes is string && request.resource.data.notes.size() <= 2000))
+                      && (!('event' in request.resource.data)
+                          || (request.resource.data.event is string && request.resource.data.event.size() <= 100))
+                      && request.resource.data.userId == request.auth.uid
+                      && entryBoundToParentWrite();
         allow update, delete: if false;
       }
     }

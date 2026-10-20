@@ -298,6 +298,7 @@ export const en = {
     backToReferrals: 'Back to Referrals',
     autoRouted: 'Auto-Routed (Pending Destination)',
     history: 'History',
+    historyError: 'Failed to load live status history.',
     unknownPatient: 'Unknown patient',
     bed: '{bed} bed',
     printTitle: 'Referral details',

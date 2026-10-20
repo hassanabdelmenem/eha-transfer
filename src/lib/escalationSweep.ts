@@ -53,7 +53,12 @@ export function stillEscalates(r: SweepReferral, action: EscalationAction, now: 
 }
 
 /** The fields written to the referral. */
-export function escalationUpdate(r: Pick<Referral, 'status'>, action: EscalationAction, nowIso: string) {
+export function escalationUpdate(
+  r: Pick<Referral, 'status'>,
+  action: EscalationAction,
+  nowIso: string,
+  actorId: string = 'system'
+) {
   const sla = action.kind === 'sla';
   return {
     referralUpdates: {
@@ -66,12 +71,12 @@ export function escalationUpdate(r: Pick<Referral, 'status'>, action: Escalation
       escalationLevel: sla ? 'facility' : 'system',
       updatedAt: nowIso,
       statusUpdatedAt: nowIso,
-      statusUpdatedBy: 'system',
+      statusUpdatedBy: actorId,
     },
     historyEntry: {
       status: r.status,
       timestamp: nowIso,
-      userId: 'system',
+      userId: actorId,
       notes: sla
         ? `No response within ${SLA_MINUTES} minutes. Automatically escalated for administrative intervention.`
         : describeCapacityEscalation(action.reason) + ' Escalated for administrative placement.',

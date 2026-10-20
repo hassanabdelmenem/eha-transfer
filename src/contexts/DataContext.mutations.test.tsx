@@ -695,11 +695,11 @@ describe('DataContext.quickTransfer', () => {
     expect(Object.values(fsState.stores['referrals/r1/statusHistory'] || {})[0].notes).not.toMatch(/Notes:/);
   });
 
-  it('attributes the transfer to "system" with no signed-in user', async () => {
+  it('rejects the transfer with no signed-in user', async () => {
     mockUser = null;
     renderProvider();
     await act(async () => { screen.getByText('QuickTransferReferral').click(); });
-    await waitFor(() => expect(Object.values(fsState.stores['referrals/r1/statusHistory'] || {})[0].userId).toBe('system'));
+    expect(fsState.stores['referrals/r1/statusHistory']).toBeUndefined();
   });
 
   it('moves a direct admission to a new department', async () => {

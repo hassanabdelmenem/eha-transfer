@@ -734,6 +734,88 @@ describe('referral content integrity (audit run-1, deferred unit)', () => {
   it('denies editing the declined-facilities list outside the decline flow', async () => {
     await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), { patientDeclinedFacilityIds: ['f3'] }));
   });
+
+  describe('lifecycle transition stamps and actor integrity (H2)', () => {
+    it('denies setting patientConsentedBy/patientConsentedAt outside transition into patient_consented', async () => {
+      await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
+        patientConsentedBy: F1_DOCTOR,
+        patientConsentedAt: '2026-10-21T00:00:00.000Z',
+      }));
+    });
+
+    it('denies setting patientConsentedBy to someone other than the caller', async () => {
+      await seedRef({ status: 'accepted', receivingFacilityId: 'f2' });
+      await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
+        status: 'patient_consented',
+        patientConsentedBy: F2_DOCTOR,
+        patientConsentedAt: '2026-10-21T00:00:00.000Z',
+      }));
+    });
+
+    it('allows setting patientConsentedBy and patientConsentedAt when transitioning into patient_consented as the caller', async () => {
+      await seedRef({ status: 'accepted', receivingFacilityId: 'f2' });
+      await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
+        status: 'patient_consented',
+        patientConsentedBy: F1_DOCTOR,
+        patientConsentedAt: '2026-10-21T00:00:00.000Z',
+        updatedAt: '2026-10-21T00:00:00.000Z',
+        statusUpdatedBy: F1_DOCTOR,
+      }));
+    });
+
+    it('denies setting inTransitAt outside transition into in_transit', async () => {
+      await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
+        inTransitAt: '2026-10-21T00:00:00.000Z',
+      }));
+    });
+
+    it('allows setting inTransitAt when transitioning into in_transit', async () => {
+      await seedRef({ status: 'patient_consented', receivingFacilityId: 'f2' });
+      await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
+        status: 'in_transit',
+        inTransitAt: '2026-10-21T00:00:00.000Z',
+        updatedAt: '2026-10-21T00:00:00.000Z',
+        statusUpdatedBy: F1_DOCTOR,
+      }));
+    });
+
+    it('denies setting arrivedAt outside transition into arrived', async () => {
+      await assertFails(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), {
+        arrivedAt: '2026-10-21T00:00:00.000Z',
+      }));
+    });
+
+    it('allows setting arrivedAt when transitioning into arrived', async () => {
+      await seedRef({ status: 'in_transit', receivingFacilityId: 'f2' });
+      await assertSucceeds(updateDoc(doc(authed(F2_DOCTOR), 'referrals', 'ref1'), {
+        status: 'arrived',
+        arrivedAt: '2026-10-21T00:00:00.000Z',
+        updatedAt: '2026-10-21T00:00:00.000Z',
+        statusUpdatedBy: F2_DOCTOR,
+      }));
+    });
+
+    it('denies setting statusUpdatedBy to another user by an unprivileged party', async () => {
+      await assertFails(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
+        statusUpdatedBy: F2_DOCTOR,
+        updatedAt: '2026-10-21T00:00:00.000Z',
+      }));
+    });
+
+    it('allows setting statusUpdatedBy to the caller', async () => {
+      await assertSucceeds(updateDoc(doc(authed(F1_DOCTOR), 'referrals', 'ref1'), {
+        statusUpdatedBy: F1_DOCTOR,
+        updatedAt: '2026-10-21T00:00:00.000Z',
+      }));
+    });
+
+    it('allows privileged user (owner) to set statusUpdatedBy to another user', async () => {
+      await assertSucceeds(updateDoc(doc(authed(OWNER), 'referrals', 'ref1'), {
+        statusUpdatedBy: F1_DOCTOR,
+        updatedAt: '2026-10-21T00:00:00.000Z',
+      }));
+    });
+  });
 });
 
 describe('profile edits need a confirmed email (audit run-1, lead 12)', () => {
@@ -1265,8 +1347,8 @@ describe('statusHistory subcollection', () => {
     await assertFails(setDoc(doc(authed('f9-uid'), 'referrals', 'ref1', 'statusHistory', 'entry2'), historyEntry()));
   });
 
-  it('allows appending to statusHistory by involved staff', async () => {
-    await assertSucceeds(setDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry2'), historyEntry({ userId: F3_CANDIDATE })));
+  it('denies standalone appending to statusHistory without matching parent write (H1)', async () => {
+    await assertFails(setDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry2'), historyEntry({ userId: F3_CANDIDATE })));
   });
 
   it('never lets a party write the legacy statusHistory array field', async () => {
@@ -1288,8 +1370,279 @@ describe('statusHistory subcollection', () => {
     await assertFails(setDoc(doc(authed(F3_CANDIDATE), 'referrals', 'ref1', 'statusHistory', 'entry4'), historyEntry({ userId: F1_DOCTOR })));
   });
 
-  it('allows system to be the user in a history entry', async () => {
-    // Automatic events (SLA escalation sweep) are attributed to 'system'.
-    await assertSucceeds(setDoc(doc(authed(F1_MANAGER), 'referrals', 'ref1', 'statusHistory', 'entry5'), historyEntry({ userId: 'system' })));
+  it('denies client creating an entry with userId system (H1)', async () => {
+    // Clients cannot forge system entries; the sweep uses Admin SDK.
+    const now = '2026-01-02T00:00:00.000Z';
+    const db = authed(F1_MANAGER);
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'referrals', 'ref1'), { updatedAt: now, statusUpdatedBy: F1_MANAGER });
+    batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'entry5'), historyEntry({ userId: 'system', timestamp: now, status: 'pending' }));
+    await assertFails(batch.commit());
+  });
+
+  it('denies statusHistory entry when status mismatches parent status', async () => {
+    const now = '2026-01-02T00:00:00.000Z';
+    const db = authed(F1_DOCTOR);
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'referrals', 'ref1'), { updatedAt: now, statusUpdatedBy: F1_DOCTOR });
+    batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'mismatch'), historyEntry({
+      status: 'accepted',
+      timestamp: now,
+      userId: F1_DOCTOR,
+    }));
+    await assertFails(batch.commit());
+  });
+
+  it('denies statusHistory entry with stale timestamp not matching parent updatedAt', async () => {
+    const now = '2026-01-02T00:00:00.000Z';
+    const db = authed(F1_DOCTOR);
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'referrals', 'ref1'), { updatedAt: now, statusUpdatedBy: F1_DOCTOR });
+    batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'stale-time'), historyEntry({
+      status: 'pending',
+      timestamp: '2026-01-01T12:00:00.000Z',
+      userId: F1_DOCTOR,
+    }));
+    await assertFails(batch.commit());
+  });
+
+  it('denies statusHistory entry with oversized notes (> 2000 chars)', async () => {
+    const now = '2026-01-02T00:00:00.000Z';
+    const db = authed(F1_DOCTOR);
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'referrals', 'ref1'), { updatedAt: now, statusUpdatedBy: F1_DOCTOR });
+    batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'big-notes'), historyEntry({
+      status: 'pending',
+      timestamp: now,
+      userId: F1_DOCTOR,
+      notes: 'a'.repeat(2001),
+    }));
+    await assertFails(batch.commit());
+  });
+
+  it('denies statusHistory entry with oversized event (> 100 chars)', async () => {
+    const now = '2026-01-02T00:00:00.000Z';
+    const db = authed(F1_DOCTOR);
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'referrals', 'ref1'), { updatedAt: now, statusUpdatedBy: F1_DOCTOR });
+    batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'big-event'), historyEntry({
+      status: 'pending',
+      timestamp: now,
+      userId: F1_DOCTOR,
+      event: 'e'.repeat(101),
+    }));
+    await assertFails(batch.commit());
+  });
+
+  describe('legitimate client transitions that write status history', () => {
+    it('allows batch creating a referral with its initial pending statusHistory entry', async () => {
+      const now = new Date(Date.now() - 1000).toISOString();
+      const db = authed(F1_DOCTOR);
+      const batch = writeBatch(db);
+      const newRef = referral({ id: 'refNew', createdAt: now, createdAtMs: Date.parse(now), updatedAt: now, status: 'pending' });
+      batch.set(doc(db, 'referrals', 'refNew'), newRef);
+      batch.set(doc(db, 'referrals', 'refNew', 'statusHistory', 'open-refNew'), {
+        status: 'pending',
+        timestamp: now,
+        userId: F1_DOCTOR,
+        notes: 'Initial submission',
+      });
+      await assertSucceeds(batch.commit());
+    });
+
+    it('allows batch transition into dept_approved with statusHistory entry', async () => {
+      const now = '2026-10-21T02:00:00.000Z';
+      const db = authed(F2_DOCTOR);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'referrals', 'ref1'), {
+        status: 'dept_approved',
+        deptApproved: true,
+        updatedAt: now,
+        statusUpdatedBy: F2_DOCTOR,
+      });
+      batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'hist-dept'), {
+        status: 'dept_approved',
+        timestamp: now,
+        userId: F2_DOCTOR,
+        notes: 'Approved by HoD',
+      });
+      await assertSucceeds(batch.commit());
+    });
+
+    it('allows batch transition into manager_approved with statusHistory entry', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { status: 'dept_approved', deptApproved: true });
+      });
+      const now = '2026-10-21T03:00:00.000Z';
+      const db = authed(F2_DOCTOR);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'referrals', 'ref1'), {
+        status: 'manager_approved',
+        hospitalApproved: true,
+        updatedAt: now,
+        statusUpdatedBy: F2_DOCTOR,
+      });
+      batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'hist-mgr'), {
+        status: 'manager_approved',
+        timestamp: now,
+        userId: F2_DOCTOR,
+        notes: 'Approved by Manager',
+      });
+      await assertSucceeds(batch.commit());
+    });
+
+    it('allows batch transition into accepted with statusHistory entry', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { status: 'manager_approved', candidateFacilityIds: ['f2', 'f3'] });
+      });
+      const now = '2026-10-21T04:00:00.000Z';
+      const db = authed(F2_DOCTOR);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'referrals', 'ref1'), {
+        status: 'accepted',
+        receivingFacilityId: 'f2',
+        updatedAt: now,
+        statusUpdatedBy: F2_DOCTOR,
+      });
+      batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'hist-accept'), {
+        status: 'accepted',
+        timestamp: now,
+        userId: F2_DOCTOR,
+        notes: 'Accepted by F2',
+      });
+      await assertSucceeds(batch.commit());
+    });
+
+    it('allows batch transition into patient_consented with statusHistory entry', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { status: 'accepted', receivingFacilityId: 'f2' });
+      });
+      const now = '2026-10-21T05:00:00.000Z';
+      const db = authed(F1_DOCTOR);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'referrals', 'ref1'), {
+        status: 'patient_consented',
+        patientConsentedBy: F1_DOCTOR,
+        patientConsentedAt: now,
+        updatedAt: now,
+        statusUpdatedBy: F1_DOCTOR,
+      });
+      batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'hist-consent'), {
+        status: 'patient_consented',
+        timestamp: now,
+        userId: F1_DOCTOR,
+        notes: 'Patient consented',
+      });
+      await assertSucceeds(batch.commit());
+    });
+
+    it('allows batch transition into in_transit with statusHistory entry', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { status: 'patient_consented', receivingFacilityId: 'f2' });
+      });
+      const now = '2026-10-21T06:00:00.000Z';
+      const db = authed(F1_DOCTOR);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'referrals', 'ref1'), {
+        status: 'in_transit',
+        inTransitAt: now,
+        updatedAt: now,
+        statusUpdatedBy: F1_DOCTOR,
+      });
+      batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'hist-transit'), {
+        status: 'in_transit',
+        timestamp: now,
+        userId: F1_DOCTOR,
+        notes: 'Dispatched in ambulance',
+      });
+      await assertSucceeds(batch.commit());
+    });
+
+    it('allows batch transition into arrived with statusHistory entry', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { status: 'in_transit', receivingFacilityId: 'f2' });
+      });
+      const now = '2026-10-21T07:00:00.000Z';
+      const db = authed(F2_DOCTOR);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'referrals', 'ref1'), {
+        status: 'arrived',
+        arrivedAt: now,
+        updatedAt: now,
+        statusUpdatedBy: F2_DOCTOR,
+      });
+      batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'hist-arrived'), {
+        status: 'arrived',
+        timestamp: now,
+        userId: F2_DOCTOR,
+        notes: 'Patient arrived at facility',
+      });
+      await assertSucceeds(batch.commit());
+    });
+
+    it('allows batch transition into admitted with statusHistory entry', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await updateDoc(doc(ctx.firestore(), 'referrals', 'ref1'), { status: 'arrived', receivingFacilityId: 'f2' });
+      });
+      const now = '2026-10-21T08:00:00.000Z';
+      const db = authed(F2_DOCTOR);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'referrals', 'ref1'), {
+        status: 'admitted',
+        admittedAt: now,
+        updatedAt: now,
+        statusUpdatedBy: F2_DOCTOR,
+      });
+      batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'hist-admitted'), {
+        status: 'admitted',
+        timestamp: now,
+        userId: F2_DOCTOR,
+        notes: 'Patient admitted',
+      });
+      await assertSucceeds(batch.commit());
+    });
+
+    it('allows batch transition into cancelled with statusHistory entry', async () => {
+      const now = '2026-10-21T09:00:00.000Z';
+      const db = authed(F1_DOCTOR);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'referrals', 'ref1'), {
+        status: 'cancelled',
+        cancelReason: 'Patient stabilized',
+        cancelledBy: F1_DOCTOR,
+        updatedAt: now,
+        statusUpdatedBy: F1_DOCTOR,
+      });
+      batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'hist-cancel'), {
+        status: 'cancelled',
+        timestamp: now,
+        userId: F1_DOCTOR,
+        notes: 'Cancelled: Patient stabilized',
+      });
+      await assertSucceeds(batch.commit());
+    });
+
+    it('allows batch recording escalation with statusHistory entry', async () => {
+      const now = '2026-10-21T10:00:00.000Z';
+      const db = authed(F1_DOCTOR);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'referrals', 'ref1'), {
+        isEscalated: true,
+        escalationReason: 'manual',
+        escalatedBy: F1_DOCTOR,
+        escalationLevel: 'facility',
+        escalatedAt: now,
+        updatedAt: now,
+        statusUpdatedBy: F1_DOCTOR,
+      });
+      batch.set(doc(db, 'referrals', 'ref1', 'statusHistory', 'hist-escalate'), {
+        status: 'pending',
+        timestamp: now,
+        userId: F1_DOCTOR,
+        notes: 'Escalation triggered',
+        event: 'escalated',
+      });
+      await assertSucceeds(batch.commit());
+    });
   });
 });

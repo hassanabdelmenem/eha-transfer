@@ -693,6 +693,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateDoc(doc(db, 'directAdmissions', id), { department: toDepartment }).catch(writeFailed("Could not move the patient to that department."));
       return;
     }
+    // The audit entry is signed by the caller and bound to this write's
+    // updatedAt in firestore.rules, so there is no anonymous fallback and both
+    // writes share one timestamp.
+    if (!user) {
+      writeFailed("Could not complete the transfer.")(new Error('Not signed in.'));
+      return;
+    }
+    const actorId = user.id;
+    const now = new Date().toISOString();
     // Read statusHistory inside the transaction: appending to a copy taken from local
     // state lets a concurrent write clobber whichever audit entry lands second.
     const refDocRef = doc(db, 'referrals', id);
@@ -702,14 +711,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const r = snap.data() as Referral;
       transaction.update(refDocRef, {
         receivingDepartments: [toDepartment],
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
       });
       const historyId = uuidv4();
       const historyRef = doc(collection(db, 'referrals', id, 'statusHistory'), historyId);
       transaction.set(historyRef, {
         status: r.status,
-        timestamp: new Date().toISOString(),
-        userId: user?.id || 'system',
+        timestamp: now,
+        userId: actorId,
         notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
       });
     }).catch(writeFailed("Could not complete the transfer."));
@@ -781,7 +790,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     createBatch.set(doc(db, 'referrals', referralDoc.id, 'statusHistory', uuidv4()), {
       status: newReferralData.status,
       timestamp: now,
-      userId: newReferralData.referringUserId
+      userId: user?.id ?? newReferralData.referringUserId
     });
     createBatch.commit().catch(writeFailed("Could not create the referral."));
     if (!isOnline) {
@@ -1396,6 +1405,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, createNotification]);
 
   const toggleReferralEscalation = useCallback(async (id: string, isEscalated: boolean) => {
+    const actorId = user?.id || 'system';
     const now = new Date().toISOString();
     const refDocRef = doc(db, 'referrals', id);
 
@@ -1409,7 +1419,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // after the fact. De-escalating clears them, otherwise a re-escalation
         // would inherit a stale reason.
         escalatedAt: isEscalated ? now : null,
-        escalatedBy: isEscalated ? (user?.id || 'system') : null,
+        escalatedBy: isEscalated ? actorId : null,
         escalationReason: isEscalated ? 'manual' : null,
         // Required by escalationClaimValid() in firestore.rules: a manual
         // escalation must be signed by the human making it, and carry a level.
@@ -1424,7 +1434,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), {
         status: r.status,
         timestamp: now,
-        userId: user?.id || 'system',
+        userId: actorId,
         notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
       });
     });
@@ -1439,6 +1449,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * safe for every online client to run the sweep concurrently.
    */
   const autoEscalateReferral = useCallback(async (id: string) => {
+    if (!user) return;
+    const actorId = user.id;
     const refDocRef = doc(db, 'referrals', id);
 
     // The escalated document comes back as the transaction's return value rather
@@ -1454,7 +1466,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!stillEscalates(r, { kind: 'sla' }, Date.now())) return null;
       // Shared with scripts/escalation-sweep.ts (lib/escalationSweep), so the
       // same event writes the same document whichever sweep got there first.
-      const { referralUpdates, historyEntry } = escalationUpdate(r, { kind: 'sla' }, new Date().toISOString());
+      const { referralUpdates, historyEntry } = escalationUpdate(r, { kind: 'sla' }, new Date().toISOString(), actorId);
       transaction.update(refDocRef, referralUpdates);
       const historyId = uuidv4();
       transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), historyEntry);
@@ -1463,7 +1475,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (!escalated) return;
     createNotification(escalationNotice(escalated, { kind: 'sla' }));
-  }, [createNotification]);
+  }, [user, createNotification]);
 
   /**
    * Escalates a pending referral that has run out of anywhere to go.
@@ -1475,6 +1487,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * transaction against the stored document.
    */
   const escalateForCapacity = useCallback(async (id: string, reason: CapacityEscalationReason) => {
+    if (!user) return;
+    const actorId = user.id;
     const refDocRef = doc(db, 'referrals', id);
 
     // Returned from the transaction rather than captured -- see the note in
@@ -1487,7 +1501,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // next tick made the De-escalate button look broken and spammed every
       // administrator with a fresh urgent alert each time.
       if (!stillEscalates(r, { kind: 'capacity', reason }, Date.now())) return null;
-      const { referralUpdates, historyEntry } = escalationUpdate(r, { kind: 'capacity', reason }, new Date().toISOString());
+      const { referralUpdates, historyEntry } = escalationUpdate(r, { kind: 'capacity', reason }, new Date().toISOString(), actorId);
       transaction.update(refDocRef, referralUpdates);
       const historyId = uuidv4();
       transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), historyEntry);
@@ -1495,7 +1509,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (escalated) notifyCapacityEscalation(escalated, reason);
-  }, [notifyCapacityEscalation]);
+  }, [user, notifyCapacityEscalation]);
 
   /**
    * Client-side half of the SLA escalation.

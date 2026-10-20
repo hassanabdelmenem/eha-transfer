@@ -1,24 +1,41 @@
 import { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import type { StatusHistoryEntry } from '../types';
+
+export interface ParentPartyFields {
+  referringFacilityId?: string;
+  receivingFacilityId?: string;
+  candidateFacilityIds?: string[];
+}
 
 /**
  * The referral's audit trail, read from referrals/{id}/statusHistory.
  *
- * `legacyHistory` is the pre-subcollection array field. Referrals not yet run
- * through scripts/migrate-status-history.mjs still carry it and have no entries
- * in the subcollection; until they do, that array is what is shown.
+ * Merges legacyHistory (pre-subcollection array) with entries from the subcollection,
+ * deduplicating on (timestamp + status + userId) and sorting ascending by timestamp.
+ * Re-subscribes whenever the caller's verified state or parent party fields change.
  */
-export function useStatusHistory(referralId: string | undefined, legacyHistory?: StatusHistoryEntry[]) {
-  const [history, setHistory] = useState<StatusHistoryEntry[] | null>(null);
+export function useStatusHistory(
+  referralId: string | undefined,
+  legacyHistory?: StatusHistoryEntry[],
+  parentParties?: ParentPartyFields
+) {
+  const { user } = useAuth();
+  const [subcollectionHistory, setSubcollectionHistory] = useState<StatusHistoryEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const isVerified = user?.verified ?? false;
+  const candidateKey = parentParties?.candidateFacilityIds?.slice().sort().join(',') ?? '';
+  const partyKey = `${parentParties?.referringFacilityId ?? ''}|${parentParties?.receivingFacilityId ?? ''}|${candidateKey}`;
+
   useEffect(() => {
     if (!referralId) {
-      setHistory(null);
+      setSubcollectionHistory(null);
       setLoading(false);
+      setError(null);
       return;
     }
 
@@ -34,7 +51,7 @@ export function useStatusHistory(referralId: string | undefined, legacyHistory?:
       q,
       (snapshot) => {
         const entries = snapshot.docs.map((doc) => doc.data() as StatusHistoryEntry);
-        setHistory(entries);
+        setSubcollectionHistory(entries);
         setLoading(false);
       },
       (err) => {
@@ -45,9 +62,30 @@ export function useStatusHistory(referralId: string | undefined, legacyHistory?:
     );
 
     return () => unsubscribe();
-  }, [referralId]);
+  }, [referralId, isVerified, partyKey]);
 
-  // Also covers a failed subcollection read, so the trail never goes blank.
-  const shown = !history?.length && legacyHistory?.length ? legacyHistory : history;
-  return { history: shown, loading, error };
+  // Merge legacyHistory + subcollectionHistory, de-dup by (timestamp + status + userId), sort by timestamp ascending
+  const merged = (() => {
+    if (!legacyHistory?.length && !subcollectionHistory?.length) {
+      return subcollectionHistory;
+    }
+    const map = new Map<string, StatusHistoryEntry>();
+    for (const entry of (legacyHistory || [])) {
+      if (entry && entry.timestamp) {
+        const key = `${entry.timestamp}_${entry.status}_${entry.userId}`;
+        map.set(key, entry);
+      }
+    }
+    for (const entry of (subcollectionHistory || [])) {
+      if (entry && entry.timestamp) {
+        const key = `${entry.timestamp}_${entry.status}_${entry.userId}`;
+        map.set(key, entry);
+      }
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  })();
+
+  return { history: merged, loading, error };
 }
