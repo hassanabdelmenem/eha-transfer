@@ -177,7 +177,9 @@ below has a regression test (rules, Vitest or e2e) that failed before the change
 - **Lead 12:** Auth is one account per email (password + Google). Profile self-edits need a confirmed email, and
   email confirmation comes before onboarding.
 - **Deferred unit (fixed):** see referralContentGuarded / deptCommentsAppendOnly in firestore.rules.
-- **Open:** lead 9 is S2b (narrow the `users` list, ~13 Oct). The staging deploy and PR previews still use a staging
+- **Lead 9 / S2b:** `users` get/list narrowed to the caller's own facility (privileged keep the full roster) and the
+  client's roster fallback removed: PR feat/s2b-narrow-users, to merge on or after 13 Oct.
+- **Open:** The staging deploy and PR previews still use a staging
   key (staging data only).
 
 ## Gotchas

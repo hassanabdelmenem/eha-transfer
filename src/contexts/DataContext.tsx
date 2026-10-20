@@ -352,7 +352,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let entries: DirectoryEntry[] = [];
       let haveFacilityUsers = false;
       let haveEntries = false;
-      let rosterFallback: (() => void) | null = null;
       const publish = () => {
         if (!haveFacilityUsers || !haveEntries) return;
         setUsers(mergeRoster(entries, facilityUsers));
@@ -368,24 +367,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }, logAndCheckOffline));
       unsubs.push(onSnapshot(collection(db, DIRECTORY_COLLECTION), (snapshot) => {
         markOnline();
-        if (snapshot.empty) {
-          // Release day only: until the sweep's first reconcile fills the
-          // directory, derive it from the full roster as before, so no recipient
-          // is missed. Remove with the S2b rules change, which closes that list.
-          rosterFallback ??= onSnapshot(collection(db, 'users'), (all) => {
-            entries = all.docs.map(d => directoryEntryFor(d.data() as User)).filter((e): e is DirectoryEntry => e !== null);
-            haveEntries = true;
-            publish();
-          }, logAndCheckOffline);
-          return;
-        }
-        rosterFallback?.();
-        rosterFallback = null;
         entries = snapshot.docs.map(d => d.data() as DirectoryEntry);
         haveEntries = true;
         publish();
       }, logAndCheckOffline));
-      unsubs.push(() => rosterFallback?.());
     }
 
     // Referrals: one bounded realtime listener per party-shape (see
