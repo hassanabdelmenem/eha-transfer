@@ -128,7 +128,7 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
 ### Phase 5: Launch readiness
 
 - [x] Arabic + RTL: foundation (#47) and every screen (#49–#57); production stays off until the clinician review (section above)
-- [ ] Pilot plan with one referring and one receiving facility; real non-admin accounts per role
+- [ ] Pilot plan with one referring and one receiving facility; real non-admin accounts per role (draft: docs/pilot-plan.md; facilities and people TBD)
 - [x] Staging project `eha-transfer-staging` (#44): dev server and PR previews use it; Auth enabled
       (Email/Password + Google) 29 Sep
 - [x] Seed staging with test accounts and synthetic referrals (`scripts/seed-staging.mjs`)
