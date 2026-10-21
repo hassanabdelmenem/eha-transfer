@@ -18,7 +18,6 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
 2. Arabic stays off in production until the clinician review is done (owner, 1 Oct); the owner
    says when to set VITE_ENABLE_ARABIC.
 3. Phase 5 pilot plan: one referring and one receiving facility, real non-admin accounts per role.
-4. 2c `statusHistory` subcollection: in review on its own branch (supersedes PR #70); merge after review.
 
 Done 21 Oct: S2b (users list/get narrowed to the caller's facility for non-admins) merged as #78
 (squash f131f4f) and live; deps #79 merged (a9d7e8b), Dependabot 0 open (the 2 grpc alerts dismissed
@@ -110,7 +109,7 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
       them in the reader's language, older ones keep their stored English. Rules bound key/vars and
       now allow only the known notification fields (owner decision d6, 1 Oct)
 - [x] The printable clinical summary stays English (owner decision d7, 1 Oct)
-- [ ] Dates in Arabic (date-fns `ar` locale with Western digits); charts stay left-to-right
+- [x] Dates in Arabic: Intl `ar-EG-u-nu-latn` (Arabic month names, Western digits) via src/i18n/format.ts; charts render `dir="ltr"`; tests in i18n.test.tsx (22 Oct)
 - [ ] Clinician review of the sheet; then enable Arabic in production
 
 ### Phase 4: Known gaps (NEXT_STEPS_PROMPT.md phase 2)
@@ -119,7 +118,7 @@ always 0–9; IBM Plex Sans Arabic; Claude drafts, a native-speaking clinician r
       WIF, `escalation-sweep` SA with datastore.user) runs `scripts/escalation-sweep.ts`; rules shared with the
       in-app sweep in `src/lib/escalationSweep.ts`. Stale `overnight-sweep.ts` removed (30 Sep)
 - [x] 2a' External 5-minute trigger: cron-job.org job calls workflow_dispatch (live 1 Oct 06:00 UTC)
-- [ ] 2c `statusHistory` as a subcollection (in review on its own branch, supersedes PR #70)
+- [x] 2c `statusHistory` as a subcollection: merged as #81 (8cfa9fb, 21 Oct); #70 closed
 - [x] 2d idle sign-out: 15 min on the wall clock, shared across tabs, and enforced on a restored session (src/lib/idleSession.ts; the unused useIdleTimeout hook removed)
 - [x] 2e small text / 28px buttons: re-audited 21 Oct; Button `sm`, every 44px control and the remaining
       small links/icon buttons raised to the 48px floor; 10px chips raised to 11px
