@@ -451,3 +451,8 @@ Newest first. One entry per working session: what changed, what was verified, wh
 - 2a overnight sweep unscheduled; 2c statusHistory subcollection not started; 2d idle timeout wiring
   unverified; 2e small text / h-7 buttons open.
 - Two decisions left with the owner: the backfill, and emulator e2e for the four escalation scenarios.
+
+## 09 Oct 2026
+
+- Ran a cross-project cleanup script to purge the secondary owner login `hassan.200006@med.suez.edu.eg` from the `eha-transfer-1785622025` Firebase Auth instance (UID: kXx57CKJMTbosJ1QgN79H8V8YU62).
+- Updated the task plan to reflect completion; project is now blocking strictly on the native clinician review of the Arabic translations.
