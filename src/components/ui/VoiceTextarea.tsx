@@ -126,7 +126,7 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
         ref={textareaRef}
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
-        className={dictation === 'full' ? className : `${className} pe-10`}
+        className={dictation === 'full' ? className : `${className} pe-12`}
         {...props}
       />
       {recognition && dictation === 'full' && (
@@ -148,12 +148,14 @@ export const VoiceTextarea: React.FC<VoiceTextareaProps> = ({ value, onValueChan
         <button
           type="button"
           onClick={toggleRecording}
-          className={`absolute end-2 bottom-2 p-1.5 rounded-full transition-colors ${isRecording ? 'bg-critical-100 text-critical-600 motion-safe:animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+          className="group absolute end-0 bottom-0 flex h-12 w-12 items-center justify-center rounded-full"
           title={isRecording ? "Stop recording" : "Start voice dictation"}
           aria-label={isRecording ? "Stop recording" : "Start voice dictation"}
           aria-pressed={isRecording}
         >
-          {isRecording ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+          <span className={`p-1.5 rounded-full transition-colors ${isRecording ? 'bg-critical-100 text-critical-600 motion-safe:animate-pulse' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'}`}>
+            {isRecording ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+          </span>
         </button>
       )}
     </div>

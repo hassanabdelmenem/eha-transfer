@@ -2,6 +2,23 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-21: S2b and deps live; 2e re-audit; task_plan refresh
+
+- S2b merged as #78 (squash f131f4f) and live: non-admins list/get `users` only within their own facility.
+- Deps #79 merged (a9d7e8b): Dependabot 0 open; the 2 grpc alerts dismissed as not_used (the browser SDK
+  uses WebChannel, not grpc).
+- Lead 12 and the referral content-integrity unit confirmed fixed (firestore.rules referralContentGuarded,
+  deptCommentsAppendOnly).
+- 2c `statusHistory` subcollection: in review on its own branch, superseding PR #70 (not done yet).
+- 2e re-audit against the DESIGN.md Thumb Floor Rule (48px) and the 11px micro-label floor: Button `sm`
+  44→48px; every `min-h-[44px]` / `h-11 w-11` control to 48px; wizard stepper to 48px; small text links
+  (login toggle, bed-grid links, admit back link, census link, referral "view" link), ECG viewer controls,
+  checkbox/radio labels and the inline dictation mic given 48px targets; two 10px chips in facility
+  settings to 11px.
+- Left for the owner: Arabic clinician review then VITE_ENABLE_ARABIC; Phase 5 pilot plan; second owner
+  login email confirmation.
+- Verified: lint (tsc), unit 1055.
+
 ## 2026-10-07 (later): audit run-1 follow-ups
 
 - #75 and #76 merged and deployed. The production deploy is keyless (WIF as github-deployer@, first run

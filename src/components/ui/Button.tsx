@@ -13,12 +13,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   size?: 'sm' | 'md' | 'lg' | 'icon';
 }
 
-// The touch-target floor (44/48/56px) is non-negotiable: gloved hands and shared
+// The touch-target floor (48/56px) is non-negotiable: gloved hands and shared
 // tablets. `className` merges last via twMerge, so a stray `min-h-[40px]` from a
 // caller would otherwise win; inline styles beat utilities regardless of merge
 // order, so the floor is enforced here and can't be shrunk by className.
 const SIZE_MIN_DIMENSIONS: Record<NonNullable<ButtonProps['size']>, React.CSSProperties> = {
-  sm: { minHeight: '44px' },
+  sm: { minHeight: '48px' },
   md: { minHeight: '48px' },
   lg: { minHeight: '56px' },
   icon: { minHeight: '48px', minWidth: '48px' },
@@ -47,7 +47,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             'border border-slate-200 bg-white text-ink hover:bg-slate-50 dark:border-white/20 dark:bg-white/5 dark:text-paper dark:hover:bg-white/10': variant === 'secondary',
             'border border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10': variant === 'outline',
             'bg-transparent text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/10': variant === 'ghost',
-            'min-h-[44px] rounded-[10px] px-3 text-[13px]': size === 'sm',
+            'min-h-[48px] rounded-[10px] px-3 text-[13px]': size === 'sm',
             'min-h-[48px] rounded-[10px] px-4 text-[14px]': size === 'md',
             'min-h-[56px] rounded-xl px-6 text-[15px]': size === 'lg',
             'h-12 w-12 rounded-[10px]': size === 'icon',

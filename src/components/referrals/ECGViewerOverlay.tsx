@@ -88,7 +88,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
               <button
                 onClick={handleZoomOut}
                 disabled={isControlsDisabled || scale <= 0.5}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex min-h-[48px] min-w-[48px] items-center justify-center p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label={t('ecg.zoomOut')}
               >
                 <ZoomOut className="w-5 h-5" aria-hidden="true" />
@@ -102,7 +102,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
               <button
                 onClick={handleZoomIn}
                 disabled={isControlsDisabled || scale >= 5}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex min-h-[48px] min-w-[48px] items-center justify-center p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label={t('ecg.zoomIn')}
               >
                 <ZoomIn className="w-5 h-5" aria-hidden="true" />
@@ -110,7 +110,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
               <button
                 onClick={handleReset}
                 disabled={isControlsDisabled}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex min-h-[48px] min-w-[48px] items-center justify-center p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 title={t('ecg.resetTitle')}
                 aria-label={t('ecg.reset')}
               >
@@ -119,7 +119,7 @@ export const ECGViewerOverlay: React.FC<ECGViewerOverlayProps> = ({ isOpen, imag
               <div className="w-px h-6 bg-slate-700 mx-1 sm:mx-2"></div>
               <button
                 onClick={onClose}
-                className="p-2 text-critical-400 hover:text-critical-300 hover:bg-slate-800 rounded transition-colors"
+                className="flex min-h-[48px] min-w-[48px] items-center justify-center p-2 text-critical-400 hover:text-critical-300 hover:bg-slate-800 rounded transition-colors"
                 aria-label={t('ecg.close')}
               >
                 <X className="w-6 h-6" aria-hidden="true" />

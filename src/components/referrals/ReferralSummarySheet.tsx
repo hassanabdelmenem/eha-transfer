@@ -89,7 +89,7 @@ export const ReferralSummarySheet: React.FC<{
             type="button"
             onClick={onClose}
             aria-label={t('sheet.close')}
-            className="-me-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-slate-700 hover:bg-slate-100 dark:text-white/70 dark:hover:bg-white/10"
+            className="-me-2 -mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] text-slate-700 hover:bg-slate-100 dark:text-white/70 dark:hover:bg-white/10"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>

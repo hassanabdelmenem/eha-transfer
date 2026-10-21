@@ -134,7 +134,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
               id="admitFacility"
               value={selectedFacilityId || facility.id}
               onChange={(e) => onSelectFacility(e.target.value)}
-              className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[44px]"
+              className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[48px]"
             >
               <option value="">{t('beds.selectToManage')}</option>
               {facilities.map((f) => (
@@ -185,7 +185,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     formErrors.patientName
                       ? 'border-critical-500 focus:ring-critical-500'
                       : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
-                  } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 outline-hidden min-h-[44px]`}
+                  } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 outline-hidden min-h-[48px]`}
                   value={patientName}
                   onChange={(e) => {
                     setPatientName(e.target.value);
@@ -217,7 +217,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     formErrors.hospitalId
                       ? 'border-critical-500 focus:ring-critical-500'
                       : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
-                  } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 outline-hidden min-h-[44px] font-mono`}
+                  } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 outline-hidden min-h-[48px] font-mono`}
                   value={hospitalId}
                   onChange={(e) => {
                     setHospitalId(e.target.value);
@@ -250,7 +250,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     formErrors.department
                       ? 'border-critical-500 focus:ring-critical-500'
                       : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
-                  } p-2.5 text-sm focus:ring-2 outline-hidden bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-[44px]`}
+                  } p-2.5 text-sm focus:ring-2 outline-hidden bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-[48px]`}
                   value={department}
                   onChange={(e) => {
                     setDepartment(e.target.value);
@@ -287,7 +287,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     formErrors.bedType
                       ? 'border-critical-500 focus:ring-critical-500'
                       : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
-                  } p-2.5 text-sm focus:ring-2 outline-hidden bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-[44px]`}
+                  } p-2.5 text-sm focus:ring-2 outline-hidden bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-[48px]`}
                   value={bedType}
                   onChange={(e) => {
                     setBedType(e.target.value as BedType);
@@ -327,7 +327,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     formErrors.age
                       ? 'border-critical-500 focus:ring-critical-500'
                       : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
-                  } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 outline-hidden min-h-[44px]`}
+                  } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 outline-hidden min-h-[48px]`}
                   value={age}
                   onChange={(e) => {
                     setAge(e.target.value);
@@ -347,9 +347,9 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
                   {t('admission.gender')}
                 </label>
-                <div className="flex flex-wrap gap-4 items-center min-h-[44px]">
+                <div className="flex flex-wrap gap-4 items-center min-h-[48px]">
                   {(['male', 'female', 'other'] as const).map(g => (
-                    <label key={g} className="flex items-center gap-2 cursor-pointer">
+                    <label key={g} className="flex min-h-[48px] items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
                         name="gender"
@@ -400,7 +400,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                       id="admitNationalId"
                       type="text"
                       placeholder={t('admission.nationalIdPlaceholder')}
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[44px]"
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[48px]"
                       value={nationalId}
                       onChange={(e) => setNationalId(e.target.value)}
                     />
@@ -417,7 +417,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                       id="admitPhoneNumber"
                       type="tel"
                       placeholder={t('admission.phonePlaceholder')}
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[44px]"
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[48px]"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                     />
@@ -436,7 +436,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     type="text"
                     dir={typedDir(diagnosis)}
                     placeholder={t('admission.diagnosisPlaceholder')}
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[44px]"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[48px]"
                     value={diagnosis}
                     onChange={(e) => setDiagnosis(e.target.value)}
                   />

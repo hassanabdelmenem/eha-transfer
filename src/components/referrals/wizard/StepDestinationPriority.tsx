@@ -184,7 +184,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
                 aria-pressed={on}
                 onClick={() => toggleDepartment(dept)}
                 className={cn(
-                  'inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-4 text-[14px] font-semibold transition-colors',
+                  'inline-flex min-h-[48px] items-center gap-1.5 rounded-full border px-4 text-[14px] font-semibold transition-colors',
                   on
                     ? 'border-ink bg-ink text-paper dark:border-paper dark:bg-paper dark:text-ink'
                     : fieldErrors?.departments

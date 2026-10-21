@@ -349,7 +349,7 @@ export const FacilitySettingsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <label htmlFor="facIsExternal" className="flex items-center gap-2 cursor-pointer">
+                <label htmlFor="facIsExternal" className="flex min-h-[48px] items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     id="facIsExternal"
@@ -413,13 +413,13 @@ export const FacilitySettingsPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">{f.name}</h4>
                       {f.isExternal && (
-                        <span className="shrink-0 text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold">{t('settings.contracted')}</span>
+                        <span className="shrink-0 text-[11px] bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold">{t('settings.contracted')}</span>
                       )}
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate"><bdi>{f.location}</bdi> · <span className="">{f.type ? t(`facilityType.${f.type}`) : ''}</span></p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {f.departments.map(d => (
-                        <span key={d} className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">{d}</span>
+                        <span key={d} className="text-[11px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">{d}</span>
                       ))}
                     </div>
                     {f.contractedServices && f.contractedServices.length > 0 && (

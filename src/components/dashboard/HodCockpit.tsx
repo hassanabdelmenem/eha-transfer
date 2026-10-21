@@ -413,7 +413,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                 type="button"
                 onClick={() => setTransferModalOpen(false)}
                 aria-label={t('department.closeTransfer')}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center -me-2 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+                className="min-h-[48px] min-w-[48px] flex items-center justify-center -me-2 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>

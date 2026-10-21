@@ -142,7 +142,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
                 type="button"
                 onClick={() => removeAttachment(att.id)}
                 aria-label={t('workupStep.removeFile', { name: att.name })}
-                className="absolute top-0 end-0 flex h-11 w-11 items-center justify-center"
+                className="absolute top-0 end-0 flex h-12 w-12 items-center justify-center"
               >
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-critical-700 shadow-sm dark:bg-ink/90 dark:text-critical-300">
                   <X className="h-4 w-4" aria-hidden="true" />

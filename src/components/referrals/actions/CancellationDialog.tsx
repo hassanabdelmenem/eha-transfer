@@ -39,7 +39,7 @@ export const CancellationDialog: React.FC<CancellationDialogProps> = ({
             setShowCancelConfirm(true);
             setCancelError('');
           }}
-          className="w-full flex items-center justify-center gap-2 min-h-[44px] rounded-xl border border-critical-200 dark:border-critical-900 text-critical-600 dark:text-critical-400 text-xs font-semibold hover:bg-critical-50 dark:hover:bg-critical-950/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+          className="w-full flex items-center justify-center gap-2 min-h-[48px] rounded-xl border border-critical-200 dark:border-critical-900 text-critical-600 dark:text-critical-400 text-xs font-semibold hover:bg-critical-50 dark:hover:bg-critical-950/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
         >
           <Ban className="w-3.5 h-3.5" /> {t('cancelReferral.open')}
         </button>

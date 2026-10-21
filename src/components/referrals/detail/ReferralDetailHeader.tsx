@@ -102,7 +102,7 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
                 type="button"
                 onClick={onBack}
                 aria-label={t('detail.goBack')}
-                className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-slate-300 text-ink hover:bg-slate-100 dark:border-white/25 dark:text-paper dark:hover:bg-white/10"
+                className="mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border border-slate-300 text-ink hover:bg-slate-100 dark:border-white/25 dark:text-paper dark:hover:bg-white/10"
               >
                 <ChevronLeft className="h-5 w-5 rtl:-scale-x-100" aria-hidden="true" />
               </button>
@@ -114,7 +114,7 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
                   : <h1 className="font-heading text-[21px] font-semibold leading-tight text-ink dark:text-paper">{name}</h1>}
                 <p className="mt-1 text-[13.5px] text-slate-700 dark:text-white/65">{deskFacts}</p>
                 {fullPageHref && (
-                  <Link to={fullPageHref} className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300">
+                  <Link to={fullPageHref} className="mt-1 inline-flex min-h-[48px] items-center gap-1 text-[13px] font-semibold text-info-700 underline-offset-4 hover:underline dark:text-info-300">
                     {t('detail.openFullPage')} <ArrowUpRight className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden="true" />
                   </Link>
                 )}
@@ -133,7 +133,7 @@ export const ReferralDetailHeader: React.FC<ReferralDetailHeaderProps> = ({ refe
               type="button"
               onClick={onBack}
               aria-label={t('detail.goBack')}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-white/25 hover:bg-white/10"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border border-white/25 hover:bg-white/10"
             >
               <ChevronLeft className="h-5 w-5 rtl:-scale-x-100" aria-hidden="true" />
             </button>
@@ -162,7 +162,7 @@ export interface ReferralUtilityBarProps {
 /** The actions every viewer has but nobody's job depends on: at the foot of the page. */
 export const ReferralUtilityBar: React.FC<ReferralUtilityBarProps> = ({ referral, copied, onCopyId, onToggleEscalation, onPrint }) => {
   const { t } = useI18n();
-  const btn = 'inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-slate-300 bg-white px-3.5 text-[13.5px] font-semibold text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10';
+  const btn = 'inline-flex min-h-[48px] items-center gap-2 rounded-[10px] border border-slate-300 bg-white px-3.5 text-[13.5px] font-semibold text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10';
   return (
     <div className="print:hidden flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4 dark:border-white/10">
       <button type="button" onClick={onPrint} className={btn}>
