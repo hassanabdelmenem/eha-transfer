@@ -7,7 +7,7 @@ import { en } from './en';
 import { ar } from './ar';
 import { AppSidebar } from '../components/layout/AppSidebar';
 import { timeAgo } from './relative';
-import { formatClock } from './format';
+import { formatClock, formatDayMonth, formatDayMonthClock } from './format';
 import { describeCapacityEscalation } from '../lib/routing';
 import { standingPhrase } from '../lib/referralStage';
 
@@ -112,6 +112,14 @@ describe('Arabic plurals and times', () => {
     const d = new Date('2026-09-30T14:05:00');
     expect(formatClock(d, 'ar')).toBe('14:05');
     expect(formatClock(d, 'ar')).not.toMatch(/[٠-٩]/);
+  });
+  it('writes dates with Arabic month names and Western digits', () => {
+    const d = new Date('2026-09-30T14:05:00');
+    expect(formatDayMonth(d, 'ar')).toMatch(/30/);
+    expect(formatDayMonth(d, 'ar')).toMatch(/سبتمبر/);
+    expect(formatDayMonthClock(d, 'ar')).toMatch(/14:05/);
+    expect(formatDayMonthClock(d, 'ar')).not.toMatch(/[٠-٩]/);
+    expect(formatDayMonth(d, 'en')).toBe('30 Sept');
   });
   it('describes where a referral stands in Arabic, and in English by default', () => {
     const r = { status: 'pending' as const, receivingDepartments: ['Cardiology'] };
