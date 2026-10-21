@@ -287,6 +287,7 @@
 "detail.backToReferrals","Back to Referrals","العودة إلى الإحالات","",""
 "detail.autoRouted","Auto-Routed (Pending Destination)","توجيه تلقائي (الجهة لم تُحدد بعد)","",""
 "detail.history","History","السجل","",""
+"detail.historyError","Failed to load live status history.","تعذر تحميل سجل الحالة المباشر.","",""
 "detail.unknownPatient","Unknown patient","مريض غير معروف","",""
 "detail.bed","{bed} bed","سرير {bed}","",""
 "detail.printTitle","Referral details","تفاصيل الإحالة","",""
