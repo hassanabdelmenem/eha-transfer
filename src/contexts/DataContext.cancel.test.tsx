@@ -95,7 +95,6 @@ function makeReferral(overrides: Partial<Referral> = {}): Referral {
     priority: 'urgent',
     status: 'accepted',
     reasonForReferral: '',
-    statusHistory: [],
     createdAt: now,
     updatedAt: now,
     deptComments: [],

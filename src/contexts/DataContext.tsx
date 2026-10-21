@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Referral, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User, ShiftLog } from '../types';
+import { Referral, StatusHistoryEntry, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User, ShiftLog } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
 import { DIRECTORY_COLLECTION, directoryEntryFor, mergeRoster, type DirectoryEntry } from '../lib/directory';
@@ -69,7 +69,7 @@ interface DataContextType {
   shiftAssignmentsByFacility: Map<string, ShiftAssignment[]>;
   shiftLogs: ShiftLog[];
   addShiftLog: (log: Omit<ShiftLog, 'id' | 'timestamp'>) => Promise<void>;
-  addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => void;
+  addReferral: (referral: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'deptComments' | 'statusUpdatedAt' | 'statusUpdatedBy' | 'patientConsentedAt' | 'inTransitAt' | 'arrivedAt'>, sendCriticalAlert?: boolean) => void;
   loadOlderReferrals?: () => Promise<void>;
   updateReferralStatus: (id: string, status: Referral['status'], notes?: string) => Promise<void>;
   overrideReferralDestination: (id: string, newFacilityId: string) => Promise<void>;
@@ -693,6 +693,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateDoc(doc(db, 'directAdmissions', id), { department: toDepartment }).catch(writeFailed("Could not move the patient to that department."));
       return;
     }
+    // The audit entry is signed by the caller and bound to this write's
+    // updatedAt in firestore.rules, so there is no anonymous fallback and both
+    // writes share one timestamp.
+    if (!user) {
+      writeFailed("Could not complete the transfer.")(new Error('Not signed in.'));
+      return;
+    }
+    const actorId = user.id;
+    const now = new Date().toISOString();
     // Read statusHistory inside the transaction: appending to a copy taken from local
     // state lets a concurrent write clobber whichever audit entry lands second.
     const refDocRef = doc(db, 'referrals', id);
@@ -702,12 +711,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const r = snap.data() as Referral;
       transaction.update(refDocRef, {
         receivingDepartments: [toDepartment],
-        statusHistory: [...r.statusHistory, {
-          status: r.status,
-          timestamp: new Date().toISOString(),
-          userId: user?.id || 'system',
-          notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
-        }]
+        updatedAt: now,
+      });
+      const historyId = uuidv4();
+      const historyRef = doc(collection(db, 'referrals', id, 'statusHistory'), historyId);
+      transaction.set(historyRef, {
+        status: r.status,
+        timestamp: now,
+        userId: actorId,
+        notes: `Internal Transfer to ${toDepartment}. ${notes ? 'Notes: ' + notes : ''}`
       });
     }).catch(writeFailed("Could not complete the transfer."));
   }, [user]);
@@ -748,39 +760,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     createNotification(escalationNotice(referral, { kind: 'capacity', reason }));
   }, [createNotification]);
 
-  const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory' | 'deptComments'>, sendCriticalAlert?: boolean) => {
+  const addReferral = useCallback((newReferralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt' | 'deptComments' | 'statusUpdatedAt' | 'statusUpdatedBy' | 'patientConsentedAt' | 'inTransitAt' | 'arrivedAt'>, sendCriticalAlert?: boolean) => {
     const now = new Date().toISOString();
-    // Referrals are always created unescalated, with exactly one history entry.
-    //
-    // Escalating here as well as in the sweep meant the create rule had to accept
-    // an already-escalated referral carrying two history entries, which is also
-    // the shape an attacker needs to forge one. Creating in a single known state
-    // lets the rules pin it exactly, and the sweep escalates a capacity-blocked
-    // referral on the very next snapshot -- which is the write this component
-    // triggers, so the gap is milliseconds.
+    // Referrals are always created unescalated.
     //
     // createdAtMs is the SLA clock. It duplicates createdAt because Firestore
     // rules cannot parse an ISO string, and comparing it against request.time is
     // what lets them verify that a claimed 30-minute breach really has elapsed.
+    const newReferralId = uuidv4();
     const newReferral: Referral = {
       ...newReferralData,
-      id: uuidv4(),
+      id: newReferralId,
       createdAt: now,
       createdAtMs: Date.parse(now),
       updatedAt: now,
+      statusUpdatedAt: now,
+      statusUpdatedBy: newReferralData.referringUserId,
       isEscalated: false,
       deptComments: [],
-      statusHistory: [
-        { status: newReferralData.status, timestamp: now, userId: newReferralData.referringUserId }
-      ]
     };
 
-    // The referral and its attachment files in one batch: the rules check the files
-    // against the referral being written (getAfter), and neither lands without the other.
+    // The referral, its attachment files and its opening audit entry in one batch:
+    // the rules check the files and the entry against the referral being written
+    // (getAfter), and none lands without the others.
     const { referral: referralDoc, files } = splitAttachments(newReferral);
     const createBatch = writeBatch(db);
     createBatch.set(doc(db, 'referrals', referralDoc.id), referralDoc);
     files.forEach(f => createBatch.set(doc(db, 'referrals', referralDoc.id, 'attachments', f.id), f));
+    createBatch.set(doc(db, 'referrals', referralDoc.id, 'statusHistory', uuidv4()), {
+      status: newReferralData.status,
+      timestamp: now,
+      userId: user?.id ?? newReferralData.referringUserId
+    });
     createBatch.commit().catch(writeFailed("Could not create the referral."));
     if (!isOnline) {
       // Firestore runs without persistent cache here (src/lib/firebase.ts), so the
@@ -883,22 +894,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             : `Rejected: ${trimmedNotes}`
           : notes;
 
-        const newHistory = [...r.statusHistory, { status, timestamp: now, userId: user.id, notes: formattedNotes }];
-
         const updatePayload: any = {
           status,
           receivingFacilityId: finalReceivingFacilityId,
           updatedAt: now,
-          statusHistory: newHistory
+          statusUpdatedAt: now,
+          statusUpdatedBy: user.id,
         };
 
         if (status === 'rejected') {
           updatePayload.rejectionReason = trimmedNotes;
           updatePayload.rejectedAt = now;
           updatePayload.rejectedBy = user.id;
+        } else if (status === 'arrived') {
+          updatePayload.arrivedAt = now;
+        } else if (status === 'in_transit') {
+          updatePayload.inTransitAt = now;
         }
 
         transaction.update(refDocRef, updatePayload);
+
+        const historyId = uuidv4();
+        const historyRef = doc(collection(db, 'referrals', id, 'statusHistory'), historyId);
+        transaction.set(historyRef, {
+          status,
+          timestamp: now,
+          userId: user.id,
+          notes: formattedNotes
+        });
 
         // Bed capacity is adjusted from the transactionally-read prior status,
         // so two concurrent admit/discharge calls can't both fire the increment.
@@ -976,13 +999,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       transaction.update(refDocRef, {
         receivingFacilityId: newFacilityId,
         updatedAt: now,
-        statusHistory: [...r.statusHistory, {
-          status: r.status,
-          timestamp: now,
-          userId: user.id,
-          notes: `Destination manually overridden to ${newFacilityName}`,
-          event: 'destination_override',
-        }]
+      });
+      const historyId = uuidv4();
+      transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), {
+        status: r.status,
+        timestamp: now,
+        userId: user.id,
+        notes: `Destination manually overridden to ${newFacilityName}`,
+        event: 'destination_override',
       });
     });
   }, [user, facilities]);
@@ -1012,13 +1036,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           deptComments: [...r.deptComments, newComment]
         };
 
+        let historyEntry: StatusHistoryEntry | null = null;
+
         // Only the first approval to land while status is still 'pending' claims the
         // referral; the transaction retries on conflict so a second, concurrent
         // approval sees the already-updated status and falls through here.
         if (isApprovalStatus && r.status === 'pending') {
           claimedReceivingFacilityId = r.receivingFacilityId === 'auto' ? (user.facilityId || 'auto') : r.receivingFacilityId;
           updates.status = 'dept_approved';
-          updates.statusHistory = [...r.statusHistory, { status: 'dept_approved', timestamp: now, userId: user.id, notes: 'Department Head Approved' }];
+          updates.updatedAt = now;
+          updates.statusUpdatedAt = now;
+          updates.statusUpdatedBy = user.id;
+          historyEntry = { status: 'dept_approved', timestamp: now, userId: user.id, notes: 'Department Head Approved' };
           updates.receivingFacilityId = claimedReceivingFacilityId;
         } else if (isRequirementsNeeded && r.status === 'pending') {
           // Skips administration entirely: the requirements go straight back to
@@ -1033,12 +1062,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const claimedFacilityId = r.receivingFacilityId === 'auto' ? (user.facilityId || 'auto') : r.receivingFacilityId;
           updates.status = 'postponed';
           updates.receivingFacilityId = claimedFacilityId;
-          updates.statusHistory = [...r.statusHistory, {
+          updates.updatedAt = now;
+          updates.statusUpdatedAt = now;
+          updates.statusUpdatedBy = user.id;
+          historyEntry = {
             status: 'postponed',
             timestamp: now,
             userId: user.id,
             notes: comment ? `Requirements needed: ${comment}` : 'Requirements needed before this referral can proceed.'
-          }];
+          };
           updates.isEscalated = true;
           updates.escalatedAt = now;
           updates.escalatedBy = 'system';
@@ -1057,6 +1089,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         transaction.update(refDocRef, updates);
+        if (historyEntry) {
+          const historyId = uuidv4();
+          transaction.set(doc(collection(db, 'referrals', referralId, 'statusHistory'), historyId), historyEntry);
+        }
       });
     } catch (e) {
       console.error(e);
@@ -1148,7 +1184,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       transaction.update(refDocRef, {
         status: 'patient_consented',
         updatedAt: now,
-        statusHistory: [...r.statusHistory, { status: 'patient_consented', timestamp: now, userId: user.id, notes: 'Patient consented to transfer.' }]
+        statusUpdatedAt: now,
+        statusUpdatedBy: user.id,
+        patientConsentedAt: now,
+        patientConsentedBy: user.id,
+      });
+      const historyId = uuidv4();
+      transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), {
+        status: 'patient_consented',
+        timestamp: now,
+        userId: user.id,
+        notes: 'Patient consented to transfer.'
       });
     });
 
@@ -1211,17 +1257,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       transaction.update(refDocRef, {
         accompanyingDoctor,
         updatedAt: now,
-        // Leaves `status` untouched -- auditTrailAppendOnly() permits appending
-        // an entry independently of a status change (the same pattern
-        // overrideReferralDestination uses), so this stays in the trail without
-        // pretending the referral moved.
-        statusHistory: [...r.statusHistory, {
-          status: r.status,
-          timestamp: now,
-          userId: user.id,
-          notes: `Accompanying doctor assigned: ${accompanyingDoctor.name} (${accompanyingDoctor.phoneNumber})`,
-          event: 'escort_assigned',
-        }]
+      });
+      const historyId = uuidv4();
+      transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), {
+        status: r.status,
+        timestamp: now,
+        userId: user.id,
+        notes: `Accompanying doctor assigned: ${accompanyingDoctor.name} (${accompanyingDoctor.phoneNumber})`,
+        event: 'escort_assigned',
       });
     });
   }, [user, shiftAssignmentsByFacility]);
@@ -1256,7 +1299,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         candidateFacilityIds: remainingCandidateIds,
         patientDeclinedFacilityIds,
         updatedAt: now,
-        statusHistory: [...r.statusHistory, { status: 'pending', timestamp: now, userId: user.id, notes: `Patient declined transfer to this facility. Reason: ${reason || 'Not specified'}. Re-routing.` }]
+        statusUpdatedAt: now,
+        statusUpdatedBy: user.id,
+      });
+      const historyId = uuidv4();
+      transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), {
+        status: 'pending',
+        timestamp: now,
+        userId: user.id,
+        notes: `Patient declined transfer to this facility. Reason: ${reason || 'Not specified'}. Re-routing.`
       });
     });
 
@@ -1322,7 +1373,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cancelledBy: user.id,
         cancelReason: reason.trim(),
         updatedAt: now,
-        statusHistory: [...r.statusHistory, { status: 'cancelled', timestamp: now, userId: user.id, notes: `Cancelled: ${reason.trim()}` }]
+        statusUpdatedAt: now,
+        statusUpdatedBy: user.id,
+      });
+      const historyId = uuidv4();
+      transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), {
+        status: 'cancelled',
+        timestamp: now,
+        userId: user.id,
+        notes: `Cancelled: ${reason.trim()}`
       });
     });
 
@@ -1346,6 +1405,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, createNotification]);
 
   const toggleReferralEscalation = useCallback(async (id: string, isEscalated: boolean) => {
+    const actorId = user?.id || 'system';
     const now = new Date().toISOString();
     const refDocRef = doc(db, 'referrals', id);
 
@@ -1359,7 +1419,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // after the fact. De-escalating clears them, otherwise a re-escalation
         // would inherit a stale reason.
         escalatedAt: isEscalated ? now : null,
-        escalatedBy: isEscalated ? (user?.id || 'system') : null,
+        escalatedBy: isEscalated ? actorId : null,
         escalationReason: isEscalated ? 'manual' : null,
         // Required by escalationClaimValid() in firestore.rules: a manual
         // escalation must be signed by the human making it, and carry a level.
@@ -1369,12 +1429,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // a manual re-escalation lets them resume if it is dismissed again.
         autoEscalationSuppressed: !isEscalated,
         updatedAt: now,
-        statusHistory: [...r.statusHistory, {
-          status: r.status,
-          timestamp: now,
-          userId: user?.id || 'system',
-          notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
-        }]
+      });
+      const historyId = uuidv4();
+      transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), {
+        status: r.status,
+        timestamp: now,
+        userId: actorId,
+        notes: isEscalated ? 'Marked as Escalated for System Admin Intervention' : 'De-escalated referral'
       });
     });
   }, [user]);
@@ -1388,6 +1449,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * safe for every online client to run the sweep concurrently.
    */
   const autoEscalateReferral = useCallback(async (id: string) => {
+    if (!user) return;
+    const actorId = user.id;
     const refDocRef = doc(db, 'referrals', id);
 
     // The escalated document comes back as the transaction's return value rather
@@ -1403,13 +1466,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!stillEscalates(r, { kind: 'sla' }, Date.now())) return null;
       // Shared with scripts/escalation-sweep.ts (lib/escalationSweep), so the
       // same event writes the same document whichever sweep got there first.
-      transaction.update(refDocRef, escalationUpdate(r, { kind: 'sla' }, new Date().toISOString()));
+      const { referralUpdates, historyEntry } = escalationUpdate(r, { kind: 'sla' }, new Date().toISOString(), actorId);
+      transaction.update(refDocRef, referralUpdates);
+      const historyId = uuidv4();
+      transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), historyEntry);
       return { ...r, id };
     });
 
     if (!escalated) return;
     createNotification(escalationNotice(escalated, { kind: 'sla' }));
-  }, [createNotification]);
+  }, [user, createNotification]);
 
   /**
    * Escalates a pending referral that has run out of anywhere to go.
@@ -1421,6 +1487,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * transaction against the stored document.
    */
   const escalateForCapacity = useCallback(async (id: string, reason: CapacityEscalationReason) => {
+    if (!user) return;
+    const actorId = user.id;
     const refDocRef = doc(db, 'referrals', id);
 
     // Returned from the transaction rather than captured -- see the note in
@@ -1433,12 +1501,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // next tick made the De-escalate button look broken and spammed every
       // administrator with a fresh urgent alert each time.
       if (!stillEscalates(r, { kind: 'capacity', reason }, Date.now())) return null;
-      transaction.update(refDocRef, escalationUpdate(r, { kind: 'capacity', reason }, new Date().toISOString()));
+      const { referralUpdates, historyEntry } = escalationUpdate(r, { kind: 'capacity', reason }, new Date().toISOString(), actorId);
+      transaction.update(refDocRef, referralUpdates);
+      const historyId = uuidv4();
+      transaction.set(doc(collection(db, 'referrals', id, 'statusHistory'), historyId), historyEntry);
       return { ...r, id };
     });
 
     if (escalated) notifyCapacityEscalation(escalated, reason);
-  }, [notifyCapacityEscalation]);
+  }, [user, notifyCapacityEscalation]);
 
   /**
    * Client-side half of the SLA escalation.

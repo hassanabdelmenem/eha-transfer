@@ -49,8 +49,8 @@ describe('escalationFor (shared by the in-app sweep and the scheduled job)', () 
 describe('escalationUpdate and escalationNotice', () => {
   it('SLA silence is facility level, notified to the referring facility and the candidates', () => {
     const u = escalationUpdate(ref({ status: 'pending' }), { kind: 'sla' }, '2026-09-30T03:00:00.000Z');
-    expect(u).toMatchObject({ isEscalated: true, escalatedBy: 'system', escalationReason: 'sla_breach', escalationLevel: 'facility' });
-    expect(u.statusHistory).toHaveLength(1);
+    expect(u.referralUpdates).toMatchObject({ isEscalated: true, escalatedBy: 'system', escalationReason: 'sla_breach', escalationLevel: 'facility' });
+    expect(u.historyEntry).toBeDefined();
     const n = escalationNotice(ref({ candidateFacilityIds: ['c1'] }), { kind: 'sla' });
     expect(n.facilityIds).toEqual(['ref', 'c1']);
     expect(n.targetRoles).toContain('head_of_department');
@@ -58,7 +58,7 @@ describe('escalationUpdate and escalationNotice', () => {
 
   it('no capacity is system level, and only admins hear about it', () => {
     const u = escalationUpdate(ref(), { kind: 'capacity', reason: 'no_matching_facility' }, 'x');
-    expect(u).toMatchObject({ escalationReason: 'no_matching_facility', escalationLevel: 'system' });
+    expect(u.referralUpdates).toMatchObject({ escalationReason: 'no_matching_facility', escalationLevel: 'system' });
     const n = escalationNotice(ref(), { kind: 'capacity', reason: 'no_matching_facility' });
     expect(n.title).toBe('ESCALATION: No Matching Facility');
     expect(n.facilityIds).toEqual([]);

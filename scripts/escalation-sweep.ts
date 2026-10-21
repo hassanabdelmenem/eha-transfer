@@ -113,7 +113,9 @@ async function main() {
         if (!snap.exists) return null;
         const r = snap.data() as Referral;
         if (!stillEscalates(r, action, Date.now())) return null;
-        tx.update(ref, escalationUpdate(r, action, new Date().toISOString()));
+        const { referralUpdates, historyEntry } = escalationUpdate(r, action, new Date().toISOString());
+        tx.update(ref, referralUpdates);
+        tx.set(ref.collection('statusHistory').doc(), historyEntry);
         return { ...r, id };
       });
       if (!done) continue;

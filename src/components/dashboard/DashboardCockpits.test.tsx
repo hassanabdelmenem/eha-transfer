@@ -137,7 +137,6 @@ const testReferral: Referral = {
   deptComments: [],
   createdAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
   updatedAt: new Date().toISOString(),
-  statusHistory: [{ status: 'pending', timestamp: new Date().toISOString(), userId: 'doc-1' }],
 };
 
 describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
@@ -567,7 +566,7 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
         status: 'in_transit',
         referringFacilityId: 'fac-9',
         patientData: { ...testReferral.patientData, name: 'Moving Patient' },
-        statusHistory: [...testReferral.statusHistory, { status: 'in_transit', timestamp: '2026-10-02T09:15:00.000Z', userId: 'er-1' }],
+        inTransitAt: '2026-10-02T09:15:00.000Z',
       }];
       render(<MemoryRouter><NurseCockpit /></MemoryRouter>);
 
@@ -740,7 +739,7 @@ describe('Milestone 3 Clinical Cockpits & Role Dashboards', () => {
       ];
       mockReferrals = [
         testReferral,
-        { ...testReferral, id: 'ref-2', status: 'admitted', isEscalated: false, statusHistory: [{ status: 'admitted', timestamp: new Date().toISOString(), userId: 'doc-1' }] },
+        { ...testReferral, id: 'ref-2', status: 'admitted', isEscalated: false, },
         { ...testReferral, id: 'ref-3', status: 'cancelled', isEscalated: false, cancelReason: 'Patient improved' },
       ];
       // Notification messages are stored English sentences: data, like names.

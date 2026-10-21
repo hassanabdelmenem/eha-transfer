@@ -33,7 +33,6 @@ function createMockReferral(overrides: Partial<Referral> = {}): Referral {
     priority: 'emergency',
     status: 'pending',
     reasonForReferral: 'Acute care',
-    statusHistory: [],
     deptComments: [],
     createdAt: '2026-08-29T10:00:00Z',
     updatedAt: '2026-08-29T10:00:00Z',

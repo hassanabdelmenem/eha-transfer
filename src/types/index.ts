@@ -178,14 +178,15 @@ export interface Referral {
   createdAtMs?: number;
   updatedAt: string;
   deptComments: DeptComment[];
-  statusHistory: {
-    status: ReferralStatus;
-    timestamp: string;
-    userId: string;
-    notes?: string;
-    /** What an entry that leaves `status` unchanged records; the timeline titles it by this. */
-    event?: 'escort_assigned' | 'destination_override';
-  }[];
+  // Last status change, denormalised from the statusHistory subcollection for
+  // list views. Absent on referrals not yet run through
+  // scripts/migrate-status-history.mjs; readers fall back to updatedAt.
+  statusUpdatedAt?: string;
+  statusUpdatedBy?: string;
+  patientConsentedAt?: string;
+  patientConsentedBy?: string;
+  inTransitAt?: string;
+  arrivedAt?: string;
   // Facilities the patient has declined transfer to; excluded from future auto-routing candidates.
   patientDeclinedFacilityIds?: string[];
   cancelledAt?: string;
@@ -273,4 +274,13 @@ export function isDoctorRole(role: Role | undefined): boolean {
 
 export function isNurseRole(role: Role | undefined): boolean {
   return role ? NURSE_ROLES.includes(role) : false;
+}
+
+export interface StatusHistoryEntry {
+  status: ReferralStatus;
+  timestamp: string;
+  userId: string;
+  notes?: string;
+  /** What an entry that leaves `status` unchanged records; the timeline titles it by this. */
+  event?: 'escort_assigned' | 'destination_override';
 }

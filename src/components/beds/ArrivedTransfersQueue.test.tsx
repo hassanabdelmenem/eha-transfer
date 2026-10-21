@@ -41,10 +41,6 @@ const mockArrivedReferrals: Referral[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     deptComments: [],
-    statusHistory: [
-      { status: 'pending', timestamp: new Date().toISOString(), userId: 'user-doc-1' },
-      { status: 'arrived', timestamp: new Date().toISOString(), userId: 'user-er-1' },
-    ],
   },
   {
     id: 'ref-2',
@@ -82,7 +78,6 @@ const mockArrivedReferrals: Referral[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     deptComments: [],
-    statusHistory: [],
   },
 ];
 

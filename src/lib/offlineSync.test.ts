@@ -38,7 +38,10 @@ const sampleReferral = {
   receivingFacilityId: 'auto',
   candidateFacilityIds: ['f1'],
   referringFacilityId: 'f2',
-  receivingDepartments: ['Emergency']
+  referringUserId: 'u1',
+  receivingDepartments: ['Emergency'],
+  updatedAt: '2026-10-21T00:00:00.000Z',
+  statusHistory: [{ status: 'pending', timestamp: '2026-10-21T00:00:00.000Z', userId: 'u1' }],
 };
 
 describe('offlineSync', () => {
@@ -64,7 +67,17 @@ describe('offlineSync', () => {
     });
 
     expect(getSpy).toHaveBeenCalled();
-    expect(capturedSets).toEqual([expect.objectContaining({ path: 'referrals/r1', data: expect.objectContaining({ id: 'r1' }) })]);
+    expect(capturedSets).toHaveLength(2);
+    expect(capturedSets[0].path).toBe('referrals/r1');
+    expect(capturedSets[0].data.statusHistory).toBeUndefined();
+    expect(capturedSets[1]).toEqual({
+      path: 'referrals/r1/statusHistory/open-r1',
+      data: expect.objectContaining({
+        status: 'pending',
+        userId: 'u1',
+        notes: 'Referral submitted offline and synced',
+      }),
+    });
     expect(notifications.length).toBeGreaterThan(0);
     expect(delSpy).toHaveBeenCalledWith('r1');
     // setPendingSyncCount is called with a fresh read of the cache after

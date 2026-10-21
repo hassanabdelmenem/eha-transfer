@@ -389,7 +389,6 @@ describe('Milestone 5 Empirical Adversarial Test Suite', () => {
         createdAt: '2026-08-28T10:00:00.000Z',
         updatedAt: '2026-08-28T10:00:00.000Z',
         deptComments: [],
-        statusHistory: [],
       };
 
       const mockAdmit = vi.fn();
@@ -451,7 +450,6 @@ describe('Milestone 5 Empirical Adversarial Test Suite', () => {
         createdAt: '2026-08-28T10:00:00.000Z',
         updatedAt: '2026-08-28T10:00:00.000Z',
         deptComments: [],
-        statusHistory: [],
       };
 
       const facilityNameMap = new Map([
@@ -497,7 +495,6 @@ describe('Milestone 5 Empirical Adversarial Test Suite', () => {
         createdAt: '2026-08-28T10:00:00.000Z',
         updatedAt: '2026-08-28T10:00:00.000Z',
         deptComments: [],
-        statusHistory: [],
       };
 
       const mockAdmit = vi.fn();
@@ -730,7 +727,6 @@ describe('Milestone 5 Empirical Adversarial Test Suite', () => {
           createdAt: '2026-08-28T10:00:00.000Z',
           updatedAt: '2026-08-28T10:00:00.000Z',
           deptComments: [],
-          statusHistory: [],
         },
         {
           id: 'ref-fayed-dest',
@@ -754,7 +750,6 @@ describe('Milestone 5 Empirical Adversarial Test Suite', () => {
           createdAt: '2026-08-28T10:00:00.000Z',
           updatedAt: '2026-08-28T10:00:00.000Z',
           deptComments: [],
-          statusHistory: [],
         },
       ];
 

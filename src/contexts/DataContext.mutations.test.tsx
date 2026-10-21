@@ -301,7 +301,7 @@ describe('DataContext.updateReferralStatus', () => {
     await act(async () => { screen.getByText('Reject').click(); });
     await waitFor(() => expect(screen.getByTestId('referral-status')).toHaveTextContent('rejected'));
     const stored = fsState.stores['referrals']['r1'];
-    expect(stored.statusHistory.at(-1).notes).toBe('Rejected: not appropriate');
+    expect(Object.values(fsState.stores['referrals/r1/statusHistory'] || {})[0].notes).toBe('Rejected: not appropriate');
     expect(stored.rejectionReason).toBe('not appropriate');
     expect(stored.rejectedBy).toBe('u1');
   });
@@ -315,7 +315,7 @@ describe('DataContext.updateReferralStatus', () => {
     render(<DataProvider><Wrapper /></DataProvider>);
     await act(async () => { screen.getByText('RejectPrefixed').click(); });
     await waitFor(() => expect(fsState.stores['referrals']['r1'].status).toBe('rejected'));
-    expect(fsState.stores['referrals']['r1'].statusHistory.at(-1).notes).toBe('Rejected: bed unavailable');
+    expect(Object.values(fsState.stores['referrals/r1/statusHistory'] || {})[0].notes).toBe('Rejected: bed unavailable');
   });
 
   it('refuses to dispatch before patient consent', async () => {
@@ -392,7 +392,7 @@ describe('DataContext.overrideReferralDestination', () => {
     renderProvider();
     await act(async () => { screen.getByText('Override').click(); });
     await waitFor(() => expect(screen.getByTestId('referral-receiving')).toHaveTextContent('f9'));
-    expect(fsState.stores['referrals']['r1'].statusHistory.at(-1).notes).toMatch(/Ninth Facility/);
+    expect(Object.values(fsState.stores['referrals/r1/statusHistory'] || {}).some(h => (h as any).notes?.match(/Ninth Facility/))).toBe(true);
   });
 
   it('does nothing without a signed-in user', async () => {
@@ -471,7 +471,7 @@ describe('DataContext.addDeptComment', () => {
     await waitFor(() => expect(screen.getByTestId('referral-status')).toHaveTextContent('postponed'));
 
     const stored = fsState.stores['referrals']['r1'];
-    expect(stored.statusHistory.at(-1).notes).toBe('Requirements needed before this referral can proceed.');
+    expect(Object.values(fsState.stores['referrals/r1/statusHistory'] || {})[0].notes).toBe('Requirements needed before this referral can proceed.');
     const notifs: any[] = Object.values(fsState.stores['notifications'] || {});
     const postponedNotif = notifs.find(n => n.title.includes('Requirements Needed'));
     expect(postponedNotif.message).toMatch(/from the referring facility/);
@@ -685,21 +685,21 @@ describe('DataContext.quickTransfer', () => {
     renderProvider();
     await act(async () => { screen.getByText('QuickTransferReferral').click(); });
     await waitFor(() => expect(fsState.stores['referrals']['r1'].receivingDepartments).toEqual(['ICU']));
-    expect(fsState.stores['referrals']['r1'].statusHistory.at(-1).notes).toMatch(/stable/);
+    expect(Object.values(fsState.stores['referrals/r1/statusHistory'] || {})[0].notes).toMatch(/stable/);
   });
 
   it('omits the "Notes:" suffix entirely when no notes are given', async () => {
     renderProvider();
     await act(async () => { screen.getByText('QuickTransferReferralNoNotes').click(); });
     await waitFor(() => expect(fsState.stores['referrals']['r1'].receivingDepartments).toEqual(['ICU']));
-    expect(fsState.stores['referrals']['r1'].statusHistory.at(-1).notes).not.toMatch(/Notes:/);
+    expect(Object.values(fsState.stores['referrals/r1/statusHistory'] || {})[0].notes).not.toMatch(/Notes:/);
   });
 
-  it('attributes the transfer to "system" with no signed-in user', async () => {
+  it('rejects the transfer with no signed-in user', async () => {
     mockUser = null;
     renderProvider();
     await act(async () => { screen.getByText('QuickTransferReferral').click(); });
-    await waitFor(() => expect(fsState.stores['referrals']['r1'].statusHistory.at(-1).userId).toBe('system'));
+    expect(fsState.stores['referrals/r1/statusHistory']).toBeUndefined();
   });
 
   it('moves a direct admission to a new department', async () => {

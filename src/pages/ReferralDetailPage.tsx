@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useStatusHistory } from '../hooks/useStatusHistory';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
@@ -23,7 +24,7 @@ import { TransferJourneyCard } from '../components/referrals/detail/TransferJour
 import { MobileActionFooter, FooterAction, InlineDetailActions } from '../components/referrals/detail/MobileActionFooter';
 import { ReferralActionConsole } from '../components/referrals/actions/ReferralActionConsole';
 import { RejectionModal } from '../components/referrals/actions/RejectionModal';
-import { ReferralStatus, DeptApprovalStatus } from '../types';
+import { ReferralStatus, DeptApprovalStatus, StatusHistoryEntry } from '../types';
 import { SENIOR_CANCEL_ROLES, CANCEL_LOCKED_STATUSES } from '../contexts/DataContext';
 import { showToast, toastError } from '../lib/toast';
 import { escortAuthority } from '../lib/escortAuthority';
@@ -42,6 +43,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
   const params = useParams<{ id: string }>();
   const id = referralId ?? params.id;
   const navigate = useNavigate();
+
   const {
     referrals,
     referralsById,
@@ -58,8 +60,9 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     facilitiesById,
     usersById,
     shiftAssignmentsByFacility,
-    loading,
+    loading: dataLoading,
   } = useData();
+
   const { user } = useAuth();
   const { t, lang } = useI18n();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
@@ -90,6 +93,13 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
   const [deptBusy, setDeptBusy] = useState(false);
 
   const referral = referralsById.get(id || '');
+  // Pre-migration referrals still carry the legacy array (see useStatusHistory).
+  const { history, loading: historyLoading, error: historyError } = useStatusHistory(
+    id,
+    (referral as { statusHistory?: StatusHistoryEntry[] } | undefined)?.statusHistory,
+    referral,
+  );
+  const loading = dataLoading || historyLoading;
   useEffect(() => {
     if (!savingFrom) return;
     if (referral && referral.status !== savingFrom) {
@@ -474,6 +484,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
             />
             <TransferJourneyCard
               referral={referral}
+              history={history}
               fromFacility={fromFacility}
               toFacility={toFacility}
               usersById={usersById}
@@ -565,7 +576,12 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
           {!isDesktop && (
             <section aria-label={t('detail.history')}>
               <p className={sectionLabel}>{t('detail.history')}</p>
-              <ReferralTimeline referral={referral} usersById={usersById} />
+              {historyError && (
+                <p className="text-xs text-rose-600 dark:text-rose-400 py-1" role="alert">
+                  {t('detail.historyError')}
+                </p>
+              )}
+              <ReferralTimeline referral={referral} history={history} usersById={usersById} />
             </section>
           )}
           <ClinicalHistoryCard referral={referral} />
@@ -578,7 +594,12 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
           {isDesktop && (
             <section aria-label={t('detail.history')}>
               <p className={sectionLabel}>{t('detail.history')}</p>
-              <ReferralTimeline referral={referral} usersById={usersById} />
+              {historyError && (
+                <p className="text-xs text-rose-600 dark:text-rose-400 py-1" role="alert">
+                  {t('detail.historyError')}
+                </p>
+              )}
+              <ReferralTimeline referral={referral} history={history} usersById={usersById} />
             </section>
           )}
           {!isDesktop && decisionForms}
@@ -615,7 +636,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
         <PrintableSummary
           ref={printRef}
           referral={referral}
-          history={referral.statusHistory}
+          history={history || []}
           users={users}
           facilities={facilities}
         />

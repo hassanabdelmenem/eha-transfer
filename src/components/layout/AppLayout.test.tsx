@@ -75,7 +75,7 @@ function makeReferral(overrides: Partial<Referral> = {}): Referral {
     },
     referringFacilityId: 'f1', referringUserId: 'u1', receivingFacilityId: 'f2',
     receivingDepartments: ['Cardiology'], requiredBedType: 'Ward', priority: 'urgent',
-    status: 'pending', reasonForReferral: '', createdAt: now, updatedAt: now, deptComments: [], statusHistory: [],
+    status: 'pending', reasonForReferral: '', createdAt: now, updatedAt: now, deptComments: [],
     ...overrides,
   };
 }

@@ -122,7 +122,6 @@ const createMockReferral = (overrides: Partial<Referral> = {}): Referral => ({
   deptComments: [],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
-  statusHistory: [{ status: 'pending', timestamp: new Date().toISOString(), userId: 'user-clinician' }],
   ...overrides,
 });
 
