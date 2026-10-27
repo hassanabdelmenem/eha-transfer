@@ -2,6 +2,20 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-27: Phase 5 pilot plan draft merged; scratch cleanup
+
+- Pilot plan draft merged (#84) creating `docs/pilot-plan.md` (defining scope, facility roles, pre-pilot verification checklist, and metric tracking).
+- Secondary owner login purge documented in `docs/` (#85).
+- Cleaned untracked scratch files (`test-output.txt`, `simulate-transfer.mjs`, stub locale re-exports) into job temp directory.
+- Verified test suite: all 94 test files (1,059 tests) passing; production & staging Firebase deployments green.
+- Left for owner/clinicians: Arabic review of `docs/i18n/arabic-review.csv`; selecting pilot referring/receiving facilities and accounts.
+
+## 2026-10-22: Arabic review spreadsheet & statusHistory append-only subcollection
+
+- PR #81 merged: migrated `statusHistory` to append-only subcollection (`referrals/{id}/history`).
+- PR #82 merged: tested Arabic dates (Arabic months with Western Arabic digits).
+- PR #83 merged: regenerated clinical Arabic review sheet (`docs/i18n/arabic-review.csv`) with 1,306 keys for clinician review.
+
 ## 2026-10-21: S2b and deps live; 2e re-audit; task_plan refresh
 
 - S2b merged as #78 (squash f131f4f) and live: non-admins list/get `users` only within their own facility.
