@@ -28,7 +28,7 @@ text under 11px.
 Done 1 Oct: the 5-minute escalation trigger is live (cron-job.org → workflow_dispatch; token
 "eha-transfer sweep trigger" expires 30 Sep 2027, rotate before then); staging is seeded.
 
-Owner, when convenient: confirm the email on the second owner login (hassan.200006@med.suez.edu.eg).
+Done (2026-10-08): The secondary owner login (hassan.200006@med.suez.edu.eg) was deleted from Firebase Auth.
 
 ## Current Phase
 
