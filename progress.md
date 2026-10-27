@@ -2,6 +2,12 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-27: Comprehensive code review, pipeline verification & repo hygiene
+
+- Ran complete verification suite: type-check (`tsc --noEmit`, 0 errors), Vitest unit tests (94 files, 1,059 tests passed), Firestore rules (193 tests passed against emulator), CSP header verification (`verify-csp-headers.mjs`), and Playwright E2E suite (11 journeys passed against Auth & Firestore emulators).
+- Production build verified: clean Vite 8.2 bundle generation with code-splitting.
+- Added `.agents/`, `.codex/`, `.omc/`, and `graphify-out/202*/` to `.gitignore` to prevent agent runtime and timestamped graph snapshot pollution.
+
 ## 2026-10-27: Phase 5 pilot plan draft merged; scratch cleanup
 
 - Pilot plan draft merged (#84) creating `docs/pilot-plan.md` (defining scope, facility roles, pre-pilot verification checklist, and metric tracking).

@@ -40,13 +40,17 @@ firestore-export/
 !.claude/skills/
 !.claude/agents/
 .copilot/
+.agents/
+.codex/
+.omc/
 _to_delete/
 
 # Graphify knowledge graph
 # graphify-out/ IS committed on purpose - the graph travels with the repo.
-# These two are local-only:
+# These are local-only:
 graphify-out/cost.json
 graphify-out/cache/
+graphify-out/202*/
 
 # One-off agent scratch work (see CLAUDE.md, Housekeeping). Keep it out of the
 # repo: it pollutes search and the graphify graph.
