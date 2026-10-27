@@ -5,9 +5,8 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
 ## Project and hosting
 
 - Repo: `hassanabdelmenem/eha-transfer`. `main` is production. Local checkout: `~/antigravity/eha-transfer`.
-- Firebase project `eha-transfer-1785622025` → https://eha-transfer.web.app. Shares nothing with `imc-er` or `er-app-final`.
-- There is **no staging**: `npm run dev` and PR preview channels talk to production. Destructive work only with
-  `VITE_USE_FIREBASE_EMULATORS=true` (Auth :9099, Firestore :8080).
+- Firebase project `eha-transfer-1785622025` → https://eha-transfer.web.app (production). Shares nothing with `imc-er` or `er-app-final`.
+- Staging project: `eha-transfer-staging` → https://eha-transfer-staging.web.app. `npm run dev` and PR previews talk to staging (isolated test data, "STAGING" banner); production is touched only on `main` deploys. Destructive work remains in emulators (`VITE_USE_FIREBASE_EMULATORS=true`, Auth :9099, Firestore :8080).
 - There is no real non-admin production account to smoke-test as.
 - Production data: every referral and notification has `createdAtMs` since the 27 Sep backfill; the rules require it.
 - Production accounts (27 Sep): 3, all owners; `hassan.200006@med.suez.edu.eg` (email/password) has an unconfirmed email.
