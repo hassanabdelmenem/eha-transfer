@@ -3,29 +3,12 @@ import { ChevronDown } from 'lucide-react';
 import { PatientData } from '../../../types';
 import { ChoicePill, FieldError, FieldHint, FieldLabel, StepHeading, inputClass, textareaClass } from './fields';
 import { useI18n, typedDir } from '../../../i18n';
+import { decodeNationalId, decodeNationalIdToPatient } from '../../../lib/validators';
 
 interface StepPatientDemographicsProps {
   patientData: Partial<PatientData>;
   setPatientData: React.Dispatch<React.SetStateAction<Partial<PatientData>>>;
   fieldErrors?: { hospitalId?: string; name?: string; age?: string; sex?: string };
-}
-
-/** Egyptian 14-digit National ID -> age and sex, when it parses. */
-function decodeNationalId(nid: string): Partial<PatientData> {
-  if (nid.length !== 14 || !/^\d+$/.test(nid)) return {};
-  const century = parseInt(nid.substring(0, 1), 10);
-  const year = parseInt(nid.substring(1, 3), 10);
-  const month = parseInt(nid.substring(3, 5), 10) - 1;
-  const day = parseInt(nid.substring(5, 7), 10);
-  const genderCode = parseInt(nid.substring(12, 13), 10);
-  const fullYear = century === 2 ? 1900 + year : century === 3 ? 2000 + year : 0;
-  if (fullYear === 0) return {};
-  const birthDate = new Date(fullYear, month, day);
-  const now = new Date();
-  let age = now.getFullYear() - birthDate.getFullYear();
-  const m = now.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birthDate.getDate())) age--;
-  return { age, gender: genderCode % 2 === 0 ? 'female' : 'male' };
 }
 
 // Step 1 of 5: only what identifies the patient. Everything else about who
@@ -41,7 +24,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
     const n = parseInt(val, 10);
     return isNaN(n) ? undefined : n;
   };
-  const decoded = patientData.nationalId?.length === 14 && Object.keys(decodeNationalId(patientData.nationalId)).length > 0;
+  const decoded = Boolean(patientData.nationalId && decodeNationalId(patientData.nationalId).valid);
 
   return (
     <div className="space-y-5">
@@ -135,7 +118,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
               value={patientData.nationalId || ''}
               onChange={e => {
                 const nid = e.target.value;
-                setPatientData(prev => ({ ...prev, nationalId: nid, ...decodeNationalId(nid) }));
+                setPatientData(prev => ({ ...prev, nationalId: nid, ...decodeNationalIdToPatient(nid) }));
               }}
               aria-describedby="nationalId-hint"
               className={inputClass(false, 'font-mono tabular-nums')}
