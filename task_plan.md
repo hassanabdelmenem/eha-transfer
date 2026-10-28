@@ -19,6 +19,8 @@ app built to an enterprise, production-ready bar (PRODUCT.md). No live patients 
    says when to set VITE_ENABLE_ARABIC.
 3. Phase 5 pilot plan: one referring and one receiving facility, real non-admin accounts per role.
 
+Done 29 Oct: Patient demographics parity with IMC-ER merged as #88 (51a0f85) — Arabic name validation, Egyptian National ID 14-digit decoding (century, DOB, age, sex), and hospital ID regex parity with unit tests (95 files, 1,075 tests passing). Cross-project clinical interface contract documented in `docs/contracts/eha-imcer-transfer-contract.md`.
+
 Done 21 Oct: S2b (users list/get narrowed to the caller's facility for non-admins) merged as #78
 (squash f131f4f) and live; deps #79 merged (a9d7e8b), Dependabot 0 open (the 2 grpc alerts dismissed
 as not_used: the browser SDK uses WebChannel). Lead 12 and the referral content-integrity unit are fixed
