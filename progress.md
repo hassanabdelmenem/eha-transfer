@@ -2,6 +2,22 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-10-29: Patient demographics parity with IMC-ER merged (PR #88)
+
+- Created `src/lib/validators.ts` and unit tests `src/lib/validators.test.ts`:
+  - `isValidArabicName`: validates Arabic script, trimming, and character length.
+  - `isValidHospitalId`: validates regional health authority ID format (`/^[A-Z]\d{9}$/`).
+  - `isValidNationalId`: validates 14-digit Egyptian National ID format (optional/required).
+  - `normalizeArabicName`: folds Alef/Hamza, Taa Marbuta, Yaa, and strips diacritics/tatweel for matching parity with IMC-ER `referralKeyName()`.
+  - `decodeNationalId`: extracts century (1900s/2000s), DOB, calendar bounds, age, and sex from 13th digit.
+  - `decodeNationalIdToPatient`: helper for direct state patch application.
+  - `validatePatientDemographics`: multi-field validation.
+- Refactored `src/components/referrals/wizard/StepPatientDemographics.tsx` to use centralized `decodeNationalId` and `decodeNationalIdToPatient`.
+- Verified: `npm run lint` (`tsc --noEmit`, 0 errors), Vitest (95 files, 1,075 tests passed).
+- PR #88 merged into `main` (commit `51a0f852827053482c1addb6660c2d24e69a20a7`).
+- Documented cross-project clinical interface contract in `docs/contracts/eha-imcer-transfer-contract.md`.
+
+
 ## 2026-10-27: Comprehensive code review, pipeline verification & repo hygiene
 
 - Ran complete verification suite: type-check (`tsc --noEmit`, 0 errors), Vitest unit tests (94 files, 1,059 tests passed), Firestore rules (193 tests passed against emulator), CSP header verification (`verify-csp-headers.mjs`), and Playwright E2E suite (11 journeys passed against Auth & Firestore emulators).
