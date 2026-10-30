@@ -60,3 +60,7 @@ scratch/
 /test_*.cjs
 /run_*.cjs
 /*.png
+
+# Local tooling and audit artifacts
+.graphifyignore
+docs/audits/
