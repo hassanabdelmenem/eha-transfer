@@ -143,11 +143,11 @@ export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({ referral, hi
             </div>
             <div className={cn('min-w-0 flex-1', !last && 'pb-[14px]')}>
               <p className="text-[14px] font-semibold leading-[1.3] text-ink dark:text-paper">{event.title}</p>
-              <p className="mt-0.5 text-[12.5px] leading-[1.4] text-slate-500 dark:text-white/60">
+              <p className="mt-0.5 text-[12.5px] leading-[1.4] text-slate-700 dark:text-white/60">
                 <bdi>{byline}</bdi>{event.decision ? ` · ${event.decision}` : ''} · <time dateTime={event.timestamp} className="font-mono text-[12px] font-medium">{whenShort(event.timestamp, t, lang)}</time>
               </p>
               {event.note && (
-                <div className="mt-[7px] rounded-[9px] border border-slate-200 bg-white px-[11px] py-[9px] text-[13px] leading-[1.45] text-slate-700 dark:border-white/12 dark:bg-white/[0.05] dark:text-white/75">
+                <div className="mt-[7px] rounded-[9px] border border-slate-200 bg-white px-[11px] py-[9px] text-[13px] leading-[1.45] text-slate-700 dark:border-white/12 dark:bg-slate-900 dark:text-white/75">
                   <span className={cn('mb-0.5 block text-[11px] font-bold uppercase tracking-[0.06em]', event.noteKind === 'dept' ? 'text-purple-700 dark:text-purple-300' : 'text-info-700 dark:text-info-300')}>
                     {event.noteKind === 'dept' ? t('timeline.deptNoteLabel') : t('timeline.actionNoteLabel')}
                   </span>
@@ -155,7 +155,7 @@ export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({ referral, hi
                 </div>
               )}
               {event.actionNote && event.actionNote !== event.note && (
-                <div className="mt-[7px] rounded-[9px] border border-slate-200 bg-white px-[11px] py-[9px] text-[13px] leading-[1.45] text-slate-700 dark:border-white/12 dark:bg-white/[0.05] dark:text-white/75">
+                <div className="mt-[7px] rounded-[9px] border border-slate-200 bg-white px-[11px] py-[9px] text-[13px] leading-[1.45] text-slate-700 dark:border-white/12 dark:bg-slate-900 dark:text-white/75">
                   <span className="mb-0.5 block text-[11px] font-bold uppercase tracking-[0.06em] text-info-700 dark:text-info-300">{t('timeline.actionNoteLabel')}</span>
                   <p dir="auto" className="whitespace-pre-wrap">{event.actionNote}</p>
                 </div>

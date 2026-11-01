@@ -7,8 +7,8 @@ import { useI18n } from '../../../i18n';
 // the field in brick and are wired through aria-describedby by the caller.
 
 export const fieldBase =
-  'w-full rounded-[10px] border bg-white px-3.5 text-[16px] text-ink placeholder:text-slate-500 transition-colors motion-reduce:transition-none focus:outline-none focus:ring-2 dark:bg-white/5 dark:text-paper dark:placeholder:text-white/45';
-export const fieldOk = 'border-slate-300 focus:border-info-700 focus:ring-info-700/30 dark:border-white/25';
+  'w-full rounded-[10px] border bg-white px-3.5 text-[16px] text-ink placeholder:text-slate-500 transition-colors motion-reduce:transition-none focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-paper dark:placeholder:text-white/45';
+export const fieldOk = 'border-field-border focus:border-brand focus:ring-brand/30';
 export const fieldBad = 'border-critical-700 focus:border-critical-700 focus:ring-critical-700/25 dark:border-critical-400';
 
 export const inputClass = (invalid?: boolean, extra?: string) => cn(fieldBase, 'min-h-[54px]', invalid ? fieldBad : fieldOk, extra);
@@ -79,7 +79,7 @@ export const ChoicePill: React.FC<{
     <label
       className={cn(
         'relative flex min-h-[52px] cursor-pointer flex-col items-center justify-center rounded-[10px] border px-3 py-2 text-center transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-info-700 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-paper dark:has-[:focus-visible]:ring-offset-ink',
-        checked ? on : 'border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-white/5 dark:text-paper dark:hover:bg-white/10',
+        checked ? on : 'border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-slate-900 dark:text-paper dark:hover:bg-white/10',
         className
       )}
     >

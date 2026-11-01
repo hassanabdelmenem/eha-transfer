@@ -104,7 +104,7 @@ export const Login: React.FC = () => {
         <h1 className="mt-6 text-center text-3xl font-light text-slate-900 dark:text-slate-100 tracking-tight">
           {t('auth.appName')}
         </h1>
-        <p className="mt-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-300">
           {t('auth.tagline')}
         </p>
         {/* Before sign-in there is no profile to save a choice in: this one stays on the device. */}
@@ -167,7 +167,7 @@ export const Login: React.FC = () => {
 
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div>
-                <label htmlFor="loginEmail" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('auth.email')}</label>
+                <label htmlFor="loginEmail" className="block text-xs font-semibold text-slate-500 dark:text-slate-300 mb-2">{t('auth.email')}</label>
                 <div className="relative">
                   <Mail className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
@@ -189,7 +189,7 @@ export const Login: React.FC = () => {
                 {formErrors.email && <p className="mt-1 text-xs text-critical-500 font-medium">{formErrors.email}</p>}
               </div>
               <div>
-                <label htmlFor="loginPassword" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('auth.password')}</label>
+                <label htmlFor="loginPassword" className="block text-xs font-semibold text-slate-500 dark:text-slate-300 mb-2">{t('auth.password')}</label>
                 <Input
                   id="loginPassword"
                   dir="ltr"
@@ -216,7 +216,7 @@ export const Login: React.FC = () => {
             <div className="text-center mt-4">
               <button
                 type="button"
-                className="min-h-[48px] px-2 text-xs text-blue-600 dark:text-blue-400 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                className="min-h-[48px] px-2 text-xs text-blue-600 dark:text-blue-400 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                 onClick={() => { setIsRegistering(!isRegistering); setError(null); }}
               >
                 {isRegistering ? t('auth.haveAccount') : t('auth.noAccount')}

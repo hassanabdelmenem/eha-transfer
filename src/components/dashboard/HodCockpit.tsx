@@ -217,7 +217,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                 setSelectedFacilityId(e.target.value);
                 setSelectedDepartment('');
               }}
-              className="w-full sm:flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-xs font-medium focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              className="w-full sm:flex-1 rounded-xl border border-field-border p-2.5 text-xs font-medium focus:ring-2 focus:ring-brand bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
             >
               <option value="">{t('department.selectFacility')}</option>
               {facilities.map(f => (
@@ -230,7 +230,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
               <select
                 value={selectedDepartment}
                 onChange={e => setSelectedDepartment(e.target.value)}
-                className="w-full sm:flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-xs font-medium focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                className="w-full sm:flex-1 rounded-xl border border-field-border p-2.5 text-xs font-medium focus:ring-2 focus:ring-brand bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               >
                 <option value="">{t('department.selectDepartment')}</option>
                 {facilitiesById
@@ -319,7 +319,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                   id="shiftDoctorSelect"
                   value={assignedDoctorId}
                   onChange={e => setAssignedDoctorId(e.target.value)}
-                  className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-xs focus:ring-2 focus:ring-blue-600 outline-none"
+                  className="flex-1 rounded-xl border border-field-border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-xs focus:ring-2 focus:ring-brand outline-none"
                 >
                   <option value="">{t('department.selectDoctor')}</option>
                   {availableDoctors.map(doc => (
@@ -430,7 +430,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                 <select
                   value={targetDepartment}
                   onChange={e => setTargetDepartment(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-xs focus:ring-2 focus:ring-blue-600 outline-none"
+                  className="w-full rounded-xl border border-field-border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-xs focus:ring-2 focus:ring-brand outline-none"
                 >
                   {otherDepartments.map(dept => (
                     <option key={dept} value={dept}>
@@ -449,7 +449,7 @@ export const HodCockpit: React.FC<HodCockpitProps> = ({ isDepartmentRoute = fals
                   onChange={e => setTransferNotes(e.target.value)}
                   dir={typedDir(transferNotes)}
                   placeholder={t('department.notesPlaceholder')}
-                  className="w-full h-24 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-xs focus:ring-2 focus:ring-blue-600 outline-none resize-none"
+                  className="w-full h-24 rounded-xl border border-field-border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-xs focus:ring-2 focus:ring-brand outline-none resize-none"
                 />
               </div>
             </div>

@@ -298,11 +298,11 @@ export const ReferralList: React.FC<ReferralListProps> = ({ limit, facilityId, s
               </div>
               <div className="flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-400 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <div className="min-w-0">
-                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">{t('referralList.from')}</span>
+                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-300">{t('referralList.from')}</span>
                   <span className="block truncate">{fromFacility?.name || '—'}</span>
                 </div>
                 <div className="min-w-0">
-                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">{t('referralList.target')}</span>
+                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-300">{t('referralList.target')}</span>
                   <span className="block truncate">{referral.receivingDepartments?.join(', ') || t('common.notApplicable')}</span>
                 </div>
               </div>

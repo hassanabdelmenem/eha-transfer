@@ -158,7 +158,7 @@ const ErSection: React.FC<{
   empty: string;
   children: React.ReactNode[];
 }> = ({ tone, icon, label, loading, loadingLabel, empty, children }) => (
-  <section aria-label={label} className="mt-2 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
+  <section aria-label={label} className="mt-2 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-slate-900">
     <h2 className={cn(
       'flex items-center gap-2 px-[14px] py-2.5 text-[11.5px] font-bold uppercase leading-tight tracking-[0.08em]',
       tone === 'warning'

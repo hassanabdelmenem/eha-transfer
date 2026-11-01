@@ -124,7 +124,7 @@ export const StepDiagnosticsReview: React.FC<StepDiagnosticsReviewProps> = ({
         <FieldLabel id="attachments-label">{t('workupStep.attachments')}</FieldLabel>
         <ul aria-labelledby="attachments-label" className="grid grid-cols-3 gap-2.5">
           {attachments.map(att => (
-            <li key={att.id} className="relative aspect-square overflow-hidden rounded-[10px] border border-slate-200 bg-white dark:border-white/12 dark:bg-white/5">
+            <li key={att.id} className="relative aspect-square overflow-hidden rounded-[10px] border border-slate-200 bg-white dark:border-white/12 dark:bg-slate-900">
               {att.type === 'image' ? (
                 <button type="button" onClick={() => setActiveEcgUrl(att.url ?? null)} className="block h-full w-full" aria-label={t('workupStep.viewFile', { name: att.name })}>
                   <img src={att.url} alt={att.name} className="h-full w-full object-cover" />

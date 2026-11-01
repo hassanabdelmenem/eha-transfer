@@ -182,7 +182,7 @@ export const NetworkDirectoryPage: React.FC = () => {
           ) : (
             <ul className="flex flex-col gap-2.5">
               {onCallNow.map(u => (
-                <li key={u.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white py-3 pe-3 ps-[14px] dark:border-white/12 dark:bg-white/[0.05]">
+                <li key={u.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white py-3 pe-3 ps-[14px] dark:border-white/12 dark:bg-slate-900">
                   <div className="min-w-0">
                     <p className="flex items-center gap-2">
                       <span className="truncate text-[16px] font-semibold text-ink dark:text-paper">{u.name}</span>
@@ -216,7 +216,7 @@ export const NetworkDirectoryPage: React.FC = () => {
           <>
             <ul className="flex flex-col gap-2.5">
               {shownFacilities.map(f => (
-                <li key={f.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-[14px] py-3 dark:border-white/12 dark:bg-white/[0.05]">
+                <li key={f.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-[14px] py-3 dark:border-white/12 dark:bg-slate-900">
                   <div className="min-w-0">
                     <p className="truncate text-[16px] font-semibold text-ink dark:text-paper">{f.name}</p>
                     <p className="mt-0.5 truncate text-[13.5px] text-slate-700 dark:text-white/65"><bdi>{f.location}</bdi> · {capacityHint(f, t)}</p>

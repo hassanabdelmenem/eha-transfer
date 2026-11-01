@@ -208,7 +208,7 @@ export const BedManagementPage: React.FC = () => {
             <select
               value={selectedFacilityId || ''}
               onChange={(e) => setSelectedFacilityId(e.target.value)}
-              className="w-full sm:w-72 min-h-[48px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-72 min-h-[48px] rounded-xl border border-field-border bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
             >
               <option value="">{t('beds.selectFacility')}</option>
               {facilities.map(f => (

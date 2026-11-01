@@ -20,7 +20,7 @@ export const RoleHomeHeadline: React.FC<{ title: string; rationale: string }> = 
 
 /** 11px/700 tracked label that heads a section of the card column. */
 export const MicroLabel: React.FC<{ children: React.ReactNode; className?: string; id?: string }> = ({ children, className, id }) => (
-  <h2 id={id} className={cn('text-[11px] font-bold uppercase leading-none tracking-[0.09em] text-slate-500 dark:text-white/60', className)}>
+  <h2 id={id} className={cn('text-[11px] font-bold uppercase leading-none tracking-[0.09em] text-slate-700 dark:text-white/60', className)}>
     {children}
   </h2>
 );
@@ -55,10 +55,10 @@ export function SegmentedControl<K extends string>({
             aria-pressed={active}
             onClick={() => onChange(s.key)}
             className={cn(
-              'flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center rounded-[10px] border px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-700 focus-visible:ring-offset-2 focus-visible:ring-offset-paper dark:focus-visible:ring-offset-ink',
+              'flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center rounded-[10px] border px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-paper dark:focus-visible:ring-offset-ink',
               active
                 ? 'border-ink bg-ink text-paper dark:border-paper dark:bg-paper dark:text-ink'
-                : 'border-slate-200 bg-white text-ink hover:bg-slate-50 dark:border-white/15 dark:bg-white/[0.04] dark:text-paper dark:hover:bg-white/10'
+                : 'border-slate-200 bg-white text-ink hover:bg-slate-50 dark:border-white/15 dark:bg-slate-900 dark:text-paper dark:hover:bg-white/10'
             )}
           >
             <span className="text-[14.5px] font-semibold leading-tight">{s.label}</span>

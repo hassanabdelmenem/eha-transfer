@@ -198,7 +198,7 @@ export const ClinicianCockpit: React.FC = () => {
         {totalAdmittedInUnit === 0 ? (
           <p className="mt-2.5 text-[14px] text-slate-700 dark:text-white/65">{t('clinician.noneAdmitted')}</p>
         ) : (
-          <ul className="mt-2.5 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.04]">
+          <ul className="mt-2.5 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-slate-900">
             {departmentReferralAdmissions.map(r => (
               <li key={r.id}>
                 <button

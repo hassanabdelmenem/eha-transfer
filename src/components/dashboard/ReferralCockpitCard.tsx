@@ -17,7 +17,7 @@ import { timeAgo } from '../../i18n/relative';
 // chip's text, never by colour alone. The ER variants render flush inside a
 // section box whose header strip names the direction (outbound / inbound).
 
-const shell = 'shrink-0 flex overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]';
+const shell = 'shrink-0 flex overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-slate-900';
 const body = 'flex-1 min-w-0 pt-[14px] px-[14px] pb-[14px]';
 const nameClass = 'text-[17px] font-semibold leading-[1.25] text-ink dark:text-paper';
 const lineClass = 'mt-[3px] text-[13.5px] leading-[1.4] text-slate-700 dark:text-white/65';
@@ -25,7 +25,7 @@ const btn = 'min-h-[48px] w-full rounded-[10px] px-3 text-[15px] font-semibold t
 const btnInk = 'bg-ink text-paper hover:bg-slate-800 dark:bg-paper dark:text-ink dark:hover:bg-slate-200';
 const btnOlive = 'bg-success-700 text-white hover:bg-success-800 disabled:bg-slate-200 disabled:text-slate-500';
 const btnOutline = 'border border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10';
-const input = 'w-full min-h-[52px] rounded-[10px] border border-slate-300 bg-white px-3.5 text-[16px] text-ink placeholder:text-slate-500 focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper dark:placeholder:text-white/50';
+const input = 'w-full min-h-[52px] rounded-[10px] border border-field-border bg-white px-3.5 text-[16px] text-ink placeholder:text-slate-500 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper dark:placeholder:text-white/50';
 const square = 'flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-[10px] border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/25 dark:text-white/80 dark:hover:bg-white/10';
 
 const Rail: React.FC<{ referral: Referral }> = ({ referral }) => (
@@ -109,7 +109,7 @@ export const ReferralCockpitCard: React.FC<ReferralCockpitCardProps> = ({
       type="button"
       onClick={handleCardClick}
       aria-current={selected ? 'true' : undefined}
-      className="flex w-full items-start justify-between gap-2.5 rounded-md text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-700 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-ink"
+      className="flex w-full items-start justify-between gap-2.5 rounded-md text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-ink"
     >
       <span className="min-w-0">
         <span className={cn('block', nameClass)}>{patient}</span>

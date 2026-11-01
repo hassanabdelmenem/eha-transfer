@@ -33,7 +33,7 @@ export const ShiftHandoverFeed: React.FC<ShiftHandoverFeedProps> = ({
       {filteredLogs.length === 0 ? (
         <p className="mt-2.5 text-[14px] text-slate-700 dark:text-white/65">{t('handover.none')}</p>
       ) : (
-        <ul className="mt-2.5 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.04]">
+        <ul className="mt-2.5 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-slate-900">
           {filteredLogs.map(log => (
             <li key={log.id} className="px-[14px] py-3">
               <div className="flex items-baseline justify-between gap-3">
@@ -41,7 +41,7 @@ export const ShiftHandoverFeed: React.FC<ShiftHandoverFeedProps> = ({
                   <bdi>{log.userName}</bdi>
                   {log.department && <span className="font-normal text-slate-700 dark:text-white/65"> · <bdi>{log.department}</bdi></span>}
                 </p>
-                <span className="shrink-0 font-mono text-[12px] font-medium text-slate-500 dark:text-white/60">{when(log.timestamp, lang)}</span>
+                <span className="shrink-0 font-mono text-[12px] font-medium text-slate-700 dark:text-white/60">{when(log.timestamp, lang)}</span>
               </div>
               {/* In the reader's language when the log carries key + vars; older logs keep their English. */}
               <p dir="auto" className="mt-1 line-clamp-2 text-[14px] leading-[1.5] text-slate-700 dark:text-white/70">{shiftLogSummary(lang, log)}</p>

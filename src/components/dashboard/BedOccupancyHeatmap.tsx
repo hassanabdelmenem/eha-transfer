@@ -28,7 +28,7 @@ export const BedOccupancyHeatmap: React.FC<BedOccupancyHeatmapProps> = ({ facili
   );
 
   return (
-    <section aria-labelledby="network-free-beds" className="rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
+    <section aria-labelledby="network-free-beds" className="rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-slate-900">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 px-[14px] pt-[14px]">
         <div>
           <h3 id="network-free-beds" className="font-heading text-[17px] font-semibold tracking-[-0.01em] text-ink dark:text-paper">

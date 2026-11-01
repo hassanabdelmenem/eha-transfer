@@ -2,8 +2,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ==========================================================================
-   Ink & paper — the world from the mobile workflow redesign handoff
-   (design_handoff_mobile_workflow_redesign). DESIGN.md documents it.
+   Ward — the shared design system of Ismailia Health Connect and IMC ER
+   (imc-er-manager). Ink and paper, one steel-blue accent, muted clinical
+   status hues. DESIGN.md documents it; the source of truth is the Ward
+   design-system artifact (tokens.json), which these values follow.
 
    Tailwind's own colour scales are remapped here rather than replaced call site
    by call site, so every existing utility lands in the palette at once:
@@ -11,7 +13,7 @@
      red / rose                   -> the critical scale
      amber / yellow               -> the warning scale
      green / emerald              -> the success scale (olive)
-     blue / indigo                -> the info scale (dusty blue)
+     blue / indigo                -> the info scale (steel blue; 700 = brand)
      purple (defined here)        -> an independent violet
    Other Tailwind hues (zinc, orange, sky, violet...) are not remapped and are
    not used; keep it that way.
@@ -21,10 +23,12 @@
    info), never a raw hue.
    ========================================================================== */
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* One register for a speed-read instrument: Manrope 500–800 for headings and
+     body alike; JetBrains Mono (always tabular) for live numbers and IDs. */
+  --font-sans: Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-body: var(--font-sans);
-  --font-heading: "Poppins", var(--font-sans);
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-heading: var(--font-sans);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --color-white: #ffffff;
   --color-black: #141413;
@@ -101,18 +105,22 @@
   --color-success-900: #1f211b;
   --color-success-950: #141413;
 
-  /* Info: in transit, informational, and the action blue (700) for links. */
-  --color-info-50: #ecf0f1;
+  /* Info: steel blue, the one accent hue (Ward `brand`). In transit,
+     informational, links and focus. 700 is brand (#3a6c86, 5.7:1 on white),
+     800 brand-strong (hover), 100 brand-tint; 400 is the dark-theme brand
+     (#6fa8c4) and 300 its hover, for `dark:` text. 600 and darker carry text on
+     white; 500 and lighter are marks only. */
+  --color-info-50: #edf2f5;
   --color-info-100: #dde6ed;
-  --color-info-200: #c0d3e5;
-  --color-info-300: #a4c1dc;
-  --color-info-400: #87aed4;
-  --color-info-500: #6a9bcc;
-  --color-info-600: #577da3;
-  --color-info-700: #445f7a;
-  --color-info-800: #314151;
-  --color-info-900: #1e2328;
-  --color-info-950: #141413;
+  --color-info-200: #bdd2df;
+  --color-info-300: #8cc0d8;
+  --color-info-400: #6fa8c4;
+  --color-info-500: #5a93b0;
+  --color-info-600: #41758f;
+  --color-info-700: #3a6c86;
+  --color-info-800: #2f5c74;
+  --color-info-900: #2e3535;
+  --color-info-950: #1e2526;
 
   /* Violet: department notes, postponed, external facilities. Independent of
      blue because both appear side by side (an action note next to a dept note). */
@@ -127,6 +135,48 @@
   --color-purple-800: #37294a;
   --color-purple-900: #211a2e;
   --color-purple-950: #141413;
+
+  /* Ward semantic tokens. The themed ones are swapped for dark values on
+     `.dark` below, so `text-brand`, `border-field-border` and friends need no
+     `dark:` twin. */
+  --color-brand: #3a6c86;
+  --color-brand-strong: #2f5c74;
+  --color-brand-tint: #dde6ed;
+  /* Form-control borders: 3.6:1 on white, 4.6:1 on the dark card (WCAG 1.4.11).
+     rule-strong (slate-300, 2.2:1) stays for outline buttons and decoration. */
+  --color-field-border: #8a8779;
+  --color-card: #ffffff;
+  --color-wash: #f0eee6;
+  --color-hairline: #e8e6dc;
+  --color-rule-strong: #b0aea5;
+  /* ink-mute is 4.3:1 on paper and 4.1:1 on desk: small text there takes ink-soft. */
+  --color-ink-soft: #5f5d54;
+  --color-ink-mute: #78766d;
+
+  /* Length-of-stay ramp (from IMC ER): time-in-state only, the same in both
+     themes. Text is on-los on tiers 1–3 and on-los-hi on 4–6. */
+  --color-los-1: #d9a441;
+  --color-los-2: #d38f2e;
+  --color-los-3: #d9752e;
+  --color-los-4: #b8431f;
+  --color-los-5: #a83326;
+  --color-los-6: #7a1f1f;
+  --color-on-los: #12181c;
+  --color-on-los-hi: #fbf9f5;
+
+  /* Role identity colours: account management only, always beside the role name. */
+  --color-role-owner: #93482a;
+  --color-role-director: #2a5a87;
+  --color-role-manager: #2f567a;
+  --color-role-deputy: #57554f;
+  --color-role-nurse: #28574c;
+  --color-role-pending: #7d5610;
+  --color-role-blocked: #a83226;
+
+  /* Chart series (light; the -night values are for dark surfaces). */
+  --color-chart-1: #3f6fa6;
+  --color-chart-2: #c2613f;
+  --color-chart-3: #7a55a8;
 
   --color-red-50: var(--color-critical-50);
   --color-red-100: var(--color-critical-100);
@@ -240,9 +290,34 @@ html.dark {
   color-scheme: dark;
 }
 
+/* Ward dark values for the themed semantic tokens. The ink/paper inversion
+   itself stays in `dark:` utilities (dark:bg-ink, dark:text-paper). */
+.dark {
+  --color-brand: #6fa8c4;
+  --color-brand-strong: #8cc0d8;
+  --color-brand-tint: #2e3535;
+  --color-card: #221f1a;
+  --color-wash: #3a392f;
+  --color-hairline: #3a392f;
+  --color-rule-strong: #5f5d54;
+  --color-ink-soft: #b0aea5;
+  --color-ink-mute: #8a8779;
+  --color-role-owner: #d97757;
+  --color-role-director: #6a9bcc;
+  --color-role-manager: #8ba9cc;
+  --color-role-deputy: #b0aea5;
+  --color-role-nurse: #5f9e8f;
+  --color-role-pending: #d9a441;
+  --color-role-blocked: #e5675a;
+  --color-chart-1: #5b8fd0;
+  --color-chart-2: #d8704a;
+  --color-chart-3: #9a79d6;
+}
+
 body {
   font-family: var(--font-body);
   font-size: 15px;
+  font-weight: 500;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -258,7 +333,7 @@ body {
 }
 
 /* Arabic (owner decision, 30 Sep): IBM Plex Sans Arabic for text and headings,
-   because Poppins has no Arabic. Its Latin digits keep vitals in 0–9. */
+   because Manrope has no Arabic. Its Latin digits keep vitals in 0–9. */
 html:lang(ar) {
   --font-sans: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-sans);
@@ -276,7 +351,7 @@ html:lang(ar) {
 
 /* The parts the browser draws still belong to the world. */
 ::selection {
-  background-color: var(--color-info-200);
+  background-color: var(--color-brand-tint);
   color: var(--color-ink);
 }
 .dark ::selection {
@@ -294,19 +369,20 @@ html:lang(ar) {
   scrollbar-color: rgb(250 249 245 / 0.22) transparent;
 }
 :focus-visible {
-  outline: 2px solid var(--color-info-700);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
-}
-.dark :focus-visible {
-  outline-color: var(--color-info-300);
 }
 a {
   text-underline-offset: 3px;
 }
-/* Clinical numbers line up: vitals, bed counts, timers. */
+/* Clinical numbers line up: vitals, bed counts, timers, and every mono run. */
 .tabular,
 time,
-[data-tabular] {
+[data-tabular],
+.font-mono,
+code,
+kbd,
+samp {
   font-variant-numeric: tabular-nums;
 }
 

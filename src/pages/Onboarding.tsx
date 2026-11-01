@@ -68,7 +68,7 @@ export const Onboarding: React.FC = () => {
         <h2 className="mt-6 text-center text-3xl font-light text-slate-900 dark:text-slate-100 tracking-tight">
           {t('onboarding.title')}
         </h2>
-        <p className="mt-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-300">
           {t('onboarding.subtitle')}
         </p>
       </div>
@@ -81,7 +81,7 @@ export const Onboarding: React.FC = () => {
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="onboardName" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('onboarding.name')}</label>
+                <label htmlFor="onboardName" className="block text-xs font-semibold text-slate-500 dark:text-slate-300 mb-2">{t('onboarding.name')}</label>
                 <div className="relative">
                   <User className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
@@ -103,7 +103,7 @@ export const Onboarding: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="onboardPhone" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('onboarding.phone')}</label>
+                <label htmlFor="onboardPhone" className="block text-xs font-semibold text-slate-500 dark:text-slate-300 mb-2">{t('onboarding.phone')}</label>
                 <div className="relative">
                   <Phone className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <Input
@@ -125,14 +125,14 @@ export const Onboarding: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="onboardRole" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
+                <label htmlFor="onboardRole" className="block text-xs font-semibold text-slate-500 dark:text-slate-300 mb-2">
                   {t('onboarding.role')} <span className="font-normal normal-case tracking-normal text-slate-500 dark:text-slate-400">{t('onboarding.roleHint')}</span>
                 </label>
                 <select
                   id="onboardRole"
                   value={role}
                   onChange={(e) => setRole(e.target.value as Role)}
-                  className="w-full min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  className="w-full min-h-[48px] rounded-xl border border-field-border bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900"
                   disabled={user?.role === 'owner'}
                 >
                   {user?.role === 'owner' && <option value="owner">{t('settings.roleOption.owner')}</option>}
@@ -144,7 +144,7 @@ export const Onboarding: React.FC = () => {
 
               {role !== 'system_admin' && role !== 'owner' && (
                 <div>
-                  <label htmlFor="onboardFacility" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('onboarding.hospital')}</label>
+                  <label htmlFor="onboardFacility" className="block text-xs font-semibold text-slate-500 dark:text-slate-300 mb-2">{t('onboarding.hospital')}</label>
                   <div className="relative">
                     <Building2 className="absolute start-3 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
                     <select
@@ -156,7 +156,7 @@ export const Onboarding: React.FC = () => {
                         setDepartment(''); 
                         if (formErrors.facilityId) setFormErrors(prev => ({ ...prev, facilityId: '' }));
                       }}
-                      className={`w-full min-h-[48px] ps-10 rounded-xl border ${formErrors.facilityId ? 'border-critical-500' : 'border-slate-200 dark:border-slate-800'} bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900`}
+                      className={`w-full min-h-[48px] ps-10 rounded-xl border ${formErrors.facilityId ? 'border-critical-500' : 'border-field-border'} bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900`}
                     >
                       <option value="">{t('onboarding.selectHospital')}</option>
                       {facilities.map(f => (
@@ -170,7 +170,7 @@ export const Onboarding: React.FC = () => {
 
               {(role === 'consultant' || role === 'specialist' || role === 'resident' || role === 'head_of_department' || role === 'nurse' || role === 'nursing_supervisor') && selectedFacility && (
                 <div>
-                  <label htmlFor="onboardDepartment" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('onboarding.department')}</label>
+                  <label htmlFor="onboardDepartment" className="block text-xs font-semibold text-slate-500 dark:text-slate-300 mb-2">{t('onboarding.department')}</label>
                   <select
                     id="onboardDepartment"
                     required
@@ -179,7 +179,7 @@ export const Onboarding: React.FC = () => {
                       setDepartment(e.target.value);
                       if (formErrors.department) setFormErrors(prev => ({ ...prev, department: '' }));
                     }}
-                    className={`w-full min-h-[48px] rounded-xl border ${formErrors.department ? 'border-critical-500' : 'border-slate-200 dark:border-slate-800'} bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900`}
+                    className={`w-full min-h-[48px] rounded-xl border ${formErrors.department ? 'border-critical-500' : 'border-field-border'} bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-900`}
                   >
                     <option value="">{t('onboarding.selectDepartment')}</option>
                     {selectedFacility.departments.map(d => (

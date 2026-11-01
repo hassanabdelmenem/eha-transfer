@@ -117,7 +117,7 @@ export const ReferralsPage: React.FC = () => {
           />
         </div>
         <select 
-          className="min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
+          className="min-h-[48px] rounded-xl border border-field-border bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:w-auto"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -126,7 +126,7 @@ export const ReferralsPage: React.FC = () => {
           ))}
         </select>
         <select 
-          className="min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
+          className="min-h-[48px] rounded-xl border border-field-border bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:w-auto"
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value)}
         >
@@ -136,7 +136,7 @@ export const ReferralsPage: React.FC = () => {
           ))}
         </select>
         <select 
-          className="min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
+          className="min-h-[48px] rounded-xl border border-field-border bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:w-auto"
           value={deptFilter}
           onChange={(e) => setDeptFilter(e.target.value)}
         >
@@ -149,7 +149,7 @@ export const ReferralsPage: React.FC = () => {
           <option value="Internal Medicine">Internal Medicine</option>
         </select>
         <select 
-          className="min-h-[48px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:w-auto"
+          className="min-h-[48px] rounded-xl border border-field-border bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:w-auto"
           value={bedFilter}
           onChange={(e) => setBedFilter(e.target.value)}
         >

@@ -136,7 +136,7 @@ export const AdminDashboard: React.FC = () => {
         {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => {
           const tone = capacityTone(free(bed), globalTotals[bed].total);
           return (
-            <li key={bed} className="rounded-[10px] border border-slate-200 bg-white px-1 py-2.5 text-center dark:border-white/12 dark:bg-white/[0.05]">
+            <li key={bed} className="rounded-[10px] border border-slate-200 bg-white px-1 py-2.5 text-center dark:border-white/12 dark:bg-slate-900">
               <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-white/60">{bed}</p>
               <p className={cn('mt-0.5 font-heading text-[22px] font-semibold leading-none tabular-nums', tone.text)}>{free(bed)}</p>
               <p className="mt-1 text-[11.5px] text-slate-700 dark:text-white/60">{t('admin.of', { total: globalTotals[bed].total })}</p>
@@ -179,7 +179,7 @@ export const AdminDashboard: React.FC = () => {
                         id={`place-${r.id}`}
                         value={placementFacilityId}
                         onChange={e => setPlacementFacilityId(e.target.value)}
-                        className="min-h-[52px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-ink dark:text-paper"
+                        className="min-h-[52px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-ink dark:text-paper"
                       >
                         <option value="">{t('admin.chooseFacility')}</option>
                         {facilities
@@ -232,7 +232,7 @@ export const AdminDashboard: React.FC = () => {
       {waitlistByFacility.length > 0 && (
         <section aria-labelledby="waitlist" className="mt-5 flex flex-col gap-2.5">
           <MicroLabel id="waitlist">{t('admin.waitlist')}</MicroLabel>
-          <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.05]">
+          <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-slate-900">
             {waitlistByFacility.map(f => (
               <li key={f.facilityId} className="flex min-h-[48px] items-center justify-between gap-3 px-[14px] py-2">
                 <span className="truncate text-[15px] text-ink dark:text-paper">{f.name}</span>
