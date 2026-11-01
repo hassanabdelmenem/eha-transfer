@@ -15,7 +15,7 @@ export const DraftRestoreBanner: React.FC<DraftRestoreBannerProps> = ({ lastSave
   const savedMs = Date.parse(lastSaved || '');
   const when = Number.isNaN(savedMs) ? null : formatClock(new Date(savedMs), lang);
   return (
-    <div role="status" className="flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white py-1.5 pe-1.5 ps-3.5 dark:border-white/12 dark:bg-white/5">
+    <div role="status" className="flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white py-1.5 pe-1.5 ps-3.5 dark:border-white/12 dark:bg-slate-900">
       <RotateCcw className="h-4 w-4 shrink-0 text-slate-700 dark:text-white/70" aria-hidden="true" />
       <p className="min-w-0 flex-1 text-[14px] leading-snug text-ink dark:text-paper">
         <span className="font-semibold">{t('wizard.restored')}</span>

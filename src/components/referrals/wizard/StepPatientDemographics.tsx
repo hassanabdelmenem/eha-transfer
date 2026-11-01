@@ -99,7 +99,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
         <FieldError id="hospitalId-error">{fieldErrors?.hospitalId}</FieldError>
       </div>
 
-      <details className="group rounded-[10px] border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.04]">
+      <details className="group rounded-[10px] border border-slate-200 bg-white dark:border-white/12 dark:bg-slate-900">
         <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 px-3.5 text-[14.5px] font-semibold text-ink dark:text-paper [&::-webkit-details-marker]:hidden">
           <span>
             {t('identity.more')}

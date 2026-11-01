@@ -549,7 +549,7 @@ export const ReferralDetailPage: React.FC<ReferralDetailPageProps> = ({ referral
     </>
   );
 
-  const sectionLabel = 'mb-2 text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60';
+  const sectionLabel = 'mb-2 text-[11px] font-bold uppercase tracking-[0.09em] text-slate-700 dark:text-white/60';
 
   return (
     <div className={`${embedded ? '' : 'max-w-5xl mx-auto'} ${hasPinnedFooter ? 'pb-48' : 'pb-4'} print:max-w-none print:pb-0 print:m-0`}>

@@ -46,7 +46,7 @@ export const DraftReferralCard: React.FC<{ draft: WizardDraft }> = ({ draft }) =
   const name = p.name?.trim() ? `${p.name.trim()}${p.age !== undefined ? `, ${p.age}` : ''}` : t('draft.unnamed');
 
   return (
-    <div className="flex shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
+    <div className="flex shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-slate-900">
       <span aria-hidden="true" className="w-[6px] shrink-0 bg-slate-300 dark:bg-white/25" />
       <div className="min-w-0 flex-1 px-[14px] pt-[14px] pb-[14px]">
         <div className="flex items-start justify-between gap-2.5">

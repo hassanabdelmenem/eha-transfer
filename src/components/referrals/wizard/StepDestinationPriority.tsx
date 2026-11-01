@@ -57,7 +57,7 @@ const freeBeds = (f: Facility, bed: BedType) => {
 const ToggleRow: React.FC<{ id: string; checked: boolean; onChange: (v: boolean) => void; title: string; sub: string }> = ({ id, checked, onChange, title, sub }) => (
   <label htmlFor={id} className={cn(
     'relative flex min-h-[56px] cursor-pointer items-start gap-3 rounded-[10px] border px-3.5 py-3 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-info-700',
-    checked ? 'border-ink bg-white dark:border-paper dark:bg-white/10' : 'border-slate-300 bg-white hover:bg-slate-50 dark:border-white/25 dark:bg-white/5'
+    checked ? 'border-ink bg-white dark:border-paper dark:bg-white/10' : 'border-slate-300 bg-white hover:bg-slate-50 dark:border-white/25 dark:bg-slate-900'
   )}>
     <input id={id} type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="absolute inset-0 m-0 h-full w-full cursor-pointer appearance-none rounded-[10px] opacity-0" />
     <span aria-hidden="true" className={cn(
@@ -188,8 +188,8 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
                   on
                     ? 'border-ink bg-ink text-paper dark:border-paper dark:bg-paper dark:text-ink'
                     : fieldErrors?.departments
-                    ? 'border-critical-700 bg-white text-ink dark:border-critical-400 dark:bg-white/5 dark:text-paper'
-                    : 'border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-white/5 dark:text-paper dark:hover:bg-white/10'
+                    ? 'border-critical-700 bg-white text-ink dark:border-critical-400 dark:bg-slate-900 dark:text-paper'
+                    : 'border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-slate-900 dark:text-paper dark:hover:bg-white/10'
                 )}
               >
                 {on && <Check className="h-4 w-4" aria-hidden="true" />}
@@ -227,7 +227,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
         </div>
         {isAutoRouting ? (
           <>
-            <p className="rounded-[10px] border border-slate-200 bg-white px-3.5 py-3 text-[14.5px] leading-[1.45] text-ink dark:border-white/12 dark:bg-white/5 dark:text-paper">
+            <p className="rounded-[10px] border border-slate-200 bg-white px-3.5 py-3 text-[14.5px] leading-[1.45] text-ink dark:border-white/12 dark:bg-slate-900 dark:text-paper">
               {receivingDepartments.length === 0
                 ? t('destinationStep.autoPickFirst')
                 : t('destinationStep.autoNotifies', { hospitals: t('wizard.matchingHospitals', { count: availableFacilities.length }), withBeds, bed: requiredBedType })}
@@ -347,7 +347,7 @@ export const StepDestinationPriority: React.FC<StepDestinationPriorityProps> = (
 
       <section aria-labelledby="review-heading" className="pt-2">
         <h3 id="review-heading" className="font-heading text-[20px] font-semibold tracking-[-0.02em] text-ink dark:text-paper">{t('destinationStep.ready')}</h3>
-        <ul className="mt-3 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.04]">
+        <ul className="mt-3 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-slate-900">
           {review.map(r => (
             <li key={r.label} className="flex items-center gap-3 py-2.5 pe-1.5 ps-3.5">
               <div className="min-w-0 flex-1">

@@ -45,7 +45,7 @@ function useChartTheme() {
   return {
     series: isDark ? PALETTE.dark : PALETTE.light,
     // The card surface: used for the 2px gap between stacked segments.
-    surface: isDark ? '#1f1f1e' : '#ffffff',
+    surface: isDark ? '#221f1a' : '#ffffff',
     grid: isDark ? 'rgba(250,249,245,0.10)' : '#e8e6dc',
     tick: isDark ? 'rgba(250,249,245,0.62)' : '#78766d',
     cursor: isDark ? 'rgba(250,249,245,0.06)' : '#f0eee6',
@@ -186,7 +186,7 @@ const ChartBlock: React.FC<{
   );
 };
 
-const panel = 'rounded-xl border border-slate-200 bg-white p-[14px] dark:border-white/12 dark:bg-white/[0.05]';
+const panel = 'rounded-xl border border-slate-200 bg-white p-[14px] dark:border-white/12 dark:bg-slate-900';
 const panelTitle = 'font-heading text-[17px] font-semibold tracking-[-0.01em] text-ink dark:text-paper';
 
 export const FacilityAnalyticsCharts: React.FC<FacilityAnalyticsChartsProps> = ({

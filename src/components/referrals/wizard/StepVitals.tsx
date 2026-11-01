@@ -91,7 +91,7 @@ export const StepVitals: React.FC<{
                     'min-h-[54px] pe-14 text-[17px] font-semibold tabular-nums',
                     abnormal
                       ? 'border-critical-700 bg-transparent text-critical-800 focus:ring-critical-700/25 dark:border-critical-400 dark:bg-transparent dark:text-critical-200'
-                      : 'border-slate-300 focus:border-info-700 focus:ring-info-700/30 dark:border-white/25'
+                      : 'border-field-border focus:border-brand focus:ring-brand/30'
                   )}
                 />
                 {flag && (

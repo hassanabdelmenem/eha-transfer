@@ -123,12 +123,12 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
         {/* What the referral waits on is stated once, by the role banner above. */}
 
         <div className="text-sm">
-          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-300 mb-1">
             {t('console.notes')}
           </label>
           <VoiceTextarea
             dir={typedDir(notes)}
-            className="w-full rounded border border-slate-300 p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+            className="w-full rounded border border-field-border p-2 text-sm focus:ring-1 focus:ring-brand outline-none"
             rows={2}
             value={notes}
             onValueChange={setNotes}
@@ -315,13 +315,13 @@ export const ReferralActionConsole: React.FC<ReferralActionConsoleProps> = ({
 
           {isAdmin && ['pending', 'dept_approved', 'manager_approved', 'accepted'].includes(referral.status) && (
             <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
-              <label htmlFor="overrideDestination" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
+              <label htmlFor="overrideDestination" className="block text-xs font-semibold text-slate-500 dark:text-slate-300 mb-2">
                 {t('console.overrideLabel')}
               </label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <select
                   id="overrideDestination"
-                  className="flex-1 min-w-0 rounded border border-slate-300 dark:border-slate-700 p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+                  className="flex-1 min-w-0 rounded border border-field-border p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
                   value={overrideFacilityId}
                   onChange={(e) => setOverrideFacilityId(e.target.value)}
                 >

@@ -11,7 +11,7 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       <div
         ref={ref}
         className={cn(
-          "inline-flex items-center rounded-[6px] px-2 py-1 text-[11px] font-bold leading-none tracking-[0.04em] focus:outline-none focus-visible:ring-2 focus-visible:ring-info-700",
+          "inline-flex items-center rounded-[6px] px-2 py-1 text-[11px] font-bold leading-none tracking-[0.04em] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand",
           {
             'bg-slate-200 text-slate-700 dark:bg-white/10 dark:text-slate-200': variant === 'default' || variant === 'secondary',
             // The four status tints. Text is the darkest step of the same hue, never

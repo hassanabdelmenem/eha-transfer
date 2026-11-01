@@ -2,6 +2,24 @@
 
 Newest first. One entry per working session: what changed, what was verified, what is left.
 
+## 2026-11-01: Ward design system (shared with imc-er-manager)
+
+- Moved the app onto Ward, the design system now shared with IMC ER (artifact
+  https://claude.ai/artifact/MFPnexR4DpNKQPyEeJ9oig). `src/index.css`: Manrope for headings and body (500–800,
+  body 500), JetBrains Mono (tabular) for mono; info scale rebuilt on steel blue (`info-700` = brand #3a6c86,
+  dark brand #6fa8c4 = `info-400`); Ward tokens `brand*`, `field-border`, `card`, `wash`, `hairline`,
+  `rule-strong`, `ink-soft`, `ink-mute`, `los-1..6`, `on-los*`, `role-*`, `chart-1..3`, themed ones swapped on
+  `.dark`; focus outline and `::selection` on brand. `index.html` loads Manrope + JetBrains Mono + IBM Plex
+  Sans Arabic (Poppins dropped).
+- Every form control border is `border-field-border` (was slate-300/200, white/25 in dark); field focus is
+  `focus:border-brand focus:ring-brand/30`; other blue focus rings are `ring-brand`.
+- Dark cards: translucent `dark:bg-white/5|[0.05]|[0.04]` on light-white cards became `dark:bg-slate-900` (#221f1a).
+- Contrast: small `slate-500` text on paper/desk (group micro-labels, stage-rail labels, timeline byline,
+  shift feed time) moved to `slate-700`; dark clinical-card labels `slate-400` → `slate-300`.
+- Verified: lint, Vitest, rules tests, build, E2E; Playwright screenshots of the HoD home and a referral
+  detail (desktop + phone, light + dark) plus the wizard, axe colour-contrast 0 violations on all.
+- DESIGN.md rewritten for Ward ("What Ward changed" at the end); findings.md design section updated.
+
 ## 2026-10-29: Patient demographics parity with IMC-ER merged (PR #88)
 
 - Created `src/lib/validators.ts` and unit tests `src/lib/validators.test.ts`:

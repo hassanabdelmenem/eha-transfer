@@ -20,15 +20,15 @@ export const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({ referr
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4">
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('cards.complaint')}</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-300 mb-1">{t('cards.complaint')}</p>
             <p dir="auto" className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData?.complaint || t('common.notApplicable')}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('cards.hpi')}</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-300 mb-1">{t('cards.hpi')}</p>
             <p dir="auto" className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData?.presentation || t('common.notApplicable')}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('cards.pmh')}</p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-300 mb-1">{t('cards.pmh')}</p>
             <p dir="auto" className="text-slate-800 dark:text-slate-200 text-sm">{referral.patientData?.pastHistory || t('common.notApplicable')}</p>
           </div>
         </div>

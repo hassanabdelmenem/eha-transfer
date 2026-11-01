@@ -6,7 +6,7 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
     // Resting card, no shadow -- DESIGN.md's Floating-Only Rule reserves shadow for
     // modals/popovers/dropdowns/toasts; the border + canvas tonal contrast does the
     // separation work here instead.
-    <div ref={ref} className={cn("rounded-xl border border-slate-200 bg-white text-ink dark:border-white/12 dark:bg-white/[0.05] dark:text-paper", className)} {...props} />
+    <div ref={ref} className={cn("rounded-xl border border-slate-200 bg-white text-ink dark:border-white/12 dark:bg-slate-900 dark:text-paper", className)} {...props} />
   )
 )
 Card.displayName = "Card"

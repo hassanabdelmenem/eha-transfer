@@ -46,14 +46,22 @@ Durable knowledge for future sessions. Update after any discovery. Secrets never
   screenshots 1a–3d). High fidelity; its copy and geometry are final unless untrue for this app.
 - Impeccable surface brief: `.impeccable/surfaces/src-app-tsx.md` (Operate mode, direction contract, seed 745e793f).
 
-## Design system as built (DESIGN.md rewritten from the build on 29 Sep; read it first)
+## Design system as built: Ward (shared with imc-er-manager since 1 Nov 2026; DESIGN.md, read it first)
 
+- Ward is one design system for this app and IMC ER (`imc-er-manager`). Source of truth: the Ward
+  design-system artifact https://claude.ai/artifact/MFPnexR4DpNKQPyEeJ9oig (`project/tokens.json`).
 - Ink and paper: paper `#faf9f5`, cards `#ffffff`, hairlines `#e8e6dc`, ink `#141413`, desk `#f4f2ed` (desktop
   detail pane). Muted text `slate-500 #78766d` / `slate-700 #5f5d54`; never `slate-400` for information.
 - Status: brick `critical-700 #b91c1c` (escalated/emergency), amber-brown `warning-800 #854d0e` on `#fef3c7`
-  (urgent), olive `success-700 #4c573c` on `#e0e3d7` (approve), dusty blue `info-500 #6a9bcc` (transit),
+  (urgent), olive `success-700 #4c573c` on `#e0e3d7` (approve), steel blue `brand #3a6c86` / dark `#6fa8c4`
+  (= `info-700` / `info-400`; links, focus, field focus, transit),
   violet `purple-700 #4e3c68` (dept notes). Raw Tailwind hues are remapped onto these scales in `src/index.css`.
-- Type: Poppins 600 headings at −0.02em, system UI body, 11px/700 tracked micro-labels, mono timestamps.
+- Type: Manrope 500–800 for headings and body, 11px/700 tracked micro-labels, JetBrains Mono (tabular) for
+  IDs and timestamps; IBM Plex Sans Arabic under `:lang(ar)`.
+- Ward tokens with dark values swapped on `.dark` (no `dark:` twin needed): `brand`, `brand-strong`,
+  `brand-tint`, `card`, `wash`, `hairline`, `rule-strong`, `ink-soft`, `ink-mute`, `role-*`, `chart-1..3`;
+  fixed: `field-border #8a8779` (every input/select/textarea border), `los-1..6`, `on-los`, `on-los-hi`.
+- Small text on paper/desk is `slate-700` (ink-soft): `slate-500` (ink-mute) is 4.3:1 on paper, 4.1:1 on desk.
 - Geometry: 18px gutter, 12px cards, 10–11px buttons, 48px minimum targets, 52–56px primaries, 6px
   priority rail plus a text chip (never colour alone).
 - Dark mode follows the device (full inversion on `#141413`); the sepia night-shift filter is not used.

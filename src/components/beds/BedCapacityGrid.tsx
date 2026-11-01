@@ -65,7 +65,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
               id="bedMgmtFacility"
               value={selectedFacilityId || facility.id}
               onChange={(e) => onSelectFacility(e.target.value)}
-              className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[48px]"
+              className="flex-1 rounded-xl border border-field-border p-2.5 text-sm focus:ring-2 focus:ring-brand bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[48px]"
             >
               <option value="">{t('beds.selectToManage')}</option>
               {facilities.map((f) => (
@@ -82,7 +82,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-300">
               {t('beds.totalBeds')}
             </span>
             <Building2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
@@ -97,7 +97,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-300">
               {t('beds.occupiedBeds')}
             </span>
             <Activity className="w-4 h-4 text-blue-500" />
@@ -112,7 +112,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-300">
               {t('beds.availableBeds')}
             </span>
             <CheckCircle2 className="w-4 h-4 text-success-500" />
@@ -127,7 +127,7 @@ export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 sm:p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-300">
               {t('beds.overall')}
             </span>
             <AlertTriangle

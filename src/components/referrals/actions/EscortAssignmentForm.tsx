@@ -34,7 +34,7 @@ export const EscortAssignmentForm: React.FC<EscortAssignmentFormProps> = ({
         placeholder={t('card.escortNamePlaceholder')}
         value={escortName}
         onChange={e => setEscortName(e.target.value)}
-        className="w-full min-h-[52px] rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink placeholder:text-slate-500 focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+        className="w-full min-h-[52px] rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink placeholder:text-slate-500 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper"
       />
       <label className="sr-only" htmlFor="escort-phone">{t('card.escortPhoneLabel')}</label>
       <input
@@ -43,7 +43,7 @@ export const EscortAssignmentForm: React.FC<EscortAssignmentFormProps> = ({
         placeholder={t('card.escortPhonePlaceholder')}
         value={escortPhone}
         onChange={e => setEscortPhone(e.target.value)}
-        className="w-full min-h-[52px] rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink placeholder:text-slate-500 focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+        className="w-full min-h-[52px] rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink placeholder:text-slate-500 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper"
       />
       <Button
         onClick={onSave}

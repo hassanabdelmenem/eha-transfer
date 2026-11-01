@@ -97,12 +97,12 @@ export const ReferralSummarySheet: React.FC<{
 
         <div className="space-y-5 overflow-y-auto px-5 pb-5">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">{t('sheet.why')}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-700 dark:text-white/60">{t('sheet.why')}</p>
             <p dir="auto" className="mt-1.5 text-[15.5px] leading-[1.55] text-ink dark:text-paper">{referral.reasonForReferral || NOT_RECORDED}</p>
           </div>
 
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">
+            <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-700 dark:text-white/60">
               {t('patient.vitals')}{vitals?.timestamp ? <> · <span className="font-mono normal-case tracking-normal">{formatClock(new Date(vitals.timestamp), lang)}</span></> : ''}
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2">
@@ -117,7 +117,7 @@ export const ReferralSummarySheet: React.FC<{
 
           {referral.patientData.diagnosis && (
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">{t('patient.diagnosis')}</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-700 dark:text-white/60">{t('patient.diagnosis')}</p>
               <p dir="auto" className="mt-1.5 text-[15px] leading-[1.5] text-ink dark:text-paper">{referral.patientData.diagnosis}</p>
             </div>
           )}

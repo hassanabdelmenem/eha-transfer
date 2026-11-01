@@ -26,7 +26,7 @@ const show = (value: number | undefined, suffix = '') =>
 const VitalStat: React.FC<{ label: string; value: React.ReactNode; unit?: string; abnormal: boolean }> = ({ label, value, unit, abnormal }) => {
   const { t } = useI18n();
   return (
-  <div className={`rounded-[9px] border p-[9px] ${abnormal ? 'border-critical-200 bg-critical-50 dark:border-critical-800 dark:bg-critical-950/60' : 'border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]'}`}>
+  <div className={`rounded-[9px] border p-[9px] ${abnormal ? 'border-critical-200 bg-critical-50 dark:border-critical-800 dark:bg-critical-950/60' : 'border-slate-200 bg-white dark:border-white/12 dark:bg-slate-900'}`}>
     <p className={`flex items-center gap-1 text-[11px] font-semibold ${abnormal ? 'text-critical-700 dark:text-critical-300' : 'text-slate-700 dark:text-white/65'}`}>
       {label}
       {abnormal && <AlertTriangle className="h-3 w-3" aria-hidden="true" />}
@@ -40,7 +40,7 @@ const VitalStat: React.FC<{ label: string; value: React.ReactNode; unit?: string
 };
 
 const MicroLabel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <p className={`text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60 ${className}`}>{children}</p>
+  <p className={`text-[11px] font-bold uppercase tracking-[0.09em] text-slate-700 dark:text-white/60 ${className}`}>{children}</p>
 );
 
 const recordedAt = (iso: string | undefined, lang: Language) => {
@@ -72,7 +72,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
         </div>
       </section>
 
-      <section aria-label={t('patient.diagnosis')} className="rounded-[11px] border border-slate-200 bg-white p-[13px] dark:border-white/12 dark:bg-white/[0.05]">
+      <section aria-label={t('patient.diagnosis')} className="rounded-[11px] border border-slate-200 bg-white p-[13px] dark:border-white/12 dark:bg-slate-900">
         <MicroLabel>{t('patient.diagnosis')}</MicroLabel>
         <p dir="auto" className="mt-[5px] text-[15.5px] font-medium leading-[1.45] text-ink dark:text-paper">{patient.diagnosis || t('patient.notRecorded')}</p>
         {patient.clinicalNotes && <p dir="auto" className="mt-2 whitespace-pre-wrap text-[14px] leading-[1.5] text-slate-700 dark:text-white/70">{patient.clinicalNotes}</p>}

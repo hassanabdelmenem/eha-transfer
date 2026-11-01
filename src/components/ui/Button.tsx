@@ -35,8 +35,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           // Focus: a 2px ring with an offset, drawn in the action blue. The offset
           // colour follows the surface so the ring never sits on its own edge.
           'inline-flex items-center justify-center gap-2 font-semibold transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info-700 focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
-          'dark:focus-visible:ring-info-300 dark:focus-visible:ring-offset-ink',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
+          'dark:focus-visible:ring-offset-ink',
           'disabled:pointer-events-none disabled:bg-slate-200 disabled:text-slate-500 disabled:border-transparent',
           'dark:disabled:bg-white/10 dark:disabled:text-white/45',
           {
@@ -44,7 +44,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             'bg-success-700 text-white hover:bg-success-800': variant === 'success',
             'bg-warning-700 text-white hover:bg-warning-800': variant === 'warning',
             'bg-critical-700 text-white hover:bg-critical-800': variant === 'destructive',
-            'border border-slate-200 bg-white text-ink hover:bg-slate-50 dark:border-white/20 dark:bg-white/5 dark:text-paper dark:hover:bg-white/10': variant === 'secondary',
+            'border border-slate-200 bg-white text-ink hover:bg-slate-50 dark:border-white/20 dark:bg-slate-900 dark:text-paper dark:hover:bg-white/10': variant === 'secondary',
             'border border-slate-300 bg-white text-ink hover:bg-slate-50 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10': variant === 'outline',
             'bg-transparent text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/10': variant === 'ghost',
             'min-h-[48px] rounded-[10px] px-3 text-[13px]': size === 'sm',

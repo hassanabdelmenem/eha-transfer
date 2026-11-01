@@ -134,7 +134,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
               id="admitFacility"
               value={selectedFacilityId || facility.id}
               onChange={(e) => onSelectFacility(e.target.value)}
-              className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[48px]"
+              className="flex-1 rounded-xl border border-field-border p-2.5 text-sm focus:ring-2 focus:ring-brand bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-[48px]"
             >
               <option value="">{t('beds.selectToManage')}</option>
               {facilities.map((f) => (
@@ -184,7 +184,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   className={`w-full rounded-xl border ${
                     formErrors.patientName
                       ? 'border-critical-500 focus:ring-critical-500'
-                      : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
+                      : 'border-field-border focus:ring-brand'
                   } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 outline-hidden min-h-[48px]`}
                   value={patientName}
                   onChange={(e) => {
@@ -216,7 +216,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   className={`w-full rounded-xl border ${
                     formErrors.hospitalId
                       ? 'border-critical-500 focus:ring-critical-500'
-                      : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
+                      : 'border-field-border focus:ring-brand'
                   } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 outline-hidden min-h-[48px] font-mono`}
                   value={hospitalId}
                   onChange={(e) => {
@@ -249,7 +249,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   className={`w-full rounded-xl border ${
                     formErrors.department
                       ? 'border-critical-500 focus:ring-critical-500'
-                      : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
+                      : 'border-field-border focus:ring-brand'
                   } p-2.5 text-sm focus:ring-2 outline-hidden bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-[48px]`}
                   value={department}
                   onChange={(e) => {
@@ -286,7 +286,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   className={`w-full rounded-xl border ${
                     formErrors.bedType
                       ? 'border-critical-500 focus:ring-critical-500'
-                      : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
+                      : 'border-field-border focus:ring-brand'
                   } p-2.5 text-sm focus:ring-2 outline-hidden bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-[48px]`}
                   value={bedType}
                   onChange={(e) => {
@@ -326,7 +326,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   className={`w-full rounded-xl border ${
                     formErrors.age
                       ? 'border-critical-500 focus:ring-critical-500'
-                      : 'border-slate-300 dark:border-slate-700 focus:ring-blue-500'
+                      : 'border-field-border focus:ring-brand'
                   } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 outline-hidden min-h-[48px]`}
                   value={age}
                   onChange={(e) => {
@@ -356,7 +356,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                         value={g}
                         checked={gender === g}
                         onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'other')}
-                        className="w-5 h-5 text-blue-600 focus:ring-blue-500 border-slate-300"
+                        className="w-5 h-5 text-blue-600 focus:ring-brand border-slate-300"
                       />
                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">{t(`gender.${g === 'other' ? 'unspecified' : g}`)}</span>
                     </label>
@@ -400,7 +400,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                       id="admitNationalId"
                       type="text"
                       placeholder={t('admission.nationalIdPlaceholder')}
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[48px]"
+                      className="w-full rounded-xl border border-field-border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-brand outline-hidden min-h-[48px]"
                       value={nationalId}
                       onChange={(e) => setNationalId(e.target.value)}
                     />
@@ -417,7 +417,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                       id="admitPhoneNumber"
                       type="tel"
                       placeholder={t('admission.phonePlaceholder')}
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[48px]"
+                      className="w-full rounded-xl border border-field-border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-brand outline-hidden min-h-[48px]"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                     />
@@ -436,7 +436,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     type="text"
                     dir={typedDir(diagnosis)}
                     placeholder={t('admission.diagnosisPlaceholder')}
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden min-h-[48px]"
+                    className="w-full rounded-xl border border-field-border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-brand outline-hidden min-h-[48px]"
                     value={diagnosis}
                     onChange={(e) => setDiagnosis(e.target.value)}
                   />
@@ -454,7 +454,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     rows={2}
                     dir={typedDir(chiefComplaint)}
                     placeholder={t('admission.complaintPlaceholder')}
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden"
+                    className="w-full rounded-xl border border-field-border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-brand outline-hidden"
                     value={chiefComplaint}
                     onChange={(e) => setChiefComplaint(e.target.value)}
                   />
@@ -472,7 +472,7 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     rows={2}
                     dir={typedDir(notes)}
                     placeholder={t('admission.notesPlaceholder')}
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden"
+                    className="w-full rounded-xl border border-field-border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-brand outline-hidden"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                   />

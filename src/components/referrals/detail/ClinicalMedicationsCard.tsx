@@ -23,7 +23,7 @@ export const ClinicalMedicationsCard: React.FC<ClinicalMedicationsCardProps> = (
       </CardHeader>
       <CardContent>
         <div className="text-sm">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('cards.medsReceived')}</p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-300 mb-1">{t('cards.medsReceived')}</p>
           <p dir="auto" className="text-slate-800 dark:text-slate-200 text-sm bg-slate-50 dark:bg-slate-950 p-4 rounded border border-slate-100 dark:border-slate-800 leading-relaxed">
             {referral.patientData.medications}
           </p>

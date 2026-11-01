@@ -61,7 +61,7 @@ export const PatientConsentCard: React.FC<PatientConsentCardProps> = ({
         <div className="space-y-2">
           <VoiceTextarea
             dir={typedDir(declineReason)}
-            className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-blue-500 min-h-[60px]"
+            className="w-full rounded border border-field-border bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 text-sm focus:ring-1 focus:ring-brand min-h-[60px]"
             placeholder={t('consent.placeholder')}
             value={declineReason}
             onValueChange={setDeclineReason}

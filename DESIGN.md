@@ -1,6 +1,6 @@
 ---
-name: Ismailia Health Connect
-description: Inter-facility referral and transfer coordination, drawn in ink and paper; the queue is the interface.
+name: Ward (Ismailia Health Connect)
+description: Ward, the design system shared by Ismailia Health Connect and IMC ER (imc-er-manager); ink and paper, one steel-blue accent, the queue is the interface.
 colors:
   paper: "#faf9f5"
   desk: "#f4f2ed"
@@ -10,6 +10,7 @@ colors:
   hairline: "#e8e6dc"
   wash: "#f0eee6"
   rule-strong: "#b0aea5"
+  field-border: "#8a8779"
   decorative-grey: "#8a8779"
   muted-text: "#78766d"
   secondary-text: "#5f5d54"
@@ -23,9 +24,16 @@ colors:
   olive: "#4c573c"
   olive-deep: "#353c2c"
   olive-tint: "#e0e3d7"
-  dusty-blue: "#6a9bcc"
-  action-blue: "#445f7a"
-  dusty-blue-tint: "#dde6ed"
+  brand: "#3a6c86"
+  brand-strong: "#2f5c74"
+  brand-tint: "#dde6ed"
+  brand-night: "#6fa8c4"
+  brand-strong-night: "#8cc0d8"
+  brand-tint-night: "#2e3535"
+  card-night: "#221f1a"
+  brick-night: "#fca5a5"
+  amber-night: "#fcd34d"
+  olive-night: "#acb89a"
   violet: "#4e3c68"
   violet-tint: "#e4dcee"
   chart-blue: "#3f6fa6"
@@ -34,44 +42,59 @@ colors:
   chart-blue-night: "#5b8fd0"
   chart-rust-night: "#d8704a"
   chart-violet-night: "#9a79d6"
+  los-1: "#d9a441"
+  los-2: "#d38f2e"
+  los-3: "#d9752e"
+  los-4: "#b8431f"
+  los-5: "#a83326"
+  los-6: "#7a1f1f"
+  on-los: "#12181c"
+  on-los-hi: "#fbf9f5"
+  role-owner: "#93482a"
+  role-director: "#2a5a87"
+  role-manager: "#2f567a"
+  role-deputy: "#57554f"
+  role-nurse: "#28574c"
+  role-pending: "#7d5610"
+  role-blocked: "#a83226"
 typography:
   headline:
-    fontFamily: "Poppins, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
     fontSize: "26px"
     fontWeight: 600
     lineHeight: 1.15
     letterSpacing: "-0.02em"
   title:
-    fontFamily: "Poppins, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
     fontSize: "21px"
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: "-0.02em"
   card-name:
-    fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif"
+    fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
     fontSize: "17px"
     fontWeight: 600
     lineHeight: 1.25
   body:
-    fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif"
+    fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
     fontSize: "15px"
-    fontWeight: 400
+    fontWeight: 500
     lineHeight: 1.45
   context:
-    fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif"
+    fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
     fontSize: "13.5px"
-    fontWeight: 400
+    fontWeight: 500
     lineHeight: 1.4
   label:
-    fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif"
+    fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
     fontSize: "11px"
     fontWeight: 700
     lineHeight: 1
     letterSpacing: "0.09em"
   mono:
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+    fontFamily: "JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
     fontSize: "13px"
-    fontWeight: 400
+    fontWeight: 500
     fontFeature: "\"tnum\""
 rounded:
   chip: "6px"
@@ -170,6 +193,7 @@ components:
     height: "52px"
   input-field:
     backgroundColor: "{colors.card}"
+    borderColor: "{colors.field-border}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
     height: "54px"
@@ -205,29 +229,39 @@ components:
     rounded: "{rounded.card}"
 ---
 
-# Design System: Ismailia Health Connect
+# Design System: Ward (Ismailia Health Connect)
 
 ## Overview
+
+**Ward is shared.** This app and IMC ER (`imc-er-manager`, the emergency-room live board) use one design
+system, Ward. Its source of truth is the Ward design-system artifact
+(https://claude.ai/artifact/MFPnexR4DpNKQPyEeJ9oig: `project/README.md`, `project/tokens.json`,
+`project/tokens.css`, component READMEs). Change a token there first, then in both apps, so the two stay
+one family. In this repo the tokens live in `src/index.css`; this file describes how they are used here.
+Ward is largely this app's earlier ink-and-paper system; what Ward changed is listed under
+"What Ward changed" at the end.
 
 **Creative North Star: "The Queue Is the Interface"**
 
 Every authenticated screen opens on the cases blocked on the person looking at it, billed in workflow order: escalated, then emergency, then urgent, then routine, oldest first within a tier. Each card carries one sentence naming what is needed and one button whose label is that action. Hierarchy is carried by billing order and type size; no tile, chart or decoration is allowed to compete with the order of the queue. This replaces the KPI-tile dashboard shown identically to every role.
 
-The material is ink and paper. A warm off-white page, white cards resting on it with hairline edges, near-black ink for primary buttons and dark chrome, warm greys for text. Status colour is muted and clinical (brick, amber-brown, olive, dusty blue, violet) and always travels with a word. Density is phone-first and thumb-first: 18px gutters, 48px minimum targets, 52 to 56px primaries, a sticky action bar at the bottom of the phone screen. On wide desktops (1280px and up) the same queue becomes a fixed column beside the open case.
+The material is ink and paper. A warm off-white page, white cards resting on it with hairline edges, near-black ink for primary buttons and dark chrome, warm greys for text. Status colour is muted and clinical (brick, amber-brown, olive, violet), with steel blue as the one accent hue, and always travels with a word. Density is phone-first and thumb-first: 18px gutters, 48px minimum targets, 52 to 56px primaries, a sticky action bar at the bottom of the phone screen. On wide desktops (1280px and up) the same queue becomes a fixed column beside the open case.
 
-Dark mode follows the device and is a full inversion onto ink, not a filter. The earlier command-blue "Clinical Command Center" world (Manrope/Inter, #1e3a8a) and the sepia night-shift filter are retired.
+Dark mode follows the device and is a full inversion onto ink (cards #221f1a), not a filter. The earlier command-blue "Clinical Command Center" world (#1e3a8a) and the sepia night-shift filter are retired.
 
 **Key Characteristics:**
 - Paper page, white cards, hairline borders; depth by tone, not shadow.
-- Ink is the single action colour; olive is the one alternative, reserved for approval.
+- Ink is the single action colour; olive is the one alternative, reserved for approval. Steel blue (`brand`) is the only accent hue: links, focus, field focus, information, in transit.
 - Priority is a 6px rail plus a text chip, never colour alone.
-- Poppins 600 at -0.02em for headings; the system UI sans for everything else; tabular numerals for clinical numbers.
+- Manrope (500–800) for every role, headings included, at -0.02em on headings; JetBrains Mono with tabular numerals for IDs, timestamps and live numbers.
 - 48px floor on every target; 52 to 56px on the action that ends a screen.
 - One queue column on phones; queue plus case pane at 1280px and up, with the selection in the URL.
 
 ## Colors
 
-A warm neutral scale from paper to ink, with five muted status hues that each own one meaning. Tailwind's own hue names are remapped in `src/index.css` onto these scales (slate and gray onto the warm neutrals; red and rose onto critical; amber and yellow onto warning; green and emerald onto success; blue and indigo onto info), so legacy utilities land in the palette. New code uses the semantic names (`critical`, `warning`, `success`, `info`, `purple`), never a raw hue.
+A warm neutral scale from paper to ink, one steel-blue accent, and four muted status hues that each own one meaning. Tailwind's own hue names are remapped in `src/index.css` onto these scales (slate and gray onto the warm neutrals; red and rose onto critical; amber and yellow onto warning; green and emerald onto success; blue and indigo onto info, which is the steel-blue brand scale), so legacy utilities land in the palette. New code uses the semantic names (`critical`, `warning`, `success`, `info`, `purple`, and the Ward tokens below), never a raw hue.
+
+**Ward semantic tokens** (Tailwind colours, so `text-brand`, `border-field-border`, `bg-card` work). The themed ones carry their dark value on `.dark`, so they need no `dark:` twin: `brand`, `brand-strong`, `brand-tint`, `card`, `wash`, `hairline`, `rule-strong`, `ink-soft`, `ink-mute`, `role-*`, `chart-1`…`chart-3`. `field-border` and the `los-*` ramp are the same in both themes. The ink/paper inversion itself still lives in `dark:` utilities (`dark:bg-ink`, `dark:text-paper`).
 
 ### Primary
 - **Ink** (ink): primary buttons, the active segment, selected choice pills, the phone header bar, the desktop navigation rail, and all body text on light surfaces. Hover deepens toward **Ink Hover** (ink-hover). In dark mode ink becomes the page and paper becomes the button.
@@ -238,7 +272,7 @@ A warm neutral scale from paper to ink, with five muted status hues that each ow
 ### Status
 - **Brick** (brick): escalation and emergency. The escalated card's 2px border and solid header strip, the emergency chip, the emergency rail, SLA clocks that have passed, field errors, zero free beds. Tinted surfaces use brick-tint and brick-wash.
 - **Amber-Brown** (amber-brown on amber-tint): urgent, pending review, low beds, "send back with requirements". Text is always amber-brown on the tint; a filled warning control uses **Amber Fill** (amber-fill), because white on the bright amber fails contrast.
-- **Dusty Blue** (dusty-blue): in transit and informational. **Action Blue** (action-blue) is the darker step used for links, focus rings and field focus borders.
+- **Steel Blue** (brand, #3a6c86; #6fa8c4 in dark): the one accent. Links, focus rings, field focus borders, active filters, in transit and informational states. **Brand Strong** (brand-strong) is its hover; **Brand Tint** (brand-tint) backs info banners and the in-transit chip. The `info` scale is the same hue: `info-700` is brand, `info-800` brand-strong, `info-100` brand-tint, `info-400` the dark brand and `info-300` its hover. 600 and darker carry text on white; 500 and lighter are marks only.
 - **Violet** (violet on violet-tint): department notes, postponed cases, external facilities. It is independent of blue because the two appear side by side.
 
 ### Neutral
@@ -248,10 +282,15 @@ A warm neutral scale from paper to ink, with five muted status hues that each ow
 - **Night Pane** (night-pane): the case pane in dark mode, one step off the ink page.
 - **Hairline** (hairline): card borders, dividers, the action bar's top rule, the routine chip, disabled buttons.
 - **Wash** (wash): the selected-row fill in flush ER lists and hover fills.
-- **Rule Strong** (rule-strong): field and outline-button borders, the routine priority rail, dashed empty-queue borders.
+- **Rule Strong** (rule-strong): outline-button borders, the routine priority rail, dashed empty-queue borders. It is 2.2:1 on white, so it is never the edge of a form control.
+- **Field Border** (field-border, #8a8779): the border of every input, select, textarea and field-like toggle. 3.6:1 on white and 4.6:1 on the dark card, which meets WCAG 1.4.11 in both themes.
 - **Decorative Grey** (decorative-grey): icons and borders only (about 3.4:1 on white). Never information.
-- **Muted Text** (muted-text): the lightest grey allowed to carry information: micro-labels, segment counts, "no clock", placeholders.
-- **Secondary Text** (secondary-text): context lines, rationale lines, field labels, hints, disabled-reason lines.
+- **Muted Text** (muted-text, Ward `ink-mute`): the lightest grey allowed to carry information, and only on card: segment counts, "no clock", placeholders. It is 4.3:1 on paper and 4.1:1 on desk, so small text there (group micro-labels, timeline bylines, stage-rail labels) takes Secondary Text.
+- **Secondary Text** (secondary-text, Ward `ink-soft`): context lines, rationale lines, field labels, hints, disabled-reason lines.
+
+### Length of stay and roles (from IMC ER)
+- **LOS ramp** (`los-1`…`los-6`): time-in-state tiers, the same fill in both themes; text is `on-los` on tiers 1–3 and `on-los-hi` on 4–6. Defined for parity with IMC ER; not used here yet.
+- **Role colours** (`role-owner`, `role-director`, `role-manager`, `role-deputy`, `role-nurse`, `role-pending`, `role-blocked`): account-management surfaces only, always beside the role name. Defined; not used here yet.
 
 ### Charts
 Facility analytics use a fixed three-series palette validated for contrast on each surface: chart-blue, chart-rust, chart-violet in light mode; chart-blue-night, chart-rust-night, chart-violet-night in dark. Gridlines are hairline in light and paper at 10% in dark; ticks are muted text.
@@ -259,24 +298,26 @@ Facility analytics use a fixed three-series palette validated for contrast on ea
 ### Named Rules
 **The Never Colour Alone Rule.** Every status tint carries a word. Priority is the rail plus the chip's text; bed capacity is the bar plus the stated count; an abnormal vital is a brick tint plus a warning icon plus a spoken "(abnormal)"; a role banner is a tint plus its uppercase label.
 
-**The Muted Floor Rule.** Informational text is Muted Text (#78766d) or darker. The 400 step of the neutral scale is for icons and borders; it never carries a word someone needs to read.
+**The Muted Floor Rule.** Informational text is Muted Text (#78766d) or darker, and on paper or desk small text is Secondary Text (#5f5d54). The 400 step of the neutral scale is for icons and borders; it never carries a word someone needs to read.
 
 **The One Meaning per Hue Rule.** Brick and amber never collapse: a rejected referral and a pending one never share a colour. Capacity has one threshold everywhere (`src/lib/capacityTone.ts`): brick at zero free beds, amber-brown under 20% free, olive above.
 
 ## Typography
 
-**Display Font:** Poppins (with the system UI stack as fallback)
-**Body Font:** System UI sans (ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial)
-**Label/Mono Font:** ui-monospace stack for phone numbers and IDs; tabular numerals for vitals, bed counts, timers and every `time` element
+**Sans (headings and body):** Manrope 500–800 (`--font-sans`; `--font-heading` and `--font-body` both point at it)
+**Mono:** JetBrains Mono 400–700 (`--font-mono`), always with tabular numerals, for IDs, phone numbers and timestamps; tabular numerals also on vitals, bed counts, timers and every `time` element
+**Arabic:** IBM Plex Sans Arabic replaces both under `:lang(ar)`, with letter-spacing 0
 
-**Character:** Poppins at 600 with tight tracking gives each screen one confident, geometric count or question; the device's own sans keeps everything else fast, familiar and legible on older shared tablets.
+All three load from Google Fonts in `index.html` (all under the SIL Open Font License). Body text is 500, because Manrope is loaded from 500.
+
+**Character:** one register for a speed-read instrument. Manrope's open, slightly condensed forms read fast at 15px and hold together at 26px/600 with tight tracking, so headings need no second face.
 
 ### Hierarchy
-- **Headline** (600, 26px, 1.15, -0.02em, Poppins): the role home count ("3 need you"), the desktop screen title, wizard step questions (24px on phones, 26px from 640px). Every h1 to h6 takes Poppins and -0.02em from the global stylesheet.
-- **Title** (600, 21px, Poppins): the patient name in the desktop case header. On the phone's ink header the name drops to 15px/600 system sans so the stage rail fits under it.
+- **Headline** (600, 26px, 1.15, -0.02em, Manrope): the role home count ("3 need you"), the desktop screen title, wizard step questions (24px on phones, 26px from 640px). Every h1 to h6 takes the heading font (Manrope) and -0.02em from the global stylesheet.
+- **Title** (600, 21px, Manrope): the patient name in the desktop case header. On the phone's ink header the name drops to 15px/600 system sans so the stage rail fits under it.
 - **Card Name** (600, 17px, 1.25, system sans): the patient name and age on every queue card and the escalation card; also the phone ScreenHeader title.
-- **Body** (400, 15px, 1.45): the default. The action sentence on a card (15px/600, tinted to priority), role banner sentences (15px/500), choice pills (15px/600) and card buttons (15px/600) sit at this size. Rationale lines and empty states use 14.5px.
-- **Context** (400, 13.5px, 1.4): the one context line under a card name (bed type, facility, department). Secondary metadata, not the clinical ask.
+- **Body** (500, 15px, 1.45): the default. The action sentence on a card (15px/600, tinted to priority), role banner sentences (15px/500), choice pills (15px/600) and card buttons (15px/600) sit at this size. Rationale lines and empty states use 14.5px.
+- **Context** (500, 13.5px, 1.4): the one context line under a card name (bed type, facility, department). Secondary metadata, not the clinical ask.
 - **Label** (700, 11px, 0.06 to 0.09em, uppercase): micro-labels heading a group of cards, priority chips, role banner labels, the escalation strip (11.5px). Field labels are 12.5px/600 sentence case.
 - **Numerals**: vitals values 16px/600 tabular; SLA clocks 13px/700 tabular ("8:12 left", "+2:05 over").
 
@@ -324,7 +365,7 @@ Solid, square-shouldered and labelled with the action itself.
 - **Outline:** White fill, Rule Strong border, ink text ("Summary", secondary actions). A critical outline (brick border and text) exists for reject-type secondaries.
 - **Square:** 48 or 52px icon squares (call the referring doctor, menu, notifications) with a Rule Strong border and an accessible name.
 - **Disabled:** Hairline fill with Muted Text, and a one-line reason beneath ("Blocked: record patient consent first").
-- **Hover / Focus:** Colour transitions only; ink deepens to Ink Hover, outlines take a paper wash. Focus is a 2px Action Blue ring offset 2px from the surface (a lighter dusty blue in dark mode).
+- **Hover / Focus:** Colour transitions only; ink deepens to Ink Hover, outlines take a paper wash. Focus is a 2px brand (steel blue) ring offset 2px from the surface; `brand` swaps to #6fa8c4 in dark mode.
 
 ### Chips
 - **Priority chip:** 6px radius, 11px/700 uppercase text at 0.06em. Emergency is brick with white text; urgent is amber-brown on amber tint; routine is secondary text on hairline.
@@ -335,17 +376,17 @@ Solid, square-shouldered and labelled with the action itself.
 - **Compact and selected (workspace):** in the desktop queue the HoD, manager and clinician cards drop their inline decision buttons (the decision lives in the case header) and the open case takes an ink border and ring. Flush ER rows take the Wash fill instead.
 - **Escalation card (EscalationAlertBanner):** pinned above the queue. 2px brick border on brick tint, with a solid brick header strip in 11.5px/700 uppercase white stating the reason and wait ("Escalated · no response 34 min"). Actions: an ink primary, an optional outline secondary, and a brick-outlined call square, all 52px. In dark mode the strip drops its fill and becomes brick-coloured text.
 - **Role banner (detail):** one uppercase label and one 15px sentence on a status tint with a matching border, 11px radius, 13px inset. It tells each role what the case means to them.
-- **Empty queue:** a dashed outline and one plain sentence; in the workspace pane an icon, a 19px Poppins line ("Nothing waiting on you") and one line of explanation.
+- **Empty queue:** a dashed outline and one plain sentence; in the workspace pane an icon, a 19px heading line ("Nothing waiting on you") and one line of explanation.
 
 ### Inputs / Fields
-- **Style:** 54px tall, white, Rule Strong border, 10px radius, 16px text (prevents iOS zoom on focus), placeholder in Muted Text. Textareas start at 112px. A 12.5px/600 label sits 6px above.
-- **Focus:** the border turns Action Blue with a 2px Action Blue ring at 30%.
+- **Style:** 54px tall, white (card in dark), Field Border border, 10px radius, 16px text (prevents iOS zoom on focus), placeholder in Muted Text. Textareas start at 112px. A 12.5px/600 label sits 6px above.
+- **Focus:** the border turns brand with a 2px brand ring at 30% (`focus:border-brand focus:ring-brand/30`).
 - **Error:** brick border and ring, with a 13px/600 brick message under the field wired through `aria-describedby`.
-- **Choice pill:** a real radio or checkbox made transparent and stretched over a 52px pill. Unselected is white with a Rule Strong border; selected is ink (brick for a critical choice, amber tint with an amber-brown border for a warning choice).
+- **Choice pill:** a real radio or checkbox made transparent and stretched over a 52px pill. Unselected is white with a Field Border border; selected is ink (brick for a critical choice, amber tint with an amber-brown border for a warning choice).
 
 ### Navigation
 - **Phone:** the role home opens with an ink identity header (role and facility, 48px squares). Other screens use ScreenHeader: a full-bleed ink bar with a 17px/600 title, a 13px subtitle at 65% paper, one optional screen action and the 48px menu square that opens the drawer.
-- **Desktop (1024px and up):** a 228px ink navigation rail; ScreenHeader becomes a plain title row with a 26px Poppins title and actions in white outline buttons.
+- **Desktop (1024px and up):** a 228px ink navigation rail; ScreenHeader becomes a plain title row with a 26px Manrope title and actions in white outline buttons.
 - **Segmented control:** equal-width 52px segments with a 10px radius, each showing its label (14.5px/600) and its case count (11.5px). The active segment is ink; inactive is white with a hairline border.
 
 ### Referral detail
@@ -368,10 +409,12 @@ State changes are instant apart from colour transitions. The summary sheet slide
 - **Do** bill every queue escalated, then emergency, urgent, routine, oldest first within a tier, and let that order carry the hierarchy.
 - **Do** pair every status colour with a word: rail plus chip, bar plus count, tint plus label, abnormal tint plus icon and spoken word.
 - **Do** make every target at least 48px, and the action that finishes a screen 52 to 56px.
-- **Do** use Muted Text (#78766d) or darker for anything a person must read.
+- **Do** use Muted Text (#78766d) or darker for anything a person must read, and Secondary Text (#5f5d54) for small text on paper or desk.
+- **Do** give every form control the Field Border edge; Rule Strong is for outline buttons and decoration.
 - **Do** keep the clinical ask (name, needed action, vitals, banner sentence, button labels) at 15px or larger.
 - **Do** follow the device for dark mode with a full inversion onto ink (#141413).
-- **Do** use the semantic scales (`critical`, `warning`, `success`, `info`, `purple`) in new code.
+- **Do** use the semantic scales (`critical`, `warning`, `success`, `info`, `purple`) and Ward tokens (`brand`, `field-border`, `card`…) in new code.
+- **Do** change Ward in the shared artifact first, then in both apps.
 - **Do** build with logical properties so the Arabic RTL pass is a layout change, not a rewrite.
 - **Do** preserve the E2E DOM contract: the ids, selectors and accessible names listed under "Interface & DOM Test Contracts" in PROJECT.md stay intact unless the user explicitly signs off on changing them.
 
@@ -384,3 +427,15 @@ State changes are instant apart from colour transitions. The summary sheet slide
 - **Don't** fabricate data in the UI: no default vitals, no invented scores, distances or counts. When a value is unknown, say so ("no clock", "Department approved").
 - **Don't** reference raw Tailwind hues (`red-600`, `amber-500`, `blue-700`) in new code.
 - **Don't** bring back KPI tiles or a newest-first grid as a role home.
+- **Don't** add a second accent hue; steel blue is the only one.
+
+## What Ward changed (1 Nov 2026)
+
+Kept as they were: the warm paper/ink neutrals, the ink primary and olive approve buttons, the brick / amber / olive / violet status hues, the chart palette, the 48–56px targets, the 6px priority rail, the queue-first layout, IBM Plex Sans Arabic.
+
+- **Fonts:** Poppins headings and the system UI body became Manrope for everything (500–800); the mono stack became JetBrains Mono with tabular numerals.
+- **Accent:** dusty blue / action blue (#6a9bcc / #445f7a) became IMC ER's steel blue, `brand` (#3a6c86 light, #6fa8c4 dark), with `brand-strong` and `brand-tint`. The `info` scale was rebuilt on it.
+- **Field borders:** new `field-border` (#8a8779) on every form control, light and dark; Rule Strong stays for outline buttons and decoration.
+- **New from IMC ER:** the length-of-stay ramp and the role colours, as tokens.
+- **Dark mode:** cards #221f1a (translucent white card fills became `slate-900`); stop #fca5a5, warn #fcd34d, good #acb89a and brand #6fa8c4 as the dark text values.
+- **Contrast:** small Muted Text on paper and desk moved to Secondary Text.

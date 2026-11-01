@@ -46,7 +46,7 @@ export const StageRail: React.FC<{ status: Referral['status']; tone?: 'ink' | 'p
                 'truncate text-[11px] font-semibold leading-tight tracking-normal lg:uppercase lg:tracking-[0.06em]',
                 onInk
                   ? current ? 'text-paper' : 'text-white/62'
-                  : current ? 'text-ink dark:text-paper' : 'text-slate-500 dark:text-white/60'
+                  : current ? 'text-ink dark:text-paper' : 'text-slate-700 dark:text-white/60'
               )}
             >
               {t(`stage.${STAGE_KEYS[i]}`)}

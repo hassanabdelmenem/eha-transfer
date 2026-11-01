@@ -40,10 +40,10 @@ const TINT_CLASSES: Record<Notification['type'], string> = {
   urgent: 'border-critical-200 bg-critical-100 dark:border-critical-800/70 dark:bg-critical-950/50',
   warning: 'border-warning-700 bg-warning-100 dark:border-warning-700/70 dark:bg-warning-900/35',
   success: 'border-success-300 bg-success-100 dark:border-success-700 dark:bg-success-900/45',
-  info: 'border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]',
+  info: 'border-slate-200 bg-white dark:border-white/12 dark:bg-slate-900',
   purple: 'border-purple-300 bg-purple-100 dark:border-purple-700 dark:bg-purple-900/40',
 };
-const READ_CLASSES = 'border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.04]';
+const READ_CLASSES = 'border-slate-200 bg-white dark:border-white/12 dark:bg-slate-900';
 const LABEL_TEXT_CLASSES: Record<Notification['type'], string> = {
   urgent: 'text-critical-700 dark:text-critical-300',
   warning: 'text-warning-800 dark:text-warning-300',

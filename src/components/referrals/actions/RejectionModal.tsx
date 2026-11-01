@@ -63,7 +63,7 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
         <textarea
           id="rejectionReasonInput"
           dir={typedDir(rejectionReason)}
-          className="w-full border rounded p-2 mb-4 dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm focus:ring-1 focus:ring-critical-500 outline-none"
+          className="w-full border border-field-border rounded p-2 mb-4 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-1 focus:ring-critical-500 outline-none"
           rows={3}
           placeholder={t('reject.placeholder')}
           value={rejectionReason}

@@ -111,7 +111,7 @@ export const ArchivePage: React.FC = () => {
             ? key === 'admitted'
               ? 'border-success-700 bg-success-100 ring-1 ring-success-700 dark:border-success-400 dark:bg-success-900/50 dark:ring-success-400'
               : 'border-critical-700 bg-critical-100 ring-1 ring-critical-700 dark:border-critical-400 dark:bg-critical-950/50 dark:ring-critical-400'
-            : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-white/12 dark:bg-white/[0.05] dark:hover:bg-white/10'
+            : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-white/12 dark:bg-slate-900 dark:hover:bg-white/10'
         )}
       >
         <span className="block text-[13.5px] text-slate-700 dark:text-white/70">{label}</span>
@@ -150,7 +150,7 @@ export const ArchivePage: React.FC = () => {
           placeholder={t('archive.searchPlaceholder')}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="min-h-[52px] w-full rounded-[10px] border border-slate-300 bg-white ps-11 pe-3 text-[16px] text-ink placeholder:text-slate-500 focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper dark:placeholder:text-white/45"
+          className="min-h-[52px] w-full rounded-[10px] border border-field-border bg-white ps-11 pe-3 text-[16px] text-ink placeholder:text-slate-500 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper dark:placeholder:text-white/45"
         />
       </div>
 
@@ -167,7 +167,7 @@ export const ArchivePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate(`/referrals/${r.id}`)}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-[14px] text-start transition-colors hover:bg-slate-50 dark:border-white/12 dark:bg-white/[0.05] dark:hover:bg-white/10"
+                  className="w-full rounded-xl border border-slate-200 bg-white p-[14px] text-start transition-colors hover:bg-slate-50 dark:border-white/12 dark:bg-slate-900 dark:hover:bg-white/10"
                 >
                   <span className="flex items-start justify-between gap-2.5">
                     <span className="min-w-0">

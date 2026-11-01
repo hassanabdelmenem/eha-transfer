@@ -96,7 +96,7 @@ export const ArrivedTransfersQueue: React.FC<ArrivedTransfersQueueProps> = ({
 
               <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
                 <div className="hidden sm:flex flex-col items-end text-end">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-300">
                     {t('beds.allocatedUnit')}
                   </span>
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200">

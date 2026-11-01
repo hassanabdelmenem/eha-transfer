@@ -306,8 +306,8 @@ export const NewReferralPage: React.FC = () => {
             <React.Fragment key={i}>{i > 0 && <strong className="font-semibold text-ink dark:text-paper">{t('wizard.them')}</strong>}{part}</React.Fragment>
           ))}
         </p>
-        <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 dark:border-white/12 dark:bg-white/5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">{t('wizard.nextForYou')}</p>
+        <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 dark:border-white/12 dark:bg-slate-900">
+          <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-700 dark:text-white/60">{t('wizard.nextForYou')}</p>
           <p className="mt-1.5 text-[15px] leading-[1.55] text-ink dark:text-paper">
             {t('wizard.nextText', { minutes: SLA_MINUTES })}
           </p>

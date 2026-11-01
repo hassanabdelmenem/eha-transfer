@@ -222,7 +222,7 @@ export const FacilitySettingsPage: React.FC = () => {
             <MicroLabel id="departments">{t('settings.departments', { count: facility.departments.length })}</MicroLabel>
             <ul className="flex flex-wrap gap-2">
               {facility.departments.map(dept => (
-                <li key={dept} className="inline-flex min-h-[48px] items-center rounded-full border border-slate-300 bg-white ps-4 text-[14px] font-medium text-ink dark:border-white/25 dark:bg-white/5 dark:text-paper">
+                <li key={dept} className="inline-flex min-h-[48px] items-center rounded-full border border-slate-300 bg-white ps-4 text-[14px] font-medium text-ink dark:border-white/25 dark:bg-slate-900 dark:text-paper">
                   {dept}
                   <button
                     type="button"
@@ -243,7 +243,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     onChange={e => setNewDepartment(e.target.value)}
                     dir={typedDir(newDepartment)}
                     placeholder={t('settings.addPlaceholder')}
-                    className="min-h-[48px] w-32 rounded-full border border-dashed border-slate-400 bg-transparent px-4 text-[14px] text-ink placeholder:text-slate-700 focus:w-48 focus:border-solid focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/35 dark:text-paper dark:placeholder:text-white/65"
+                    className="min-h-[48px] w-32 rounded-full border border-dashed border-slate-400 bg-transparent px-4 text-[14px] text-ink placeholder:text-slate-700 focus:w-48 focus:border-solid focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:border-white/35 dark:text-paper dark:placeholder:text-white/65"
                   />
                 </form>
               </li>
@@ -254,7 +254,7 @@ export const FacilitySettingsPage: React.FC = () => {
         {facility && (
           <section aria-labelledby="configured-capacity" className="flex flex-col gap-2.5">
             <MicroLabel id="configured-capacity">{t('settings.capacity')}</MicroLabel>
-            <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.05]">
+            <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-slate-900">
               {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).filter(bed => facility.capacity[bed]).map(bed => (
                 <li key={bed} className="flex min-h-[48px] items-center justify-between px-[14px]">
                   <span className="text-[15px] font-semibold text-ink dark:text-paper">{bed}</span>
@@ -273,7 +273,7 @@ export const FacilitySettingsPage: React.FC = () => {
       {/* 3c: facilities are a flat list under one label, with one full-width way to add one. */}
       {(isGlobalAdmin || ['hospital_manager', 'medical_director', 'owner'].includes(user.role)) && (
         <section aria-labelledby="facilities-label" className="flex flex-col gap-2.5">
-          <p id="facilities-label" className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">
+          <p id="facilities-label" className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-700 dark:text-white/60">
             {t('settings.facilities', { count: facilities.length })}
           </p>
           <button
@@ -306,7 +306,7 @@ export const FacilitySettingsPage: React.FC = () => {
                       onChange={e => setFacName(e.target.value)}
                       dir={typedDir(facName)}
                       placeholder={t('settings.facNamePlaceholder')}
-                      className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+                      className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper"
                     />
                   </div>
                   <div>
@@ -315,7 +315,7 @@ export const FacilitySettingsPage: React.FC = () => {
                       id="facType"
                       value={facType}
                       onChange={e => setFacType(e.target.value as FacilityType)}
-                      className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+                      className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper"
                     >
                       {(['tertiary_care', 'district_hospital', 'primary_care', 'external_contracted'] as FacilityType[]).map(ft => (
                         <option key={ft} value={ft}>{t(`settings.type.${ft}`)}</option>
@@ -332,7 +332,7 @@ export const FacilitySettingsPage: React.FC = () => {
                       onChange={e => setFacLocation(e.target.value)}
                       dir={typedDir(facLocation)}
                       placeholder={t('settings.locationPlaceholder')}
-                      className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+                      className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper"
                     />
                   </div>
                   <div>
@@ -344,7 +344,7 @@ export const FacilitySettingsPage: React.FC = () => {
                       onChange={e => setFacDepts(e.target.value)}
                       dir={typedDir(facDepts)}
                       placeholder="Emergency, ICU, CCU, Surgery"
-                      className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+                      className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper"
                     />
                   </div>
                 </div>
@@ -372,7 +372,7 @@ export const FacilitySettingsPage: React.FC = () => {
                       onChange={e => setFacContractedServices(e.target.value)}
                       dir={typedDir(facContractedServices)}
                       placeholder={t('settings.servicesPlaceholder')}
-                      className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+                      className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper"
                     />
                   </div>
                 )}
@@ -382,19 +382,19 @@ export const FacilitySettingsPage: React.FC = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
                       <label htmlFor="icuTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedsOf', { bed: 'ICU' })}</label>
-                      <input id="icuTotal" type="number" min="0" value={icuTotal} onChange={e => setIcuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper tabular-nums" />
+                      <input id="icuTotal" type="number" min="0" value={icuTotal} onChange={e => setIcuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper tabular-nums" />
                     </div>
                     <div>
                       <label htmlFor="ccuTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedsOf', { bed: 'CCU' })}</label>
-                      <input id="ccuTotal" type="number" min="0" value={ccuTotal} onChange={e => setCcuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper tabular-nums" />
+                      <input id="ccuTotal" type="number" min="0" value={ccuTotal} onChange={e => setCcuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper tabular-nums" />
                     </div>
                     <div>
                       <label htmlFor="picuTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedsOf', { bed: 'PICU' })}</label>
-                      <input id="picuTotal" type="number" min="0" value={picuTotal} onChange={e => setPicuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper tabular-nums" />
+                      <input id="picuTotal" type="number" min="0" value={picuTotal} onChange={e => setPicuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper tabular-nums" />
                     </div>
                     <div>
                       <label htmlFor="wardTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedsOf', { bed: 'Ward' })}</label>
-                      <input id="wardTotal" type="number" min="0" value={wardTotal} onChange={e => setWardTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-slate-300 bg-white px-3 text-[15px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper tabular-nums" />
+                      <input id="wardTotal" type="number" min="0" value={wardTotal} onChange={e => setWardTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper tabular-nums" />
                     </div>
                   </div>
                 </div>
@@ -406,7 +406,7 @@ export const FacilitySettingsPage: React.FC = () => {
               </form>
             )}
 
-            <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-white/[0.05]">
+            <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-slate-900">
               {facilities.map(f => (
                 <li key={f.id} className="flex items-start justify-between gap-2 px-[14px] py-3">
                   <div className="min-w-0">
@@ -455,9 +455,9 @@ export const FacilitySettingsPage: React.FC = () => {
       {/* Staff Roles & Facility Transfer -- restyled wrapper, same table
           (genuinely dense/tabular data, kept as a table on purpose), larger
           touch targets on every control. */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-white/[0.05]">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/12 dark:bg-slate-900">
         <div className="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-          <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500 dark:text-white/60">{t('settings.staff', { count: verifiedUsers.length })}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-slate-700 dark:text-white/60">{t('settings.staff', { count: verifiedUsers.length })}</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-start text-sm whitespace-nowrap">
@@ -481,7 +481,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">
                       <select
-                        className="min-h-[48px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper max-w-[180px]"
+                        className="min-h-[48px] rounded-[10px] border border-field-border bg-white px-2 text-[13.5px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper max-w-[180px]"
                         value={u.facilityId || ''}
                         onChange={(e) => {
                           const newFacId = e.target.value;
@@ -496,7 +496,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">
                        <select
-                         className="min-h-[48px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+                         className="min-h-[48px] rounded-[10px] border border-field-border bg-white px-2 text-[13.5px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper"
                          value={u.role}
                          disabled={user.role !== 'owner' && u.role === 'owner'}
                          onChange={(e) => updateUserRole(u.id, e.target.value as Role, u.department)}
@@ -526,7 +526,7 @@ export const FacilitySettingsPage: React.FC = () => {
                     <td className="px-4 py-3">
                        {['consultant', 'specialist', 'resident', 'head_of_department', 'nurse', 'nursing_supervisor'].includes(u.role) ? (
                          <select
-                           className="min-h-[48px] rounded-[10px] border border-slate-300 bg-white px-2 text-[13.5px] text-ink focus:border-info-700 focus:outline-none focus:ring-2 focus:ring-info-700/30 dark:border-white/25 dark:bg-white/5 dark:text-paper"
+                           className="min-h-[48px] rounded-[10px] border border-field-border bg-white px-2 text-[13.5px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper"
                            value={u.department || ''}
                            onChange={(e) => updateUserRole(u.id, u.role, e.target.value)}
                          >

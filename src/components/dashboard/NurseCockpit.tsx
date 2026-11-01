@@ -30,7 +30,7 @@ const BedStepperWidget: React.FC<{
   const stepBtn = 'flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[10px] border border-slate-300 bg-white text-ink transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/25 dark:bg-transparent dark:text-paper dark:hover:bg-white/10';
 
   return (
-    <div className="shrink-0 rounded-xl border border-slate-200 bg-white p-[14px] dark:border-white/12 dark:bg-white/[0.05]">
+    <div className="shrink-0 rounded-xl border border-slate-200 bg-white p-[14px] dark:border-white/12 dark:bg-slate-900">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[17px] font-semibold leading-tight text-ink dark:text-paper">{bedType}</p>

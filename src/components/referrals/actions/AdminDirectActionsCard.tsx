@@ -43,7 +43,7 @@ export const AdminDirectActionsCard: React.FC<AdminDirectActionsCardProps> = ({
           {t('adminActions.forceMove')}
         </label>
         <select
-          className="w-full min-h-[48px] rounded-xl border border-slate-300 dark:border-slate-700 p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full min-h-[48px] rounded-xl border border-field-border p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand"
           value={contractedFacilityId}
           onChange={(e) => setContractedFacilityId(e.target.value)}
         >
