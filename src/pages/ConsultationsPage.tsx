@@ -23,6 +23,12 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { showToast, toastError } from '../lib/toast';
 import { cn } from '../lib/utils';
 import { useI18n } from '../i18n';
+import {
+  isValidHospitalId,
+  isValidNationalId,
+  decodeNationalIdToPatient,
+  formatUnknownPatientName,
+} from '../lib/validators';
 
 const COMMON_SPECIALTIES = [
   'Cardiology',
@@ -109,10 +115,26 @@ export const ConsultationsPage: React.FC = () => {
     return { total, pending, answered, emergencyPending };
   }, [consultations]);
 
+  const handleQuickUnknown = () => {
+    const nextNum = Math.floor(100 + Math.random() * 900);
+    setPatientName(formatUnknownPatientName(1));
+    setHospitalId(`UNK-${nextNum}`);
+  };
+
   // Handle create consultation submit
   const handleCreateConsultation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!patientName.trim() || !hospitalId.trim() || !reason.trim() || !targetFacilityId) {
+      return;
+    }
+
+    if (!isValidHospitalId(hospitalId)) {
+      showToast(t('admission.errors.invalidHospitalId') || 'Please enter a valid Hospital ID (e.g. IMC-8821, H123456789, UNK-101)', 'error');
+      return;
+    }
+
+    if (nationalId.trim() && !isValidNationalId(nationalId)) {
+      showToast(t('admission.errors.invalidNationalId') || 'Please enter a valid 14-digit National ID', 'error');
       return;
     }
 
@@ -565,9 +587,18 @@ export const ConsultationsPage: React.FC = () => {
             <form onSubmit={handleCreateConsultation} className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    {t('consultations.patientName')} *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {t('consultations.patientName')} *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleQuickUnknown}
+                      className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                    >
+                      + {t('identity.unknownPatient') || 'مجهول الهوية'}
+                    </button>
+                  </div>
                   <input
                     type="text"
                     required
@@ -585,6 +616,8 @@ export const ConsultationsPage: React.FC = () => {
                   <input
                     type="text"
                     required
+                    autoCapitalize="characters"
+                    maxLength={30}
                     value={hospitalId}
                     onChange={e => setHospitalId(e.target.value)}
                     placeholder="e.g. IMC-12345"
@@ -601,8 +634,15 @@ export const ConsultationsPage: React.FC = () => {
                   <input
                     type="text"
                     maxLength={14}
+                    inputMode="numeric"
                     value={nationalId}
-                    onChange={e => setNationalId(e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setNationalId(val);
+                      const decoded = decodeNationalIdToPatient(val);
+                      if (decoded.age !== undefined) setAge(String(decoded.age));
+                      if (decoded.gender) setGender(decoded.gender);
+                    }}
                     placeholder="14 digits"
                     className="w-full min-h-[44px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono"
                   />

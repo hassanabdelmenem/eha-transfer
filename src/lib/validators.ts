@@ -4,12 +4,26 @@
  * Parity with imc-er-manager patient demographics rules.
  */
 
-export const ARABIC_NAME_REGEX = /^[؀-ۿ\s]+$/;
-export const HOSPITAL_ID_REGEX = /^[A-Z]\d{9}$/;
+// Arabic name allowing attached numbers for unknown patients ("مجهول 1", "مجهول الهوية 12")
+export const ARABIC_NAME_REGEX = /^(?=.*[ء-ي؀-ۿ])[؀-ۿ\s0-9]+$/;
+
+// Resilient Hospital ID: 2-30 chars, alphanumeric with hyphens/underscores, requires at least one digit
+export const HOSPITAL_ID_REGEX = /^(?=.*\d)[A-Z0-9ء-ي][A-Z0-9ء-ي\-_]{0,28}[A-Z0-9ء-ي]$/;
+
 export const NATIONAL_ID_REGEX = /^\d{14}$/;
 
 /**
+ * Normalizes Eastern Arabic (Arabic-Indic) and Persian digits to Latin digits.
+ */
+export function toLatinDigits(s: unknown): string {
+  return String(s ?? '')
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06F0));
+}
+
+/**
  * Validates whether a patient name is in Arabic script.
+ * Supports attached numbers for unknown patients (e.g. "مجهول الهوية 1").
  */
 export function isValidArabicName(name: unknown): boolean {
   if (typeof name !== 'string') return false;
@@ -18,11 +32,49 @@ export function isValidArabicName(name: unknown): boolean {
 }
 
 /**
- * Validates hospital ID against standard Egyptian regional health authority format (e.g. H123456789).
+ * Checks if a name indicates an unidentified/unknown patient.
  */
-export function isValidHospitalId(id: unknown): boolean {
+export function isUnknownPatientName(name: unknown): boolean {
+  if (typeof name !== 'string') return false;
+  const s = name.trim();
+  return /^(مجهول|مجهولة|مجهول\s+الهوية|مجهولة\s+الهوية|unknown(\s+patient)?)/i.test(s);
+}
+
+/**
+ * Formats a standardized unknown patient name with sequence number.
+ */
+export function formatUnknownPatientName(num = 1, isFemale = false): string {
+  const prefix = isFemale ? 'مجهولة الهوية' : 'مجهول الهوية';
+  return `${prefix} ${num}`;
+}
+
+/**
+ * Detects if a hospital ID is a temporary emergency ID (e.g. UNK-101, TEMP-01).
+ */
+export function isTemporaryHospitalId(id: unknown): boolean {
   if (typeof id !== 'string') return false;
   const s = id.trim().toUpperCase();
+  return /^(UNK|TEMP|EMERG|UNKNOWN)[-_]/.test(s);
+}
+
+const BIDI_CLEAN_RE = new RegExp('[\\u200B\\u200E\\u200F\\u061C\\u2028\\u2029\\u202A-\\u202E\\u2060\\u2066-\\u2069\\uFEFF]', 'g');
+
+/**
+ * Validates hospital ID against universal regional health authority format.
+ * Supports:
+ * - Standard UHI: H123456789, A000000001
+ * - Regional facility prefixes: IMC-8821, ABK-7023, FYD-4412, ISM-1, HID-001
+ * - Pure numeric MRNs: 104928, 8821
+ * - Temporary intake codes: UNK-101, TEMP-ER-001, EMERG-042
+ * - Arabic-Indic numbers and slash-to-hyphen normalization
+ */
+export function isValidHospitalId(id: unknown): boolean {
+  if (typeof id !== 'string' && typeof id !== 'number') return false;
+  const s = toLatinDigits(String(id))
+    .replace(BIDI_CLEAN_RE, '')
+    .replace(/\//g, '-')
+    .trim()
+    .toUpperCase();
   return HOSPITAL_ID_REGEX.test(s);
 }
 
@@ -34,6 +86,17 @@ export function isValidNationalId(nid: unknown): boolean {
   if (typeof nid !== 'string') return false;
   const s = nid.trim();
   return s === '' || NATIONAL_ID_REGEX.test(s);
+}
+
+/**
+ * Normalizes Hospital ID for uniform dictionary lookup and deduplication.
+ */
+export function hospitalIdKey(v: unknown): string {
+  return toLatinDigits(String(v ?? ''))
+    .replace(BIDI_CLEAN_RE, '')
+    .replace(/\s+/g, '')
+    .replace(/\//g, '-')
+    .toUpperCase();
 }
 
 /**
@@ -138,4 +201,53 @@ export function validatePatientDemographics(
     valid: Object.keys(errors).length === 0,
     errors,
   };
+}
+
+export interface ShiftPatientIdentityParams {
+  verifiedNationalId: string;
+  unifiedHospitalId: string;
+  verifiedName?: string;
+  staffEmail?: string;
+}
+
+/**
+ * Reconciles a patient record with temporary/unknown identity to their permanent,
+ * unified Hospital ID and National ID, appending an audit record into notes.
+ */
+export function shiftPatientIdentity<
+  T extends {
+    hospitalId?: string;
+    patientId?: string;
+    nationalId?: string;
+    name?: string;
+    notes?: string;
+    [key: string]: unknown;
+  }
+>(
+  currentPatient: T,
+  { verifiedNationalId, unifiedHospitalId, verifiedName, staffEmail }: ShiftPatientIdentityParams
+): Partial<T> & Record<string, unknown> {
+  const prevId = currentPatient?.hospitalId || currentPatient?.patientId || '';
+  const prevName = currentPatient?.name || '';
+  const nowStr = new Date().toISOString();
+  const staffTag = staffEmail ? ` by ${staffEmail}` : '';
+  const auditLine = `[Identity Shift ${nowStr}${staffTag}: from ID "${prevId}" (${prevName}) to unified ID "${unifiedHospitalId}"]`;
+  const existingNotes = currentPatient?.notes ? `${currentPatient.notes}\n${auditLine}` : auditLine;
+
+  const patch: Record<string, unknown> = {
+    hospitalId: unifiedHospitalId,
+    nationalId: verifiedNationalId,
+    notes: existingNotes,
+    lastModified: nowStr,
+  };
+
+  if (currentPatient && 'patientId' in currentPatient) {
+    patch.patientId = unifiedHospitalId;
+  }
+
+  if (verifiedName && verifiedName.trim()) {
+    patch.name = verifiedName.trim();
+  }
+
+  return patch as Partial<T> & Record<string, unknown>;
 }

@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { PatientData } from '../../../types';
 import { ChoicePill, FieldError, FieldHint, FieldLabel, StepHeading, inputClass, textareaClass } from './fields';
 import { useI18n, typedDir } from '../../../i18n';
-import { decodeNationalId, decodeNationalIdToPatient } from '../../../lib/validators';
+import { decodeNationalId, decodeNationalIdToPatient, formatUnknownPatientName } from '../../../lib/validators';
 
 interface StepPatientDemographicsProps {
   patientData: Partial<PatientData>;
@@ -31,7 +31,23 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
       <StepHeading>{t('identity.heading')}</StepHeading>
 
       <div>
-        <FieldLabel htmlFor="patientName" required>{t('identity.fullName')}</FieldLabel>
+        <div className="flex items-center justify-between mb-1.5">
+          <FieldLabel htmlFor="patientName" required>{t('identity.fullName')}</FieldLabel>
+          <button
+            type="button"
+            onClick={() => {
+              const nextNum = Math.floor(100 + Math.random() * 900);
+              set({
+                name: formatUnknownPatientName(1),
+                hospitalId: `UNK-${nextNum}`,
+                gender: 'male',
+              });
+            }}
+            className="text-[12px] font-semibold text-brand dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+          >
+            + {t('identity.unknownPatient') || 'مجهول الهوية'}
+          </button>
+        </div>
         <input
           id="patientName"
           required
@@ -89,6 +105,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
           required
           autoComplete="off"
           autoCapitalize="characters"
+          maxLength={30}
           placeholder="ISM-XXXXX"
           value={patientData.hospitalId || ''}
           onChange={e => set({ hospitalId: e.target.value })}
