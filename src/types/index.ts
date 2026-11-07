@@ -51,8 +51,10 @@ export interface Facility {
   isExternal?: boolean;
   contractedServices?: string[];
   name: string;
+  nameAr?: string;
   type: FacilityType;
   location: string;
+  locationAr?: string;
   departments: string[];
   capacity: Record<BedType, { total: number; occupied: number }> | Record<string, { total: number; occupied: number }>;
 }

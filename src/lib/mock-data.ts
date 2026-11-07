@@ -4,9 +4,11 @@ export const FACILITIES: Facility[] = [
   {
     id: 'f1',
     name: 'Ismailia Medical Complex',
+    nameAr: 'مجمع الإسماعيلية الطبي',
     type: 'tertiary_care',
     location: 'Ismailia City',
-    departments: ['Emergency', 'ICU', 'CCU', 'PICU', 'Cardiology', 'Neurology', 'Surgery', 'Pediatrics', 'Internal Medicine', 'Nephrology', 'Orthopedics', 'Vascular Surgery', 'Neurosurgery', 'Cardiothoracic Surgery', 'Oncology', 'ENT', 'Ophthalmology', 'Maxillofacial', 'Radiology'],
+    locationAr: 'مدينة الإسماعيلية',
+    departments: ['Emergency', 'ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Cardiology', 'Neurology', 'Surgery', 'Pediatrics', 'Internal Medicine', 'Nephrology', 'Orthopedics', 'Vascular Surgery', 'Neurosurgery', 'Cardiothoracic Surgery', 'Oncology', 'ENT', 'Ophthalmology', 'Maxillofacial', 'Radiology'],
     capacity: {
       ICU: { total: 17, occupied: 15 },
       Intermediate: { total: 39, occupied: 32 },
@@ -19,116 +21,132 @@ export const FACILITIES: Facility[] = [
   {
     id: 'f2',
     name: 'Abu Khalifa Emergency Hospital',
+    nameAr: 'مستشفى أبو خليفة للطوارئ والجراحات المتخصصة',
     type: 'tertiary_care',
     location: 'Abu Khalifa, Ismailia',
-    departments: ['Emergency', 'ICU', 'Surgery', 'Orthopedics', 'Cardiothoracic Surgery', 'Internal Medicine', 'Radiology'],
+    locationAr: 'أبو خليفة - القنطرة غرب',
+    departments: ['Emergency', 'ICU', 'Intermediate', 'Surgery', 'Orthopedics', 'Cardiothoracic Surgery', 'Vascular Surgery', 'Neurosurgery', 'Internal Medicine', 'Radiology'],
     capacity: {
-      ICU: { total: 16, occupied: 14 },
-      Intermediate: { total: 10, occupied: 8 },
+      ICU: { total: 13, occupied: 11 },
+      Intermediate: { total: 6, occupied: 5 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
       NICU: { total: 0, occupied: 0 },
-      Ward: { total: 66, occupied: 52 }
+      Ward: { total: 95, occupied: 74 }
     }
   },
   {
     id: 'f3',
     name: 'Fayed Specialized Hospital',
+    nameAr: 'مستشفى فايد التخصصي',
     type: 'district_hospital',
     location: 'Fayed',
-    departments: ['Emergency', 'ICU', 'Surgery', 'Orthopedics', 'Internal Medicine', 'Pediatrics', 'Obstetrics & Gynecology'],
+    locationAr: 'مركز ومدينة فايد',
+    departments: ['Emergency', 'ICU', 'Intermediate', 'NICU', 'Surgery', 'Orthopedics', 'Internal Medicine', 'Pediatrics', 'Obstetrics & Gynecology', 'Nephrology', 'Radiology'],
     capacity: {
-      ICU: { total: 12, occupied: 10 },
-      Intermediate: { total: 8, occupied: 6 },
+      ICU: { total: 7, occupied: 6 },
+      Intermediate: { total: 5, occupied: 4 },
       CCU: { total: 0, occupied: 0 },
-      PICU: { total: 4, occupied: 2 },
-      NICU: { total: 6, occupied: 4 },
-      Ward: { total: 50, occupied: 38 }
+      PICU: { total: 0, occupied: 0 },
+      NICU: { total: 12, occupied: 9 },
+      Ward: { total: 47, occupied: 36 }
     }
   },
   {
     id: 'f4',
     name: 'El Qassasin Specialized Hospital',
+    nameAr: 'مستشفى القصاصين التخصصي',
     type: 'district_hospital',
     location: 'El Qassasin',
-    departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Nephrology'],
+    locationAr: 'مركز ومدينة القصاصين الجديدة',
+    departments: ['Emergency', 'ICU', 'NICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Nephrology', 'Obstetrics & Gynecology', 'Orthopedics', 'Radiology'],
     capacity: {
-      ICU: { total: 12, occupied: 11 },
-      Intermediate: { total: 8, occupied: 6 },
+      ICU: { total: 15, occupied: 12 },
+      Intermediate: { total: 0, occupied: 0 },
       CCU: { total: 0, occupied: 0 },
-      PICU: { total: 6, occupied: 4 },
-      NICU: { total: 8, occupied: 6 },
-      Ward: { total: 60, occupied: 45 }
+      PICU: { total: 0, occupied: 0 },
+      NICU: { total: 11, occupied: 8 },
+      Ward: { total: 46, occupied: 35 }
     }
   },
   {
     id: 'f5',
     name: 'El Qantara West Hospital',
+    nameAr: 'مستشفى القنطرة غرب المركزي',
     type: 'district_hospital',
     location: 'El Qantara West',
-    departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics'],
+    locationAr: 'مدينة القنطرة غرب',
+    departments: ['Emergency', 'ICU', 'Intermediate', 'NICU', 'Surgery', 'Internal Medicine', 'Orthopedics', 'Pediatrics', 'Obstetrics & Gynecology', 'Radiology'],
     capacity: {
-      ICU: { total: 8, occupied: 7 },
-      Intermediate: { total: 6, occupied: 4 },
+      ICU: { total: 8, occupied: 6 },
+      Intermediate: { total: 4, occupied: 3 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
-      NICU: { total: 4, occupied: 3 },
-      Ward: { total: 45, occupied: 32 }
+      NICU: { total: 5, occupied: 4 },
+      Ward: { total: 50, occupied: 38 }
     }
   },
   {
     id: 'f6',
     name: 'El Qantara East Hospital',
+    nameAr: 'مستشفى القنطرة شرق المركزي',
     type: 'district_hospital',
     location: 'El Qantara East',
-    departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics'],
+    locationAr: 'مدينة القنطرة شرق',
+    departments: ['Emergency', 'ICU', 'Intermediate', 'NICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Obstetrics & Gynecology', 'Radiology'],
     capacity: {
       ICU: { total: 6, occupied: 5 },
-      Intermediate: { total: 4, occupied: 3 },
+      Intermediate: { total: 2, occupied: 2 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
-      NICU: { total: 4, occupied: 2 },
-      Ward: { total: 35, occupied: 20 }
+      NICU: { total: 4, occupied: 3 },
+      Ward: { total: 36, occupied: 24 }
     }
   },
   {
     id: 'f7',
     name: 'Tel El Kebir Central Hospital',
+    nameAr: 'مستشفى التل الكبير المركزي',
     type: 'district_hospital',
     location: 'Tel El Kebir',
-    departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Nephrology'],
+    locationAr: 'مركز ومدينة التل الكبير',
+    departments: ['Emergency', 'ICU', 'Intermediate', 'NICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Obstetrics & Gynecology', 'Nephrology', 'Orthopedics', 'Radiology'],
     capacity: {
-      ICU: { total: 10, occupied: 9 },
-      Intermediate: { total: 8, occupied: 6 },
+      ICU: { total: 10, occupied: 8 },
+      Intermediate: { total: 6, occupied: 4 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
       NICU: { total: 6, occupied: 4 },
-      Ward: { total: 60, occupied: 48 }
+      Ward: { total: 60, occupied: 45 }
     }
   },
   {
     id: 'f8',
     name: '30 June Nephrology & Urology Center',
+    nameAr: 'مركز 30 يونيو الدولي لأمراض الكلى والمسالك البولية',
     type: 'tertiary_care',
     location: 'Ismailia City',
-    departments: ['Emergency', 'ICU', 'Nephrology', 'Urology', 'Kidney Transplant', 'Hemodialysis', 'Surgery'],
+    locationAr: 'مدينة الإسماعيلية',
+    departments: ['Emergency', 'ICU', 'Nephrology', 'Urology', 'Kidney Transplant', 'Hemodialysis', 'Surgery', 'Radiology'],
     capacity: {
-      ICU: { total: 8, occupied: 7 },
-      Intermediate: { total: 6, occupied: 5 },
+      ICU: { total: 8, occupied: 6 },
+      Intermediate: { total: 0, occupied: 0 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
       NICU: { total: 0, occupied: 0 },
-      Ward: { total: 40, occupied: 30 }
+      Ward: { total: 44, occupied: 32 }
     }
   },
   {
     id: 'f9',
     name: 'Suez Canal University Hospital',
+    nameAr: 'مستشفيات جامعة قناة السويس',
     type: 'external_contracted',
     isExternal: true,
-    contractedServices: ['Toxicology', 'Neurosurgery', 'Pediatric Surgery', 'Vascular Surgery'],
+    contractedServices: ['Toxicology', 'Neurosurgery', 'Pediatric Surgery', 'Vascular Surgery', 'Cardiothoracic Surgery'],
     location: 'Ismailia (University Campus)',
-    departments: ['Emergency', 'ICU', 'CCU', 'Neurosurgery', 'Cardiothoracic Surgery', 'Vascular Surgery', 'Pediatric Surgery', 'Toxicology'],
+    locationAr: 'الإسماعيلية (المجمع الطبي الجامعي)',
+    departments: ['Emergency', 'ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Neurosurgery', 'Cardiothoracic Surgery', 'Vascular Surgery', 'Pediatric Surgery', 'Toxicology'],
     capacity: {
       ICU: { total: 30, occupied: 28 },
       Intermediate: { total: 20, occupied: 18 },
@@ -141,9 +159,11 @@ export const FACILITIES: Facility[] = [
   {
     id: 'f10',
     name: 'Suez Medical Complex',
+    nameAr: 'مجمع السويس الطبي',
     type: 'tertiary_care',
     location: 'Suez Governorate',
-    departments: ['Emergency', 'ICU', 'CCU', 'PICU', 'Cardiology', 'Surgery', 'Burns & Plastic Surgery'],
+    locationAr: 'محافظة السويس',
+    departments: ['Emergency', 'ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Cardiology', 'Surgery', 'Burns & Plastic Surgery'],
     capacity: {
       ICU: { total: 45, occupied: 40 },
       Intermediate: { total: 25, occupied: 20 },
@@ -156,9 +176,11 @@ export const FACILITIES: Facility[] = [
   {
     id: 'f11',
     name: 'Port Said Specialized Eye Hospital',
+    nameAr: 'مستشفى رمد بورسعيد التخصصي',
     type: 'tertiary_care',
     location: 'Port Said Governorate',
-    departments: ['Emergency', 'Ophthalmology', 'Surgery'],
+    locationAr: 'محافظة بورسعيد',
+    departments: ['Emergency', 'Ophthalmology', 'Surgery', 'ICU'],
     capacity: {
       ICU: { total: 4, occupied: 2 },
       Intermediate: { total: 2, occupied: 1 },
