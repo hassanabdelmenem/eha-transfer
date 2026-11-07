@@ -11,7 +11,7 @@ import { BedType, Facility } from '../types';
 import { isAdmin as checkIsAdmin } from '../lib/permissions';
 import { useI18n } from '../i18n';
 
-const BED_TYPES: BedType[] = ['ICU', 'CCU', 'PICU', 'Ward'];
+const BED_TYPES: BedType[] = ['ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Ward'];
 // 2e network list: a capacity hint per facility -- the first configured bed
 // type, ICU preferred since that's what most referrals in this network need.
 // Falls back to a department count for a facility with no capacity configured.

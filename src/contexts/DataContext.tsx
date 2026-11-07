@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Referral, StatusHistoryEntry, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User, ShiftLog } from '../types';
+import { Referral, StatusHistoryEntry, Notification, ReferralPriority, DeptApprovalStatus, Role, Facility, BedType, ShiftAssignment, User, ShiftLog, Consultation, ConsultationOutcome } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS } from '../lib/mock-data';
+import { FACILITIES as INITIAL_FACILITIES, MOCK_USERS as INITIAL_USERS, MOCK_CONSULTATIONS as INITIAL_CONSULTATIONS } from '../lib/mock-data';
 import { DIRECTORY_COLLECTION, directoryEntryFor, mergeRoster, type DirectoryEntry } from '../lib/directory';
 import { useAuth } from './AuthContext';
 import { db } from '../lib/firebase';
@@ -64,6 +64,10 @@ interface DataContextType {
   notifications: Notification[];
   facilities: Facility[];
   facilitiesById: Map<string, Facility>;
+  consultations: Consultation[];
+  consultationsById: Map<string, Consultation>;
+  addConsultation: (consultation: Omit<Consultation, 'id' | 'consultationNumber' | 'status' | 'outcome' | 'isAnswered' | 'requestedAt'>) => void;
+  answerConsultation: (id: string, response: { outcome: ConsultationOutcome; responseNotes: string; doctorName: string }) => void;
   directAdmissions: DirectAdmission[];
   shiftAssignments: ShiftAssignment[];
   shiftAssignmentsByFacility: Map<string, ShiftAssignment[]>;
@@ -137,6 +141,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [consultations, setConsultations] = useState<Consultation[]>(INITIAL_CONSULTATIONS);
   const [directAdmissions, setDirectAdmissions] = useState<DirectAdmission[]>([]);
   const [shiftAssignments, setShiftAssignments] = useState<ShiftAssignment[]>([]);
   const [shiftLogs, setShiftLogs] = useState<ShiftLog[]>([]);
@@ -469,6 +474,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         markOnline();
         setShiftLogs(snapshot.docs.map(doc => doc.data() as ShiftLog).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')));
       }, logAndCheckOffline));
+
+    // Consultations: specialist inter-hospital telemedicine teleconsultations
+    unsubs.push(onSnapshot(collection(db, 'consultations'), (snapshot) => {
+      markOnline();
+      if (!snapshot.empty) {
+        setConsultations(snapshot.docs.map(doc => doc.data() as Consultation).sort((a, b) => (b.requestedAt || '').localeCompare(a.requestedAt || '')));
+      } else {
+        setConsultations(INITIAL_CONSULTATIONS);
+      }
+    }, (err) => {
+      logAndCheckOffline(err);
+      setConsultations(INITIAL_CONSULTATIONS);
+    }));
 
     return () => unsubs.forEach(u => u());
   }, [user?.id, user?.verified, cleared, user?.facilityId, user?.role]);
@@ -1603,6 +1621,52 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, notifications]);
 
   const referralsById = useMemo(() => new Map(referrals.map(r => [r.id, r])), [referrals]);
+  const consultationsById = useMemo(() => new Map(consultations.map(c => [c.id, c])), [consultations]);
+
+  const addConsultation = useCallback((consultationData: Omit<Consultation, 'id' | 'consultationNumber' | 'status' | 'outcome' | 'isAnswered' | 'requestedAt'>) => {
+    const id = `c-${Date.now()}`;
+    const consultationNumber = String(Math.floor(100 + Math.random() * 900));
+    const newConsultation: Consultation = {
+      ...consultationData,
+      id,
+      consultationNumber,
+      status: 'pending',
+      outcome: 'pending',
+      isAnswered: false,
+      requestedAt: new Date().toISOString()
+    };
+
+    setConsultations(prev => [newConsultation, ...prev]);
+
+    setDoc(doc(db, 'consultations', id), newConsultation).catch(writeFailed("Could not add consultation."));
+  }, []);
+
+  const answerConsultation = useCallback((id: string, response: {
+    outcome: ConsultationOutcome;
+    responseNotes: string;
+    doctorName: string;
+  }) => {
+    const answeredAt = new Date().toISOString();
+    setConsultations(prev => prev.map(c => {
+      if (c.id === id) {
+        return {
+          ...c,
+          ...response,
+          status: 'answered',
+          isAnswered: true,
+          answeredAt
+        };
+      }
+      return c;
+    }));
+
+    updateDoc(doc(db, 'consultations', id), {
+      ...response,
+      status: 'answered',
+      isAnswered: true,
+      answeredAt
+    }).catch(writeFailed("Could not answer consultation."));
+  }, []);
 
   const contextValue = useMemo(() => ({
     loading: dataLoading,
@@ -1610,6 +1674,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     usersById,
     referrals,
     referralsById,
+    consultations,
+    consultationsById,
+    addConsultation,
+    answerConsultation,
     notifications,
     facilities,
     facilitiesById,
@@ -1654,6 +1722,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // include referralsById to ensure consistency when referrals change
     // so consumers relying on it get updated contextValue
     referralsById,
+    consultations,
+    consultationsById,
+    addConsultation,
+    answerConsultation,
     notifications,
     facilities,
     facilitiesById,

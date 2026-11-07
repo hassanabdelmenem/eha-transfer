@@ -42,6 +42,7 @@ const DepartmentPage = lazy(() => import('./pages/DepartmentPage').then(m => ({ 
 const NetworkDirectoryPage = lazy(() => import('./pages/NetworkDirectoryPage').then(m => ({ default: m.NetworkDirectoryPage })));
 const FacilitySettingsPage = lazy(() => import('./pages/FacilitySettingsPage').then(m => ({ default: m.FacilitySettingsPage })));
 const BedManagementPage = lazy(() => import('./pages/BedManagementPage').then(m => ({ default: m.BedManagementPage })));
+const ConsultationsPage = lazy(() => import('./pages/ConsultationsPage').then(m => ({ default: m.ConsultationsPage })));
 const Onboarding = lazy(() => import('./pages/Onboarding').then(m => ({ default: m.Onboarding })));
 const PendingVerification = lazy(() => import('./pages/PendingVerification').then(m => ({ default: m.PendingVerification })));
 
@@ -138,6 +139,7 @@ const AppRoutes = () => {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<RoleBasedDashboard />} />
           <Route path="referrals" element={<ReferralsPage />} />
+          <Route path="consultations" element={<ConsultationsPage />} />
           <Route path="archive" element={<ArchivePage />} />
           <Route path="referrals/new" element={<NewReferralPage />} />
           <Route path="referrals/:id" element={<ReferralWorkspacePane />} />

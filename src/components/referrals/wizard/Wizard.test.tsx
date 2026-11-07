@@ -510,7 +510,7 @@ describe('Intake wizard in Arabic', () => {
   const ALLOWED = new Set([
     ...NETWORK_DEPARTMENTS.flatMap(d => d.split(' ')),
     ...mockFacilities.flatMap(f => f.name.split(' ')),
-    'Ward', 'ICU', 'CCU', 'PICU',
+    'Ward', 'ICU', 'Intermediate', 'CCU', 'PICU', 'NICU',
     'HR', 'BP', 'SpO', 'RR', 'GCS', 'bpm', 'mmHg', 'min', 'PDF', 'JPG', 'PNG', 'WEBP', 'GIF', 'SVG',
     // Clinical examples kept in English in the Arabic placeholders.
     'Anterior', 'STEMI', 'Troponin', 'ng', 'mL', 'ECG', 'ST', 'elevation',

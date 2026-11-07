@@ -67,7 +67,7 @@ export const ManagerCockpit: React.FC = () => {
     [facilityReferrals, user?.facilityId]
   );
 
-  const bedTypesWithCapacity = (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).filter(
+  const bedTypesWithCapacity = (['ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Ward'] as BedType[]).filter(
     bt => (userFacility?.capacity?.[bt]?.total ?? 0) > 0
   );
 

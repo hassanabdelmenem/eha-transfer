@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FACILITIES, MOCK_USERS } from './mock-data';
+import { FACILITIES, MOCK_USERS, MOCK_CONSULTATIONS } from './mock-data';
 
 const facilityIds = new Set(FACILITIES.map(f => f.id));
 
@@ -20,6 +20,21 @@ describe('lib/mock-data (strong assertions)', () => {
       // capacity keys should exist
       expect(typeof f.capacity).toBe('object');
       expect(f.capacity).toHaveProperty('Ward');
+    }
+  });
+
+  it('mock consultations have required fields and valid status', () => {
+    expect(Array.isArray(MOCK_CONSULTATIONS)).toBe(true);
+    expect(MOCK_CONSULTATIONS.length).toBeGreaterThan(0);
+    for (const c of MOCK_CONSULTATIONS) {
+      expect(typeof c.id).toBe('string');
+      expect(typeof c.patientName).toBe('string');
+      expect(typeof c.hospitalId).toBe('string');
+      expect(typeof c.specialty).toBe('string');
+      expect(typeof c.requestingHospital).toBe('string');
+      expect(typeof c.requestedHospital).toBe('string');
+      expect(['routine', 'urgent', 'emergency']).toContain(c.urgency);
+      expect(['pending', 'answered']).toContain(c.status);
     }
   });
 
@@ -55,9 +70,11 @@ describe('lib/mock-data (strong assertions)', () => {
       departments: ['Emergency', 'ICU', 'CCU', 'PICU', 'Cardiology', 'Neurology', 'Surgery', 'Pediatrics', 'Internal Medicine', 'Nephrology', 'Orthopedics', 'Vascular Surgery', 'Neurosurgery', 'Cardiothoracic Surgery', 'Oncology', 'ENT', 'Ophthalmology', 'Maxillofacial', 'Radiology'],
       capacity: {
         ICU: { total: 17, occupied: 15 },
+        Intermediate: { total: 39, occupied: 32 },
         CCU: { total: 21, occupied: 18 },
-        PICU: { total: 38, occupied: 30 },
-        Ward: { total: 251, occupied: 210 }
+        PICU: { total: 11, occupied: 9 },
+        NICU: { total: 27, occupied: 21 },
+        Ward: { total: 212, occupied: 178 }
       }
     });
 
@@ -70,8 +87,10 @@ describe('lib/mock-data (strong assertions)', () => {
       departments: ['Emergency', 'ICU', 'Surgery', 'Orthopedics', 'Cardiothoracic Surgery', 'Internal Medicine', 'Radiology'],
       capacity: {
         ICU: { total: 16, occupied: 14 },
+        Intermediate: { total: 10, occupied: 8 },
         CCU: { total: 0, occupied: 0 },
         PICU: { total: 0, occupied: 0 },
+        NICU: { total: 0, occupied: 0 },
         Ward: { total: 66, occupied: 52 }
       }
     });
@@ -85,8 +104,10 @@ describe('lib/mock-data (strong assertions)', () => {
       departments: ['Emergency', 'ICU', 'Surgery', 'Orthopedics', 'Internal Medicine', 'Pediatrics', 'Obstetrics & Gynecology'],
       capacity: {
         ICU: { total: 12, occupied: 10 },
+        Intermediate: { total: 8, occupied: 6 },
         CCU: { total: 0, occupied: 0 },
         PICU: { total: 4, occupied: 2 },
+        NICU: { total: 6, occupied: 4 },
         Ward: { total: 50, occupied: 38 }
       }
     });
@@ -100,8 +121,10 @@ describe('lib/mock-data (strong assertions)', () => {
       departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Nephrology'],
       capacity: {
         ICU: { total: 12, occupied: 11 },
+        Intermediate: { total: 8, occupied: 6 },
         CCU: { total: 0, occupied: 0 },
         PICU: { total: 6, occupied: 4 },
+        NICU: { total: 8, occupied: 6 },
         Ward: { total: 60, occupied: 45 }
       }
     });
@@ -115,8 +138,10 @@ describe('lib/mock-data (strong assertions)', () => {
       departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics'],
       capacity: {
         ICU: { total: 8, occupied: 7 },
+        Intermediate: { total: 6, occupied: 4 },
         CCU: { total: 0, occupied: 0 },
         PICU: { total: 0, occupied: 0 },
+        NICU: { total: 4, occupied: 3 },
         Ward: { total: 45, occupied: 32 }
       }
     });

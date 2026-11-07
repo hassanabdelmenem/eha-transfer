@@ -106,7 +106,7 @@ export const BedManagementPage: React.FC = () => {
           ...pendingUpdatesRef.current,
         };
         // Check if values actually changed to avoid re-rendering loops
-        const hasChanged = (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).some(
+        const hasChanged = (['ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Ward'] as BedType[]).some(
           (bt) =>
             prev[bt]?.total !== next[bt]?.total ||
             prev[bt]?.occupied !== next[bt]?.occupied
