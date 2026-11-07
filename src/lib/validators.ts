@@ -234,7 +234,7 @@ export function shiftPatientIdentity<
   const auditLine = `[Identity Shift ${nowStr}${staffTag}: from ID "${prevId}" (${prevName}) to unified ID "${unifiedHospitalId}"]`;
   const existingNotes = currentPatient?.notes ? `${currentPatient.notes}\n${auditLine}` : auditLine;
 
-  const patch: Partial<T> & Record<string, unknown> = {
+  const patch: Record<string, unknown> = {
     hospitalId: unifiedHospitalId,
     nationalId: verifiedNationalId,
     notes: existingNotes,
@@ -249,5 +249,5 @@ export function shiftPatientIdentity<
     patch.name = verifiedName.trim();
   }
 
-  return patch;
+  return patch as Partial<T> & Record<string, unknown>;
 }

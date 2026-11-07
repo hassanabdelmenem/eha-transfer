@@ -32,7 +32,7 @@ export const StepPatientDemographics: React.FC<StepPatientDemographicsProps> = (
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <FieldLabel htmlFor="patientName" required className="mb-0">{t('identity.fullName')}</FieldLabel>
+          <FieldLabel htmlFor="patientName" required>{t('identity.fullName')}</FieldLabel>
           <button
             type="button"
             onClick={() => {
