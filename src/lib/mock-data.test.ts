@@ -49,75 +49,75 @@ describe('lib/mock-data (strong assertions)', () => {
     const f1 = FACILITIES.find(f => f.id === 'f1');
     expect(f1).toEqual({
       id: 'f1',
-      name: 'Ismailia General Hospital',
+      name: 'Ismailia Medical Complex',
       type: 'tertiary_care',
       location: 'Ismailia City',
-      departments: ['Emergency', 'ICU', 'CCU', 'PICU', 'Cardiology', 'Neurology', 'Surgery', 'Pediatrics', 'Internal Medicine'],
+      departments: ['Emergency', 'ICU', 'CCU', 'PICU', 'Cardiology', 'Neurology', 'Surgery', 'Pediatrics', 'Internal Medicine', 'Nephrology', 'Orthopedics', 'Vascular Surgery', 'Neurosurgery', 'Cardiothoracic Surgery', 'Oncology', 'ENT', 'Ophthalmology', 'Maxillofacial', 'Radiology'],
       capacity: {
-        ICU: { total: 20, occupied: 18 },
-        CCU: { total: 10, occupied: 9 },
-        PICU: { total: 8, occupied: 5 },
-        Ward: { total: 200, occupied: 150 }
+        ICU: { total: 17, occupied: 15 },
+        CCU: { total: 21, occupied: 18 },
+        PICU: { total: 38, occupied: 30 },
+        Ward: { total: 251, occupied: 210 }
       }
     });
 
     const f2 = FACILITIES.find(f => f.id === 'f2');
     expect(f2).toEqual({
       id: 'f2',
-      name: 'Tel El Kebir District Hospital',
-      type: 'district_hospital',
-      location: 'Tel El Kebir',
-      departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics'],
+      name: 'Abu Khalifa Emergency Hospital',
+      type: 'tertiary_care',
+      location: 'Abu Khalifa, Ismailia',
+      departments: ['Emergency', 'ICU', 'Surgery', 'Orthopedics', 'Cardiothoracic Surgery', 'Internal Medicine', 'Radiology'],
       capacity: {
-        ICU: { total: 8, occupied: 8 },
+        ICU: { total: 16, occupied: 14 },
         CCU: { total: 0, occupied: 0 },
         PICU: { total: 0, occupied: 0 },
-        Ward: { total: 100, occupied: 85 }
+        Ward: { total: 66, occupied: 52 }
       }
     });
 
     const f3 = FACILITIES.find(f => f.id === 'f3');
     expect(f3).toEqual({
       id: 'f3',
-      name: 'Qassasin District Hospital',
+      name: 'Fayed Specialized Hospital',
       type: 'district_hospital',
-      location: 'Qassasin',
-      departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine'],
+      location: 'Fayed',
+      departments: ['Emergency', 'ICU', 'Surgery', 'Orthopedics', 'Internal Medicine', 'Pediatrics', 'Obstetrics & Gynecology'],
       capacity: {
-        ICU: { total: 6, occupied: 4 },
+        ICU: { total: 12, occupied: 10 },
         CCU: { total: 0, occupied: 0 },
-        PICU: { total: 0, occupied: 0 },
-        Ward: { total: 80, occupied: 60 }
+        PICU: { total: 4, occupied: 2 },
+        Ward: { total: 50, occupied: 38 }
       }
     });
 
     const f4 = FACILITIES.find(f => f.id === 'f4');
     expect(f4).toEqual({
       id: 'f4',
-      name: 'Fayed Primary Care Unit',
-      type: 'primary_care',
-      location: 'Fayed',
-      departments: ['Emergency', 'Outpatient'],
+      name: 'El Qassasin Specialized Hospital',
+      type: 'district_hospital',
+      location: 'El Qassasin',
+      departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Nephrology'],
       capacity: {
-        ICU: { total: 0, occupied: 0 },
+        ICU: { total: 12, occupied: 11 },
         CCU: { total: 0, occupied: 0 },
-        PICU: { total: 0, occupied: 0 },
-        Ward: { total: 10, occupied: 2 }
+        PICU: { total: 6, occupied: 4 },
+        Ward: { total: 60, occupied: 45 }
       }
     });
 
     const f5 = FACILITIES.find(f => f.id === 'f5');
     expect(f5).toEqual({
       id: 'f5',
-      name: 'Abu Suwir Primary Care Unit',
-      type: 'primary_care',
-      location: 'Abu Suwir',
-      departments: ['Emergency', 'Outpatient'],
+      name: 'El Qantara West Hospital',
+      type: 'district_hospital',
+      location: 'El Qantara West',
+      departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics'],
       capacity: {
-        ICU: { total: 0, occupied: 0 },
+        ICU: { total: 8, occupied: 7 },
         CCU: { total: 0, occupied: 0 },
         PICU: { total: 0, occupied: 0 },
-        Ward: { total: 10, occupied: 1 }
+        Ward: { total: 45, occupied: 32 }
       }
     });
 
