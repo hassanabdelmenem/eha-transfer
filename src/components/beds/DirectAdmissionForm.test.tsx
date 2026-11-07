@@ -130,4 +130,30 @@ describe('DirectAdmissionForm', () => {
     expect(screen.getByLabelText(/Chief Complaint/i)).toHaveAttribute('id', 'admitChiefComplaint');
     expect(screen.getByLabelText(/Nursing \/ Admission Notes/i)).toHaveAttribute('id', 'admitNotes');
   });
+
+  it('supports quick unknown patient registration with UNK ID', () => {
+    render(<DirectAdmissionForm facility={mockFacility} onSubmit={vi.fn()} />);
+    const unknownBtn = screen.getByRole('button', { name: /\+ (Unknown Patient|مجهول الهوية)/i });
+    fireEvent.click(unknownBtn);
+
+    const nameInput = screen.getByLabelText(/Patient Name/i) as HTMLInputElement;
+    const hospitalIdInput = screen.getByLabelText(/Hospital ID/i) as HTMLInputElement;
+
+    expect(nameInput.value).toBe('مجهول الهوية 1');
+    expect(hospitalIdInput.value).toMatch(/^UNK-\d{3}$/);
+  });
+
+  it('rejects invalid Hospital ID format on submit', async () => {
+    const handleSubmit = vi.fn();
+    render(<DirectAdmissionForm facility={mockFacility} onSubmit={handleSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/Patient Name/i), { target: { value: 'Ahmed Ali' } });
+    fireEvent.change(screen.getByLabelText(/Hospital ID/i), { target: { value: 'bad' } });
+    fireEvent.change(screen.getByLabelText(/Admitting Department/i), { target: { value: 'Cardiology' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /Admit Patient & Update Capacity/i }));
+
+    expect(handleSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(/Enter a valid Hospital ID/i)).toBeInTheDocument();
+  });
 });

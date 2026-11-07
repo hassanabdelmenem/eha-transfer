@@ -4,6 +4,12 @@ import { Button } from '../ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { UserPlus, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useI18n, typedDir } from '../../i18n';
+import {
+  isValidHospitalId,
+  isValidNationalId,
+  decodeNationalIdToPatient,
+  formatUnknownPatientName,
+} from '../../lib/validators';
 
 export interface DirectAdmissionFormData {
   facilityId: string;
@@ -61,6 +67,20 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
   const [showClinicalDetails, setShowClinicalDetails] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  const handleQuickUnknown = () => {
+    const nextNum = Math.floor(100 + Math.random() * 900);
+    setPatientName(formatUnknownPatientName(1));
+    setHospitalId(`UNK-${nextNum}`);
+    if (formErrors.patientName || formErrors.hospitalId) {
+      setFormErrors((prev) => {
+        const next = { ...prev };
+        delete next.patientName;
+        delete next.hospitalId;
+        return next;
+      });
+    }
+  };
+
   const validate = () => {
     const errors: Record<string, string> = {};
     if (!patientName.trim()) {
@@ -68,6 +88,11 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
     }
     if (!hospitalId.trim()) {
       errors.hospitalId = t('admission.errors.hospitalId');
+    } else if (!isValidHospitalId(hospitalId)) {
+      errors.hospitalId = t('admission.errors.invalidHospitalId') || 'Invalid Hospital ID';
+    }
+    if (nationalId.trim() && !isValidNationalId(nationalId)) {
+      errors.nationalId = t('admission.errors.invalidNationalId') || 'Invalid National ID';
     }
     if (!department) {
       errors.department = t('admission.errors.department');
@@ -169,12 +194,21 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
             {/* Core Patient Demographics */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label
-                  htmlFor="admitPatientName"
-                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
-                >
-                  {t('admission.patientName')} <span className="text-critical-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label
+                    htmlFor="admitPatientName"
+                    className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    {t('admission.patientName')} <span className="text-critical-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleQuickUnknown}
+                    className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                  >
+                    + {t('admission.unknownPatient') || 'مجهول الهوية'}
+                  </button>
+                </div>
                 <input
                   id="admitPatientName"
                   type="text"
@@ -212,6 +246,8 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                   id="admitHospitalId"
                   type="text"
                   required
+                  autoCapitalize="characters"
+                  maxLength={30}
                   placeholder={t('admission.hospitalIdPlaceholder')}
                   className={`w-full rounded-xl border ${
                     formErrors.hospitalId
@@ -399,11 +435,27 @@ export const DirectAdmissionForm: React.FC<DirectAdmissionFormProps> = ({
                     <input
                       id="admitNationalId"
                       type="text"
+                      inputMode="numeric"
                       placeholder={t('admission.nationalIdPlaceholder')}
-                      className="w-full rounded-xl border border-field-border bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm focus:ring-2 focus:ring-brand outline-hidden min-h-[48px]"
+                      className={`w-full rounded-xl border ${
+                        formErrors.nationalId
+                          ? 'border-critical-500 focus:ring-critical-500'
+                          : 'border-field-border focus:ring-brand'
+                      } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-sm font-mono focus:ring-2 outline-hidden min-h-[48px]`}
                       value={nationalId}
-                      onChange={(e) => setNationalId(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNationalId(val);
+                        if (formErrors.nationalId) {
+                          setFormErrors((prev) => ({ ...prev, nationalId: '' }));
+                        }
+                      }}
                     />
+                    {formErrors.nationalId && (
+                      <p className="text-[11px] text-critical-600 dark:text-critical-400 mt-1 font-medium">
+                        {formErrors.nationalId}
+                      </p>
+                    )}
                   </div>
 
                   <div>

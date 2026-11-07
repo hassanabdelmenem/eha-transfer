@@ -16,6 +16,7 @@ import { StepDiagnosticsReview } from '../components/referrals/wizard/StepDiagno
 import { StepDestinationPriority } from '../components/referrals/wizard/StepDestinationPriority';
 import { SLA_MINUTES } from '../lib/sla';
 import { useI18n } from '../i18n';
+import { isValidHospitalId } from '../lib/validators';
 
 const loadDraft = (): WizardDraft | null => {
   try {
@@ -119,6 +120,7 @@ export const NewReferralPage: React.FC = () => {
       // No default: a pre-selected Male was never stored. A national ID fills it in.
       if (!patientData.gender) e.sex = t('wizard.errors.sex');
       if (!patientData.hospitalId?.trim()) e.hospitalId = t('wizard.errors.hospitalId');
+      else if (!isValidHospitalId(patientData.hospitalId)) e.hospitalId = t('wizard.errors.invalidHospitalId') || t('wizard.errors.hospitalId');
     } else if (step === 3) {
       if (!patientData.complaint?.trim()) e.complaint = t('wizard.errors.complaint');
       if (!patientData.presentation?.trim()) e.presentation = t('wizard.errors.presentation');
