@@ -26,7 +26,7 @@ export const SLA_SECONDS = SLA_MINUTES * 60;
  * noise. Widening this is a clinical decision, not a technical one.
  */
 export const SLA_TRACKED_PRIORITIES: readonly ReferralPriority[] = ['emergency', 'urgent'];
-export const SLA_TRACKED_BED_TYPES: readonly BedType[] = ['ICU', 'CCU', 'PICU'];
+export const SLA_TRACKED_BED_TYPES: readonly BedType[] = ['ICU', 'CCU', 'PICU', 'NICU'];
 
 /** The clock only runs while nobody has responded. */
 export const SLA_TRACKED_STATUS = 'pending';

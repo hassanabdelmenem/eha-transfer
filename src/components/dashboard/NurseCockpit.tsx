@@ -13,7 +13,7 @@ import { capacityTone } from '../../lib/capacityTone';
 import { cn } from '../../lib/utils';
 import { useI18n } from '../../i18n';
 
-const BED_TYPES: BedType[] = ['ICU', 'CCU', 'PICU', 'Ward'];
+const BED_TYPES: BedType[] = ['ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Ward'];
 
 // One bed type: what is free, and a stepper that writes immediately (the
 // parent debounces the Firestore write). The count shown is FREE beds, so

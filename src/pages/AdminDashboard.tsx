@@ -34,13 +34,15 @@ export const AdminDashboard: React.FC = () => {
   const calculateTotalCapacity = () => {
     const totals: Record<BedType, { total: number; occupied: number; available: number }> = {
       ICU: { total: 0, occupied: 0, available: 0 },
+      Intermediate: { total: 0, occupied: 0, available: 0 },
       CCU: { total: 0, occupied: 0, available: 0 },
       PICU: { total: 0, occupied: 0, available: 0 },
+      NICU: { total: 0, occupied: 0, available: 0 },
       Ward: { total: 0, occupied: 0, available: 0 }
     };
 
     facilities.filter(f => f.type !== 'primary_care').forEach(facility => {
-      (['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).forEach(bed => {
+      (['ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Ward'] as BedType[]).forEach(bed => {
         const cap = facility.capacity[bed];
         if (cap) {
           totals[bed].total += cap.total;
@@ -132,8 +134,8 @@ export const AdminDashboard: React.FC = () => {
       />
 
       {/* Network free beds: tertiary and district hospitals, primary care excluded. */}
-      <ul aria-label={t('admin.freeBeds')} className="mt-1 grid grid-cols-4 gap-2">
-        {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).map(bed => {
+      <ul aria-label={t('admin.freeBeds')} className="mt-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        {(['ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Ward'] as BedType[]).map(bed => {
           const tone = capacityTone(free(bed), globalTotals[bed].total);
           return (
             <li key={bed} className="rounded-[10px] border border-slate-200 bg-white px-1 py-2.5 text-center dark:border-white/12 dark:bg-slate-900">

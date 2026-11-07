@@ -8,7 +8,7 @@ interface BedOccupancyHeatmapProps {
   facilities: Facility[];
 }
 
-const BED_TYPES: BedType[] = ['ICU', 'CCU', 'PICU', 'Ward'];
+const BED_TYPES: BedType[] = ['ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Ward'];
 
 const LEGEND: { label: 'full' | 'under20' | 'bedsFree'; swatch: string }[] = [
   { label: 'full', swatch: 'bg-critical-100 border-critical-300 dark:bg-critical-900/70 dark:border-critical-700' },

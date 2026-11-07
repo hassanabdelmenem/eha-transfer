@@ -15,7 +15,36 @@ export type Role =
   | 'er_room';
 
 export type FacilityType = 'primary_care' | 'district_hospital' | 'tertiary_care' | 'external_contracted';
-export type BedType = 'ICU' | 'CCU' | 'PICU' | 'Ward';
+export type BedType = 'ICU' | 'CCU' | 'PICU' | 'NICU' | 'Intermediate' | 'Ward';
+
+export type ConsultationUrgency = 'routine' | 'urgent' | 'emergency';
+export type ConsultationStatus = 'pending' | 'answered';
+export type ConsultationOutcome = 'indicated' | 'not_indicated' | 'alternative_treatment' | 'pending';
+
+export interface Consultation {
+  id: string;
+  consultationNumber?: string;
+  patientName: string;
+  hospitalId: string;
+  nationalId?: string;
+  age?: number | string;
+  gender?: 'male' | 'female' | 'other';
+  specialty: string;
+  requestingHospital: string;
+  requestingHospitalId?: string;
+  requestedHospital: string;
+  requestedHospitalId?: string;
+  reason: string;
+  urgency: ConsultationUrgency;
+  status: ConsultationStatus;
+  outcome?: ConsultationOutcome;
+  doctorName?: string;
+  responseNotes?: string;
+  requestedAt: string;
+  answeredAt?: string;
+  isAnswered: boolean;
+  notes?: string;
+}
 
 export interface Facility {
   id: string;
@@ -25,7 +54,7 @@ export interface Facility {
   type: FacilityType;
   location: string;
   departments: string[];
-  capacity: Record<BedType, { total: number; occupied: number }>;
+  capacity: Record<BedType, { total: number; occupied: number }> | Record<string, { total: number; occupied: number }>;
 }
 
 export interface User {

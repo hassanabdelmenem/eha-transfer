@@ -21,6 +21,7 @@ import {
   Bell,
   ClipboardList,
   BarChart3,
+  Stethoscope,
 } from 'lucide-react';
 import { isNurseRole } from '../../types';
 import { cn } from '../../lib/utils';
@@ -147,6 +148,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-1">
         {navLink("/dashboard", LayoutDashboard, isNurseRole(user.role) ? t('rail.beds') : t('rail.waitingOnYou'), waitingCount)}
         {navLink("/referrals", Users, t('rail.referrals'))}
+        {navLink("/consultations", Stethoscope, t('rail.consultations'))}
         {isDoctor && navLink("/referrals/new", Plus, t('rail.newReferral'))}
         {navLink("/notifications", Bell, t('rail.inbox'))}
         {(isNurse || isLeadership) && navLink("/bed-management", Bed, t('rail.bedManagement'))}

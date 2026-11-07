@@ -18,7 +18,7 @@ export interface BedCapacityGridProps {
   disabled?: boolean;
 }
 
-const BED_TYPES: BedType[] = ['ICU', 'CCU', 'PICU', 'Ward'];
+const BED_TYPES: BedType[] = ['ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Ward'];
 
 export const BedCapacityGrid: React.FC<BedCapacityGridProps> = ({
   facility,

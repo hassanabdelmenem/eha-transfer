@@ -30,6 +30,10 @@ describe('isSlaTracked', () => {
     expect(isSlaTracked(referral())).toBe(true);
   });
 
+  it('tracks a pending emergency NICU referral', () => {
+    expect(isSlaTracked(referral({ requiredBedType: 'NICU' }))).toBe(true);
+  });
+
   it('tracks urgent as well as emergency', () => {
     expect(isSlaTracked(referral({ priority: 'urgent' }))).toBe(true);
   });

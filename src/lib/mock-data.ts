@@ -1,4 +1,4 @@
-import { Facility, User } from '../types';
+import { Facility, User, Consultation } from '../types';
 
 export const FACILITIES: Facility[] = [
   {
@@ -9,9 +9,11 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'ICU', 'CCU', 'PICU', 'Cardiology', 'Neurology', 'Surgery', 'Pediatrics', 'Internal Medicine', 'Nephrology', 'Orthopedics', 'Vascular Surgery', 'Neurosurgery', 'Cardiothoracic Surgery', 'Oncology', 'ENT', 'Ophthalmology', 'Maxillofacial', 'Radiology'],
     capacity: {
       ICU: { total: 17, occupied: 15 },
+      Intermediate: { total: 39, occupied: 32 },
       CCU: { total: 21, occupied: 18 },
-      PICU: { total: 38, occupied: 30 },
-      Ward: { total: 251, occupied: 210 }
+      PICU: { total: 11, occupied: 9 },
+      NICU: { total: 27, occupied: 21 },
+      Ward: { total: 212, occupied: 178 }
     }
   },
   {
@@ -22,8 +24,10 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'ICU', 'Surgery', 'Orthopedics', 'Cardiothoracic Surgery', 'Internal Medicine', 'Radiology'],
     capacity: {
       ICU: { total: 16, occupied: 14 },
+      Intermediate: { total: 10, occupied: 8 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
+      NICU: { total: 0, occupied: 0 },
       Ward: { total: 66, occupied: 52 }
     }
   },
@@ -35,8 +39,10 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'ICU', 'Surgery', 'Orthopedics', 'Internal Medicine', 'Pediatrics', 'Obstetrics & Gynecology'],
     capacity: {
       ICU: { total: 12, occupied: 10 },
+      Intermediate: { total: 8, occupied: 6 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 4, occupied: 2 },
+      NICU: { total: 6, occupied: 4 },
       Ward: { total: 50, occupied: 38 }
     }
   },
@@ -48,8 +54,10 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Nephrology'],
     capacity: {
       ICU: { total: 12, occupied: 11 },
+      Intermediate: { total: 8, occupied: 6 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 6, occupied: 4 },
+      NICU: { total: 8, occupied: 6 },
       Ward: { total: 60, occupied: 45 }
     }
   },
@@ -61,8 +69,10 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics'],
     capacity: {
       ICU: { total: 8, occupied: 7 },
+      Intermediate: { total: 6, occupied: 4 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
+      NICU: { total: 4, occupied: 3 },
       Ward: { total: 45, occupied: 32 }
     }
   },
@@ -74,8 +84,10 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics'],
     capacity: {
       ICU: { total: 6, occupied: 5 },
+      Intermediate: { total: 4, occupied: 3 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
+      NICU: { total: 4, occupied: 2 },
       Ward: { total: 35, occupied: 20 }
     }
   },
@@ -87,8 +99,10 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Nephrology'],
     capacity: {
       ICU: { total: 10, occupied: 9 },
+      Intermediate: { total: 8, occupied: 6 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
+      NICU: { total: 6, occupied: 4 },
       Ward: { total: 60, occupied: 48 }
     }
   },
@@ -100,8 +114,10 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'ICU', 'Nephrology', 'Urology', 'Kidney Transplant', 'Hemodialysis', 'Surgery'],
     capacity: {
       ICU: { total: 8, occupied: 7 },
+      Intermediate: { total: 6, occupied: 5 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
+      NICU: { total: 0, occupied: 0 },
       Ward: { total: 40, occupied: 30 }
     }
   },
@@ -115,8 +131,10 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'ICU', 'CCU', 'Neurosurgery', 'Cardiothoracic Surgery', 'Vascular Surgery', 'Pediatric Surgery', 'Toxicology'],
     capacity: {
       ICU: { total: 30, occupied: 28 },
+      Intermediate: { total: 20, occupied: 18 },
       CCU: { total: 15, occupied: 14 },
       PICU: { total: 15, occupied: 12 },
+      NICU: { total: 16, occupied: 14 },
       Ward: { total: 300, occupied: 270 }
     }
   },
@@ -128,8 +146,10 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'ICU', 'CCU', 'PICU', 'Cardiology', 'Surgery', 'Burns & Plastic Surgery'],
     capacity: {
       ICU: { total: 45, occupied: 40 },
+      Intermediate: { total: 25, occupied: 20 },
       CCU: { total: 20, occupied: 17 },
       PICU: { total: 20, occupied: 15 },
+      NICU: { total: 24, occupied: 20 },
       Ward: { total: 350, occupied: 290 }
     }
   },
@@ -141,10 +161,104 @@ export const FACILITIES: Facility[] = [
     departments: ['Emergency', 'Ophthalmology', 'Surgery'],
     capacity: {
       ICU: { total: 4, occupied: 2 },
+      Intermediate: { total: 2, occupied: 1 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
+      NICU: { total: 0, occupied: 0 },
       Ward: { total: 50, occupied: 30 }
     }
+  }
+];
+
+export const MOCK_CONSULTATIONS: Consultation[] = [
+  {
+    id: 'c-1',
+    consultationNumber: '101',
+    patientName: 'أحمد محمود إبراهيم',
+    hospitalId: 'IMC-8821',
+    nationalId: '28005120101123',
+    age: 46,
+    gender: 'male',
+    specialty: 'Vascular Surgery',
+    requestingHospital: 'مجمع الإسماعيلية الطبي',
+    requestingHospitalId: 'f1',
+    requestedHospital: 'مستشفى جامعة قناة السويس',
+    requestedHospitalId: 'f9',
+    reason: 'Acute lower limb ischemia with absent distal pulses, needs emergency revascularization vs embolectomy',
+    urgency: 'emergency',
+    status: 'pending',
+    outcome: 'pending',
+    isAnswered: false,
+    requestedAt: new Date(Date.now() - 3600 * 1000).toISOString()
+  },
+  {
+    id: 'c-2',
+    consultationNumber: '102',
+    patientName: 'سارة عبد الرحمن حسن',
+    hospitalId: 'FYD-4412',
+    nationalId: '29208250102456',
+    age: 34,
+    gender: 'female',
+    specialty: 'Neurosurgery',
+    requestingHospital: 'مستشفى فايد التخصصي',
+    requestingHospitalId: 'f3',
+    requestedHospital: 'مجمع الإسماعيلية الطبي',
+    requestedHospitalId: 'f1',
+    reason: 'Traumatic subarachnoid hemorrhage with depressed skull fracture GCS 12, urgent intervention evaluation',
+    urgency: 'urgent',
+    status: 'answered',
+    outcome: 'indicated',
+    doctorName: 'د. طارق العدوي (استشاري جراحة المخ والأعصاب)',
+    responseNotes: 'الحالة تستدعي التدخل الجراحي العاجل لرفع الكسر وتفريغ النزيف. تم تأكيد قبول الحالة وتحويلها لقسم جراحة المخ والأعصاب بمجمع الإسماعيلية.',
+    isAnswered: true,
+    requestedAt: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
+    answeredAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+  },
+  {
+    id: 'c-3',
+    consultationNumber: '103',
+    patientName: 'محمود السيد علي',
+    hospitalId: 'QAS-1930',
+    nationalId: '26503150109988',
+    age: 61,
+    gender: 'male',
+    specialty: 'Cardiology',
+    requestingHospital: 'مستشفى القصاصين التخصصي',
+    requestingHospitalId: 'f4',
+    requestedHospital: 'مجمع الإسماعيلية الطبي',
+    requestedHospitalId: 'f1',
+    reason: 'Refractory unstable angina with ST depressions V3-V6 despite dual antiplatelets and nitrate infusion, urgent cath evaluation',
+    urgency: 'urgent',
+    status: 'answered',
+    outcome: 'indicated',
+    doctorName: 'د. هاني الشافعي (استشاري القلب والقسطرة)',
+    responseNotes: 'الحالة مؤشرة لقسطرة قلبية عاجلة (Urgent Angiography & Primary PCI). سرير رعاية القلب (CCU) متاح وجاهز للاستقبال.',
+    isAnswered: true,
+    requestedAt: new Date(Date.now() - 10 * 3600 * 1000).toISOString(),
+    answeredAt: new Date(Date.now() - 7 * 3600 * 1000).toISOString()
+  },
+  {
+    id: 'c-4',
+    consultationNumber: '104',
+    patientName: 'مريم يوسف عثمان',
+    hospitalId: 'ABK-7023',
+    nationalId: '29811050106543',
+    age: 28,
+    gender: 'female',
+    specialty: 'Toxicology',
+    requestingHospital: 'مستشفى أبو خليفة للطوارئ',
+    requestingHospitalId: 'f2',
+    requestedHospital: 'مستشفى جامعة قناة السويس',
+    requestedHospitalId: 'f9',
+    reason: 'Organophosphate poisoning with respiratory secretions and bradycardia, advice on atropinization and pralidoxime regimen',
+    urgency: 'urgent',
+    status: 'answered',
+    outcome: 'not_indicated',
+    doctorName: 'د. دعاء رضوان (استشاري السموم الإكلينيكية)',
+    responseNotes: 'تم إعطاء بروتوكول الأتروبين المطلوب ومتابعة التشبع الأكسجيني. لا يستدعي النقل الجغرافي حالياً مع استقرار العلامات الحيوية بالمستشفى.',
+    isAnswered: true,
+    requestedAt: new Date(Date.now() - 18 * 3600 * 1000).toISOString(),
+    answeredAt: new Date(Date.now() - 16 * 3600 * 1000).toISOString()
   }
 ];
 

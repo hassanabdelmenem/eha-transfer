@@ -34,9 +34,11 @@ export const NETWORK_DEPARTMENTS = [
 
 export const BED_TYPES: { label: string; value: BedType }[] = [
   { label: 'Standard Ward', value: 'Ward' },
+  { label: 'Intermediate Care (HDU)', value: 'Intermediate' },
   { label: 'ICU (Intensive Care)', value: 'ICU' },
   { label: 'CCU (Coronary Care)', value: 'CCU' },
-  { label: 'PICU (Pediatric ICU)', value: 'PICU' }
+  { label: 'PICU (Pediatric ICU)', value: 'PICU' },
+  { label: 'NICU (Neonatal ICU)', value: 'NICU' }
 ];
 
 /**

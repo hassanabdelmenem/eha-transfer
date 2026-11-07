@@ -40,8 +40,10 @@ export const FacilitySettingsPage: React.FC = () => {
   const [facContractedServices, setFacContractedServices] = useState('');
   const [facDepts, setFacDepts] = useState('Emergency, ICU, Surgery, Internal Medicine');
   const [icuTotal, setIcuTotal] = useState(10);
+  const [intermediateTotal, setIntermediateTotal] = useState(10);
   const [ccuTotal, setCcuTotal] = useState(5);
   const [picuTotal, setPicuTotal] = useState(5);
+  const [nicuTotal, setNicuTotal] = useState(5);
   const [wardTotal, setWardTotal] = useState(50);
 
   const hasAccess = user && ['hospital_manager', 'deputy_manager', 'medical_director', 'owner', 'system_admin', 'head_of_department'].includes(user.role);
@@ -115,10 +117,12 @@ export const FacilitySettingsPage: React.FC = () => {
     setFacIsExternal(f.isExternal);
     setFacContractedServices(f.contractedServices?.join(', ') || '');
     setFacDepts(f.departments.join(', '));
-    setIcuTotal(f.capacity.ICU.total);
-    setCcuTotal(f.capacity.CCU.total);
-    setPicuTotal(f.capacity.PICU.total);
-    setWardTotal(f.capacity.Ward.total);
+    setIcuTotal(f.capacity.ICU?.total ?? 0);
+    setIntermediateTotal(f.capacity.Intermediate?.total ?? 0);
+    setCcuTotal(f.capacity.CCU?.total ?? 0);
+    setPicuTotal(f.capacity.PICU?.total ?? 0);
+    setNicuTotal(f.capacity.NICU?.total ?? 0);
+    setWardTotal(f.capacity.Ward?.total ?? 0);
     setShowAddFacility(true);
   };
 
@@ -146,8 +150,10 @@ export const FacilitySettingsPage: React.FC = () => {
       departments: departmentsArray.length > 0 ? departmentsArray : ['Emergency', 'General'],
       capacity: {
         ICU: capacityFor('ICU', icuTotal),
+        Intermediate: capacityFor('Intermediate', intermediateTotal),
         CCU: capacityFor('CCU', ccuTotal),
         PICU: capacityFor('PICU', picuTotal),
+        NICU: capacityFor('NICU', nicuTotal),
         Ward: capacityFor('Ward', wardTotal)
       }
     };
@@ -255,7 +261,7 @@ export const FacilitySettingsPage: React.FC = () => {
           <section aria-labelledby="configured-capacity" className="flex flex-col gap-2.5">
             <MicroLabel id="configured-capacity">{t('settings.capacity')}</MicroLabel>
             <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white dark:divide-white/10 dark:border-white/12 dark:bg-slate-900">
-              {(['ICU', 'CCU', 'PICU', 'Ward'] as BedType[]).filter(bed => facility.capacity[bed]).map(bed => (
+              {(['ICU', 'Intermediate', 'CCU', 'PICU', 'NICU', 'Ward'] as BedType[]).filter(bed => facility.capacity[bed]).map(bed => (
                 <li key={bed} className="flex min-h-[48px] items-center justify-between px-[14px]">
                   <span className="text-[15px] font-semibold text-ink dark:text-paper">{bed}</span>
                   <span className="text-[14px] tabular-nums text-slate-700 dark:text-white/65">
@@ -379,10 +385,14 @@ export const FacilitySettingsPage: React.FC = () => {
 
                 <div className="border-t border-slate-200 dark:border-slate-800 pt-4">
                   <p className="mb-2 text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedCapacity')}</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     <div>
                       <label htmlFor="icuTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedsOf', { bed: 'ICU' })}</label>
                       <input id="icuTotal" type="number" min="0" value={icuTotal} onChange={e => setIcuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper tabular-nums" />
+                    </div>
+                    <div>
+                      <label htmlFor="intermediateTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedsOf', { bed: 'Intermediate' })}</label>
+                      <input id="intermediateTotal" type="number" min="0" value={intermediateTotal} onChange={e => setIntermediateTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper tabular-nums" />
                     </div>
                     <div>
                       <label htmlFor="ccuTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedsOf', { bed: 'CCU' })}</label>
@@ -391,6 +401,10 @@ export const FacilitySettingsPage: React.FC = () => {
                     <div>
                       <label htmlFor="picuTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedsOf', { bed: 'PICU' })}</label>
                       <input id="picuTotal" type="number" min="0" value={picuTotal} onChange={e => setPicuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper tabular-nums" />
+                    </div>
+                    <div>
+                      <label htmlFor="nicuTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedsOf', { bed: 'NICU' })}</label>
+                      <input id="nicuTotal" type="number" min="0" value={nicuTotal} onChange={e => setNicuTotal(Math.max(0, Number(e.target.value) || 0))} className="min-h-[48px] w-full rounded-[10px] border border-field-border bg-white px-3 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:bg-slate-900 dark:text-paper tabular-nums" />
                     </div>
                     <div>
                       <label htmlFor="wardTotal" className="mb-1 block text-[12.5px] font-semibold text-slate-700 dark:text-white/70">{t('settings.bedsOf', { bed: 'Ward' })}</label>

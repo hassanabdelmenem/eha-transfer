@@ -98,8 +98,10 @@ const testFacility: Facility = {
   departments: ['Cardiology', 'ICU', 'Emergency', 'Surgery'],
   capacity: {
     ICU: { total: 10, occupied: 4 },
+    Intermediate: { total: 8, occupied: 3 },
     CCU: { total: 5, occupied: 2 },
     PICU: { total: 4, occupied: 1 },
+    NICU: { total: 6, occupied: 2 },
     Ward: { total: 40, occupied: 20 },
   },
 };
