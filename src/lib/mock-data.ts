@@ -1,71 +1,151 @@
 import { Facility, User } from '../types';
 
 export const FACILITIES: Facility[] = [
-  { 
-    id: 'f1', 
-    name: 'Ismailia General Hospital', 
-    type: 'tertiary_care', 
+  {
+    id: 'f1',
+    name: 'Ismailia Medical Complex',
+    type: 'tertiary_care',
     location: 'Ismailia City',
-    departments: ['Emergency', 'ICU', 'CCU', 'PICU', 'Cardiology', 'Neurology', 'Surgery', 'Pediatrics', 'Internal Medicine'],
+    departments: ['Emergency', 'ICU', 'CCU', 'PICU', 'Cardiology', 'Neurology', 'Surgery', 'Pediatrics', 'Internal Medicine', 'Nephrology', 'Orthopedics', 'Vascular Surgery', 'Neurosurgery', 'Cardiothoracic Surgery', 'Oncology', 'ENT', 'Ophthalmology', 'Maxillofacial', 'Radiology'],
     capacity: {
-      ICU: { total: 20, occupied: 18 },
-      CCU: { total: 10, occupied: 9 },
-      PICU: { total: 8, occupied: 5 },
-      Ward: { total: 200, occupied: 150 }
+      ICU: { total: 17, occupied: 15 },
+      CCU: { total: 21, occupied: 18 },
+      PICU: { total: 38, occupied: 30 },
+      Ward: { total: 251, occupied: 210 }
     }
   },
-  { 
-    id: 'f2', 
-    name: 'Tel El Kebir District Hospital', 
-    type: 'district_hospital', 
-    location: 'Tel El Kebir',
+  {
+    id: 'f2',
+    name: 'Abu Khalifa Emergency Hospital',
+    type: 'tertiary_care',
+    location: 'Abu Khalifa, Ismailia',
+    departments: ['Emergency', 'ICU', 'Surgery', 'Orthopedics', 'Cardiothoracic Surgery', 'Internal Medicine', 'Radiology'],
+    capacity: {
+      ICU: { total: 16, occupied: 14 },
+      CCU: { total: 0, occupied: 0 },
+      PICU: { total: 0, occupied: 0 },
+      Ward: { total: 66, occupied: 52 }
+    }
+  },
+  {
+    id: 'f3',
+    name: 'Fayed Specialized Hospital',
+    type: 'district_hospital',
+    location: 'Fayed',
+    departments: ['Emergency', 'ICU', 'Surgery', 'Orthopedics', 'Internal Medicine', 'Pediatrics', 'Obstetrics & Gynecology'],
+    capacity: {
+      ICU: { total: 12, occupied: 10 },
+      CCU: { total: 0, occupied: 0 },
+      PICU: { total: 4, occupied: 2 },
+      Ward: { total: 50, occupied: 38 }
+    }
+  },
+  {
+    id: 'f4',
+    name: 'El Qassasin Specialized Hospital',
+    type: 'district_hospital',
+    location: 'El Qassasin',
+    departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Nephrology'],
+    capacity: {
+      ICU: { total: 12, occupied: 11 },
+      CCU: { total: 0, occupied: 0 },
+      PICU: { total: 6, occupied: 4 },
+      Ward: { total: 60, occupied: 45 }
+    }
+  },
+  {
+    id: 'f5',
+    name: 'El Qantara West Hospital',
+    type: 'district_hospital',
+    location: 'El Qantara West',
     departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics'],
     capacity: {
-      ICU: { total: 8, occupied: 8 },
+      ICU: { total: 8, occupied: 7 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
-      Ward: { total: 100, occupied: 85 }
+      Ward: { total: 45, occupied: 32 }
     }
   },
-  { 
-    id: 'f3', 
-    name: 'Qassasin District Hospital', 
-    type: 'district_hospital', 
-    location: 'Qassasin',
-    departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine'],
+  {
+    id: 'f6',
+    name: 'El Qantara East Hospital',
+    type: 'district_hospital',
+    location: 'El Qantara East',
+    departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics'],
     capacity: {
-      ICU: { total: 6, occupied: 4 },
+      ICU: { total: 6, occupied: 5 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
-      Ward: { total: 80, occupied: 60 }
+      Ward: { total: 35, occupied: 20 }
     }
   },
-  { 
-    id: 'f4', 
-    name: 'Fayed Primary Care Unit', 
-    type: 'primary_care', 
-    location: 'Fayed',
-    departments: ['Emergency', 'Outpatient'],
+  {
+    id: 'f7',
+    name: 'Tel El Kebir Central Hospital',
+    type: 'district_hospital',
+    location: 'Tel El Kebir',
+    departments: ['Emergency', 'ICU', 'Surgery', 'Internal Medicine', 'Pediatrics', 'Nephrology'],
     capacity: {
-      ICU: { total: 0, occupied: 0 },
+      ICU: { total: 10, occupied: 9 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
-      Ward: { total: 10, occupied: 2 }
+      Ward: { total: 60, occupied: 48 }
     }
   },
-  { 
-    id: 'f5', 
-    name: 'Abu Suwir Primary Care Unit', 
-    type: 'primary_care', 
-    location: 'Abu Suwir',
-    departments: ['Emergency', 'Outpatient'],
+  {
+    id: 'f8',
+    name: '30 June Nephrology & Urology Center',
+    type: 'tertiary_care',
+    location: 'Ismailia City',
+    departments: ['Emergency', 'ICU', 'Nephrology', 'Urology', 'Kidney Transplant', 'Hemodialysis', 'Surgery'],
     capacity: {
-      ICU: { total: 0, occupied: 0 },
+      ICU: { total: 8, occupied: 7 },
       CCU: { total: 0, occupied: 0 },
       PICU: { total: 0, occupied: 0 },
-      Ward: { total: 10, occupied: 1 }
+      Ward: { total: 40, occupied: 30 }
     }
   },
+  {
+    id: 'f9',
+    name: 'Suez Canal University Hospital',
+    type: 'external_contracted',
+    isExternal: true,
+    contractedServices: ['Toxicology', 'Neurosurgery', 'Pediatric Surgery', 'Vascular Surgery'],
+    location: 'Ismailia (University Campus)',
+    departments: ['Emergency', 'ICU', 'CCU', 'Neurosurgery', 'Cardiothoracic Surgery', 'Vascular Surgery', 'Pediatric Surgery', 'Toxicology'],
+    capacity: {
+      ICU: { total: 30, occupied: 28 },
+      CCU: { total: 15, occupied: 14 },
+      PICU: { total: 15, occupied: 12 },
+      Ward: { total: 300, occupied: 270 }
+    }
+  },
+  {
+    id: 'f10',
+    name: 'Suez Medical Complex',
+    type: 'tertiary_care',
+    location: 'Suez Governorate',
+    departments: ['Emergency', 'ICU', 'CCU', 'PICU', 'Cardiology', 'Surgery', 'Burns & Plastic Surgery'],
+    capacity: {
+      ICU: { total: 45, occupied: 40 },
+      CCU: { total: 20, occupied: 17 },
+      PICU: { total: 20, occupied: 15 },
+      Ward: { total: 350, occupied: 290 }
+    }
+  },
+  {
+    id: 'f11',
+    name: 'Port Said Specialized Eye Hospital',
+    type: 'tertiary_care',
+    location: 'Port Said Governorate',
+    departments: ['Emergency', 'Ophthalmology', 'Surgery'],
+    capacity: {
+      ICU: { total: 4, occupied: 2 },
+      CCU: { total: 0, occupied: 0 },
+      PICU: { total: 0, occupied: 0 },
+      Ward: { total: 50, occupied: 30 }
+    }
+  }
 ];
 
 // Placeholder seed roster, used only to populate an empty `users` collection on a
