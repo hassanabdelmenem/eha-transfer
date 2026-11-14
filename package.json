@@ -67,6 +67,9 @@
   },
   "overrides": {
     "qs": "^6.15.3",
-    "fast-uri": "^3.1.6"
+    "fast-uri": "^3.1.6",
+    "@firebase/firestore": {
+      "@grpc/grpc-js": "^1.14.6"
+    }
   }
 }
